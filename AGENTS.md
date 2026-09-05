@@ -94,17 +94,26 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-```bash
-# The full fork delta
-git -C ycash-dd diff ycash-legacy...digidollar --stat
+Start a session with `make status`. It reports all four repos and **exits non-zero if a
+`ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
+`docs/mapping.md`.
 
+```bash
+make            # list targets (same as `make help`)
+make status     # git status across all four repos, with pin verification
+make status-short   # same, without the per-file listing
+make pins       # one line per repo, machine-readable
+make diff       # fork delta: ycash-legacy...digidollar
+make log        # commits on the fork branch beyond the baseline
+```
+
+The pins are declared once, at the top of the `Makefile`, and mirrored in this file and in
+`docs/mapping.md`. If you re-pin a reference repo, update all three.
+
+```bash
 # Search upstream DigiDollar (read-only)
 git -C ref/digibyte grep -n 'OP_DIGIDOLLAR' -- src/
 
 # Search the Ycash baseline (read-only)
 git -C ref/ycash grep -n 'SignatureHash' -- src/
-
-# Confirm the pins
-git -C ref/digibyte describe --tags   # v9.26.5
-git -C ref/ycash    describe --tags   # v4.5.0
 ```
