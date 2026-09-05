@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pretty per-repo git status for the ydollar workspace.
+# Pretty per-repo git status for the Yellowback (YED) workspace.
 #
 # Usage: scripts/repo-status.sh [--short]
 # Pins are supplied by the Makefile via the environment; the defaults here

@@ -1,6 +1,7 @@
 # DigiByte → Ycash crosswalk (`mapping.md`)
 
-**Purpose.** This is the anchor document for every agent session in this workspace. Before you
+**Purpose.** This is the anchor document for every agent session in this workspace (the
+product is **Ycash Yellowback (YED)**: Yellowback is the system, YED is the unit). Before you
 transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Each row says:
 
 > DigiByte does **X** in file **Y** using **mechanism M**; the Ycash equivalent is **Z**, which
@@ -42,7 +43,7 @@ of those things exists in Ycash. A naive port produces code that compiles and is
 | Indexes | `src/index/` (`digidollarstatsindex.cpp`) | *(no `src/index/`)* | No base index framework. Either build one, or persist DD state in a dedicated LevelDB wrapper alongside `src/txdb.cpp`. |
 | Node/kernel split | `src/node/`, `src/kernel/`, `src/init/`, `src/util/`, `src/logging/`, `src/common/` | *(none of these)* | Flatten into `src/`, `src/util*.cpp`, `src/init.cpp`. |
 | Shielded pools | *(none)* | `src/zcash/`, `src/rust/`, JoinSplit + Sapling spends/outputs | **DigiByte has no analogue.** See §6. |
-| GUI | `src/qt/digidollar*` (≈ 10.4k lines, in-process Qt widgets over `WalletModel`) | `src/qt/` does not exist; the GUI is **YecWallet** (`ref/yecwallet`, ≈ 8.3k lines, Qt 6 + CMake), a separate application that bundles `ycashd` and drives it over JSON-RPC | Build the YDollar screens in `yecwallet-dd` against the `yd_*` RPCs; DigiByte's widgets are the behavioural reference. See §12. |
+| GUI | `src/qt/digidollar*` (≈ 10.4k lines, in-process Qt widgets over `WalletModel`) | `src/qt/` does not exist; the GUI is **YecWallet** (`ref/yecwallet`, ≈ 8.3k lines, Qt 6 + CMake), a separate application that bundles `ycashd` and drives it over JSON-RPC | Build the Yellowback screens in `yecwallet-dd` against the `yed_*` RPCs; DigiByte's widgets are the behavioural reference. See §12. |
 
 ---
 
@@ -132,10 +133,10 @@ deploy without a hard fork.
 >    invariants become quorum-enforced rather than consensus-enforced — a real weakening that must
 >    be stated explicitly, not assumed away. **This is the recommended path** unless the trust
 >    model is judged unacceptable.
-> 1. **Network-upgrade hard fork (Zcash-native).** Add `UPGRADE_YDOLLAR` to
+> 1. **Network-upgrade hard fork (Zcash-native).** Add `UPGRADE_YELLOWBACK` to
 >    `Consensus::UpgradeIndex` (`ref/ycash/src/consensus/params.h`) with a fresh `nBranchId` in
 >    `NetworkUpgradeInfo` (`ref/ycash/src/consensus/upgrades.cpp`), and gate the new opcodes on
->    `NetworkUpgradeActive(nHeight, params, Consensus::UPGRADE_YDOLLAR)`. This is how Zcash-family
+>    `NetworkUpgradeActive(nHeight, params, Consensus::UPGRADE_YELLOWBACK)`. This is how Zcash-family
 >    chains normally ship consensus changes, and the branch-ID sighash binding gives free replay
 >    protection across the fork. It is also a coordinated hard fork — the largest possible ask of
 >    a risk-averse team, so it needs a written justification for why Tier 0 will not do.
@@ -198,10 +199,10 @@ opcode.** Any price-checking opcode must bind to the block's own committed bundl
 > **DigiByte** activates DigiDollar via a buried BIP9 bit-23 deployment and threads
 > `SCRIPT_VERIFY_DIGIDOLLAR` into script flags once active. **Ycash** has no versionbits machinery
 > — every consensus change is a scheduled network upgrade with a new branch ID — **so the
-> adaptation is**: add `UPGRADE_YDOLLAR` before `UPGRADE_ZFUTURE` in `UpgradeIndex`, add a matching
+> adaptation is**: add `UPGRADE_YELLOWBACK` before `UPGRADE_ZFUTURE` in `UpgradeIndex`, add a matching
 > `NetworkUpgradeInfo` entry with a fresh `nBranchId` and `nProtocolVersion`, set
 > `nActivationHeight` per network in `chainparams.cpp`, and replace every
-> `DeploymentActiveAt(..., DEPLOYMENT_DIGIDOLLAR)` call with `NetworkUpgradeActive(..., UPGRADE_YDOLLAR)`.
+> `DeploymentActiveAt(..., DEPLOYMENT_DIGIDOLLAR)` call with `NetworkUpgradeActive(..., UPGRADE_YELLOWBACK)`.
 > Note `UPGRADE_NU5` already exists in the enum but is **`NO_ACTIVATION_HEIGHT`** on all networks
 > (`ref/ycash/src/chainparams.cpp:136-138`) and Ycash has **no Orchard code whatsoever** (zero
 > matches for `orchard` in `src/`). Do not build on NU5.
@@ -243,9 +244,9 @@ with `IsDigiDollarTransaction()` / `GetDigiDollarTxType()` / `GetDigiDollarFlags
 > **DigiByte** marks a transaction as DigiDollar by bit-packing a magic marker, a type and flags
 > into `CTransaction::nVersion`. **Ycash** reserves bit 31 of that field for `fOverwintered` and
 > pins the remaining bits to exactly `4`, with a second mandatory `nVersionGroupId` field
-> (ZIP-202) — **so the adaptation is**: **do not touch `nVersion`.** Carry the YDollar type/flags
-> either (a) in a new `nVersionGroupId` value gated by `UPGRADE_YDOLLAR` plus a new tx version 5
-> with an appended YDollar field group, following the ZIP-202/ZIP-225 pattern Ycash already
+> (ZIP-202) — **so the adaptation is**: **do not touch `nVersion`.** Carry the Yellowback type/flags
+> either (a) in a new `nVersionGroupId` value gated by `UPGRADE_YELLOWBACK` plus a new tx version 5
+> with an appended Yellowback field group, following the ZIP-202/ZIP-225 pattern Ycash already
 > implements for Overwinter/Sapling, or (b) out-of-band in an `OP_RETURN` payload output plus
 > script-shape detection. Option (a) is more invasive but is the idiom the codebase is built
 > around; option (b) avoids touching serialization but makes DD-ness a script-parsing question in
@@ -267,9 +268,9 @@ a `valueBalance` that moves value between the transparent and shielded pools.
 > **DigiByte** can assume every DigiDollar UTXO is transparent and therefore fully auditable by
 > consensus — collateral ratios, supply totals, and the stats index all read the UTXO set directly.
 > **Ycash** allows value to enter a shielded pool where consensus cannot see amounts or ownership
-> — **so the adaptation is**: state explicitly, in `docs/spec/ydollar-adaptation-spec.md`, whether
-> YDollar-bearing outputs may be shielded. The safe default is **no** — require DD mint/redeem
-> outputs to be transparent and reject any transaction that is both `UPGRADE_YDOLLAR`-typed and
+> — **so the adaptation is**: state explicitly, in `docs/spec/yellowback-adaptation-spec.md`, whether
+> YED-bearing outputs may be shielded. The safe default is **no** — require DD mint/redeem
+> outputs to be transparent and reject any transaction that is both `UPGRADE_YELLOWBACK`-typed and
 > carries `vShieldedOutput`/`vJoinSplit` — because a shielded DD output makes global DD supply and
 > the collateral ratio unverifiable. If shielded DD is a product requirement, it is a research
 > project (a Zcash-style value-pool commitment per asset type), not a port.
@@ -301,7 +302,7 @@ a `valueBalance` that moves value between the transparent and shielded pools.
 
 | | DigiByte | Ycash |
 |---|---|---|
-| DD RPC | `src/rpc/digidollar.cpp` (6305 L), `src/rpc/digidollar_transactions.cpp` | Add a new `src/rpc/ydollar.cpp`; register in `src/rpc/register.h` |
+| DD RPC | `src/rpc/digidollar.cpp` (6305 L), `src/rpc/digidollar_transactions.cpp` | Add a new `src/rpc/yellowback.cpp`; register in `src/rpc/register.h` |
 | RPC framework | modern `RPCHelpMan` / `UniValue` with argument specs | older `UniValue` + `fHelp` string convention (`ref/ycash/src/rpc/*.cpp`) — **rewrite, do not copy** |
 | Wallet | `src/wallet/digidollarwallet.cpp` (8351 L), descriptor wallets, `CCoinControl` | `src/wallet/wallet.cpp`, legacy keypool wallet with `CWalletTx` + Sapling note management, no descriptors |
 | Long ops | synchronous RPC | `AsyncRPCOperation` / `AsyncRPCQueue` (`ref/ycash/src/asyncrpcoperation.h`) — mint/redeem should use this |
@@ -349,30 +350,30 @@ a `valueBalance` that moves value between the transparent and shielded pools.
 ## 11. Rows added while writing the v1 development plan
 
 All cites at the pinned tags. Rationale and the resulting design live in
-[`plans/ydollar-v1-development-plan.md`](plans/ydollar-v1-development-plan.md).
+[`plans/yellowback-v1-development-plan.md`](plans/yellowback-v1-development-plan.md).
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Wallet recognises and signs DD vaults via descriptor/Taproot solvers (`src/wallet/digidollarwallet.cpp`, script-path signing) | `IsMine` and `ProduceSignature`/`signrawtransaction` only solve standard templates; a P2SH redeem script with `CLTV … CHECKSIGVERIFY … CHECKMULTISIG` is unsolvable (`ref/ycash/src/script/sign.cpp`, `ref/ycash/src/rpc/rawtransaction.cpp:1057-1061`) | Track vaults in the YDollar index, not the wallet; sign vault inputs manually with `SignatureHash(redeemScript, tx, nIn, SIGHASH_ALL, amount, branchId)` + `CKey::Sign`, as `ref/ycash/src/rpc/atomicswap.cpp:760-775` does; `yd_cosignredeem` merges signatures in roster order |
+| Wallet recognises and signs DD vaults via descriptor/Taproot solvers (`src/wallet/digidollarwallet.cpp`, script-path signing) | `IsMine` and `ProduceSignature`/`signrawtransaction` only solve standard templates; a P2SH redeem script with `CLTV … CHECKSIGVERIFY … CHECKMULTISIG` is unsolvable (`ref/ycash/src/script/sign.cpp`, `ref/ycash/src/rpc/rawtransaction.cpp:1057-1061`) | Track vaults in the Yellowback index, not the wallet; sign vault inputs manually with `SignatureHash(redeemScript, tx, nIn, SIGHASH_ALL, amount, branchId)` + `CKey::Sign`, as `ref/ycash/src/rpc/atomicswap.cpp:760-775` does; `yed_cosignredeem` merges signatures in roster order |
 | Carries DD metadata in `OP_RETURN` with no tight relay bound (`src/digidollar/txbuilder.cpp:407-418, 807-818`) | Policy allows exactly one `OP_RETURN` and 80 data bytes (`ref/ycash/src/policy/policy.cpp:52,123`; `ref/ycash/src/script/standard.h:34`) | Payload budget of 80 bytes per tx: MINT ≤ 47 B, TRANSFER ≤ 12 assignments; roster pubkeys never travel in payloads — rosters are revealed by anchor spends |
 | Mint lock window `[tier, tier+100]` against confirmation height (`src/digidollar/validation.cpp:1377`); no tx expiry | Every Ycash tx has `nExpiryHeight`; default delta 40 post-Blossom; mempool rejects "expiring soon" (`ref/ycash/src/main.h:78-81`, `main.cpp:1548`) | `MINT_WINDOW = 40` = expiry delta; wallet sets `lockHeight = tip + tierBlocks + 40`; redeems use a normal expiry of `tip + 40` (never 0) |
-| Index/state updated synchronously inside `ConnectBlock`/`DisconnectBlock` (`src/validation.cpp`, `src/index/`) | `ThreadNotifyWallets` delivers `ChainTip(pindex, pblock, added)` for every connect and disconnect, in order, once per second on a background thread, from genesis under `-reindex`, without try/catch around block callbacks (`ref/ycash/src/validationinterface.cpp:183-217`; started at `init.cpp:1831-1847`) | YDollar index is a `CValidationInterface` subscriber (zero `main.cpp` lines); handler must be idempotent, catch all exceptions, and RPCs report the index height rather than `chainActive.Height()` |
+| Index/state updated synchronously inside `ConnectBlock`/`DisconnectBlock` (`src/validation.cpp`, `src/index/`) | `ThreadNotifyWallets` delivers `ChainTip(pindex, pblock, added)` for every connect and disconnect, in order, once per second on a background thread, from genesis under `-reindex`, without try/catch around block callbacks (`ref/ycash/src/validationinterface.cpp:183-217`; started at `init.cpp:1831-1847`) | Yellowback index is a `CValidationInterface` subscriber (zero `main.cpp` lines); handler must be idempotent, catch all exceptions, and RPCs report the index height rather than `chainActive.Height()` |
 | 35-key oracle roster aggregated by MuSig2 into one 64-byte signature | P2SH limits: 520-byte redeem script push (`ref/ycash/src/script/script.h:23`), 1650-byte scriptSig (`policy.cpp:93`), 15 P2SH sigops (`policy.h:24`) | Federation roster bounded to n ≤ 13 with one owner key; v1 uses 5-of-9 |
 | `__int128` collateral/health math (`src/consensus/dca.cpp:37-44`, `err.cpp:100`) | No `__int128` anywhere in Ycash | Use `arith_uint256` (`ref/ycash/src/arith_uint256.h`) for all products |
 | BIP-340 Schnorr + MuSig2 via modern libsecp256k1 modules | Vendored `secp256k1` configured with only `--enable-module-recovery` (`ref/ycash/configure.ac:1282`) | ECDSA `OP_CHECKMULTISIG` for both price attestations and vault co-signing; no crypto library changes |
-| DD-ness read from `nVersion`; no shielded fields exist | `nVersion` pinned to 4; `nExpiryHeight`, `valueBalance`, `vShieldedSpend/Output`, `vJoinSplit` on every tx (`ref/ycash/src/primitives/transaction.h:553-558`) | Payload type byte marks YDollar txs; rule TX-0 requires fully transparent transactions |
+| DD-ness read from `nVersion`; no shielded fields exist | `nVersion` pinned to 4; `nExpiryHeight`, `valueBalance`, `vShieldedSpend/Output`, `vJoinSplit` on every tx (`ref/ycash/src/primitives/transaction.h:553-558`) | Payload type byte marks Yellowback txs; rule TX-0 requires fully transparent transactions |
 | Miner embeds the oracle bundle in the coinbase (`src/node/miner.cpp`) | Coinbase shape governed by founders'/YDF streams; `miner.cpp` is on the consensus-adjacent list | Prices are ordinary transactions spending a federation anchor UTXO; consensus verifies the k-of-n ECDSA signatures for free (`MANDATORY_SCRIPT_VERIFY_FLAGS = P2SH`, `ref/ycash/src/script/standard.h:53`) |
 
 ### Rows added by the revision-3 audit of the plan (full `ycash-dd` read)
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Oracle/coordinator code builds transactions with a modern `createrawtransaction` that accepts `"data"` outputs, or in-process (`src/oracle/`) | Ycash's `createrawtransaction` takes only `{"address": amount}` outputs — no `OP_RETURN` (`ref/ycash/src/rpc/rawtransaction.cpp:539-620`) | A node RPC (`yd_createpricetx`) builds the unsigned price transaction with `CreateNewContextualCMutableTransaction` (`ref/ycash/src/main.cpp:7364`); the coordinator only signs and broadcasts |
+| Oracle/coordinator code builds transactions with a modern `createrawtransaction` that accepts `"data"` outputs, or in-process (`src/oracle/`) | Ycash's `createrawtransaction` takes only `{"address": amount}` outputs — no `OP_RETURN` (`ref/ycash/src/rpc/rawtransaction.cpp:539-620`) | A node RPC (`yed_createpricetx`) builds the unsigned price transaction with `CreateNewContextualCMutableTransaction` (`ref/ycash/src/main.cpp:7364`); the coordinator only signs and broadcasts |
 | Descriptor wallets sign any solvable P2SH/P2WSH from the descriptor | `signrawtransaction` adds a `prevtxs` `redeemScript` to its keystore only when private keys are supplied (`fGivenKeys`, `ref/ycash/src/rpc/rawtransaction.cpp:966-974`); wallet signing needs the script in `wallet.dat` | Every federation operator runs `addmultisigaddress` once (`AddCScript`, `ref/ycash/src/wallet/rpcwallet.cpp:1175`); `prevtxs` (with `amount`) only for unconfirmed anchors |
 | Consensus rejects an invalid mint; the user loses nothing | An overlay cannot reject; a mint that fails its rules at confirmation locks collateral for the whole tier | The MINT payload commits an `evalHeight`; collateral rules read the node's snapshot at that height, so the wallet knows the exact requirement before signing (plan §3.7, B3) |
-| Wallet marks DD coins via its own tables at creation | Own 0-conf outputs are *trusted* and immediately spendable (`CWalletTx::IsTrusted`, `ref/ycash/src/wallet/wallet.cpp:4842-4867`); `LockCoin` is in-memory and asserts `cs_wallet` (`wallet.cpp:6265`) | Lock overlay coins **before** `CommitTransaction`, pre-lock from `SyncTransaction`, reconcile in `ChainTip`; lock order `cs_main → cs_wallet → cs_ydollar` |
+| Wallet marks DD coins via its own tables at creation | Own 0-conf outputs are *trusted* and immediately spendable (`CWalletTx::IsTrusted`, `ref/ycash/src/wallet/wallet.cpp:4842-4867`); `LockCoin` is in-memory and asserts `cs_wallet` (`wallet.cpp:6265`) | Lock overlay coins **before** `CommitTransaction`, pre-lock from `SyncTransaction`, reconcile in `ChainTip`; lock order `cs_main → cs_wallet → cs_yellowback` |
 | Functional tests run with standardness enforced | Regtest sets `fRequireStandard = false` (`ref/ycash/src/chainparams.cpp:671`); no `-acceptnonstdtxn`; `IsStandardTx`/`AreInputsStandard` skipped (`main.cpp:1558,1646`) | Pin relay constraints with Boost unit tests that call both functions directly |
-| Test framework carries the chain's real deployment parameters | `qa/rpc-tests/test_framework/util.py:40-42` has **Zcash's** Blossom/Heartwood/Canopy branch IDs; Ycash's are `0x8e471bd6`, `0x66314da3`, `0x19bd2d2f` (`ref/ycash/src/consensus/upgrades.cpp`) and `-nuparams` rejects unknown IDs (`init.cpp:1212-1246`); the cached regtest chain activates only Overwinter+Sapling; CI (`.github/workflows/book.yml`) runs no functional tests | Define Ycash IDs in `ydollar_util.py`, activate all upgrades at height 1 with `setup_clean_chain = True` (regtest keeps Equihash 48/5, `chainparams.cpp:860-863`); add a fork-local CI job |
+| Test framework carries the chain's real deployment parameters | `qa/rpc-tests/test_framework/util.py:40-42` has **Zcash's** Blossom/Heartwood/Canopy branch IDs; Ycash's are `0x8e471bd6`, `0x66314da3`, `0x19bd2d2f` (`ref/ycash/src/consensus/upgrades.cpp`) and `-nuparams` rejects unknown IDs (`init.cpp:1212-1246`); the cached regtest chain activates only Overwinter+Sapling; CI (`.github/workflows/book.yml`) runs no functional tests | Define Ycash IDs in `yellowback_util.py`, activate all upgrades at height 1 with `setup_clean_chain = True` (regtest keeps Equihash 48/5, `chainparams.cpp:860-863`); add a fork-local CI job |
 | Deep reorgs handled by the index framework | Node refuses reorgs longer than `MAX_REORG_LENGTH = 99` (`ref/ycash/src/main.h:62`, `main.cpp:3772`); `RewindBlockIndex` at init can move the tip further (`init.cpp:1695`) | Keep ~1,000 undo records; deeper ⇒ wipe and rebuild |
 | Fee estimation loop in the DD wallet | Every `z_*` operation uses a flat `DEFAULT_FEE = 1000` zat (`ref/ycash/src/policy/fees.h:15`) | Flat fee, no estimation |
 | `TransactionBuilder`-style helpers accept arbitrary scripts | Ycash's `TransactionBuilder` (`ref/ycash/src/transaction_builder.h`) has no raw-script output and `Build()` signs only keystore-solvable inputs | Build manually as `rpc/atomicswap.cpp` does; start from `CreateNewContextualCMutableTransaction` |
@@ -382,15 +383,15 @@ All cites at the pinned tags. Rationale and the resulting design live in
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Consensus validation has the full UTXO set in hand for every DD transaction (`src/digidollar/validation.cpp`) | The overlay index knows only YDollar outpoints; a redemption's fee and `AreInputsStandard` need every input's value and `scriptPubKey`, which only `pcoinsTip` has | Co-signer and validator RPCs hold `cs_main` and build the input view as `signrawtransaction` does — `pcoinsTip` behind `CCoinsViewMemPool` (`ref/ycash/src/rpc/rawtransaction.cpp:906-921`); `Tokens` records also store `nValue` (plan C1) |
+| Consensus validation has the full UTXO set in hand for every DD transaction (`src/digidollar/validation.cpp`) | The overlay index knows only Yellowback outpoints; a redemption's fee and `AreInputsStandard` need every input's value and `scriptPubKey`, which only `pcoinsTip` has | Co-signer and validator RPCs hold `cs_main` and build the input view as `signrawtransaction` does — `pcoinsTip` behind `CCoinsViewMemPool` (`ref/ycash/src/rpc/rawtransaction.cpp:906-921`); `Tokens` records also store `nValue` (plan C1) |
 | Wallet knows a DD coin is a DD coin from its own tables, in and out of blocks | `ThreadNotifyWallets` emits `SyncTransaction(tx, NULL, h)` identically for mempool arrivals, conflicts and every transaction of a **disconnected** block (`ref/ycash/src/validationinterface.cpp:183,210,226`); a disconnected transaction re-enters the mempool where its outputs are trusted 0-conf | Overlay coin locks are never released on disconnect; only a confirmed transaction whose verdict assigns no cents releases a lock (plan C3) |
-| Oracle members sign a bundle, never a transaction (`src/oracle/`) | `signrawtransaction` signs **every** input the wallet can solve (`rawtransaction.cpp:1044-1057`) | Operator wallets are dedicated; a co-signing peer refuses any non-anchor input its wallet can solve; `yd_cosignredeem` signs only `vin[0]` over the vault script reconstructed from the index (plan C5) |
-| Modern `createrawtransaction`/wallet picks change addresses for oracle-side transactions | `yd_createpricetx` runs in node context with no wallet to pick change from | The refill input is absorbed whole into the new anchor; the proposer pre-creates a confirmed UTXO of the exact amount (plan C6) |
+| Oracle members sign a bundle, never a transaction (`src/oracle/`) | `signrawtransaction` signs **every** input the wallet can solve (`rawtransaction.cpp:1044-1057`) | Operator wallets are dedicated; a co-signing peer refuses any non-anchor input its wallet can solve; `yed_cosignredeem` signs only `vin[0]` over the vault script reconstructed from the index (plan C5) |
+| Modern `createrawtransaction`/wallet picks change addresses for oracle-side transactions | `yed_createpricetx` runs in node context with no wallet to pick change from | The refill input is absorbed whole into the new anchor; the proposer pre-creates a confirmed UTXO of the exact amount (plan C6) |
 | Regtest chain parameters activate every deployment by default (`src/kernel/chainparams.cpp` regtest) | Ycash regtest sets Overwinter, Sapling, Ycash, Blossom, Heartwood, Canopy all to `NO_ACTIVATION_HEIGHT` (`ref/ycash/src/chainparams.cpp:576-604`); post-Ycash coinbases need a 5 % YDF output until `nYdfMandateEndHeight = 5` (`main.cpp:4508-4522`), which `miner.cpp:201-203` adds itself | Functional tests pass six `-nuparams=<id>:1`; nothing else needed (plan C12) |
 | Index tests poll the index for the tip | `sync_blocks`/`sync_mempools` wait on `fullyNotified` (`qa/rpc-tests/test_framework/util.py:133,160`; `src/rpc/blockchain.cpp:1188,1415`), set after every `CValidationInterface` subscriber ran for the cycle (`validationinterface.cpp:238-241`) | After `sync_all()` the overlay index is at the tip; no separate poll (plan C13) |
-| Fuzz targets under `src/test/fuzz/` (libFuzzer, Core ≥ 0.19) | Ycash fuzz targets are `src/fuzzing/<Target>/fuzz.cpp` with an `input/` corpus (`ref/ycash/src/fuzzing/`) | Same layout for `YDollarPayload` and `YDollarScript` (plan C14) |
-| Fee is estimated per transaction | ZIP-401 mempool limiter adds `LOW_FEE_PENALTY` to any transaction paying under `DEFAULT_FEE` (`ref/ycash/src/mempool_limit.cpp:151-157`) | Flat `YD_FEE = DEFAULT_FEE`, and `-ydollarfee` may not go below it (plan C16) |
-| Regtest DD parameters are compiled in | Regtest genesis anchor is created by the test at run time; the index needs the anchor's block height as well as the outpoint and script | `-ydollarstartheight`, `-ydollargenesisanchor`, `-ydollargenesisroster` (regtest only, all three together) (plan C2) |
+| Fuzz targets under `src/test/fuzz/` (libFuzzer, Core ≥ 0.19) | Ycash fuzz targets are `src/fuzzing/<Target>/fuzz.cpp` with an `input/` corpus (`ref/ycash/src/fuzzing/`) | Same layout for `YellowbackPayload` and `YellowbackScript` (plan C14) |
+| Fee is estimated per transaction | ZIP-401 mempool limiter adds `LOW_FEE_PENALTY` to any transaction paying under `DEFAULT_FEE` (`ref/ycash/src/mempool_limit.cpp:151-157`) | Flat `YELLOWBACK_FEE = DEFAULT_FEE`, and `-yellowbackfee` may not go below it (plan C16) |
+| Regtest DD parameters are compiled in | Regtest genesis anchor is created by the test at run time; the index needs the anchor's block height as well as the outpoint and script | `-yellowbackstartheight`, `-yellowbackgenesisanchor`, `-yellowbackgenesisroster` (regtest only, all three together) (plan C2) |
 
 ### Rows added by the revision-5 audit of the plan
 
@@ -403,14 +404,14 @@ All cites at the pinned tags. Rationale and the resulting design live in
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Wallet and RPC history read DD transactions back through `txindex` / the wallet's DD tables (`src/wallet/digidollarwallet.cpp`) | `GetTransaction` finds a confirmed transaction only with `-txindex` (`ref/ycash/src/main.cpp:1858-1870`); the overlay erases spent token records | The overlay keeps an append-only `TxLog` per YDollar-relevant transaction, undone with the block; history and verdict RPCs read it, so `-txindex` is never required (plan E1) |
+| Wallet and RPC history read DD transactions back through `txindex` / the wallet's DD tables (`src/wallet/digidollarwallet.cpp`) | `GetTransaction` finds a confirmed transaction only with `-txindex` (`ref/ycash/src/main.cpp:1858-1870`); the overlay erases spent token records | The overlay keeps an append-only `TxLog` per Yellowback-relevant transaction, undone with the block; history and verdict RPCs read it, so `-txindex` is never required (plan E1) |
 | Descriptor wallets with mature encryption hold oracle and vault keys | Ycash wallet encryption is experimental and gated behind `-developerencryptwallet` (`ref/ycash/src/wallet/rpcwallet.cpp:2127,2160`) | Custody by host: dedicated machine, full-disk encryption, localhost RPC, offline `wallet.dat` backups; no reliance on wallet encryption (plan E5) |
 
 ### Rows added by the revision-7 audit of the plan
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Transactions never expire; an unmined DD transaction stays valid and the wallet's unconfirmed outputs stay spendable | Every Ycash transaction has `nExpiryHeight`; the mempool drops it at the next block (`ref/ycash/src/main.cpp:3636`), but the wallet keeps it at depth 0, rebroadcasts it (`wallet.cpp:4653-4668`) and still offers its outputs to coin selection (`AvailableCoins`, `wallet.cpp:5038-5052`, no expiry filter) | Every YDollar input is confirmed — YDollar inputs from the index, YEC inputs via the existing `AvailableCoins(..., nMinDepth = 1)`; expired YDollar transactions are reported by `yd_gettxinfo` and re-run (plan F3, F6) |
+| Transactions never expire; an unmined DD transaction stays valid and the wallet's unconfirmed outputs stay spendable | Every Ycash transaction has `nExpiryHeight`; the mempool drops it at the next block (`ref/ycash/src/main.cpp:3636`), but the wallet keeps it at depth 0, rebroadcasts it (`wallet.cpp:4653-4668`) and still offers its outputs to coin selection (`AvailableCoins`, `wallet.cpp:5038-5052`, no expiry filter) | Every YED input is confirmed — YED inputs from the index, YEC inputs via the existing `AvailableCoins(..., nMinDepth = 1)`; expired Yellowback transactions are reported by `yed_gettxinfo` and re-run (plan F3, F6) |
 | DigiDollar's oracle tests run a 35-member roster with in-process mock signers (`src/test/`, `mock_oracle.cpp`) | Ycash's functional framework runs at most `MAX_NODES = 8` separate `ycashd` processes per test (`qa/rpc-tests/test_framework/util.py:46`), one wallet each | Five operator nodes hold five real keys; keys 6–9 are generated by `test_framework/key.py` and enter the roster as public keys only, so the production 5-of-9 script is exercised with five signers (plan §6.0, G2: the keys come from a node wallet, not `test_framework/key.py`, which binds OpenSSL via `ctypes`) |
 | Functional tests write `bitcoin.conf`/`digibyte.conf` matching the daemon | The inherited framework writes `zcash.conf` (`qa/rpc-tests/test_framework/util.py:175`, `multi_rpc.py:29`) but Ycash reads only `ycash.conf` (`ref/ycash/src/util.cpp:76`) and exits without it (`util.cpp:372-378`, `bitcoind.cpp:104-113`); `start_node` relies on the file for `regtest=1` | Two-line framework fix in Phase 0; until then no `qa/rpc-tests` script can start a Ycash node (plan G1) |
 
@@ -429,18 +430,18 @@ JSON.** Every row below has the same shape as §1–§11.
 
 | DigiByte does X (Y, mechanism M) | YecWallet equivalent Z, which lacks M | Adaptation W |
 |---|---|---|
-| Seven DD tabs inside the node's own Qt GUI (`src/qt/digidollartab.cpp`), sharing `WalletModel`, `ClientModel`, `OptionsModel` | YecWallet has four tabs — Balance, Send, Receive, Transactions — plus a hidden `ycashd` console tab (`src/mainwindow.ui:29,289,663,894,911`; `mainwindow.cpp:132-139`), each populated by `Controller` from RPC replies; no in-process wallet objects at all | One new **YDollar** tab (`src/ydollartab.cpp`, `.ui`) holding the sub-pages of plan §4.7, populated by a `YDollarController` that issues `yd_*` calls through the existing `Connection::doRPCWithDefaultErrorHandling` (`src/connection.h:100-104`); no new transport, no new dependency |
-| Widgets refresh on wallet signals (`NotifyTransactionChanged`, `numBlocksChanged`) | `Controller::getInfoThenRefresh` polls `getinfo` every `Settings::updateSpeed` and refreshes everything when `blocks` changes (`controller.cpp:38-43,247-280`) | Hook the YDollar refresh into the same "block changed" branch (`yd_getinfo` → `yd_getstats`, `yd_getbalance`, `yd_listpositions`, `yd_listtransactions`); pending redemptions poll on `txTimer` like `watchTxStatus` (`controller.cpp:45-50`) |
-| Mint/Send/Redeem call the wallet directly (`DigiDollarWallet::CreateMintTransaction` etc.) | Sends go `sendtab.cpp` → `doSendTxValidations` → `Controller::executeTransaction` → `z_sendmany` (`sendtab.cpp:661-701`, `controller.cpp:587-607`), with a confirm dialog (`src/confirm.ui`) | `yd_mint`, `yd_send`, `yd_redeem`/`yd_submitredeem` follow the same validate → confirm → RPC → watch pattern; the node builds and signs, the wallet never touches keys |
+| Seven DD tabs inside the node's own Qt GUI (`src/qt/digidollartab.cpp`), sharing `WalletModel`, `ClientModel`, `OptionsModel` | YecWallet has four tabs — Balance, Send, Receive, Transactions — plus a hidden `ycashd` console tab (`src/mainwindow.ui:29,289,663,894,911`; `mainwindow.cpp:132-139`), each populated by `Controller` from RPC replies; no in-process wallet objects at all | One new **Yellowback** tab (`src/yellowbacktab.cpp`, `.ui`) holding the sub-pages of plan §4.7, populated by a `YellowbackController` that issues `yed_*` calls through the existing `Connection::doRPCWithDefaultErrorHandling` (`src/connection.h:100-104`); no new transport, no new dependency |
+| Widgets refresh on wallet signals (`NotifyTransactionChanged`, `numBlocksChanged`) | `Controller::getInfoThenRefresh` polls `getinfo` every `Settings::updateSpeed` and refreshes everything when `blocks` changes (`controller.cpp:38-43,247-280`) | Hook the Yellowback refresh into the same "block changed" branch (`yed_getinfo` → `yed_getstats`, `yed_getbalance`, `yed_listpositions`, `yed_listtransactions`); pending redemptions poll on `txTimer` like `watchTxStatus` (`controller.cpp:45-50`) |
+| Mint/Send/Redeem call the wallet directly (`DigiDollarWallet::CreateMintTransaction` etc.) | Sends go `sendtab.cpp` → `doSendTxValidations` → `Controller::executeTransaction` → `z_sendmany` (`sendtab.cpp:661-701`, `controller.cpp:587-607`), with a confirm dialog (`src/confirm.ui`) | `yed_mint`, `yed_send`, `yed_redeem`/`yed_submitredeem` follow the same validate → confirm → RPC → watch pattern; the node builds and signs, the wallet never touches keys |
 | Coin-control dialog for DD outputs (`digidollarcoincontroldialog.cpp`) | no coin control anywhere in YecWallet | dropped (node selects inputs smallest-first, confirmed-only; plan §4.5) |
-| Positions/redeem read vault state from wallet DB tables (`digidollarwallet.cpp`) | no wallet tables; `DataModel` holds RPC snapshots (`src/datamodel.h:7-17`) | `yd_listpositions` / `yd_getvault` into a `YDollarPositionsModel : QAbstractTableModel` (pattern: `src/txtablemodel.h`, `balancestablemodel.h`) |
-| Node started by the same process with its own option model | YecWallet launches the bundled `ycashd` with **no arguments**; every setting comes from the `ycash.conf` it writes (`server=1`, `addnode`, `rpcuser`, `rpcpassword`, optional `fastsync`/`datadir`/`proxy`; `connection.cpp:189-209`) | `createZcashConf` also writes `experimentalfeatures=1` and `ydollar=1`; for an existing conf the wallet detects `yd_getinfo` → "Method not found" and offers to append the two lines (plan §4.7 Settings row) |
+| Positions/redeem read vault state from wallet DB tables (`digidollarwallet.cpp`) | no wallet tables; `DataModel` holds RPC snapshots (`src/datamodel.h:7-17`) | `yed_listpositions` / `yed_getvault` into a `YellowbackPositionsModel : QAbstractTableModel` (pattern: `src/txtablemodel.h`, `balancestablemodel.h`) |
+| Node started by the same process with its own option model | YecWallet launches the bundled `ycashd` with **no arguments**; every setting comes from the `ycash.conf` it writes (`server=1`, `addnode`, `rpcuser`, `rpcpassword`, optional `fastsync`/`datadir`/`proxy`; `connection.cpp:189-209`) | `createZcashConf` also writes `experimentalfeatures=1` and `yellowback=1`; for an existing conf the wallet detects `yed_getinfo` → "Method not found" and offers to append the two lines (plan §4.7 Settings row) |
 | Oracle/co-sign traffic handled in the node (`src/oracle/`) | YecWallet's only network client is the RPC `QNetworkAccessManager` (`Connection::client`, `connection.cpp:221`) plus HTTPS calls it already makes (price fetch and release check, `controller.cpp:685,757`); the static Qt links OpenSSL statically (`scripts/build-qt.sh:147-159`) | The redemption wizard reuses that `QNetworkAccessManager` for HTTPS POSTs to the operators' `/cosign` endpoints — the one screen that talks to anything but the local node (plan §4.7) |
 | Qt 5 widgets in Bitcoin Core's build, with the node's test framework | Qt **6.5.8** built statically by `build.sh` (`build.sh:57`) **with `-no-feature-testlib`** (`scripts/build-qt.sh:129`), CMake source list in `CMakeLists.txt:68-92`, `.ui` files under `src/`; no test target at all | New sources are appended to the CMake list; `.ui` files use the existing `uic` step; the QTest target is an `OPTIONAL_COMPONENTS Test` (pattern of `CMakeLists.txt:53`) built only against a system Qt 6 in development/CI, never in the static release build (plan H1) |
-| GUI tests attach to a regtest node through the test harness | Stock `--conf <file> --no-embedded` already attach the wallet to any node whose conf has `rpcuser`/`rpcpassword`/`rpcport` (`src/main.cpp:168-172`, `connection.cpp:647-673`); network is taken from `getinfo.testnet`, `false` on regtest (`controller.cpp:255-257`) | No new options; the YDollar tab reads `yd_getinfo.network` for address prefixes (plan H2, H3) |
-| Release bundles the node in the same binary | YecWallet looks for `ycashd` (Linux: `zqw-ycashd` then `ycashd`) beside its executable (`connection.cpp:348-364`) | Releases of `yecwallet-dd` ship the `ycash-dd` build of `ycashd`; the wallet checks `yd_getinfo.rpcversion` and refuses a node it does not know |
+| GUI tests attach to a regtest node through the test harness | Stock `--conf <file> --no-embedded` already attach the wallet to any node whose conf has `rpcuser`/`rpcpassword`/`rpcport` (`src/main.cpp:168-172`, `connection.cpp:647-673`); network is taken from `getinfo.testnet`, `false` on regtest (`controller.cpp:255-257`) | No new options; the Yellowback tab reads `yed_getinfo.network` for address prefixes (plan H2, H3) |
+| Release bundles the node in the same binary | YecWallet looks for `ycashd` (Linux: `zqw-ycashd` then `ycashd`) beside its executable (`connection.cpp:348-364`) | Releases of `yecwallet-dd` ship the `ycash-dd` build of `ycashd`; the wallet checks `yed_getinfo.rpcversion` and refuses a node it does not know |
 
 Rules for `yecwallet-dd`, mirroring rules 2, 6 and 7 for the node: work only on `feature/digidollar`
-off `yecwallet-legacy`; naming is YDollar/`yd`; do not restructure `Controller`, `Connection` or
+off `yecwallet-legacy`; naming follows AGENTS.md rule 6 (Yellowback for the system, YED for amounts, `yed_*` RPCs); do not restructure `Controller`, `Connection` or
 `MainWindow` while adding the tab — add files, append to lists, hook into the two existing refresh
 branches, and keep `git diff yecwallet-legacy...feature/digidollar` reviewable.

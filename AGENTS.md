@@ -1,6 +1,6 @@
 # ydollar-workspace — agent instructions
 
-Bring a decentralized digital dollar to **Ycash** as *YDollar*, using DigiByte's **DigiDollar**
+Bring a decentralized digital dollar to **Ycash** as **Ycash Yellowback (YED)**, using DigiByte's **DigiDollar**
 as the reference implementation — in the node (`ycashd`) **and** in the full-node GUI wallet
 (**YecWallet**, a Qt application that bundles and drives `ycashd` over RPC). Start with
 [README.md](README.md) for the goal and the change-budget ladder; this file is the working rules.
@@ -23,14 +23,14 @@ ydollar-workspace/
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/digidollar`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/digidollar`, off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
-│   ├── spec/        DigiDollar upstream spec + the YDollar adaptation spec
+│   ├── spec/        DigiDollar upstream spec + the Yellowback adaptation spec
 │   ├── plans/       THE DEVELOPMENT PLAN (node §1–§6, wallet §4.7 and Phase 5b)
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**Two forks, one feature.** The node fork (`ycash-dd`) adds the YDollar overlay and its `yd_*`
-RPCs; the wallet fork (`yecwallet-dd`) adds the YDollar screens on top of those RPCs and bundles
+**Two forks, one feature.** The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
+RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
 the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
 fork the way `src/digidollar/` is for the node fork — and it is just as much *not* source to
 copy: DigiByte's widgets read in-process wallet models; YecWallet reads everything over JSON-RPC
@@ -53,7 +53,7 @@ and update the pins recorded in this file and in `docs/mapping.md`.
 `ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines — **never commit to
 them.** They exist so you can always `git diff <legacy>...feature/digidollar` to see the entire
 fork delta (`make diff` shows both). Keep those diffs reviewable. Node code goes in `ycash-dd`
-only; wallet code goes in `yecwallet-dd` only; the `yd_*` RPC surface is the sole interface
+only; wallet code goes in `yecwallet-dd` only; the `yed_*` RPC surface is the sole interface
 between them (plan §4.7).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
@@ -112,9 +112,28 @@ not rediscover the same trap.
 
 ### 6. Naming
 
-Use **YDollar** / `ydollar` / `YD` in new Ycash code. Do not carry `DigiDollar` / `digidollar` /
-`DD` naming across — it makes `git grep` ambiguous between "ported code" and "upstream reference"
-and defeats the point of the split. The one exception is comments that cite an upstream file.
+One rule covers every case: **Yellowback is the thing. YED is the unit.** Same relationship as
+Bitcoin/BTC or dollar/USD — never "5 yellowbacks YED", never "the YED protocol".
+
+- **YED when a number is attached or implied:** `1 YED = $1`, "you minted 250 YED", balances,
+  price feeds, collateral ratios, exchange listings. Code that counts units: `yedAmount`,
+  `yedIn`/`yedOut`, `yed_getbalance`, `yed_mint`.
+- **Yellowback when naming the thing itself:** "Yellowback is a decentralized dollar on Ycash",
+  the whitepaper title, the position or note ("minting a Yellowback against locked YEC"). Code
+  that names the system: `CYellowbackPosition`, `src/yellowback/`, namespace `yellowback`,
+  `-yellowback` config flags, log category `yellowback`.
+- **The test:** if the word could be swapped for "dollars", it is YED. If it could be swapped for
+  "the product" or "the system", it is Yellowback.
+- **First mention in any formal document:** "Ycash Yellowback (YED)"; then YED for amounts and
+  Yellowback for the system throughout.
+- The RPC prefix is `yed_` (the asset ticker as namespace, the way Zcash uses `z_`); addresses
+  hold YED, so the mainnet address prefix is `ye…` (D10).
+
+Do not carry `DigiDollar` / `digidollar` / `DD` naming across — it makes `git grep` ambiguous
+between "ported code" and "upstream reference" and defeats the point of the split. The one
+exception is comments that cite an upstream file. The old working name *YDollar* / `ydollar` /
+`yd_` survives only in the workspace directory name (`ydollar-workspace`) and in pre-rebrand code
+on the fork branches until the code rename lands (plan §0, revision 13).
 
 ### 7. Consensus code is not refactorable.
 

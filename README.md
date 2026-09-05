@@ -1,6 +1,6 @@
 # ydollar-workspace
 
-Bring a decentralized digital dollar to **Ycash**, using DigiByte's **DigiDollar** as the
+Bring a decentralized digital dollar to **Ycash** as **Ycash Yellowback (YED)**, using DigiByte's **DigiDollar** as the
 reference implementation — with the smallest possible change to the Ycash codebase.
 
 The reference and target repos are pinned, side by side, so an agent or a human can read the
@@ -26,7 +26,7 @@ ydollar-workspace/
 
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
 filesystem, not just documented. All work happens in `ycash-dd/` (node) and `yecwallet-dd/`
-(wallet); the `yd_*` RPC surface is the only interface between the two.
+(wallet); the `yed_*` RPC surface is the only interface between the two.
 
 ---
 
@@ -58,7 +58,7 @@ Prefer the lowest tier that can work. Every step down the list costs review effo
 | **0** | Wallet + RPC only. New script templates built from **existing** opcodes (P2SH, `OP_CHECKMULTISIG`, `OP_CHECKLOCKTIMEVERIFY`, `OP_HASH160`, `OP_IF`). Read-only observer hooks in `main.cpp`. | No fork. Off by default behind an experimental flag. | ✅ **Atomic swaps, shipped in v4.5.0** — see below |
 | **1** | Tier 0 + relay/mempool policy (`src/policy/`), non-consensus | No fork (policy only) | standardness rules |
 | **2** | New opcode semantics on unused `OP_NOP` slots | Soft fork; old nodes still accept | never done in Ycash |
-| **3** | New network upgrade: `UPGRADE_YDOLLAR`, new branch ID, new tx version / version group | **Hard fork**, coordinated | Overwinter, Sapling, Ycash, Heartwood, Canopy |
+| **3** | New network upgrade: `UPGRADE_YELLOWBACK`, new branch ID, new tx version / version group | **Hard fork**, coordinated | Overwinter, Sapling, Ycash, Heartwood, Canopy |
 
 ### Tier 0 is not hypothetical — Ycash already did it
 
@@ -83,7 +83,7 @@ run with `-experimentalfeatures -atomicswaps`.
 ### What Tier 0 costs, stated honestly
 
 DigiDollar enforces collateral ratios and supply in *consensus*: the chain itself refuses an
-invalid mint. A Tier-0 YDollar cannot do that — with no new opcodes, correctness has to rest on an
+invalid mint. A Tier-0 Yellowback cannot do that — with no new opcodes, correctness has to rest on an
 oracle/federation quorum co-signing valid mints and redemptions under a P2SH multisig, with CLTV
 timeouts as the escape hatch.
 
@@ -94,7 +94,7 @@ Do not paper over this. The adaptation spec has to state which properties are co
 and which are quorum-enforced, and the answer decides whether Tier 0 is acceptable or whether the
 project has to buy its way up to Tier 2 or 3. **Decide this before writing code** — it is the
 single most consequential open question in
-[docs/spec/ydollar-adaptation-spec.md](docs/spec/ydollar-adaptation-spec.md).
+[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md).
 
 ---
 
@@ -118,8 +118,8 @@ Sprout JoinSplits and Sapling spends/outputs, plus a `valueBalance` moving value
 transparent and shielded. DigiDollar assumes every DD output is transparent and auditable, which
 is how it computes supply and collateral ratios at all. **Orchard was never implemented** —
 `UPGRADE_NU5` exists in the enum but is `NO_ACTIVATION_HEIGHT` on every network, and there are
-zero occurrences of `orchard` in `src/`. The safe default is that YDollar outputs must be
-transparent; a shielded YDollar makes global supply unverifiable and is a research project, not a
+zero occurrences of `orchard` in `src/`. The safe default is that YED outputs must be
+transparent; shielded YED makes global supply unverifiable and is a research project, not a
 port.
 
 **3. Sighash and transaction format.**
@@ -148,7 +148,7 @@ Full detail, with `file:line` citations at both pins:
 3. **[docs/why-no-consensus-change.md](docs/why-no-consensus-change.md)** — the plain-language
    rationale for the Tier-0 decision: how every DigiDollar feature maps onto rules Ycash already
    enforces, and the one rule (burn-before-release) that a federation enforces instead.
-4. **[docs/spec/ydollar-adaptation-spec.md](docs/spec/ydollar-adaptation-spec.md)** — the design
+4. **[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md)** — the design
    we are writing. Currently a skeleton of open decisions.
 5. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
