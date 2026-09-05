@@ -11,8 +11,10 @@ cd "$ROOT"
 
 DIGIBYTE_PIN="${DIGIBYTE_PIN:-v9.26.5}"
 YCASH_PIN="${YCASH_PIN:-v4.5.0}"
+YECWALLET_PIN="${YECWALLET_PIN:-v4.5.0}"
 DD_BRANCH="${DD_BRANCH:-feature/digidollar}"
 DD_BASE="${DD_BASE:-ycash-legacy}"
+WALLET_BASE="${WALLET_BASE:-yecwallet-legacy}"
 
 SHORT=0
 [ "${1:-}" = "--short" ] && SHORT=1
@@ -30,9 +32,9 @@ DIRTY_ANY=0; PIN_DRIFT=0
 
 field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 
-# repo_status <label> <path> <expected-tag|-> <expected-branch|->
+# repo_status <label> <path> <expected-tag|-> <expected-branch|-> [fork-base]
 repo_status() {
-  local label="$1" path="$2" want_tag="$3" want_branch="$4"
+  local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:-$DD_BASE}"
 
   if [ ! -e "$path/.git" ]; then
     printf "\n${B}▸ %s${R}  ${D}%s${R}\n" "$label" "$path"
@@ -116,13 +118,13 @@ repo_status() {
   field "remote" "$(printf '%b' "$rel")"
 
   # --- fork delta, working repo only ---
-  if [ "$want_branch" != "-" ] && "${g[@]}" rev-parse --verify --quiet "$DD_BASE" >/dev/null; then
+  if [ "$want_branch" != "-" ] && "${g[@]}" rev-parse --verify --quiet "$base" >/dev/null; then
     local files ins del stat_line
-    stat_line="$("${g[@]}" diff --shortstat "${DD_BASE}...HEAD" 2>/dev/null)"
+    stat_line="$("${g[@]}" diff --shortstat "${base}...HEAD" 2>/dev/null)"
     if [ -z "$stat_line" ]; then
-      field "fork" "$(printf '%b' "${D}no changes vs ${DD_BASE}${R}")"
+      field "fork" "$(printf '%b' "${D}no changes vs ${base}${R}")"
     else
-      field "fork" "$(printf '%b' "${YEL}${stat_line# }${R} ${D}vs ${DD_BASE}${R}")"
+      field "fork" "$(printf '%b' "${YEL}${stat_line# }${R} ${D}vs ${base}${R}")"
     fi
   fi
 
@@ -140,7 +142,9 @@ printf "${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 repo_status "workspace"    "."            "-"                "-"
 repo_status "ref/digibyte" "ref/digibyte" "$DIGIBYTE_PIN"    "-"
 repo_status "ref/ycash"    "ref/ycash"    "$YCASH_PIN"       "-"
-repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"
+repo_status "ref/yecwallet" "ref/yecwallet" "$YECWALLET_PIN" "-"
+repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"    "$DD_BASE"
+repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$DD_BRANCH"    "$WALLET_BASE"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 if [ "$PIN_DRIFT" -ne 0 ]; then

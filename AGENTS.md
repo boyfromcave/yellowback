@@ -1,8 +1,9 @@
 # ydollar-workspace — agent instructions
 
 Bring a decentralized digital dollar to **Ycash** as *YDollar*, using DigiByte's **DigiDollar**
-as the reference implementation. Start with [README.md](README.md) for the goal and the
-change-budget ladder; this file is the working rules.
+as the reference implementation — in the node (`ycashd`) **and** in the full-node GUI wallet
+(**YecWallet**, a Qt application that bundles and drives `ycashd` over RPC). Start with
+[README.md](README.md) for the goal and the change-budget ladder; this file is the working rules.
 
 **The prime directive is minimal change to the Ycash codebase.** The Ycash team is risk-averse and
 the shielded pool's soundness rests on consensus code few people fully understand. Prefer the
@@ -16,20 +17,30 @@ footprint, take the smaller footprint and record what was given up.
 ```
 ydollar-workspace/
 ├── ref/
-│   ├── digibyte/   READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
-│   └── ycash/      READ-ONLY. Ycash, pinned to tag v4.5.0 (624c12814)
-├── ycash-dd/       THE WORKING FORK. branch `feature/digidollar`, off `ycash-legacy` (= v4.5.0)
+│   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
+│   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
+│   └── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
+├── ycash-dd/        WORKING FORK of the node.   branch `feature/digidollar`, off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/digidollar`, off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
-│   ├── spec/       DigiDollar upstream spec + the YDollar adaptation spec
-│   └── mapping.md  ← THE FILE-BY-FILE CROSSWALK. READ IT FIRST.
+│   ├── spec/        DigiDollar upstream spec + the YDollar adaptation spec
+│   ├── plans/       THE DEVELOPMENT PLAN (node §1–§6, wallet §4.7 and Phase 5b)
+│   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
+
+**Two forks, one feature.** The node fork (`ycash-dd`) adds the YDollar overlay and its `yd_*`
+RPCs; the wallet fork (`yecwallet-dd`) adds the YDollar screens on top of those RPCs and bundles
+the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
+fork the way `src/digidollar/` is for the node fork — and it is just as much *not* source to
+copy: DigiByte's widgets read in-process wallet models; YecWallet reads everything over JSON-RPC
+(`ref/yecwallet/src/controller.cpp`, `connection.cpp`).
 
 ## Rules
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-Both `ref/` checkouts are pinned to a tag in detached HEAD and their working trees are
+All three `ref/` checkouts are pinned to a tag in detached HEAD and their working trees are
 `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
@@ -37,11 +48,13 @@ The file you want is under `ycash-dd/`.
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/` on the `feature/digidollar` branch.
+### 2. All work happens in `ycash-dd/` and `yecwallet-dd/`, on their `feature/digidollar` branches.
 
-`ycash-legacy` is the pristine v4.5.0 baseline — **never commit to it.** It exists so you can
-always `git diff ycash-legacy...feature/digidollar` to see the entire fork delta. Keep that diff
-reviewable.
+`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines — **never commit to
+them.** They exist so you can always `git diff <legacy>...feature/digidollar` to see the entire
+fork delta (`make diff` shows both). Keep those diffs reviewable. Node code goes in `ycash-dd`
+only; wallet code goes in `yecwallet-dd` only; the `yd_*` RPC surface is the sole interface
+between them (plan §4.7).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -111,7 +124,7 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-Start a session with `make status`. It reports all four repos and **exits non-zero if a
+Start a session with `make status`. It reports all six repos and **exits non-zero if a
 `ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
 `docs/mapping.md`.
 
@@ -120,8 +133,8 @@ make            # list targets (same as `make help`)
 make status     # git status across all four repos, with pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
-make diff       # fork delta: ycash-legacy...feature/digidollar
-make log        # commits on the fork branch beyond the baseline
+make diff       # fork deltas: ycash-dd and yecwallet-dd vs their -legacy baselines
+make log        # commits on each fork branch beyond its baseline
 ```
 
 The pins are declared once, at the top of the `Makefile`, and mirrored in this file and in
@@ -133,4 +146,8 @@ git -C ref/digibyte grep -n 'OP_DIGIDOLLAR' -- src/
 
 # Search the Ycash baseline (read-only)
 git -C ref/ycash grep -n 'SignatureHash' -- src/
+
+# Search DigiByte's DigiDollar GUI and YecWallet (both read-only)
+git -C ref/digibyte grep -n 'DigiDollarMintWidget' -- src/qt/
+git -C ref/yecwallet grep -n 'doRPCWithDefaultErrorHandling' -- src/
 ```

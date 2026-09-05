@@ -2,6 +2,7 @@
 # Pins are recorded in AGENTS.md and docs/mapping.md.
 /ref/
 /ycash-dd/
+/yecwallet-dd/
 
 # macOS
 .DS_Store

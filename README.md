@@ -3,24 +3,30 @@
 Bring a decentralized digital dollar to **Ycash**, using DigiByte's **DigiDollar** as the
 reference implementation — with the smallest possible change to the Ycash codebase.
 
-The three repos here are pinned, side by side, so an agent or a human can read the reference and
-the target at the same time without confusing one for the other.
+The reference and target repos are pinned, side by side, so an agent or a human can read the
+reference and the target at the same time without confusing one for the other. There are two
+targets, because Ycash users reach the node through a GUI: **YecWallet**, a Qt application that
+bundles `ycashd` and drives it over RPC.
 
 ```
 ydollar-workspace/
 ├── ref/
-│   ├── digibyte/   READ-ONLY  DigiByte @ v9.26.5   — the DigiDollar reference implementation
-│   └── ycash/      READ-ONLY  Ycash    @ v4.5.0    — the pristine target, for diffing against
-├── ycash-dd/       THE WORKING FORK — branch `feature/digidollar` off `ycash-legacy` (= v4.5.0)
+│   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
+│   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
+│   └── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
+├── ycash-dd/        WORKING FORK of the node   — `feature/digidollar` off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet — `feature/digidollar` off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
-│   ├── spec/       DigiDollar's own design docs + our Ycash adaptation spec
-│   └── mapping.md  the file-by-file, mechanism-by-mechanism crosswalk
-├── AGENTS.md       working rules  (CLAUDE.md symlinks to it)
-└── Makefile        `make status` — repo state + pin verification
+│   ├── spec/        DigiDollar's own design docs + our Ycash adaptation spec
+│   ├── plans/       the development plan (node, federation, wallet GUI, single-machine testing)
+│   └── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
+├── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
+└── Makefile         `make status` — repo state + pin verification
 ```
 
-Both `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
-filesystem, not just documented. All work happens in `ycash-dd/`.
+All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
+filesystem, not just documented. All work happens in `ycash-dd/` (node) and `yecwallet-dd/`
+(wallet); the `yd_*` RPC surface is the only interface between the two.
 
 ---
 
