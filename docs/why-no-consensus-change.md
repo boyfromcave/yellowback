@@ -1,9 +1,11 @@
-# Why YDollar needs no consensus change
+# Why Yellowback needs no consensus change
+
+**Ycash Yellowback (YED)** is the system this document is about; YED is its unit.
 
 **Audience:** anyone who needs to understand, or explain to the Ycash team, how a full
 DigiDollar-style stablecoin can run on Ycash without a hard fork, a soft fork, a new opcode, or a
 network upgrade — and what that costs. This is the plain-language rationale behind the Tier-0
-decision in [`plans/ydollar-v1-development-plan.md`](plans/ydollar-v1-development-plan.md) §1 and D1.
+decision in [`plans/yellowback-v1-development-plan.md`](plans/yellowback-v1-development-plan.md) §1 and D1.
 The plan is normative; this document explains it.
 
 Every claim below was checked against the pinned trees (`ref/digibyte` @ `v9.26.5`, `ref/ycash` @
@@ -20,15 +22,15 @@ policy, so every claim here stands unchanged. Nothing in this document depends o
 
 ## 1. The one-sentence answer
 
-**The Ycash chain never needs to know YDollar exists.** YDollar uses only transaction shapes Ycash
+**The Ycash chain never needs to know Yellowback exists.** Yellowback uses only transaction shapes Ycash
 already accepts today and puts the "this is a dollar" meaning in a small data note that every
-YDollar-aware node interprets identically. Ordinary nodes see ordinary transactions. YDollar nodes
+Yellowback-aware node interprets identically. Ordinary nodes see ordinary transactions. Yellowback nodes
 see a stablecoin. Nothing new is rejected and nothing new is accepted by consensus, so there is
 nothing to fork.
 
 This is the same shape as the atomic-swap feature Ycash shipped in v4.5.0 (`ref/ycash` commit
 `ccddd22e4`: RPCs, a script helper, an experimental-features flag, 17 lines in `main.cpp` and
-about 400 in the wallet files). YDollar needs even fewer hooks — zero lines in `main.cpp` and zero
+about 400 in the wallet files). Yellowback needs even fewer hooks — zero lines in `main.cpp` and zero
 in `src/wallet/`, for the reason in §3.5.
 
 ## 2. Why DigiByte *did* change consensus, and why that is not required
@@ -52,7 +54,7 @@ already has. What changes is *who enforces* one rule (§4).
 
 ### 3.1 Tokens — colored outputs plus an `OP_RETURN` note
 
-A YDollar balance is an ordinary transparent P2PKH output carrying a small amount of YEC, plus the
+A YED balance is an ordinary transparent P2PKH output carrying a small amount of YEC, plus the
 transaction's single `OP_RETURN` output saying "output N is worth X cents." This is the
 colored-coin model (Omni, Counterparty, Runes).
 
@@ -80,7 +82,7 @@ is already shaped by founders'/YDF streams, so touching either is a network upgr
 
 Instead the federation holds a well-known **anchor UTXO** — an ordinary k-of-n P2SH multisig — and
 publishes a price by spending it into a new anchor plus an `OP_RETURN` price note. Consensus
-verifies the k-of-n ECDSA signatures as it would for any transaction; YDollar nodes only parse the
+verifies the k-of-n ECDSA signatures as it would for any transaction; Yellowback nodes only parse the
 note. Because each price spends the previous anchor, updates are serialised by construction. No
 miner involvement, no P2P messages, no new signature code.
 
@@ -88,18 +90,18 @@ miner involvement, no P2P messages, no new signature code.
 
 These are integer tables and formulas (`ref/digibyte/src/consensus/digidollar.h:72-84`,
 `src/consensus/dca.cpp`, `src/consensus/err.cpp`). They are ported as-is into the overlay and
-evaluated by every YDollar node with the same integer math on the same blocks. Since all nodes read
-the same chain and run the same deterministic rules, they all compute the same YDollar state:
+evaluated by every Yellowback node with the same integer math on the same blocks. Since all nodes read
+the same chain and run the same deterministic rules, they all compute the same Yellowback state:
 supply, vault status, required burns, health. Conservation and accounting are therefore enforced
-by every honest YDollar node — without the chain rejecting anything.
+by every honest Yellowback node — without the chain rejecting anything.
 
 ### 3.5 Watching the chain — a signal Ycash already emits
 
-The atomic-swap feature added 17 lines to `main.cpp` to observe blocks. YDollar needs none:
+The atomic-swap feature added 17 lines to `main.cpp` to observe blocks. Yellowback needs none:
 Ycash's wallet notifier already reads every connected and disconnected block from disk, in exact
 chain order, and delivers it to subscribers through `CValidationInterface::ChainTip`
 (`ref/ycash/src/validationinterface.cpp:183-217`). The wallet's own Sapling witness cache depends
-on these semantics, so the mechanism is proven on every node today. The YDollar index subscribes
+on these semantics, so the mechanism is proven on every node today. The Yellowback index subscribes
 to that signal, keeps its own rebuildable LevelDB, and rolls back on reorgs with per-block undo
 records.
 
@@ -110,7 +112,7 @@ records.
 | Signatures | ECDSA `OP_CHECKSIG` / `OP_CHECKMULTISIG`, the same code that verifies every transparent input |
 | Partial signing across operators | `signrawtransaction` merges partial signatures (`ref/ycash/src/rpc/rawtransaction.cpp:1057-1061`) |
 | Opt-in activation | `-experimentalfeatures` + a feature flag (`ref/ycash/src/experimental_features.cpp`), as atomic swaps do |
-| Preventing accidental burns | `CWallet::LockCoin` (`ref/ycash/src/wallet/wallet.h:1369`), applied before the wallet commits a transaction and kept across reorgs, and a distinct YDollar address prefix |
+| Preventing accidental burns | `CWallet::LockCoin` (`ref/ycash/src/wallet/wallet.h:1369`), applied before the wallet commits a transaction and kept across reorgs, and a distinct Yellowback address prefix |
 | Bounded staleness | transaction expiry (`DEFAULT_POST_BLOSSOM_TX_EXPIRY_DELTA = 40`, `ref/ycash/src/main.h:78-79`) |
 
 ## 4. The one rule an overlay cannot enforce, stated plainly
@@ -122,7 +124,7 @@ Ycash script can say "only if a token was destroyed in this transaction." That i
 Ycash has none.
 
 If the vault script were just *timelock + owner key*, the owner could wait out the lock, take the
-collateral back, **and keep the YDollar they had already sold** — minting would be a free loan
+collateral back, **and keep the YED they had already sold** — minting would be a free loan
 (plan D3). So the vault script additionally requires **k-of-n federation signatures**, and the
 federation signs a release only after verifying that the required burn is in the same transaction.
 
@@ -132,13 +134,13 @@ federation signs a release only after verifying that the required burn is in the
   volatility protection, and the price feed all exist and behave as in DigiDollar (deviations, all
   parametric or platform-driven, are listed in the plan §10).
 - **The trust model changes in one place.** DigiDollar already trusts a 7-of-35 quorum for prices.
-  YDollar v1 trusts a 5-of-9 quorum for prices *and* for "no release without burn." A colluding
+  Yellowback v1 trusts a 5-of-9 quorum for prices *and* for "no release without burn." A colluding
   quorum could release collateral without a burn, or publish a false price. A quorum with fewer
   than k live keys pauses redemptions and new mints (transfers continue) until it recovers.
-- **What the federation still cannot do:** create YDollar from nothing, move anyone's YDollar, or
+- **What the federation still cannot do:** create YED from nothing, move anyone's YED, or
   take collateral without the owner's signature. Those are pure accounting and script rules that
-  every YDollar node checks and the chain enforces respectively.
-- **It is visible.** A release without the required burn is detectable by every YDollar node on
+  every Yellowback node checks and the chain enforces respectively.
+- **It is visible.** A release without the required burn is detectable by every Yellowback node on
   chain (the closed vault's `burnedCents` is below the burn its closing block required, plan F1),
   which is what makes roster rotation and public accountability possible.
 
@@ -150,7 +152,7 @@ with v1.
 1. **It is the smallest change that yields a working dollar.** Zero lines in `src/main.cpp`,
    `src/consensus/`, `src/script/`, `src/primitives/`, `src/pow/`, or `src/chainparams.cpp`. Block
    validity, mempool policy, shielded-pool value balance, fee policy, and P2P behaviour are
-   byte-for-byte those of v4.5.0 for every node, with or without `-ydollar` (plan §8.3).
+   byte-for-byte those of v4.5.0 for every node, with or without `-yellowback` (plan §8.3).
 2. **It has precedent.** The atomic-swap feature was merged at exactly this tier.
 3. **It is the specification for the consensus rule.** The overlay's validator is written as pure
    functions of `(transaction, state, height)`. If the Ycash team later chooses a network upgrade,
@@ -160,11 +162,11 @@ with v1.
 
 ## 6. How to explain it in one paragraph
 
-> YDollar is an overlay on ordinary Ycash transactions, the way Omni was an overlay on Bitcoin and
+> Yellowback is an overlay on ordinary Ycash transactions, the way Omni was an overlay on Bitcoin and
 > the way DigiDollar itself stores dollar amounts in `OP_RETURN`. Collateral sits in timelocked
 > multisig scripts Ycash has enforced for years; prices are published by a federation spending a
-> multisig anchor coin; every YDollar node computes the same state from the same chain with the
+> multisig anchor coin; every Yellowback node computes the same state from the same chain with the
 > same integer rules. No consensus code changes and no fork is needed. The single thing DigiByte
-> enforces in consensus that Ycash cannot — "you must burn YDollar to unlock collateral" — is
+> enforces in consensus that Ycash cannot — "you must burn YED to unlock collateral" — is
 > enforced by requiring a 5-of-9 federation co-signature on every release, and that trust
 > assumption is stated openly, with a defined path to move it into consensus later.
