@@ -1,10 +1,10 @@
-# YDollar — Ycash adaptation spec (normative v1 protocol)
+# Ycash Yellowback (YED) — adaptation spec (normative v1 protocol)
 
 **Status:** DECIDED. This file is the normative protocol: §3 of the development plan, reproduced
 verbatim so implementers and reviewers have one file to cite for rule identifiers (**MINT-1**,
 **XFER-2**, **RED-7**, …). Every design decision, the rationale for each rule, the audit history,
 the architecture, the federation coordinator, the phased work plan and the trust statement live in
-[`../plans/ydollar-v1-development-plan.md`](../plans/ydollar-v1-development-plan.md); when the two
+[`../plans/yellowback-v1-development-plan.md`](../plans/yellowback-v1-development-plan.md); when the two
 disagree, the plan wins and this file is regenerated from it.
 
 **Base:** Ycash `v4.5.0` (`624c12814`) · **Reference:** DigiByte `v9.26.5` (`05b50e229d`)
@@ -14,7 +14,9 @@ Section numbering below matches the plan (§3.1–§3.10) so cross-references re
 
 ---
 
-## 3. YDollar v1 protocol (normative)
+## 3. Yellowback v1 protocol (normative)
+
+Naming: **Yellowback** is the system, **YED** is the unit (AGENTS.md rule 6).
 
 Everything in this section is deterministic given the block sequence and the parameters. Words in
 **bold caps** are rule identifiers used by the test plan.
@@ -23,7 +25,7 @@ Everything in this section is deterministic given the block sequence and the par
 
 | Name | Value | Notes |
 |---|---|---|
-| `CENT` | 1 | YDollar amounts are integer US cents; `100 = $1.00` |
+| `CENT` | 1 | YED amounts are integer US cents; `100 = $1.00` |
 | `MICRO_USD` | 1 | prices are integer micro-USD per YEC; `1,000,000 = $1.00` |
 | `COIN` | 100,000,000 | zatoshi per YEC (existing) |
 | `BLOCKS_PER_HOUR` | 48 | 75-second target spacing post-Blossom |
@@ -31,10 +33,10 @@ Everything in this section is deterministic given the block sequence and the par
 | `PRICE_MAX_AGE` | 48 blocks | attestation older than this is not a price |
 | `PRICE_MIN` / `PRICE_MAX` | 100 / 100,000,000 µUSD | $0.0001 – $100.00 per YEC (DigiByte bounds) |
 | `MINT_WINDOW` | 40 blocks | protocol constant; equals `DEFAULT_POST_BLOSSOM_TX_EXPIRY_DELTA` (`ref/ycash/src/main.h:78-79`) but does not follow `-txexpirydelta` |
-| `MINT_EVAL_LAG` | 2 blocks | **wallet-side, not protocol**: `evalHeight = indexTip − MINT_EVAL_LAG`, so a reorg shorter than 3 blocks cannot change the snapshot a mint committed to (C4); `-ydollarmintlag` overrides (0..36) |
+| `MINT_EVAL_LAG` | 2 blocks | **wallet-side, not protocol**: `evalHeight = indexTip − MINT_EVAL_LAG`, so a reorg shorter than 3 blocks cannot change the snapshot a mint committed to (C4); `-yellowbackmintlag` overrides (0..36) |
 | `ROSTER_GRACE` | 1,152 blocks | how long the previous roster stays mintable after its successor is revealed |
-| `YD_FEE` | 1,000 zat | flat transaction fee, = `DEFAULT_FEE` (`ref/ycash/src/policy/fees.h:15`). Not only convention: ZIP-401's mempool limiter adds `LOW_FEE_PENALTY` to the eviction weight of any transaction paying less (`ref/ycash/src/mempool_limit.cpp:151-157`), so `-ydollarfee` is clamped to ≥ `DEFAULT_FEE` (C16) |
-| `TOKEN_VALUE` | 10,000 zat | YEC carried by every YDollar output; ≥ 100× the dust floor (`GetDustThreshold`, `ref/ycash/src/primitives/transaction.h:460`) |
+| `YELLOWBACK_FEE` | 1,000 zat | flat transaction fee, = `DEFAULT_FEE` (`ref/ycash/src/policy/fees.h:15`). Not only convention: ZIP-401's mempool limiter adds `LOW_FEE_PENALTY` to the eviction weight of any transaction paying less (`ref/ycash/src/mempool_limit.cpp:151-157`), so `-yellowbackfee` is clamped to ≥ `DEFAULT_FEE` (C16) |
+| `TOKEN_VALUE` | 10,000 zat | YEC carried by every YED output; ≥ 100× the dust floor (`GetDustThreshold`, `ref/ycash/src/primitives/transaction.h:460`) |
 | `MIN_MINT` / `MAX_MINT` | 10,000 / 1,000,000 cents | $100 / $10,000 (param) |
 | `MIN_OUTPUT` / `MAX_OUTPUT` | 100 / 10,000,000 cents | $1 (DigiByte's `minOutputAmount`) / $100,000 (param; DigiByte's `maxMintAmount`, C17) |
 | `SUPPLY_CAP` | 100,000,000 cents | $1,000,000 mainnet v1 (param; 0 = none on regtest) |
@@ -54,12 +56,12 @@ Lock tiers (`tierBlocks` at 75 s; ratios from `ref/digibyte/src/consensus/digido
 | 3 | 180 days | 207,360 | 350 % |
 | 4 | 1 year | 420,480 | 300 % |
 
-Per-network parameters (`src/ydollar/params.cpp`): `startHeight`, `genesisAnchor` (outpoint),
+Per-network parameters (`src/yellowback/params.cpp`): `startHeight`, `genesisAnchor` (outpoint),
 `genesisRosterScript` (the k-of-n redeem script, so the roster is known before its first spend),
 address version bytes (D10), `SUPPLY_CAP`, `MAX_MINT`. Regtest takes the first three from
-`-ydollarstartheight=<h>`, `-ydollargenesisanchor=<txid:n>` and `-ydollargenesisroster=<hex>`
+`-yellowbackstartheight=<h>`, `-yellowbackgenesisanchor=<txid:n>` and `-yellowbackgenesisroster=<hex>`
 (all three required together, refused on any other network) so tests can create the anchor on
-chain first and then restart with `-ydollar` (C2).
+chain first and then restart with `-yellowback` (C2).
 
 **Regtest overrides** (`params.cpp`, network `"regtest"` only; ratios, formulas and every rule are
 identical, only block counts shrink so a test can walk through a full lifecycle in seconds — the
@@ -73,20 +75,20 @@ protocol is height-based and never reads a clock, so this changes nothing but th
 | `PRICE_MAX_AGE`, `MINT_WINDOW`, `MINT_EVAL_LAG` | 48 / 40 / 2 | unchanged (tied to expiry and reorg depth, not to time) |
 | volatility windows `BLOCKS_PER_HOUR` / `BLOCKS_PER_DAY` (§3.6) | 48 / 1,152 | 48 / 96 (G5) |
 | `ROSTER_N` / `ROSTER_K` | 9 / 5 | whatever the test's genesis roster script says (2-of-3 for fast tests, 5-of-9 for the production-shape tests, §6.0) |
-| `SUPPLY_CAP` | 100,000,000 cents | 0 (none) unless `-ydollarsupplycap` is passed |
+| `SUPPLY_CAP` | 100,000,000 cents | 0 (none) unless `-yellowbacksupplycap` is passed |
 
 ### 3.2 Payload encoding
 
-The YDollar payload is the data of the transaction's **only** `OP_RETURN` output (policy forbids
+The Yellowback payload is the data of the transaction's **only** `OP_RETURN` output (policy forbids
 two), and that output must be exactly `OP_RETURN <one push of 4..80 bytes>`; `Solver` accepts any
 push-only tail as `TX_NULL_DATA` (`ref/ycash/src/script/standard.cpp:102`), so this shape rule is
 ours (B12). A transaction with an `OP_RETURN` that does not have this shape or does not begin with
-the magic is a non-YDollar transaction (its inputs are still processed by **IN-1..3** below).
+the magic is a non-Yellowback transaction (its inputs are still processed by **IN-1..3** below).
 All multi-byte integers are fixed-width little-endian; nothing in the payload uses `CompactSize`
 or `VARINT` (B11).
 
 ```
-magic   2 bytes   0x59 0x44 ("YD")
+magic   2 bytes   0x59 0x42 ("YB")
 version 1 byte    0x01
 type    1 byte    0x01 MINT | 0x02 TRANSFER | 0x03 REDEEM | 0x10 PRICE
 body    variable  per type; total ≤ 80 bytes; trailing bytes → malformed
@@ -96,19 +98,19 @@ body    variable  per type; total ≤ 80 bytes; trailing bytes → malformed
 |---|---|---|
 | MINT | `tier u8`, `cents u32le`, `lockHeight u32le`, `evalHeight u32le`, `ownerPubKey 33 B compressed` | 50 |
 | TRANSFER | `count u8`, then `count ×` (`vout u8`, `cents u32le`) | 5 + 5·count → count ≤ 15 |
-| REDEEM | same body as TRANSFER (assigns YDollar change); `count` may be 0 | |
+| REDEEM | same body as TRANSFER (assigns YED change); `count` may be 0 | |
 | PRICE | `priceMicroUsd u64le` | 12 |
 
 There is no rotation payload: a roster rotation is an anchor spend whose `vout[0]` pays a
 different P2SH, with no `OP_RETURN` at all (§3.7, C9).
 
 Malformed payload (bad magic/version/type, short/long body, `vout` out of range, duplicate `vout`,
-`vout` pointing at the `OP_RETURN`, `cents == 0`) ⇒ the transaction is treated as **non-YDollar**
+`vout` pointing at the `OP_RETURN`, `cents == 0`) ⇒ the transaction is treated as **non-Yellowback**
 for outputs and as an ordinary spend for inputs (**IN-1..3**). Unknown `type` ⇒ same. This is the
 forward-compatibility rule: a future version bump is ignored by v1 nodes, never mis-parsed.
 
 One more encoding rule, for determinism: a transaction with **more than one** `OP_RETURN` output
-(non-standard, but a miner may include it) is non-YDollar regardless of contents. The decoder is a
+(non-standard, but a miner may include it) is non-Yellowback regardless of contents. The decoder is a
 bounds-checked reader over a `std::vector<unsigned char>`; it never uses `CDataStream` so it cannot
 throw.
 
@@ -133,7 +135,7 @@ parsed, D7), sorted ascending so every party derives the same script:
 `lockHeight` is pushed as a minimal `CScriptNum` and must be `< LOCKTIME_THRESHOLD`
 (`ref/ycash/src/script/script.h:30`), i.e. a block height.
 
-**Vault scriptSig** (built by `yd_redeem` + co-signers; stack order matters):
+**Vault scriptSig** (built by `yed_redeem` + co-signers; stack order matters):
 
 ```
 OP_0 <qsig_1> … <qsig_k> <ownerSig> <vaultScript>
@@ -170,17 +172,17 @@ over the DER bytes **without** the trailing hashtype byte (C24), and places them
 order; a co-signer verifies the owner's signature the same way under the branch ID it would
 itself sign with, so a branch-ID disagreement surfaces as a RED-7 refusal (C11).
 
-**YDollar token output**: `OP_DUP OP_HASH160 <keyHash> OP_EQUALVERIFY OP_CHECKSIG` with value
+**Yellowback token output**: `OP_DUP OP_HASH160 <keyHash> OP_EQUALVERIFY OP_CHECKSIG` with value
 `TOKEN_VALUE`. The overlay does not require this shape or value (any non-`OP_RETURN` output may be
-assigned YDollar); the wallet always produces this shape.
+assigned YED); the wallet always produces this shape.
 
 ### 3.4 Transaction templates (what the wallet builds)
 
-**MINT** (`yd_mint <cents> <tier>`):
+**MINT** (`yed_mint <cents> <tier>`):
 
 | Index | Output | Value |
 |---|---|---|
-| vin[*] | wallet YEC inputs (never YDollar-bearing, never vaults) | |
+| vin[*] | wallet YEC inputs (never YED-bearing, never vaults) | |
 | vout[0] | P2SH(vaultScript) | exactly `requiredZat(cents, tier, Snapshots[evalHeight])` (§3.6), rounded up to a multiple of 1,000 zat |
 | vout[1] | P2PKH(owner's fresh key) — receives all minted cents | `TOKEN_VALUE` |
 | vout[2] | `OP_RETURN` MINT payload | 0 |
@@ -196,22 +198,22 @@ so MINT-2 holds at every possible confirmation height; and the mempool's expirin
 `evalHeight`, the wallet knows before signing whether the mint will register; the 2 % margin of
 revision 2 is gone (B3), and a reorg must be longer than `L` blocks to disturb the snapshot.
 
-**TRANSFER** (`yd_send`, `yd_sendmany`): YDollar inputs (confirmed only) + YEC fee inputs
+**TRANSFER** (`yed_send`, `yed_sendmany`): YED inputs (confirmed only) + YEC fee inputs
 (confirmed only, F3);
-outputs: one `TOKEN_VALUE` P2PKH per recipient, one for YDollar change, `OP_RETURN` TRANSFER
+outputs: one `TOKEN_VALUE` P2PKH per recipient, one for YED change, `OP_RETURN` TRANSFER
 payload assigning cents to those vouts, YEC change.
 
-**REDEEM** (`yd_redeem <vaultTxid>`): `vin[0]` = vault outpoint; `vin[1..]` = YDollar inputs
-totalling ≥ `requiredBurn` (§3.7). **No YEC inputs** (C10): every YDollar input carries
-`TOKEN_VALUE` = 10 × `YD_FEE` and a VOID release has the collateral itself. Outputs: collateral to
-the owner's address (value = vault value + surplus token value − `YD_FEE` − `TOKEN_VALUE` × number
-of YDollar change outputs), optional YDollar change (`TOKEN_VALUE`) with a REDEEM payload
+**REDEEM** (`yed_redeem <vaultTxid>`): `vin[0]` = vault outpoint; `vin[1..]` = YED inputs
+totalling ≥ `requiredBurn` (§3.7). **No YEC inputs** (C10): every YED input carries
+`TOKEN_VALUE` = 10 × `YELLOWBACK_FEE` and a VOID release has the collateral itself. Outputs: collateral to
+the owner's address (value = vault value + surplus token value − `YELLOWBACK_FEE` − `TOKEN_VALUE` × number
+of YED change outputs), optional YED change (`TOKEN_VALUE`) with a REDEEM payload
 (`count = 0` if none, but the payload is still present so the transaction is self-describing).
 
-**PRICE** (federation coordinator, built by `yd_createpricetx`): `vin[0]` = current anchor;
+**PRICE** (federation coordinator, built by `yed_createpricetx`): `vin[0]` = current anchor;
 at most one refill input, **absorbed entirely into the new anchor** (no change output, C6);
 `vout[0]` = P2SH(rosterScript) — the **same** script as the spent anchor (the new anchor, value =
-anchor + refill − `YD_FEE`); `vout[1]` = `OP_RETURN` PRICE. Exactly two outputs.
+anchor + refill − `YELLOWBACK_FEE`); `vout[1]` = `OP_RETURN` PRICE. Exactly two outputs.
 
 **ROTATION** (federation, rare): `vin[0]` = current anchor, optional refill as above, `vout[0]` =
 P2SH(*new* roster script), **no `OP_RETURN`** (C9). Exactly one output.
@@ -229,7 +231,7 @@ Vaults         outpoint → { ownerPubKey, tier, lockHeight, collateralZat, mint
                              closingTxid, burnedCents, errBpsAtClose, requiredBurnAtClose,
                              rosterIndex }
 Tokens         outpoint → { cents, nValue, scriptPubKey, height }
-TxLog          txid → { height, type, verdict, ydIn, ydOut, burned, assigned[] (outpoint, cents,
+TxLog          txid → { height, type, verdict, yedIn, yedOut, burned, assigned[] (outpoint, cents,
                         scriptPubKey), closedVaults[] }   (every payload-bearing tx and every tx
                         spending a Tokens/Vaults/Anchor outpoint; source for history RPCs, E1)
 Totals         { supplyCents, collateralZat, activeVaults, voidVaults }
@@ -239,7 +241,7 @@ Undo           blockHash → list of inverse operations for that block
 ```
 
 `Snapshots` are written for every block ≥ `startHeight` (≈ 60 bytes each) and are what
-`yd_gethistory` and the Phase-B consensus rule read.
+`yed_gethistory` and the Phase-B consensus rule read.
 
 ### 3.6 Derived quantities (integer, `arith_uint256`)
 
@@ -304,17 +306,17 @@ of that block is processed, so a spend of the genesis anchor inside block `start
 processed before its outputs. Every transaction that carries a payload or spends a `Tokens`,
 `Vaults` or `Anchor` outpoint gets a `TxLog` entry (E1).
 
-**IN-1** Every input that spends an outpoint in `Tokens` removes it and adds its cents to `ydIn`.
+**IN-1** Every input that spends an outpoint in `Tokens` removes it and adds its cents to `yedIn`.
 **IN-2** Every input that spends an outpoint in `Vaults` with status ACTIVE or VOID sets the vault
 to CLOSED (`closeHeight = H`, `closingTxid`, `errBpsAtClose = Snapshots[H − 1].errBps`,
 `requiredBurnAtClose = RequiredBurn(mintedCents, errBpsAtClose)` for ACTIVE and 0 for VOID, F1),
 and, if it was ACTIVE, subtracts its `collateralZat` from `Totals.collateralZat` and decrements
 `activeVaults`.
-**IN-3** After outputs are processed, `burned = ydIn − ydOut`; `Totals.supplyCents −= burned`;
+**IN-3** After outputs are processed, `burned = yedIn − yedOut`; `Totals.supplyCents −= burned`;
 `burned` is recorded on every vault closed by this transaction (split is informational).
 
 **TX-0** A transaction with any shielded component (`vJoinSplit`, `vShieldedSpend`,
-`vShieldedOutput` non-empty or `valueBalance ≠ 0`) or that is a coinbase has `ydOut = 0` regardless
+`vShieldedOutput` non-empty or `valueBalance ≠ 0`) or that is a coinbase has `yedOut = 0` regardless
 of payload.
 
 **MINT-1** payload MINT, well-formed. **MINT-2** `tier ∈ {0..4}`, `MIN_MINT ≤ cents ≤ MAX_MINT`,
@@ -331,18 +333,18 @@ B21); `ownerPubKey` is a valid compressed key. **MINT-4** with `E = Snapshots[ev
 function of the payload and a block every node has already applied (B3).
 
 If MINT-1..7 hold: `Vaults[txid:0] = ACTIVE {…}`, `Tokens[txid:1] = cents`, `supplyCents += cents`,
-`collateralZat += vout[0].nValue`, `ydOut = cents`. If MINT-1 holds but any of MINT-2..7 fails and
-`vout[0]` is P2SH: `Vaults[txid:0] = VOID` (so it can be tracked and released), `ydOut = 0`. Note
-that `ydIn` in a MINT is always burned (a mint never assigns YDollar to outputs other than by
+`collateralZat += vout[0].nValue`, `yedOut = cents`. If MINT-1 holds but any of MINT-2..7 fails and
+`vout[0]` is P2SH: `Vaults[txid:0] = VOID` (so it can be tracked and released), `yedOut = 0`. Note
+that `yedIn` in a MINT is always burned (a mint never assigns YED to outputs other than by
 minting).
 
 **XFER-1** payload TRANSFER or REDEEM, well-formed; every assigned `vout` exists and is not the
 `OP_RETURN`; `MIN_OUTPUT ≤ cents ≤ MAX_OUTPUT` per assignment. **XFER-2** `Σ assigned cents ≤
-ydIn` (TRANSFER and REDEEM share this rule; the difference `ydIn − Σ` is burned — for a TRANSFER
-built by the wallet it is always 0, for a REDEEM it is the burn). **XFER-3** `ydIn > 0`.
+yedIn` (TRANSFER and REDEEM share this rule; the difference `yedIn − Σ` is burned — for a TRANSFER
+built by the wallet it is always 0, for a REDEEM it is the burn). **XFER-3** `yedIn > 0`.
 
-If XFER-1..3 hold: each assignment creates `Tokens[txid:vout] = cents`; `ydOut = Σ`. If XFER-1 or
-XFER-3 fails, or `Σ > ydIn`, nothing is assigned and `ydOut = 0` (all inputs burned, D18). This is
+If XFER-1..3 hold: each assignment creates `Tokens[txid:vout] = cents`; `yedOut = Σ`. If XFER-1 or
+XFER-3 fails, or `Σ > yedIn`, nothing is assigned and `yedOut = 0` (all inputs burned, D18). This is
 the most forgiving rule that is still total: an honest wallet bug that under-assigns loses only the
 unassigned remainder, never the whole input.
 
@@ -358,7 +360,7 @@ wins (B7). An anchor spend that changes the script (a rotation, C9), or carries 
 absent payload, moves the anchor without recording a price. An anchor spend whose `vout[0]` is not P2SH
 breaks the chain of custody: `Anchor` becomes null and no further prices are accepted until a
 software release with a new genesis anchor (operator failure, §8). A PRICE payload on a transaction
-that does not spend the anchor is non-YDollar.
+that does not spend the anchor is non-Yellowback.
 
 **SNAP** After the last transaction of the block: recompute `breach(H)`, write `Snapshots[H]`.
 
@@ -367,7 +369,7 @@ then undoing a block must restore byte-identical state (tested).
 
 ### 3.8 Policy checks (wallet and federation, not state rules)
 
-These are computed by `yd_validaterawtransaction` and used by the wallet before broadcasting and by
+These are computed by `yed_validaterawtransaction` and used by the wallet before broadcasting and by
 federation members before co-signing. They do **not** change the state machine (D18) but they are
 the rules §9 would promote to consensus.
 
@@ -377,9 +379,9 @@ the rules §9 would promote to consensus.
   (E2).
 - **RED-1** `vin[0]` spends an ACTIVE or VOID vault; the transaction spends no other vault.
 - **RED-2** `nLockTime ≥ vault.lockHeight` and `indexTip ≥ vault.lockHeight`.
-- **RED-3** `ydIn − ydOut ≥ requiredBurn(vault.mintedCents, health(indexTip))` (0 for VOID).
+- **RED-3** `yedIn − yedOut ≥ requiredBurn(vault.mintedCents, health(indexTip))` (0 for VOID).
 - **RED-4** the transaction is transparent-only, standard, and pays a fee in
-  `[YD_FEE, 100 × YD_FEE]`. `IsStandardTx(tx, reason, Params(), tip + 1)` and
+  `[YELLOWBACK_FEE, 100 × YELLOWBACK_FEE]`. `IsStandardTx(tx, reason, Params(), tip + 1)` and
   `AreInputsStandard(tx, view, branchId)` run against a `CCoinsViewCache` built exactly as
   `signrawtransaction` builds it — `pcoinsTip` behind `CCoinsViewMemPool` under `cs_main`
   (`ref/ycash/src/rpc/rawtransaction.cpp:906-921`) — because the fee needs every input's value and
@@ -399,8 +401,8 @@ the rules §9 would promote to consensus.
 - **RED-8** `nExpiryHeight ≤ indexTip + 40 + RED_SKEW` with `RED_SKEW = 2`, so a fully co-signed
   transaction cannot be held and broadcast later under different health, while an owner whose node
   is a block or two ahead of the co-signer's is not refused (E2).
-- **SUB-1** (owner's node, in `yd_submitredeem`) the returned transaction equals the one
-  `yd_redeem` produced — held in the node's `PendingRedemption` record for that vault (D3) — except
+- **SUB-1** (owner's node, in `yed_submitredeem`) the returned transaction equals the one
+  `yed_redeem` produced — held in the node's `PendingRedemption` record for that vault (D3) — except
   for additional signature pushes in `vin[0].scriptSig`, every input
   passes `VerifyScript` under `STANDARD_SCRIPT_VERIFY_FLAGS`, `chainActive.Height() ≥ lockHeight`
   and `nExpiryHeight ≥ chainActive.Height() + 1 + TX_EXPIRING_SOON_THRESHOLD` — all **before**
@@ -422,18 +424,18 @@ Co-signers do not check where the collateral goes: the owner signs every output 
 
 The federation rotates by publishing a ROTATION transaction — an anchor spend paying to the new
 roster script with no `OP_RETURN` (C9) — immediately followed by a PRICE transaction from the new
-anchor (which reveals the new script). Wallets read `yd_getroster` (returns `Rosters.back()` and its pubkeys) before every mint.
+anchor (which reveals the new script). Wallets read `yed_getroster` (returns `Rosters.back()` and its pubkeys) before every mint.
 MINT-3 accepts the current or previous roster, so a mint built just before a rotation still
 registers, but only for `ROSTER_GRACE` (1,152 blocks, one day) after the new roster is revealed
 (B21). Old roster members must retain their keys until every vault that references their roster is
-CLOSED; `yd_listvaults` reports the count per roster index for the runbook. With v1 tiers capped at
+CLOSED; `yed_listvaults` reports the count per roster index for the runbook. With v1 tiers capped at
 one year, this obligation is bounded to one year and one day past rotation.
 
 ### 3.10 Determinism requirements for implementers
 
 The validator and state machine may read only: the block being applied, the state view, and
 `Params`. Forbidden: `GetTime()`, `GetAdjustedTime()`, `mempool`, `pwalletMain`, `GetArg`, floating
-point, `std::map` iteration order that depends on pointers. Every function in `src/ydollar/state.*`
+point, `std::map` iteration order that depends on pointers. Every function in `src/yellowback/state.*`
 must be callable from a unit test with an in-memory view.
 
 ---
