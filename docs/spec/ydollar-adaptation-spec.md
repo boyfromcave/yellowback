@@ -18,16 +18,25 @@ committed per block, tiered collateral, time-locked redemption, and a stats inde
 
 ---
 
-## 2. Upgrade vehicle
+## 2. Upgrade vehicle — and the change budget
 
-DigiDollar deploys as a BIP9 soft fork riding BIP342 `OP_SUCCESSx`. Ycash has neither.
-See `mapping.md` §2, §4.
+The governing constraint is **minimal change to Ycash** (see `../../README.md`). Work down this
+ladder and stop at the first tier that can carry the design.
 
-- **OPEN — Recommended:** new network upgrade `UPGRADE_YDOLLAR` with a fresh `nBranchId`,
-  inserted before `UPGRADE_ZFUTURE` in `Consensus::UpgradeIndex`.
-  - [ ] Choose `nBranchId` (must not collide with any entry in `ref/ycash/src/consensus/upgrades.cpp`)
-  - [ ] Choose `nProtocolVersion`
-  - [ ] Choose mainnet / testnet / regtest `nActivationHeight`
+- **Tier 0 — no consensus change (try first).** Existing opcodes only, wallet + RPC + observer
+  hooks, gated by an experimental flag. No fork, no activation height, no branch ID.
+  - [ ] **Blocking question:** can the mint/redeem contract be expressed with P2SH +
+        `OP_CHECKMULTISIG` + `OP_CHECKLOCKTIMEVERIFY` + `OP_HASH160` + `OP_IF`? Model it on
+        `ref/ycash/src/script/atomicswap.h` and commit `ccddd22e4`.
+  - [ ] If yes: which invariants become **quorum-enforced** instead of consensus-enforced, and is
+        that trust model acceptable? Write the answer down — it is the project's central trade-off.
+  - [ ] Register a flag in `ref/ycash/src/experimental_features.{h,cpp}` (e.g. `-ydollar`)
+- **Tier 2 — `OP_NOPx` soft fork.** Only if Tier 0 cannot carry it. Nine free slots (`OP_NOP1`,
+  `OP_NOP3`–`OP_NOP10`); each is a bare no-op, so multi-operand semantics do not fit cleanly.
+- **Tier 3 — network upgrade `UPGRADE_YDOLLAR`.** A coordinated hard fork; the largest possible
+  ask. Requires a written justification for why Tiers 0–2 fail.
+  - [ ] Fresh `nBranchId` (no collision in `ref/ycash/src/consensus/upgrades.cpp`)
+  - [ ] `nProtocolVersion`; mainnet / testnet / regtest `nActivationHeight`
   - [ ] Confirm the branch-ID sighash binding gives the replay protection we want across the fork
 
 ---
@@ -40,7 +49,8 @@ See `mapping.md` §2, §4.
 <lockHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP OP_DIGIDOLLAR <amount> OP_DDVERIFY <ownerKey> OP_CHECKSIG
 ```
 
-- [ ] Opcode encoding: new opcodes gated on `UPGRADE_YDOLLAR`, or `OP_NOPx` re-encoding? (`mapping.md` §2)
+- [ ] **First:** can this be expressed with existing opcodes only (Tier 0)? If so, no opcode work is needed.
+- [ ] If not: new opcodes gated on `UPGRADE_YDOLLAR`, or `OP_NOPx` re-encoding? (`mapping.md` §2)
 - [ ] **Do not** port `OP_CHECKPRICE` — disabled upstream as a chain-fork vector.
 - [ ] `OP_CHECKCOLLATERAL` needs operands; Ycash `OP_NOPx` slots are bare no-ops (nine free: `OP_NOP1`, `OP_NOP3`–`OP_NOP10`). Resolve.
 - [ ] Ycash has **no `OP_CHECKSEQUENCEVERIFY`** — only CLTV. Confirm no DD script needs relative locktime.
@@ -53,7 +63,8 @@ See `mapping.md` §2, §4.
 **OPEN.** DigiByte bit-packs type+flags into `nVersion`; Ycash pins `nVersion == 4` and adds
 `nVersionGroupId` (`mapping.md` §5).
 
-- [ ] (a) New tx version 5 + `YDOLLAR_VERSION_GROUP_ID`, ZIP-202 style — or — (b) `OP_RETURN` payload output
+- [ ] (b) `OP_RETURN` payload output + script-shape detection is Tier 0 and touches no serialization
+      — prefer it — or — (a) new tx version 5 + `YDOLLAR_VERSION_GROUP_ID`, ZIP-202 style, which is Tier 3
 - [ ] Restate all value-conservation invariants to account for `valueBalance` and the shielded pools
 
 ---

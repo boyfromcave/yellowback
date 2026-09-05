@@ -1,6 +1,15 @@
 # ydollar-workspace — agent instructions
 
-Port DigiByte's **DigiDollar** stablecoin protocol to **Ycash** as *YDollar*.
+Bring a decentralized digital dollar to **Ycash** as *YDollar*, using DigiByte's **DigiDollar**
+as the reference implementation. Start with [README.md](README.md) for the goal and the
+change-budget ladder; this file is the working rules.
+
+**The prime directive is minimal change to the Ycash codebase.** The Ycash team is risk-averse and
+the shielded pool's soundness rests on consensus code few people fully understand. Prefer the
+cheapest tier that works: Tier 0 (existing opcodes, wallet/RPC, observer hooks, experimental flag —
+what Ycash's own atomic-swap feature did in commit `ccddd22e4`) over a soft fork, and a soft fork
+over a coordinated network upgrade. When a design trades elegance for a smaller consensus
+footprint, take the smaller footprint and record what was given up.
 
 ## Layout
 
@@ -73,6 +82,9 @@ Write it down in the commit message or the PR body:
 If you cannot fill in **W**, you are not ready to write code. If **M** turns out to be
 Taproot, SegWit, BIP9, `nVersion` bit-packing, the `Coin` model, or MuSig2 — stop and check
 `docs/mapping.md`; there is already a row for it.
+
+Then one more: **which tier does W land on, and why won't a cheaper tier do?** A consensus change
+needs that answer in writing before any code.
 
 ### 5. Update `docs/mapping.md` as you go.
 

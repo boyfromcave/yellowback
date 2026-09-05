@@ -118,14 +118,25 @@ deploy without a hard fork.
 > `src/script/interpreter.cpp` **only under `SigVersion::TAPSCRIPT`**, relying on BIP342
 > `OP_SUCCESSx` for forward compatibility. **Ycash** (`src/script/interpreter.cpp:942`) treats
 > those same bytes as `SCRIPT_ERR_BAD_OPCODE` and has no Tapscript context at all, **so the
-> adaptation is**: pick a different upgrade vehicle. Realistic options, in order of preference:
+> adaptation is**: do not port an opcode layer at all if you can avoid one. Options, cheapest
+> first — see the change-budget ladder in [`../README.md`](../README.md), which is the ordering
+> that governs this project:
 >
+> 0. **No new opcodes (Tier 0 — try this first).** Express the mint/redeem contract with opcodes
+>    Ycash already has: P2SH, `OP_CHECKMULTISIG`, `OP_CHECKLOCKTIMEVERIFY`, `OP_HASH160`,
+>    `OP_IF`/`OP_ELSE`. Ycash's own atomic-swap HTLC (`ref/ycash/src/script/atomicswap.h`,
+>    commit `ccddd22e4`) does exactly this and touched `interpreter.cpp`, `script.h`,
+>    `consensus/` and `chainparams.cpp` **not at all**. The cost is that collateral and supply
+>    invariants become quorum-enforced rather than consensus-enforced — a real weakening that must
+>    be stated explicitly, not assumed away. **This is the recommended path** unless the trust
+>    model is judged unacceptable.
 > 1. **Network-upgrade hard fork (Zcash-native).** Add `UPGRADE_YDOLLAR` to
 >    `Consensus::UpgradeIndex` (`ref/ycash/src/consensus/params.h`) with a fresh `nBranchId` in
 >    `NetworkUpgradeInfo` (`ref/ycash/src/consensus/upgrades.cpp`), and gate the new opcodes on
 >    `NetworkUpgradeActive(nHeight, params, Consensus::UPGRADE_YDOLLAR)`. This is how Zcash-family
->    chains normally ship consensus changes, and the branch-ID sighash binding gives you free
->    replay protection across the fork. **This is the recommended path.**
+>    chains normally ship consensus changes, and the branch-ID sighash binding gives free replay
+>    protection across the fork. It is also a coordinated hard fork — the largest possible ask of
+>    a risk-averse team, so it needs a written justification for why Tier 0 will not do.
 > 2. **`OP_NOPx` soft fork (Bitcoin-native).** Re-encode DD semantics onto unused
 >    `OP_NOP` slots, which Ycash accepts as no-ops today
 >    (`ref/ycash/src/script/interpreter.cpp:388-392`). Nine slots are free — `OP_NOP1` and
@@ -134,9 +145,9 @@ deploy without a hard fork.
 >    from the stack, so multi-operand opcodes like `OP_CHECKCOLLATERAL` do not fit cleanly.
 >    Do **not** reuse the 0xbb–0xbf byte values.
 >
-> Either way: **there is no `sigversion != TAPSCRIPT` guard to copy.** Delete it and replace it
-> with the height/branch-ID gate. Copying the guard verbatim produces an opcode that can never
-> execute, because `sigversion` in Ycash is never `TAPSCRIPT`.
+> In every case: **there is no `sigversion != TAPSCRIPT` guard to copy.** Copying it verbatim
+> produces an opcode that can never execute, because `sigversion` in Ycash is never `TAPSCRIPT`.
+> If you do add opcodes, that guard is replaced by a height/branch-ID gate.
 
 `OP_CHECKPRICE` (0xbd) is already **deliberately disabled** upstream — see the long comment at
 `ref/digibyte/src/script/interpreter.cpp:708-736`: consulting the live oracle price made the
@@ -192,6 +203,11 @@ opcode.** Any price-checking opcode must bind to the block's own committed bundl
 > Note `UPGRADE_NU5` already exists in the enum but is **`NO_ACTIVATION_HEIGHT`** on all networks
 > (`ref/ycash/src/chainparams.cpp:136-138`) and Ycash has **no Orchard code whatsoever** (zero
 > matches for `orchard` in `src/`). Do not build on NU5.
+>
+> **But first:** a network upgrade is Tier 3 on the change-budget ladder — a coordinated hard fork.
+> A Tier-0 design needs no activation mechanism at all, only an experimental-feature flag
+> (`ref/ycash/src/experimental_features.h`, e.g. `-experimentalfeatures -atomicswaps`). Reach for
+> this section only after Tier 0 has been ruled out in writing.
 
 ---
 
