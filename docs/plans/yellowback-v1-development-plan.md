@@ -1576,7 +1576,7 @@ coordinator's configuration file.
 - [x] Fix the inherited framework's config filename (`qa/rpc-tests/test_framework/util.py:175`
       and `qa/rpc-tests/multi_rpc.py:29`: `zcash.conf` → `ycash.conf`, G1). Without it no
       functional test can start a node.
-- [ ] Build `ycash-dd` (`zcutil/build.sh`, both with and without `YCASH_WR=1`) and record the
+- [~] Build `ycash-dd` (`zcutil/build.sh`, both with and without `YCASH_WR=1`) and record the
       baseline: `make check`, then `qa/pull-tester/rpc-tests.py`. Expect the inherited post-Blossom
       tests (`coinbase_funding_streams.py`, `feature_zip221.py`, `upgrade_golden.py`,
       `shorter_block_times.py`, `post_heartwood_rollback.py`) to fail at node start because
@@ -1584,6 +1584,9 @@ coordinator's configuration file.
       later phases only have to keep those green. Note also that `atomicswap.py` is not listed in
       `rpc-tests.py` and starts its nodes with no network upgrade active and without
       `-experimentalfeatures` (`qa/rpc-tests/atomicswap.py:28-35`), so it is not a template (C12).
+      *(Partly done 2026-09-05: the default build and the full `test_bitcoin` run are recorded in
+      `doc/yellowback.md` — two pre-existing failures in files the fork does not touch; the
+      `YCASH_WR=1` build and the inherited `rpc-tests.py` baseline are still to be run.)*
 - [x] Add `.github/workflows/yellowback-tests.yml` to the fork as specified in §6.0 item 6 (Ycash's
       CI runs no functional tests); confirm the `depends/` and `~/.zcash-params` caches restore
       on a second run.
@@ -1676,13 +1679,13 @@ The inherited runner also named the daemon `src/zcashd`; it now names `src/ycash
 
 ### Phase 3 — Wallet: mint, send, redeem, co-sign (≈ 1,000 lines)
 
-- [ ] `wallet.cpp`: ownership, coin locking, balances, positions.
-- [ ] `txbuilder.cpp`: `BuildMint`, `BuildTransfer`, `BuildRedeem` (owner signature only),
+- [x] `wallet.cpp`: ownership, coin locking, balances, positions.
+- [x] `txbuilder.cpp`: `BuildMint`, `BuildTransfer`, `BuildRedeem` (owner signature only),
       `AddCosignature`, `IsComplete` (uses `VerifyScript` with the vault script),
       `SameExceptSignatures` (SUB-1).
-- [ ] `src/rpc/yellowbackwallet.cpp`: all wallet RPCs; `yed_redeem` returns hex; `yed_submitredeem`;
+- [x] `src/rpc/yellowbackwallet.cpp`: all wallet RPCs; `yed_redeem` returns hex; `yed_submitredeem`;
       `yed_cosignredeem` with RED-0..8.
-- [ ] `qa/rpc-tests/yellowback_lifecycle.py`: node 0 mints tier 0 at a mocked price, asserts vault
+- [x] `qa/rpc-tests/yellowback_lifecycle.py`: node 0 mints tier 0 at a mocked price, asserts vault
       + balance; immediately after `yed_mint` (0-conf) a `sendtoaddress` for the node's whole
       balance must not consume the token output (`listlockunspent` shows it, B4); a price
       attestation 20 % lower is published before the mint confirms and the mint still registers
@@ -1704,14 +1707,24 @@ The inherited runner also named the daemon `src/zcashd`; it now names `src/ycash
       refuses because RED-7 is computed over the index's script (C5); `yed_submitredeem` refuses a
       returned transaction with a modified output (SUB-1) and refuses before `lockHeight` (C22);
       the REDEEM carries no YEC inputs (C10).
-- [ ] `qa/rpc-tests/yellowback_void_mint.py`: under-collateralised mint, mint whose `evalHeight` is
+- [x] `qa/rpc-tests/yellowback_void_mint.py`: under-collateralised mint, mint whose `evalHeight` is
       older than `MINT_WINDOW` or has no price, mint during ERR at `evalHeight`, mint over the
       supply cap ⇒ VOID; release at lockHeight with zero burn; `yed_abortredeem` unlocks after an
       abandoned redemption (B19).
-- [ ] `qa/rpc-tests/yellowback_wallet_restore.py`: dump keys, fresh node with `importprivkey` +
+- [x] `qa/rpc-tests/yellowback_wallet_restore.py`: dump keys, fresh node with `importprivkey` +
       index sync sees the same balances and positions; encrypted wallet flows.
 
 Exit: full lifecycle passes on regtest; `src/wallet/wallet.{h,cpp}` untouched.
+**Done 2026-09-05** (`ycash-dd` commits "Yellowback Phase 3 (part 1)" and "(part 2)"); the three
+functional tests are green locally and `src/wallet/` is untouched. Notes: (i) the "different redeem
+script in the scriptSig" case (C5) is refused explicitly by RED-7 (the supplied script must equal
+the index's reconstruction), because an owner signature made over the true script would otherwise
+still verify and the co-signer would simply rebuild the correct scriptSig; (ii) RED-8 also refuses a
+redemption that has already expired or is within `TX_EXPIRING_SOON_THRESHOLD` of expiry, the
+mirror image the plan's text left implicit; (iii) `doc/yellowback-rpc.md` (Phase 5b's contract) is
+written from the implemented RPCs, with `yed_getstats.supplyCapCents` added at the wallet fork's
+request; (iv) the inherited Python framework needs `pyasyncore` and a `pyblake2` shim on Python
+3.12+, carried in the workspace venv rather than as framework edits.
 
 ### Phase 4 — Federation coordinator and redemption client (≈ 900 lines Python, 0 lines C++)
 
