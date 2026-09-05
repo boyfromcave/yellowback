@@ -1571,13 +1571,13 @@ Exit: `make status` clean; baseline test run recorded in `doc/ydollar.md`.
 
 Files: `params`, `amount.h`, `payload`, `script`, `address`. No chain, DB or wallet dependencies.
 
-- [ ] `Params` for main/test/regtest with the constants of §3.1 (genesis anchor placeholders on
+- [x] `Params` for main/test/regtest with the constants of §3.1 (genesis anchor placeholders on
       main/test; regtest from args).
-- [ ] `RequiredCollateral`, `Health`, `DcaBps`, `ErrBps`, `RequiredBurn` in `arith_uint256`, with
+- [x] `RequiredCollateral`, `Health`, `DcaBps`, `ErrBps`, `RequiredBurn` in `arith_uint256`, with
       the worked examples of §3.6 as unit tests, plus overflow tests at `MAX_MINT`/`PRICE_MIN`.
-- [ ] Payload codec with a table-driven round-trip test and a rejection test for every malformed
+- [x] Payload codec with a table-driven round-trip test and a rejection test for every malformed
       case listed in §3.2.
-- [ ] `RosterScript`, `VaultScript`, parsers, `BuildVaultScriptSig`, `ExtractRedeemScript`; tests
+- [x] `RosterScript`, `VaultScript`, parsers, `BuildVaultScriptSig`, `ExtractRedeemScript`; tests
       that (i) script sizes ≤ 520 for n = 13 with a 4-byte height push, (ii) sigops = n + 1 via
       `GetSigOpCount(true)`, (iii) a vault script executes under `VerifyScript` with
       `STANDARD_SCRIPT_VERIFY_FLAGS` (a superset of the consensus flags, `policy.h:32-40`) on a
@@ -1585,11 +1585,13 @@ Files: `params`, `amount.h`, `payload`, `script`, `address`. No chain, DB or wal
       k−1 quorum sigs, wrong roster), and (iv) **standardness**: `IsStandardTx` and
       `AreInputsStandard` return true for synthetic MINT, TRANSFER, REDEEM (k = n = 13) and PRICE
       transactions — regtest never runs these checks (B5).
-- [ ] Address encode/decode tests, including cross-network rejection.
-- [ ] Register in `Makefile.am` / `Makefile.test.include`.
+- [x] Address encode/decode tests, including cross-network rejection.
+- [x] Register in `Makefile.am` / `Makefile.test.include`.
 
 Exit: `src/test/test_bitcoin --run_test=ydollar_*` green; no file outside the new module touched
-except the two Makefiles.
+except the two Makefiles. **Done 2026-09-05** (`ycash-dd` commit "YDollar Phase 1"); the math
+header is `src/ydollar/math.h`, not `amount.h`, because a quoted `#include "amount.h"` from inside
+`src/ydollar/` resolves to itself.
 
 ### Phase 2 — State machine, database, index, node RPCs (≈ 1,600 lines)
 
