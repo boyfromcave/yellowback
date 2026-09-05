@@ -1618,7 +1618,7 @@ header is `src/yellowback/math.h`, not `amount.h`, because a quoted `#include "a
 
 ### Phase 2 — State machine, database, index, node RPCs (≈ 1,600 lines)
 
-- [ ] **Rebrand the existing fork code** (revision 13): `src/ydollar/` → `src/yellowback/`,
+- [x] **Rebrand the existing fork code** (revision 13, done 2026-09-05 in both forks): `src/ydollar/` → `src/yellowback/`,
       `namespace ydollar` → `yellowback`, tests `ydollar_*_tests.cpp` → `yellowback_*`, payload
       magic `"YB"`, mainnet address bytes `0x1FE4`, `doc/ydollar.md` → `doc/yellowback.md`,
       `contrib/ydollar/` → `contrib/yellowback/`, the CI workflow file, and in `yecwallet-dd` the
