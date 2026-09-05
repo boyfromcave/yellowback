@@ -1,0 +1,7 @@
+# Nested clones — each is its own git repo, managed independently.
+# Pins are recorded in AGENTS.md and docs/mapping.md.
+/ref/
+/ycash-dd/
+
+# macOS
+.DS_Store
