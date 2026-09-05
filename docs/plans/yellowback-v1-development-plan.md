@@ -1728,11 +1728,11 @@ request; (iv) the inherited Python framework needs `pyasyncore` and a `pyblake2`
 
 ### Phase 4 — Federation coordinator and redemption client (≈ 900 lines Python, 0 lines C++)
 
-- [ ] `contrib/yellowback/yellowback_fed.py` (price rounds with TWAP/outlier/clamp brakes over
+- [x] `contrib/yellowback/yellowback_fed.py` (price rounds with TWAP/outlier/clamp brakes over
       `yed_createpricetx` + `signrawtransaction` + `sendrawtransaction`, `/cosign` over HTTPS,
       rotate) with a `--mock-price` source and an `--insecure-localhost` transport (plain HTTP on
       127.0.0.1) for tests (G7); `contrib/yellowback/yellowback-redeem`.
-- [ ] `qa/rpc-tests/yellowback_federation.py`: launches three coordinators against three regtest
+- [x] `qa/rpc-tests/yellowback_federation.py`: launches three coordinators against three regtest
       nodes with mock prices; asserts prices land on chain every 8 blocks, that the clamp limits a
       50 % mock jump to 10 % per round, that a member offline still yields 2-of-3, that
       `yellowback-redeem` completes end-to-end (`yed_redeem` → `/cosign` → `yed_submitredeem`), that a
@@ -1742,6 +1742,14 @@ request; (iv) the inherited Python framework needs `pyasyncore` and a `pyblake2`
       the new roster and a successful redemption of a vault on the old roster.
 
 Exit: federation test green in CI; runbook drafted.
+**Done 2026-09-05** (`ycash-dd` commit "Yellowback Phase 4"); the federation test is green locally
+(CI has not been run yet) and `doc/yellowback-federation.md` is drafted. One interface note: the
+revealing PRICE after a rotation is built by passing the new roster script to `yed_createpricetx` as
+its third argument (the anchor's script is unrevealed until that transaction confirms), which is
+what the `rotate` sub-command does; peers verify a PRICE against the anchor's current script
+rather than `yed_getroster`, so the reveal round needs no special case on their side. The
+"under-burned redemption" refusal is exercised in `yellowback_lifecycle.py` (RED-3 after a price
+crash) rather than in the federation test.
 
 ### Phase 5 — Protections (≈ 400 lines)
 
