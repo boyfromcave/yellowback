@@ -1546,11 +1546,11 @@ coordinator's configuration file.
 
 ### Phase 0 — Groundwork (≈ 1 day)
 
-- [ ] Replace `docs/spec/ydollar-adaptation-spec.md` with §3 of this plan (normative spec) and a
+- [x] Replace `docs/spec/ydollar-adaptation-spec.md` with §3 of this plan (normative spec) and a
       pointer here for rationale.
-- [ ] Add the mapping rows listed in Appendix A to `docs/mapping.md`.
-- [ ] Create `ycash-dd/doc/ydollar.md` skeleton and `contrib/ydollar/README.md`.
-- [ ] Fix the inherited framework's config filename (`qa/rpc-tests/test_framework/util.py:175`
+- [x] Add the mapping rows listed in Appendix A to `docs/mapping.md`. *(Done: all 23 rows were already present in §11 by the revision-7 audit; verified row by row.)*
+- [x] Create `ycash-dd/doc/ydollar.md` skeleton and `contrib/ydollar/README.md`.
+- [x] Fix the inherited framework's config filename (`qa/rpc-tests/test_framework/util.py:175`
       and `qa/rpc-tests/multi_rpc.py:29`: `zcash.conf` → `ycash.conf`, G1). Without it no
       functional test can start a node.
 - [ ] Build `ycash-dd` (`zcutil/build.sh`, both with and without `YCASH_WR=1`) and record the
@@ -1561,7 +1561,7 @@ coordinator's configuration file.
       later phases only have to keep those green. Note also that `atomicswap.py` is not listed in
       `rpc-tests.py` and starts its nodes with no network upgrade active and without
       `-experimentalfeatures` (`qa/rpc-tests/atomicswap.py:28-35`), so it is not a template (C12).
-- [ ] Add `.github/workflows/ydollar-tests.yml` to the fork as specified in §6.0 item 6 (Ycash's
+- [x] Add `.github/workflows/ydollar-tests.yml` to the fork as specified in §6.0 item 6 (Ycash's
       CI runs no functional tests); confirm the `depends/` and `~/.zcash-params` caches restore
       on a second run.
 

@@ -10,3 +10,6 @@
 # Personal, machine-local Claude Code settings (attribution off).
 # Team-wide settings would go in .claude/settings.json instead.
 /.claude/settings.local.json
+
+# Python virtual environment for the workspace (never install into the system Python).
+/.venv/
