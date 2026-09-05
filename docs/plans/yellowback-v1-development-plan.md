@@ -1753,14 +1753,21 @@ crash) rather than in the federation test.
 
 ### Phase 5 — Protections (≈ 400 lines)
 
-- [ ] DCA and ERR wired into MINT-4/5 and RED-3 (already in `amount.h`; this phase adds state
+- [x] DCA and ERR wired into MINT-4/5 and RED-3 (already in `amount.h`; this phase adds state
       plumbing, snapshots, `yed_getstats` fields, `yed_getprotectionstatus`).
-- [ ] Volatility breach/cooldown in SNAP and MINT-4.
-- [ ] `qa/rpc-tests/yellowback_protection.py`: drive price down through 149/119/109 % and assert
+- [x] Volatility breach/cooldown in SNAP and MINT-4.
+- [x] `qa/rpc-tests/yellowback_protection.py`: drive price down through 149/119/109 % and assert
       `dcaBps`; below 100 % assert mints VOID and `requiredBurn` per ERR tier; spike price 25 % in
       one hour and assert mint freeze and cooldown expiry at exactly `lastBreach + 1728`.
 
 Exit: protection matrix green; `yed_gethistory` shows the snapshots.
+**Done 2026-09-05** (`ycash-dd` commit "Yellowback Phase 5"). The DCA/ERR/volatility plumbing was
+built into the state machine in Phase 2; this phase added `yed_getprotectionstatus` and the
+protection test. Precision note recorded in `docs/mapping.md` §11: because §3.6 judges a move only
+against `price(H − 48)` and `price(H − 96)`, a move made while those windows hold no price cannot
+breach at the time; its echo breaches when the windows reach it, and a breach re-fires every block
+while the reference window still reads the old level (so the last breach of a step change is at
+`H + 47` and the freeze ends at `H + 47 + VOL_COOLDOWN`).
 
 ### Phase 5b — YecWallet fork `yecwallet-dd` (parallel to Phases 3–6; ≈ 3,200 lines incl. `.ui`)
 

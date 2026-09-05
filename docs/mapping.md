@@ -441,6 +441,16 @@ JSON.** Every row below has the same shape as §1–§11.
 | GUI tests attach to a regtest node through the test harness | Stock `--conf <file> --no-embedded` already attach the wallet to any node whose conf has `rpcuser`/`rpcpassword`/`rpcport` (`src/main.cpp:168-172`, `connection.cpp:647-673`); network is taken from `getinfo.testnet`, `false` on regtest (`controller.cpp:255-257`) | No new options; the Yellowback tab reads `yed_getinfo.network` for address prefixes (plan H2, H3) |
 | Release bundles the node in the same binary | YecWallet looks for `ycashd` (Linux: `zqw-ycashd` then `ycashd`) beside its executable (`connection.cpp:348-364`) | Releases of `yecwallet-dd` ship the `ycash-dd` build of `ycashd`; the wallet checks `yed_getinfo.rpcversion` and refuses a node it does not know |
 
+### Rows added while building Phases 2–5 (2026-09-05)
+
+| DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |
+|---|---|---|
+| Volatility protection compares timestamped oracle prices with a standard deviation (`src/consensus/volatility.cpp`) | The overlay has only heights and the `Prices` table; §3.6 compares `price(H)` with `price(H − 48)` and `price(H − 96)` and a window with no price is not evaluated | A step change made before the windows hold any price breaches only when its echo reaches the windows; a step change re-breaches every block until `price(H − 48)` reads the new level, so the last breach is at `H + 47` and the freeze ends at `H + 47 + VOL_COOLDOWN`. Tests settle both windows before asserting on a spike (`yellowback_protection.py`) |
+| `bitcoin.conf`/`digibyte.conf` and `bitcoind`/`digibyted` names match the daemon in the test runner | `qa/pull-tester/rpc-tests.py:262` set `BITCOIND` to `src/zcashd`; the binary is `src/ycashd` | One-line runner fix beside the G1 `ycash.conf` fix; the functional suite cannot start without both |
+| Test framework runs on the platform's Python | `test_framework/mininode.py` imports `asyncore` (removed in Python 3.12) and `pyblake2` (unmaintained C extension) | The workspace venv carries `pyasyncore` and a one-line `pyblake2` shim over `hashlib.blake2b`; no framework file changed |
+| `CScript` in Core's test framework appends scripts with `+` | Ycash's `test_framework/script.py` coerces a `CScript` operand of `+` to a data push (`__coerce_instance`, `isinstance(other, bytes)`) | Concatenate raw bytes when composing the vault script in Python (`yellowback_util.build_mint_tx`) |
+| `invalidateblock` tests wait on the node's own notification | `getblockchaininfo.fullyNotified` covers connects only; a disconnect is delivered on the next notifier cycle without bumping the sequence | `yellowback_util.wait_yed_synced` polls `yed_getinfo.synced` after `invalidateblock` |
+
 ### Rows added while building the wallet tab (Phase 5b, 2026-09-05)
 
 | DigiByte does X (Y, mechanism M) | YecWallet equivalent Z, which lacks M | Adaptation W |
