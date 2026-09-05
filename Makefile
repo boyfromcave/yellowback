@@ -5,7 +5,7 @@
 
 DIGIBYTE_PIN := v9.26.5
 YCASH_PIN    := v4.5.0
-DD_BRANCH    := digidollar
+DD_BRANCH    := dev/digidollar
 DD_BASE      := ycash-legacy
 
 export DIGIBYTE_PIN YCASH_PIN DD_BRANCH DD_BASE
@@ -28,20 +28,20 @@ status-short: ## Same as status, without the per-file listing
 	@scripts/repo-status.sh --short
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
-	@printf '%-14s %-12s %s\n' repo ref commit
-	@printf '%-14s %-12s %s\n' workspace \
+	@printf '%-14s %-16s %s\n' repo ref commit
+	@printf '%-14s %-16s %s\n' workspace \
 		"$$(git rev-parse --abbrev-ref HEAD)" "$$(git rev-parse --short HEAD)"
-	@printf '%-14s %-12s %s\n' ref/digibyte \
+	@printf '%-14s %-16s %s\n' ref/digibyte \
 		"$$(git -C ref/digibyte describe --tags 2>/dev/null)" \
 		"$$(git -C ref/digibyte rev-parse --short HEAD)"
-	@printf '%-14s %-12s %s\n' ref/ycash \
+	@printf '%-14s %-16s %s\n' ref/ycash \
 		"$$(git -C ref/ycash describe --tags 2>/dev/null)" \
 		"$$(git -C ref/ycash rev-parse --short HEAD)"
-	@printf '%-14s %-12s %s\n' ycash-dd \
+	@printf '%-14s %-16s %s\n' ycash-dd \
 		"$$(git -C ycash-dd rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C ycash-dd rev-parse --short HEAD)"
 
-diff: ## Full fork delta: ycash-legacy...digidollar
+diff: ## Full fork delta: ycash-legacy...dev/digidollar
 	@out="$$(git -C ycash-dd diff --stat '$(DD_BASE)...$(DD_BRANCH)')"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
 	else printf '\033[2mno changes vs %s\033[0m\n' '$(DD_BASE)'; fi

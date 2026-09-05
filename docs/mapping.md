@@ -12,7 +12,7 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 |---|---|---|---|
 | DigiByte | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | Ycash | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
-| Working fork | `ycash-dd` | branch `digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
+| Working fork | `ycash-dd` | branch `dev/digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
 
 Line numbers below were read at these pins. If a pin moves, re-verify before trusting them.
 

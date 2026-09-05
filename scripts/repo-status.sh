@@ -11,7 +11,7 @@ cd "$ROOT"
 
 DIGIBYTE_PIN="${DIGIBYTE_PIN:-v9.26.5}"
 YCASH_PIN="${YCASH_PIN:-v4.5.0}"
-DD_BRANCH="${DD_BRANCH:-digidollar}"
+DD_BRANCH="${DD_BRANCH:-dev/digidollar}"
 DD_BASE="${DD_BASE:-ycash-legacy}"
 
 SHORT=0

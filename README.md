@@ -11,7 +11,7 @@ ydollar-workspace/
 ├── ref/
 │   ├── digibyte/   READ-ONLY  DigiByte @ v9.26.5   — the DigiDollar reference implementation
 │   └── ycash/      READ-ONLY  Ycash    @ v4.5.0    — the pristine target, for diffing against
-├── ycash-dd/       THE WORKING FORK — branch `digidollar` off `ycash-legacy` (= v4.5.0)
+├── ycash-dd/       THE WORKING FORK — branch `dev/digidollar` off `ycash-legacy` (= v4.5.0)
 ├── docs/
 │   ├── spec/       DigiDollar's own design docs + our Ycash adaptation spec
 │   └── mapping.md  the file-by-file, mechanism-by-mechanism crosswalk
@@ -162,7 +162,7 @@ change, say which tier it lands on and why a lower tier will not do.
 make            # list targets
 make status     # git status for all four repos, and verify the ref/ pins
 make pins       # one line per repo, machine-readable
-make diff       # the fork delta: ycash-legacy...digidollar
+make diff       # the fork delta: ycash-legacy...dev/digidollar
 make log        # commits on the fork branch beyond the baseline
 ```
 
@@ -173,7 +173,7 @@ citation in `docs/mapping.md` was written against these exact revisions.
 |---|---|---|
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
-| `ycash-dd` | branch `digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
+| `ycash-dd` | branch `dev/digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
 
 Pins are declared once at the top of the [Makefile](Makefile) and mirrored in `AGENTS.md` and
 `docs/mapping.md`. Re-pinning means updating all three.
