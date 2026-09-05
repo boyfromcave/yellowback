@@ -441,6 +441,16 @@ JSON.** Every row below has the same shape as §1–§11.
 | GUI tests attach to a regtest node through the test harness | Stock `--conf <file> --no-embedded` already attach the wallet to any node whose conf has `rpcuser`/`rpcpassword`/`rpcport` (`src/main.cpp:168-172`, `connection.cpp:647-673`); network is taken from `getinfo.testnet`, `false` on regtest (`controller.cpp:255-257`) | No new options; the Yellowback tab reads `yed_getinfo.network` for address prefixes (plan H2, H3) |
 | Release bundles the node in the same binary | YecWallet looks for `ycashd` (Linux: `zqw-ycashd` then `ycashd`) beside its executable (`connection.cpp:348-364`) | Releases of `yecwallet-dd` ship the `ycash-dd` build of `ycashd`; the wallet checks `yed_getinfo.rpcversion` and refuses a node it does not know |
 
+### Rows added while building the wallet tab (Phase 5b, 2026-09-05)
+
+| DigiByte does X (Y, mechanism M) | YecWallet equivalent Z, which lacks M | Adaptation W |
+|---|---|---|
+| `DigiDollarTab` builds seven widgets in code and switches a `QStackedWidget` to an "activation" label polled every 5 s (`ref/digibyte/src/qt/digidollartab.cpp:100-130`) | YecWallet tabs are `.ui` forms filled by `Controller` on the 20-s `getinfo` cycle (`ref/yecwallet/src/mainwindow.ui:23`, `controller.cpp:38-43`) | one `.ui` per sub-page under `yecwallet-dd/src/yellowback*.ui`; availability is a banner driven by `YellowbackController::availabilityChanged`, refreshed on the block-changed branch, not a separate timer |
+| Console tab re-added by index: `Controller::setEZcashd` tests `ui->tabWidget->widget(4) == nullptr` (`ref/yecwallet/src/controller.cpp:80-82`) | — | the Yellowback tab takes index 4, so the test becomes `indexOf(main->zcashdtab) == -1`; any further tab must use `indexOf`, never a literal index |
+| DD mint widget gates on `WalletModel` balance and in-process oracle state (`digidollarmintwidget.cpp`) | no wallet objects; YEC balance is `DataModel::getAllBalances()` (`ref/yecwallet/src/datamodel.h`) summed over `Settings::isTAddress` | gate reasons come from cached `yed_getstats`/`yed_getinfo`; the collateral figure is always `yed_estimatecollateral`, debounced, and Mint is enabled only when the estimate matches the typed amount |
+| DD redeem widget signs and broadcasts in-process | `Controller::watchTxStatus` polls on `txTimer` at `Settings::quickUpdateSpeed` = **5 s** (`ref/yecwallet/src/settings.h:125`), not 1 s as plan H4 says | pending redemptions ride the same timer (`YellowbackController::watchPending()`); the wizard's own countdown is a 1-s `QTimer`. Plan H4's "1-second mode" is really the 5-second quick mode |
+| DD widgets prompt with `QMessageBox` | `MainWindow::backupWalletDat` is private, reachable only through `ui->actionBackup_wallet_dat` (`ref/yecwallet/src/mainwindow.cpp:102`) | the tab triggers that `QAction` instead of adding a public method; the backup-nag state persists in `QSettings` |
+
 Rules for `yecwallet-dd`, mirroring rules 2, 6 and 7 for the node: work only on `feature/digidollar`
 off `yecwallet-legacy`; naming follows AGENTS.md rule 6 (Yellowback for the system, YED for amounts, `yed_*` RPCs); do not restructure `Controller`, `Connection` or
 `MainWindow` while adding the tab — add files, append to lists, hook into the two existing refresh

@@ -1624,19 +1624,19 @@ header is `src/yellowback/math.h`, not `amount.h`, because a quoted `#include "a
       `contrib/ydollar/` → `contrib/yellowback/`, the CI workflow file, and in `yecwallet-dd` the
       `ydollar=1` conf line → `yellowback=1`, `YDollarController` → `YellowbackController`,
       `docs/ydollar.md` → `docs/yellowback.md`, RPC names `yd_*` → `yed_*`.
-- [ ] `view.h` with in-memory implementation; `state.cpp` implementing §3.7 and §3.8 over the
+- [x] `view.h` with in-memory implementation; `state.cpp` implementing §3.7 and §3.8 over the
       view; `Verdict` type with stable reason strings (reuse DigiByte's token names where they
       exist: `bad-mint-lock-tier-duration`, `minting-blocked-during-err`, `bad-oracle-price`,
       `dd-input-amounts-unknown` → `yed-input-unknown`).
-- [ ] Unit tests: synthetic block sequences for every rule; apply/undo byte-identity for every
+- [x] Unit tests: synthetic block sequences for every rule; apply/undo byte-identity for every
       sequence; price age boundary (48 vs 49 blocks); in-block chaining; anchor custody break.
-- [ ] `db.cpp` on `CDBWrapper` with per-block batch, `Undo`, undo pruning; `index.cpp` with
+- [x] `db.cpp` on `CDBWrapper` with per-block batch, `Undo`, undo pruning; `index.cpp` with
       `ChainTip` handling, idempotence rules, exception boundary, `SyncToChain`, unhealthy flag,
       `-reindex-yellowback`, `-reindex` (start-empty) behaviour, `-prune` refusal, genesis-anchor
       check, `synced` flag, state hash.
-- [ ] `experimental_features` flag; `init.cpp` wiring; `rpc/register.h`; `src/rpc/yellowback.cpp`
+- [x] `experimental_features` flag; `init.cpp` wiring; `rpc/register.h`; `src/rpc/yellowback.cpp`
       node RPCs including `yed_getstatehash`; `rpc/client.cpp` conversions.
-- [ ] `qa/rpc-tests/test_framework/yellowback_util.py`: Ycash branch IDs (`YCASH 0x374d694f`,
+- [x] `qa/rpc-tests/test_framework/yellowback_util.py`: Ycash branch IDs (`YCASH 0x374d694f`,
       `BLOSSOM 0x8e471bd6`, `HEARTWOOD 0x66314da3`, `CANOPY 0x19bd2d2f`) and
       `yellowback_node_args(extra)` = six `-nuparams` at height 1 (Overwinter `5ba81b19`, Sapling
       `76b809bb`, Ycash, Blossom, Heartwood, Canopy — regtest activates none by default,
@@ -1650,7 +1650,7 @@ header is `src/yellowback/math.h`, not `amount.h`, because a quoted `#include "a
       the anchor, B2); `fund_genesis_anchor` (returns `txid:0`, script and block height for
       `-yellowbackstartheight` / `-yellowbackgenesisanchor` / `-yellowbackgenesisroster`, C2);
       `restart_with_yellowback(nodes, ...)`; `publish_price` (via `yed_createpricetx`, B1).
-- [ ] `qa/rpc-tests/yellowback_index.py`: three regtest nodes started **without** `-yellowback`; test
+- [x] `qa/rpc-tests/yellowback_index.py`: three regtest nodes started **without** `-yellowback`; test
       creates a 2-of-3 anchor with `addmultisigaddress` + `signrawtransaction`, mines it, restarts
       the nodes with `-yellowback -yellowbackstartheight -yellowbackgenesisanchor -yellowbackgenesisroster`
       (C2), publishes prices (one with a confirmed refill absorbed whole, C6; one spending an
@@ -1664,6 +1664,15 @@ header is `src/yellowback/math.h`, not `amount.h`, because a quoted `#include "a
 
 Exit: all of the above green; `git diff --stat ycash-legacy...feature/digidollar` shows `main.cpp`
 untouched.
+**Done 2026-09-05** (`ycash-dd` commits "Yellowback Phase 2 (part 1)" and "(part 2)"); 28 Boost cases
+and `yellowback_index.py` green; `main.cpp` untouched. Two notes: (i) the reorg in
+`yellowback_index.py` is driven by the framework's `split_network`/`join_network` (two competing
+branches, the longer wins) rather than `invalidateblock`/`reconsiderblock`, because a manually
+invalidated block's price transaction is resurrected into the invalidating node's mempool and
+conflicts with any replacement price; the state-hash assertions are the same. (ii)
+`yed_validaterawtransaction` runs the §3.7 dry run now; the §3.8 RED checks are added with
+`policy.cpp` in Phase 3, which is where their inputs (`CCoinsViewMemPool`, the wallet) appear.
+The inherited runner also named the daemon `src/zcashd`; it now names `src/ycashd` (same class as G1).
 
 ### Phase 3 — Wallet: mint, send, redeem, co-sign (≈ 1,000 lines)
 
