@@ -139,9 +139,12 @@ Full detail, with `file:line` citations at both pins:
 2. **[docs/mapping.md](docs/mapping.md)** — the crosswalk. Read the relevant row *before* porting
    any symbol. It exists to stop one specific failure: grepping `ref/digibyte` for a DigiDollar
    symbol and transplanting it into a Ycash file with incompatible semantics.
-3. **[docs/spec/ydollar-adaptation-spec.md](docs/spec/ydollar-adaptation-spec.md)** — the design
+3. **[docs/why-no-consensus-change.md](docs/why-no-consensus-change.md)** — the plain-language
+   rationale for the Tier-0 decision: how every DigiDollar feature maps onto rules Ycash already
+   enforces, and the one rule (burn-before-release) that a federation enforces instead.
+4. **[docs/spec/ydollar-adaptation-spec.md](docs/spec/ydollar-adaptation-spec.md)** — the design
    we are writing. Currently a skeleton of open decisions.
-4. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
+5. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
 
 Before porting anything, answer four questions in writing:
