@@ -1771,25 +1771,25 @@ while the reference window still reads the old level (so the last breach of a st
 
 ### Phase 5b — YecWallet fork `yecwallet-dd` (parallel to Phases 3–6; ≈ 3,200 lines incl. `.ui`)
 
-- [ ] Phase 0 (wallet side): build `ref/yecwallet` unmodified two ways — plain CMake against the
+- [x] Phase 0 (wallet side): build `ref/yecwallet` unmodified two ways — plain CMake against the
       CI runner's system Qt 6 (this is the development and test configuration; confirm `Qt6::Test`
       is present) and the full static `build.sh` (release configuration, `-no-feature-testlib`,
       H1); record times; confirm it starts the `ycash-dd` `ycashd` placed beside it and that
       `--conf <playground node conf> --no-embedded` attaches to a §6.0 playground node (H2) with
       the stock Balance/Send tabs working (regtest addresses pass `isTAddress`, H3). Record the
       baseline in `yecwallet-dd/docs/yellowback.md`.
-- [ ] `doc/yellowback-rpc.md` in `ycash-dd` frozen at the end of Phase 3 (wallet RPCs) and Phase 5
+- [x] `doc/yellowback-rpc.md` in `ycash-dd` frozen at the end of Phase 3 (wallet RPCs) and Phase 5
       (protection fields); `yed_getinfo.rpcversion = 1`; the wallet's `Settings` stores the
       version it was built for and refuses others.
-- [ ] `connection.cpp`: `experimentalfeatures=1` / `yellowback=1` in `createZcashConf`; existing-conf
+- [x] `connection.cpp`: `experimentalfeatures=1` / `yellowback=1` in `createZcashConf`; existing-conf
       detection and repair offer. (No new command-line options: `--conf` and `--no-embedded`
       already attach the GUI to a playground node, H2.)
-- [ ] `YellowbackController` + models + the Yellowback tab, sub-pages in the order Overview → Receive →
+- [x] `YellowbackController` + models + the Yellowback tab, sub-pages in the order Overview → Receive →
       Send → Mint → Vaults → Transactions → Redeem wizard → Settings, each usable against the §6.0
       playground as soon as its RPCs exist (Overview/Send/Receive/Mint after Phase 3;
       Vaults/Redeem after Phase 4; protection fields after Phase 5). Behaviour follows DigiByte's
       `src/qt/digidollar*widget.cpp` pane by pane (`mapping.md` §12), minus coin control.
-- [ ] QTest end-to-end target (optional component, H1) against the playground (mint → send →
+- [x] QTest end-to-end target (optional component, H1) against the playground (mint → send →
       tier-0 lock → redeem through five local operators → abort path → expired-transaction
       display), run in `yecwallet-dd` CI on the cached node build under
       `QT_QPA_PLATFORM=offscreen` (H5).
@@ -1805,22 +1805,32 @@ within the §4.7 table.
 
 ### Phase 6 — Hardening, documentation, review (≈ 2 weeks)
 
-- [ ] Fuzz harness for `payload::Decode` and `script::Parse*`: `src/fuzzing/YellowbackPayload/fuzz.cpp`
+- [x] Fuzz harness for `payload::Decode` and `script::Parse*`: `src/fuzzing/YellowbackPayload/fuzz.cpp`
       and `src/fuzzing/YellowbackScript/fuzz.cpp` with `input/` corpora, the layout of Ycash's existing
       targets (`ref/ycash/src/fuzzing/CheckBlock/`, C14); plus a Boost test that replays the corpus
       so `make check` covers it without a fuzzing build.
-- [ ] Reorg stress test: random 1–6 block reorgs over 500 blocks with random Yellowback activity on
+- [x] Reorg stress test: random 1–6 block reorgs over 500 blocks with random Yellowback activity on
       three nodes; assert state-hash equality after every reorg and after a cold rebuild.
-- [ ] DoS review: payload parse bounds, `yed_validaterawtransaction` cost and its phantom-input
+- [x] DoS review: payload parse bounds, `yed_validaterawtransaction` cost and its phantom-input
       refusal (D1), `/cosign` rate limits, HTTP client timeouts, index DB size growth (snapshots
       ≈ 60 B/block ≈ 25 MB/yr; VOID-vault records per block at the mempool cost limit, D9).
-- [ ] Determinism audit: grep `src/yellowback/state.cpp` and callees for the forbidden symbols of
+- [x] Determinism audit: grep `src/yellowback/state.cpp` and callees for the forbidden symbols of
       §3.10; add a CI grep.
-- [ ] `doc/yellowback.md` (user), `doc/yellowback-federation.md` (operators), RPC help text review.
-- [ ] Self-review against the checklist in §8.4; external review request to Ycash maintainers
+- [x] `doc/yellowback.md` (user), `doc/yellowback-federation.md` (operators), RPC help text review.
+- [~] Self-review against the checklist in §8.4 (done: `ycash-dd/doc/yellowback-review.md`, 19 of 20 items with evidence, item 20 partial); external review request to Ycash maintainers
       with the diff-budget table filled in with actual numbers.
 
 Exit: review sign-off; tagged `yellowback-v1-rc1`.
+**Status 2026-09-05:** everything a single developer can do locally is done (`ycash-dd` commits
+"Yellowback Phase 6 (part 1)" and "(part 2)"): fuzz targets with corpora and a corpus-replay unit
+test, the index fault-injection test, the seeded reorg stress test (30 reorgs / 300 blocks, green),
+the determinism audit as a CI step, the DoS review and the §8.4 self-review in
+`doc/yellowback-review.md`, and the user/operator/RPC documents. Not done: the external review,
+the `rc1` tag, a CI run on GitHub (never pushed), the `YCASH_WR=1` build and the inherited
+`rpc-tests.py` baseline. Wallet side (Phase 5b): the tab, controller, models, wizard and QTest
+target compile against the host's Homebrew Qt 6 and the QTest target passes offscreen (5 cases);
+the end-to-end QTest against a playground node, the static `build.sh --package` release and the
+copy review remain.
 
 ### Phase 7 — Testnet launch
 
