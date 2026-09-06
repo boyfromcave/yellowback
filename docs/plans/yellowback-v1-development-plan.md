@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) v1 — Development Plan
 
-**Status:** DECIDED — revision 15 (revision 14 plus Sapling funding of mints and Sapling collateral destinations, §0). Revisions 3–6 were re-audited claim-by-claim against the
+**Status:** DECIDED — revision 16 (revision 15 plus D23, other assets reserved but not built, §0). Revisions 3–6 were re-audited claim-by-claim against the
 pinned trees and the code paths in `ycash-dd` that every rule, hook and RPC depends on (validation
 interface, init and shutdown, wallet spend tracking, coin selection, rebroadcast and encryption,
 raw-transaction and multisig RPCs, transaction lookup, policy, script interpreter, coins view,
@@ -240,6 +240,12 @@ The workspace now holds it as a third read-only reference (`ref/yecwallet` @ `v4
 "an external application to be identified" to concrete files, hooks and a diff budget in
 `yecwallet-dd`; D21 is restated; §6.0 gains the wallet's build and playground test; §10 and §11
 are updated. The node-side plan (§1–§4.6, §5, §6 Phases 0–5) is unchanged.
+
+### Revision 16 — Other assets reserved, not built (2026-09-06)
+
+| # | Finding | Kind | Resolution |
+|---|---|---|---|
+| I3 | The payload's `type` byte had three YED codes and one federation code with no statement of what the remaining values are for, and nothing said what happens when a future payload spends a v1 YED output (a v1 node burns it via IN-1..3). | precision | `type` partitioned (`0x01–0x0F` YED, `0x10–0x1F` federation, `0x20–0xFF` reserved); the no-mixing constraint stated in §3.2; no asset identifier added. Decision record D23; §10 row. Nothing in code changes. |
 
 ### Revision 15 — Sapling funding and destinations (2026-09-05)
 
@@ -689,6 +695,35 @@ against one market being wrong; `min_venues` is the guard for that, and the vola
 (§3.6) is the guard behind both. Unit tests: `contrib/yellowback/test_yellowback_fed.py` against
 captured replies. Runbook: `ycash-dd/doc/yellowback-federation.md` §3.
 
+### D23. Other assets on the overlay (2026-09-06)
+
+Question raised 2026-09-06: could the overlay carry assets other than YED, is that possible as-is,
+and should v1 be changed to allow it. Options: (a) an asset-identifier byte in the payload header
+now · (b) reserve part of the `type` namespace and state the one safety constraint, build nothing ·
+(c) design multi-asset state (`Tokens` keyed by asset, per-asset totals and rosters) now.
+
+**Decision: (b).** v1 is single-asset by construction: no asset field in the header (§3.2),
+`Tokens` maps an outpoint to cents, totals are scalar, and MINT is specifically a collateralised
+dollar priced by the federation. Nothing else can be issued today, and the forward-compatibility
+rule (§3.2) guarantees a v1 node ignores — never mis-parses — anything that is not v1 YED. A later
+asset is therefore an **overlay software upgrade, never a Ycash network upgrade**, and takes one of
+three shapes: a second collateralised peg (same state machine, different price feed, roster,
+parameters and address version bytes; cleanest as a second overlay instance with its own magic bytes
+and index directory, sharing no state — the only structural obstacle is that the index and wallet
+objects are singletons, `init.cpp`), a simple uncollateralised token (a new payload type, a far
+simpler MINT), or a wrapped external asset (custodial; a different trust model, out of scope).
+
+What (b) fixes in writing: the `type` partition (`0x20–0xFF` reserved) and the **no-mixing
+constraint** — a transaction with a payload of one asset or version must never spend a token output
+of another, because a v1 node applies IN-1..3 to the input and records a burn. That constraint is
+the one thing a future designer could get wrong, and the one-`OP_RETURN` rule only makes mixing
+awkward, not impossible.
+
+What (a) would cost and why it was rejected: one header byte in every payload, TRANSFER's recipient
+count falls from 15 to 14 (`6 + 5·count ≤ 80`), and it buys nothing until a second asset exists — at
+which point separate magic bytes isolate the assets better than a shared header would. (c) was
+rejected as speculative work on consensus-adjacent state for a product that does not exist.
+
 ## 3. Yellowback v1 protocol (normative)
 
 Everything in this section is deterministic given the block sequence and the parameters. Words in
@@ -781,6 +816,17 @@ Malformed payload (bad magic/version/type, short/long body, `vout` out of range,
 `vout` pointing at the `OP_RETURN`, `cents == 0`) ⇒ the transaction is treated as **non-Yellowback**
 for outputs and as an ordinary spend for inputs (**IN-1..3**). Unknown `type` ⇒ same. This is the
 forward-compatibility rule: a future version bump is ignored by v1 nodes, never mis-parsed.
+
+**Type namespace and other assets (D23).** The `type` byte is partitioned: `0x01–0x0F` are YED
+transaction types (`0x01`–`0x03` assigned), `0x10–0x1F` are federation types (`0x10` assigned),
+and `0x20–0xFF` are **reserved for future assets or payload families**. v1 nodes treat every
+unassigned code as unknown (non-Yellowback, above); no reserved code may be given a meaning that a
+v1 node would have to understand. One constraint binds any future asset or version: **a transaction
+carrying a payload of one asset (or one version) must never spend a token output of another.** A v1
+node that sees such a spend applies **IN-1..3** to the YED input and records a burn, so mixing is
+not a compatibility question but a loss of funds. The overlay does not carry an asset identifier in
+v1; a second asset is a second overlay instance with its own magic bytes, index, parameters, price
+roster and address prefix (D23).
 
 One more encoding rule, for determinism: a transaction with **more than one** `OP_RETURN` output
 (non-standard, but a miner may include it) is non-Yellowback regardless of contents. The decoder is a
@@ -2242,6 +2288,7 @@ price feed, which is exactly DigiDollar's trust model.
 | Qt GUI: seven DigiDollar tabs in-process over `WalletModel` (`src/qt/digidollar*`, ≈ 10,400 lines) | one Yellowback tab with the same seven functions in **YecWallet** (`yecwallet-dd`, Qt 6), over the `yed_*` RPC contract; coin control dropped | Ycash ships no GUI in the node; YecWallet is a separate RPC-driven application (D21, §4.7, `mapping.md` §12) |
 | `txindex=1` required | not required | index is self-contained |
 | Transfers require confirmed inputs at consensus | wallet-enforced; state machine allows in-block chaining | determinism without a mempool rule |
+| Single asset, no type-namespace reservation | single asset; `type` `0x20–0xFF` reserved, no-mixing constraint stated | D23; a later asset is an overlay upgrade, not a network upgrade |
 
 ---
 

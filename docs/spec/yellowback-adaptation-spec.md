@@ -109,6 +109,17 @@ Malformed payload (bad magic/version/type, short/long body, `vout` out of range,
 for outputs and as an ordinary spend for inputs (**IN-1..3**). Unknown `type` ⇒ same. This is the
 forward-compatibility rule: a future version bump is ignored by v1 nodes, never mis-parsed.
 
+**Type namespace and other assets (D23).** The `type` byte is partitioned: `0x01–0x0F` are YED
+transaction types (`0x01`–`0x03` assigned), `0x10–0x1F` are federation types (`0x10` assigned),
+and `0x20–0xFF` are **reserved for future assets or payload families**. v1 nodes treat every
+unassigned code as unknown (non-Yellowback, above); no reserved code may be given a meaning that a
+v1 node would have to understand. One constraint binds any future asset or version: **a transaction
+carrying a payload of one asset (or one version) must never spend a token output of another.** A v1
+node that sees such a spend applies **IN-1..3** to the YED input and records a burn, so mixing is
+not a compatibility question but a loss of funds. The overlay does not carry an asset identifier in
+v1; a second asset is a second overlay instance with its own magic bytes, index, parameters, price
+roster and address prefix (D23).
+
 One more encoding rule, for determinism: a transaction with **more than one** `OP_RETURN` output
 (non-standard, but a miner may include it) is non-Yellowback regardless of contents. The decoder is a
 bounds-checked reader over a `std::vector<unsigned char>`; it never uses `CDataStream` so it cannot
