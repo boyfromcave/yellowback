@@ -178,15 +178,24 @@ assigned YED); the wallet always produces this shape.
 
 ### 3.4 Transaction templates (what the wallet builds)
 
-**MINT** (`yed_mint <cents> <tier>`):
+**MINT** (`yed_mint <cents> <tier> [from]`):
 
 | Index | Output | Value |
 |---|---|---|
-| vin[*] | wallet YEC inputs (never YED-bearing, never vaults) | |
+| vin[*] | wallet YEC inputs (never YED-bearing, never vaults); **or none** when the collateral is funded from a `ys1…` address (below) | |
 | vout[0] | P2SH(vaultScript) | exactly `requiredZat(cents, tier, Snapshots[evalHeight])` (§3.6), rounded up to a multiple of 1,000 zat |
 | vout[1] | P2PKH(owner's fresh key) — receives all minted cents | `TOKEN_VALUE` |
 | vout[2] | `OP_RETURN` MINT payload | 0 |
-| vout[3] | YEC change (optional) | |
+| vout[3] | YEC change (optional; transparent funding only) | |
+
+**Funding source** (`from`, I2): omitted — any confirmed transparent output of the wallet
+(smallest-first, F3); an `s1…` address — only that address's confirmed outputs; a `ys1…` address
+— the collateral, the token value and the fee come from that address's Sapling notes in the
+**same** transaction: `vShieldedSpend` over the selected notes (largest-first, as `z_sendmany`;
+at most `MAX_SAPLING_SPENDS` = 20), `valueBalance = vout[0].nValue + TOKEN_VALUE + fee`, no
+transparent inputs, and the change is a Sapling output back to the funding address. The three
+transparent outputs and the payload are identical in every case, so MINT-1..7 do not see the
+difference (TX-0, D13).
 
 With `indexTip` the index's synced height and `L = MINT_EVAL_LAG` (default 2, C4):
 `evalHeight = indexTip − L`; `nExpiryHeight = evalHeight + MINT_WINDOW` (so the mint cannot
@@ -203,12 +212,21 @@ revision 2 is gone (B3), and a reorg must be longer than `L` blocks to disturb t
 outputs: one `TOKEN_VALUE` P2PKH per recipient, one for YED change, `OP_RETURN` TRANSFER
 payload assigning cents to those vouts, YEC change.
 
-**REDEEM** (`yed_redeem <vaultTxid>`): `vin[0]` = vault outpoint; `vin[1..]` = YED inputs
+**REDEEM** (`yed_redeem <vaultTxid> [to]`): `vin[0]` = vault outpoint; `vin[1..]` = YED inputs
 totalling ≥ `requiredBurn` (§3.7). **No YEC inputs** (C10): every YED input carries
-`TOKEN_VALUE` = 10 × `YELLOWBACK_FEE` and a VOID release has the collateral itself. Outputs: collateral to
-the owner's address (value = vault value + surplus token value − `YELLOWBACK_FEE` − `TOKEN_VALUE` × number
-of YED change outputs), optional YED change (`TOKEN_VALUE`) with a REDEEM payload
+`TOKEN_VALUE` = 10 × `YELLOWBACK_FEE` and a VOID release has the collateral itself. Outputs: collateral
+(value = vault value + surplus token value − `YELLOWBACK_FEE` − `TOKEN_VALUE` × number of YED change
+outputs) to the **collateral destination**, optional YED change (`TOKEN_VALUE`) with a REDEEM payload
 (`count = 0` if none, but the payload is still present so the transaction is self-describing).
+
+**Collateral destination** (`to`, I2): omitted — a fresh transparent key of the wallet at
+`vout[0]`; an `s1…` address — that P2PKH at `vout[0]`; a `ys1…` address — a single Sapling
+output (`vShieldedOutput`, `valueBalance = −collateral`) encrypted under the wallet's
+`ovkForShieldingFromTaddr` key so it is recoverable from the seed, as `z_sendmany` does for
+t→z; the YED change, if any, is then `vout[0]` and the payload `vout[1]`. The vault input and
+the YED inputs are added to `TransactionBuilder` **unsigned** and signed after `Build()` with the
+same code as the transparent shape — the ZIP-243 digest does not cover `scriptSig`s, so the
+binding signature stays valid (D9).
 
 **PRICE** (federation coordinator, built by `yed_createpricetx`): `vin[0]` = current anchor;
 at most one refill input, **absorbed entirely into the new anchor** (no change output, C6);
@@ -315,9 +333,10 @@ and, if it was ACTIVE, subtracts its `collateralZat` from `Totals.collateralZat`
 **IN-3** After outputs are processed, `burned = yedIn − yedOut`; `Totals.supplyCents −= burned`;
 `burned` is recorded on every vault closed by this transaction (split is informational).
 
-**TX-0** A transaction with any shielded component (`vJoinSplit`, `vShieldedSpend`,
-`vShieldedOutput` non-empty or `valueBalance ≠ 0`) or that is a coinbase has `yedOut = 0` regardless
-of payload.
+**TX-0** A coinbase has `yedOut = 0` regardless of payload (and registers no vault, not even
+VOID). Shielded components (`vJoinSplit`, `vShieldedSpend`, `vShieldedOutput`, `valueBalance`)
+play no part in any rule: they belong to the YEC side of the transaction (D13, I1). YED can still
+only be assigned to transparent outputs, because an assignment names a `vout` index.
 
 **MINT-1** payload MINT, well-formed. **MINT-2** `tier ∈ {0..4}`, `MIN_MINT ≤ cents ≤ MAX_MINT`,
 `lockHeight < LOCKTIME_THRESHOLD`, `tierBlocks ≤ lockHeight − H ≤ tierBlocks + MINT_WINDOW`
@@ -380,8 +399,12 @@ the rules §9 would promote to consensus.
 - **RED-1** `vin[0]` spends an ACTIVE or VOID vault; the transaction spends no other vault.
 - **RED-2** `nLockTime ≥ vault.lockHeight` and `indexTip ≥ vault.lockHeight`.
 - **RED-3** `yedIn − yedOut ≥ requiredBurn(vault.mintedCents, health(indexTip))` (0 for VOID).
-- **RED-4** the transaction is transparent-only, standard, and pays a fee in
-  `[YELLOWBACK_FEE, 100 × YELLOWBACK_FEE]`. `IsStandardTx(tx, reason, Params(), tip + 1)` and
+- **RED-4** the transaction has no `vJoinSplit` and no `vShieldedSpend` (a co-signer policy, not
+  a state rule — I1); `vShieldedOutput` is allowed, so the collateral may go straight to a `ys1…`
+  address (I2), and `valueBalance ≤ 0` then; the transaction is standard and pays a fee in
+  `[YELLOWBACK_FEE, 100 × YELLOWBACK_FEE]`, computed as `Σ transparent inputs − GetValueOut()`
+  (`GetValueOut` already counts a negative `valueBalance` as an output,
+  `ref/ycash/src/primitives/transaction.cpp`). `IsStandardTx(tx, reason, Params(), tip + 1)` and
   `AreInputsStandard(tx, view, branchId)` run against a `CCoinsViewCache` built exactly as
   `signrawtransaction` builds it — `pcoinsTip` behind `CCoinsViewMemPool` under `cs_main`
   (`ref/ycash/src/rpc/rawtransaction.cpp:906-921`) — because the fee needs every input's value and

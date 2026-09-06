@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) v1 — Development Plan
 
-**Status:** DECIDED — revision 13 (revision 12 plus the Yellowback/YED rebrand, §0). Revisions 3–6 were re-audited claim-by-claim against the
+**Status:** DECIDED — revision 15 (revision 14 plus Sapling funding of mints and Sapling collateral destinations, §0). Revisions 3–6 were re-audited claim-by-claim against the
 pinned trees and the code paths in `ycash-dd` that every rule, hook and RPC depends on (validation
 interface, init and shutdown, wallet spend tracking, coin selection, rebroadcast and encryption,
 raw-transaction and multisig RPCs, transaction lookup, policy, script interpreter, coins view,
@@ -241,6 +241,18 @@ The workspace now holds it as a third read-only reference (`ref/yecwallet` @ `v4
 `yecwallet-dd`; D21 is restated; §6.0 gains the wallet's build and playground test; §10 and §11
 are updated. The node-side plan (§1–§4.6, §5, §6 Phases 0–5) is unchanged.
 
+### Revision 15 — Sapling funding and destinations (2026-09-05)
+
+| # | Finding | Kind | Resolution |
+|---|---|---|---|
+| I2 | With I1 in place nothing protocol-side stopped a mint funded from a `ys1…` address or a redemption paying its collateral to one, and the product owner made both a **v1 requirement**: a user whose YEC is shielded must not have to unshield to a transparent address in a separate, visible step, and released collateral must be able to return to the shielded pool directly. The v1 wallet builder (D9) was transparent-only and `TransactionBuilder` has no raw-script output, no unsigned input and no lock-time setter (`ref/ycash/src/transaction_builder.h:129-180`). | **requirement** | `yed_mint` gains `[from]` (omitted / `s1…` / `ys1…`) and `yed_redeem` gains `[to]` (omitted / `s1…` / `ys1…`), §3.4. The Sapling shapes are built with `TransactionBuilder` plus a three-method additive extension in `src/transaction_builder.{h,cpp}` — `AddTransparentOutput(const CScript&, CAmount)`, `AddTransparentInputUnsigned(COutPoint, CAmount, nSequence)`, `SetLockTime(uint32_t)` — the fork's first logic edit outside `src/yellowback/` (D9, `mapping.md`). Proving runs with no lock held: the RPCs build under `cs_main`/`cs_wallet`/`cs_yellowback`, release, `Build()`, then re-lock to sign the vault and YED inputs and commit, the `z_sendmany` pattern. RED-4 now allows `vShieldedOutput` and still refuses spends and JoinSplits; SUB-1 compares the shielded fields and `bindingSig` byte for byte. The transparent shapes are unchanged. (D9, D13, §3.4, §3.8, §4.4, §4.5, §4.7, §6 Phase 3c) |
+
+### Revision 14 — TX-0 narrowed to the coinbase (2026-09-05)
+
+| # | Finding | Kind | Resolution |
+|---|---|---|---|
+| I1 | D13 and TX-0 bundled two different things. That YED can only sit on transparent outputs is *structural*: a payload assigns cents to `vout` indexes and a Sapling output has none (`ref/ycash/src/primitives/transaction.h:553-558`), so "shielded YED" is undefined, not forbidden. But TX-0 went further and voided/burned any payload-carrying transaction whose **YEC side** touched the shielded pool — a mint whose collateral is unshielded in the same transaction, a transfer paying its fee from `ys1…`, a redemption sending collateral straight to `ys1…`. In all three the accounting reads only transparent inputs, `vout` indexes and the `OP_RETURN`; MINT-5 reads `vout[0].nValue`, which is visible whatever funded it; supply and collateral stay auditable. The real reason for the ban was D9's hand-built transparent builder, a wallet cost. Left as a *state* rule it burned a well-formed TRANSFER for a harmless shape, and state rules are the hardest thing to change later (every Yellowback node must agree on verdicts; a later relaxation changes reindex results). | **user-loss** / design | TX-0 now covers the coinbase only; the state ignores `vJoinSplit`, `vShieldedSpend`, `vShieldedOutput` and `valueBalance`. The v1 wallet builder stays transparent-only (D9); RED-4 stays as co-signer *policy* (relaxable by a federation release without touching state); `yed_createpricetx` peers keep refusing shielded PRICE shapes for the same reason. D13 is rewritten to say what is structural and what is policy. A one-transaction `ys1…`-funded mint is now a wallet feature, not a protocol change (built in revision 15, I2). (D13, §3.7, §3.8, §4.5) |
+
 ### Revision 13 — Yellowback/YED rebrand (2026-09-05)
 
 The working name *YDollar* / `ydollar` / `yd_` / `YD` is replaced throughout the plan, the spec
@@ -476,6 +488,18 @@ no fee-estimation loop; smallest-first input selection as `find_utxos` does; `Si
 P2PKH inputs and the manual sighash for the vault input. Cost: ≈ 400 lines in
 `src/yellowback/txbuilder.cpp` and `wallet.cpp`; zero lines in `src/wallet/`.
 
+**Sapling shapes (revision 15, I2).** A mint funded from a `ys1…` address and a redemption paying
+its collateral to one need Sapling spend/output proofs and the binding signature, which only
+`TransactionBuilder` produces. Its two limitations for Yellowback — no raw-script output for the
+`OP_RETURN`, and `Build()` signing every transparent input through the keystore, which cannot
+solve the vault script — are removed by a three-method additive extension in
+`src/transaction_builder.{h,cpp}` (raw-script output, unsigned transparent input with an explicit
+`nSequence`, lock-time setter; `Build()` skips unsigned inputs). Because the ZIP-243 digest covers
+`hashPrevouts`, `hashSequence` and `hashOutputs` but never a `scriptSig`, the vault and YED inputs
+are signed *after* `Build()` by the same code the transparent shape uses, and the binding and
+spend-auth signatures remain valid. This is the fork's first logic edit outside `src/yellowback/`
+(recorded in `mapping.md`); it is wallet code in `libbitcoin_common`, not consensus.
+
 ### D10. Address format
 
 **Decision: a Yellowback address is Base58Check(version ‖ 20-byte key hash) with version bytes
@@ -506,10 +530,32 @@ anywhere).
 
 ### D13. Shielded pools
 
-**Decision:** Yellowback transactions must be fully transparent: empty `vShieldedSpend`,
-`vShieldedOutput`, `vJoinSplit`, and `valueBalance == 0` (`ref/ycash/src/primitives/transaction.h:553-558`).
-A Yellowback payload on a transaction with any shielded component is invalid (mint void, transfer
-burns). Shielded YED is out of scope (`mapping.md` §6).
+**Decision (revised in revision 14, I1):** YED lives only on transparent outputs, and that is
+structural rather than a rule: a payload assigns cents to `vout` indexes, and a Sapling output
+has no index, no script and no amount consensus can see (`ref/ycash/src/primitives/transaction.h:553-558`).
+Shielded YED is therefore undefined in v1 and out of scope (`mapping.md` §6; it would be a
+per-asset value-pool commitment, a research project, not a port).
+
+The **YEC side** of a Yellowback transaction is not restricted by the state rules. The index
+reads transparent inputs, `vout` indexes and the `OP_RETURN`, and MINT-5 reads `vout[0].nValue`,
+which is visible whatever funded it, so a transaction with `vShieldedSpend`, `vShieldedOutput`,
+`vJoinSplit` or `valueBalance ≠ 0` is accounted exactly as a transparent one (TX-0 covers the
+coinbase only). What *is* transparent-only in v1 is the wallet: `src/yellowback/txbuilder.cpp`
+builds transparent transactions by hand (D9) and never adds Sapling components, so a user whose
+YEC is shielded unshields to a transparent address first and mints in a second transaction.
+RED-4 keeps redemptions transparent-only as co-signer policy, which a federation release can relax
+without a state change. Mixed shapes — a mint whose collateral is unshielded in the same
+transaction, a fee paid from `ys1…`, collateral redeemed straight to `ys1…` — are wallet features
+for a later release, at zero protocol cost (follow-up note below).
+
+**Sapling funding and destinations (revision 15, I2) — a v1 requirement.** Users may mint
+straight from a `ys1…` address and may have collateral returned straight to one: `yed_mint <cents>
+<tier> [from]` and `yed_redeem <vaultTxid> [to]` (§3.4). YED itself stays on transparent outputs
+(structural, above); only the **YEC side** is shielded. What a mint from `ys1…` reveals on chain
+is the collateral amount and the vault, which a transparent mint reveals too; what it hides is the
+funding address and the prior unshielding hop. A shielded collateral destination hides where the
+collateral went after release. Sprout (`zc…`) addresses are not supported (Ycash's `z_sendmany`
+treats them as legacy; a Sprout shape would need JoinSplits, which RED-4 refuses).
 
 ### D14. Activation
 
@@ -769,15 +815,24 @@ assigned YED); the wallet always produces this shape.
 
 ### 3.4 Transaction templates (what the wallet builds)
 
-**MINT** (`yed_mint <cents> <tier>`):
+**MINT** (`yed_mint <cents> <tier> [from]`):
 
 | Index | Output | Value |
 |---|---|---|
-| vin[*] | wallet YEC inputs (never YED-bearing, never vaults) | |
+| vin[*] | wallet YEC inputs (never YED-bearing, never vaults); **or none** when the collateral is funded from a `ys1…` address (below) | |
 | vout[0] | P2SH(vaultScript) | exactly `requiredZat(cents, tier, Snapshots[evalHeight])` (§3.6), rounded up to a multiple of 1,000 zat |
 | vout[1] | P2PKH(owner's fresh key) — receives all minted cents | `TOKEN_VALUE` |
 | vout[2] | `OP_RETURN` MINT payload | 0 |
-| vout[3] | YEC change (optional) | |
+| vout[3] | YEC change (optional; transparent funding only) | |
+
+**Funding source** (`from`, I2): omitted — any confirmed transparent output of the wallet
+(smallest-first, F3); an `s1…` address — only that address's confirmed outputs; a `ys1…` address
+— the collateral, the token value and the fee come from that address's Sapling notes in the
+**same** transaction: `vShieldedSpend` over the selected notes (largest-first, as `z_sendmany`;
+at most `MAX_SAPLING_SPENDS` = 20), `valueBalance = vout[0].nValue + TOKEN_VALUE + fee`, no
+transparent inputs, and the change is a Sapling output back to the funding address. The three
+transparent outputs and the payload are identical in every case, so MINT-1..7 do not see the
+difference (TX-0, D13).
 
 With `indexTip` the index's synced height and `L = MINT_EVAL_LAG` (default 2, C4):
 `evalHeight = indexTip − L`; `nExpiryHeight = evalHeight + MINT_WINDOW` (so the mint cannot
@@ -794,12 +849,21 @@ revision 2 is gone (B3), and a reorg must be longer than `L` blocks to disturb t
 outputs: one `TOKEN_VALUE` P2PKH per recipient, one for YED change, `OP_RETURN` TRANSFER
 payload assigning cents to those vouts, YEC change.
 
-**REDEEM** (`yed_redeem <vaultTxid>`): `vin[0]` = vault outpoint; `vin[1..]` = YED inputs
+**REDEEM** (`yed_redeem <vaultTxid> [to]`): `vin[0]` = vault outpoint; `vin[1..]` = YED inputs
 totalling ≥ `requiredBurn` (§3.7). **No YEC inputs** (C10): every YED input carries
-`TOKEN_VALUE` = 10 × `YELLOWBACK_FEE` and a VOID release has the collateral itself. Outputs: collateral to
-the owner's address (value = vault value + surplus token value − `YELLOWBACK_FEE` − `TOKEN_VALUE` × number
-of YED change outputs), optional YED change (`TOKEN_VALUE`) with a REDEEM payload
+`TOKEN_VALUE` = 10 × `YELLOWBACK_FEE` and a VOID release has the collateral itself. Outputs: collateral
+(value = vault value + surplus token value − `YELLOWBACK_FEE` − `TOKEN_VALUE` × number of YED change
+outputs) to the **collateral destination**, optional YED change (`TOKEN_VALUE`) with a REDEEM payload
 (`count = 0` if none, but the payload is still present so the transaction is self-describing).
+
+**Collateral destination** (`to`, I2): omitted — a fresh transparent key of the wallet at
+`vout[0]`; an `s1…` address — that P2PKH at `vout[0]`; a `ys1…` address — a single Sapling
+output (`vShieldedOutput`, `valueBalance = −collateral`) encrypted under the wallet's
+`ovkForShieldingFromTaddr` key so it is recoverable from the seed, as `z_sendmany` does for
+t→z; the YED change, if any, is then `vout[0]` and the payload `vout[1]`. The vault input and
+the YED inputs are added to `TransactionBuilder` **unsigned** and signed after `Build()` with the
+same code as the transparent shape — the ZIP-243 digest does not cover `scriptSig`s, so the
+binding signature stays valid (D9).
 
 **PRICE** (federation coordinator, built by `yed_createpricetx`): `vin[0]` = current anchor;
 at most one refill input, **absorbed entirely into the new anchor** (no change output, C6);
@@ -906,9 +970,10 @@ and, if it was ACTIVE, subtracts its `collateralZat` from `Totals.collateralZat`
 **IN-3** After outputs are processed, `burned = yedIn − yedOut`; `Totals.supplyCents −= burned`;
 `burned` is recorded on every vault closed by this transaction (split is informational).
 
-**TX-0** A transaction with any shielded component (`vJoinSplit`, `vShieldedSpend`,
-`vShieldedOutput` non-empty or `valueBalance ≠ 0`) or that is a coinbase has `yedOut = 0` regardless
-of payload.
+**TX-0** A coinbase has `yedOut = 0` regardless of payload (and registers no vault, not even
+VOID). Shielded components (`vJoinSplit`, `vShieldedSpend`, `vShieldedOutput`, `valueBalance`)
+play no part in any rule: they belong to the YEC side of the transaction (D13, I1). YED can still
+only be assigned to transparent outputs, because an assignment names a `vout` index.
 
 **MINT-1** payload MINT, well-formed. **MINT-2** `tier ∈ {0..4}`, `MIN_MINT ≤ cents ≤ MAX_MINT`,
 `lockHeight < LOCKTIME_THRESHOLD`, `tierBlocks ≤ lockHeight − H ≤ tierBlocks + MINT_WINDOW`
@@ -971,8 +1036,12 @@ the rules §9 would promote to consensus.
 - **RED-1** `vin[0]` spends an ACTIVE or VOID vault; the transaction spends no other vault.
 - **RED-2** `nLockTime ≥ vault.lockHeight` and `indexTip ≥ vault.lockHeight`.
 - **RED-3** `yedIn − yedOut ≥ requiredBurn(vault.mintedCents, health(indexTip))` (0 for VOID).
-- **RED-4** the transaction is transparent-only, standard, and pays a fee in
-  `[YELLOWBACK_FEE, 100 × YELLOWBACK_FEE]`. `IsStandardTx(tx, reason, Params(), tip + 1)` and
+- **RED-4** the transaction has no `vJoinSplit` and no `vShieldedSpend` (a co-signer policy, not
+  a state rule — I1); `vShieldedOutput` is allowed, so the collateral may go straight to a `ys1…`
+  address (I2), and `valueBalance ≤ 0` then; the transaction is standard and pays a fee in
+  `[YELLOWBACK_FEE, 100 × YELLOWBACK_FEE]`, computed as `Σ transparent inputs − GetValueOut()`
+  (`GetValueOut` already counts a negative `valueBalance` as an output,
+  `ref/ycash/src/primitives/transaction.cpp`). `IsStandardTx(tx, reason, Params(), tip + 1)` and
   `AreInputsStandard(tx, view, branchId)` run against a `CCoinsViewCache` built exactly as
   `signrawtransaction` builds it — `pcoinsTip` behind `CCoinsViewMemPool` under `cs_main`
   (`ref/ycash/src/rpc/rawtransaction.cpp:906-921`) — because the fee needs every input's value and
@@ -1180,9 +1249,9 @@ Wallet context (`src/rpc/yellowbackwallet.cpp`, `ENABLE_WALLET`):
 | `yed_validateaddress <addr>` | decode; `ismine` |
 | `yed_getbalance [minconf]` | confirmed / unconfirmed cents |
 | `yed_listunspent [minconf]` | YED outputs that are mine |
-| `yed_mint <cents> <tier>` | builds, signs, commits a MINT; returns txid, vault outpoint, lockHeight, collateral |
+| `yed_mint <cents> <tier> [from]` | builds, signs, commits a MINT; `from` omitted = any transparent output, `s1…` = that address only, `ys1…` = Sapling notes of that address in the same transaction (I2); returns txid, vault outpoint, lockHeight, collateral, `fundedFrom` (`transparent`/`sapling`) |
 | `yed_send <ydaddr> <cents>` / `yed_sendmany {addr:cents}` | TRANSFER |
-| `yed_redeem <vaultTxid>` | builds the REDEEM, signs the owner input and the YED inputs, records a `PendingRedemption` for the vault (reserving those inputs, D3), returns `{hex, vault, roster, requiredBurn, expiry}` — no network I/O; refuses if a pending record for that vault exists |
+| `yed_redeem <vaultTxid> [to]` | builds the REDEEM with the collateral paid to `to` (omitted = fresh transparent key, `s1…`, or `ys1…` as a Sapling output, I2), signs the owner input and the YED inputs, records a `PendingRedemption` for the vault (reserving those inputs, D3), returns `{hex, vault, roster, requiredBurn, expiry}` — no network I/O; refuses if a pending record for that vault exists |
 | `yed_submitredeem <hex>` | SUB-1 check against the `PendingRedemption` record, `VerifyScript` on every input, lock-height and expiry margin (C22), then `CommitTransaction` (wallet tracking + relay) and clears the record |
 | `yed_abortredeem <vaultTxid>` | clears the `PendingRedemption` record of a redemption that was never broadcast (B19, D3); YED coin locks are untouched |
 | `yed_cosignredeem <hex>` | federation member: RED-0..8, add own signature in roster order, return hex; never signs twice for the same vault outpoint within one height |
@@ -1241,6 +1310,16 @@ Configuration: `-yellowback`; `-yellowbackstartheight`, `-yellowbackgenesisancho
   leaves no index trace (its stage-(i) locks name outputs that never exist and are harmless); an
   expired REDEEM leaves the vault ACTIVE and its `PendingRedemption` is dropped when the index
   passes `nExpiryHeight`; the user re-runs the command (F6).
+- **Sapling funding and destinations (I2).** `yed_mint … ys1…` selects that address's confirmed
+  Sapling notes largest-first (as `z_sendmany`), fetches witnesses and the anchor under
+  `cs_main`/`cs_wallet`, releases every lock for `TransactionBuilder::Build()` (one spend proof per
+  note, seconds each), then re-locks to commit; the notes are not `LockNote`d, exactly as
+  `z_sendmany` does not, because the transaction is broadcast immediately. `yed_redeem … ys1…`
+  builds the same way with an unsigned vault input and unsigned YED inputs, proves the single
+  Sapling output with no lock held, then re-locks to owner-sign `vin[0]` and `SignSignature` the
+  YED inputs before recording the pending redemption. Either RPC blocks for the proving time
+  (no operation id: the wallet already treats every `yed_*` call as an ordinary, possibly slow,
+  request).
 - **Change floor.** `yed_send`/`yed_sendmany`/`yed_redeem` refuse to build a transaction whose Yellowback
   change would lie in `(0, MIN_OUTPUT)`: XFER-1 could not assign it and it would burn (C20). The
   error names the smallest amount that works.
@@ -1319,9 +1398,9 @@ smallest-first and confirmed-only, §4.5; a user has no reason to pick outpoints
 | **Overview** | YED balance (confirmed, unconfirmed), YEC balance, YEC price, system health %, DCA multiplier, ERR status, "minting paused" (volatility freeze / ERR / no fresh price / cap reached), price age, recent Yellowback transactions | `yed_getbalance`, `getbalance`, `yed_getstats`, `yed_getprice`, `yed_listtransactions` | health and freeze are the reasons a mint may be refused; show them *before* the user opens Mint |
 | **Receive** | a fresh Yellowback address with QR; label; copy | `yed_getnewaddress`, `yed_validateaddress` | the address is visibly a Yellowback address (`ye…`), never a `s1…` address; text: "send only YED here" |
 | **Send** | recipient (validated, `ye` prefix), amount in dollars and cents, YEC fee shown, confirm | `yed_validateaddress`, `yed_send`, `yed_sendmany` | refuse `s1…` recipients with a clear message; surface the change-floor error (C20: "amount leaves less than $1.00 of change") with the nearest workable amount; unconfirmed YED is shown but not spendable (§4.5) |
-| **Mint** | amount ($100–$10,000), tier picker showing lock period, ratio and the **exact** YEC collateral required now, unlock height and estimated date (75 s/block), YEC available; confirm | `yed_estimatecollateral`, `yed_getstats`, `yed_mint` | gates (with the reason) when health < 100 %, mint frozen, no fresh price, cap headroom < amount, index not synced or `indexTip < startHeight + MINT_EVAL_LAG` (D5); confirmation text states that the requirement is fixed at signing (B3/C4) and that collateral is locked until the unlock height and needs the federation's co-signature to release (§8.1); **after a successful mint the app insists on a `wallet.dat` backup** (keypool keys are not derived from a seed, A10) |
+| **Mint** | amount ($100–$10,000), **funding source** (transparent balance, or one of the wallet's `ys1…` addresses with its balance; the YEC-available figure follows the choice, I2), tier picker showing lock period, ratio and the **exact** YEC collateral required now, unlock height and estimated date (75 s/block), YEC available; confirm | `yed_estimatecollateral`, `yed_getstats`, `yed_mint` | gates (with the reason) when health < 100 %, mint frozen, no fresh price, cap headroom < amount, index not synced or `indexTip < startHeight + MINT_EVAL_LAG` (D5); confirmation text states that the requirement is fixed at signing (B3/C4) and that collateral is locked until the unlock height and needs the federation's co-signature to release (§8.1); **after a successful mint the app insists on a `wallet.dat` backup** (keypool keys are not derived from a seed, A10) |
 | **Vaults** (positions) | one row per vault: status (ACTIVE / VOID / CLOSED), minted, collateral, unlock height + date, required burn *now*, redeemable yes/no; VOID rows explain why (verdict from `yed_gettxinfo`) and that collateral returns at unlock with no burn | `yed_listpositions`, `yed_getvault`, `yed_gettxinfo` | "required burn" can exceed "minted" during ERR (§3.6); say so and link to the health figure |
-| **Redeem** (wizard) | 1 pick a redeemable vault; 2 review burn (YED to be destroyed) and collateral to be returned; 3 **collect co-signatures**: progress "k of 5", operator names from the roster, transient failures retried, deadline countdown (36 blocks ≈ 45 min, B24); 4 submit; or abort at any step | `yed_listpositions`, `yed_redeem`, operators' `/cosign` (HTTPS), `yed_submitredeem`, `yed_abortredeem` | this is the **only** screen that talks to anything but the local node; the app embeds the `yellowback-redeem` logic (§5) and the published operator endpoint list, verifiable against `yed_getroster`; on deadline expiry it calls `yed_abortredeem` and offers to restart; a refusal reason from a co-signer (RED-3 short burn, RED-6 oracle outage, RED-8 expiry) is shown verbatim |
+| **Redeem** (wizard) | 1 pick a redeemable vault; 2 review burn (YED to be destroyed) and collateral to be returned, and choose the **collateral destination** (a fresh transparent address, or one of the wallet's `ys1…` addresses, I2); 3 **collect co-signatures**: progress "k of 5", operator names from the roster, transient failures retried, deadline countdown (36 blocks ≈ 45 min, B24); 4 submit; or abort at any step | `yed_listpositions`, `yed_redeem`, operators' `/cosign` (HTTPS), `yed_submitredeem`, `yed_abortredeem` | this is the **only** screen that talks to anything but the local node; the app embeds the `yellowback-redeem` logic (§5) and the published operator endpoint list, verifiable against `yed_getroster`; on deadline expiry it calls `yed_abortredeem` and offers to restart; a refusal reason from a co-signer (RED-3 short burn, RED-6 oracle outage, RED-8 expiry) is shown verbatim |
 | **Transactions** | mint / send / receive / burn / redeem history with amounts in dollars, confirmations, and `expired` for wallet transactions that died unmined (F6) | `yed_listtransactions`, `yed_gettxinfo` | a plain-YEC spend of a YED output shows as **burn** with an explanation (D18) |
 | **Settings** | operator endpoint list (defaults shipped, editable), display unit, show/hide advanced (raw hex) | — | `-yellowback` and `-experimentalfeatures` must be set in the node's `ycash.conf`; the app detects their absence (`yed_getinfo` → "Method not found") and shows the two lines to add |
 
@@ -1356,8 +1435,9 @@ it does not know.
    the application only displays it.
 3. **Heights, not clocks, with a translation.** The protocol speaks block heights; the application
    shows both the height and an estimated date/time at 75 s per block, labelled as an estimate.
-4. **Transparent by design.** Yellowback is transparent-only (D13); the application says so where a
-   user might expect shielded behaviour (Receive, Send).
+4. **Transparent by design.** YED lives only on transparent outputs (D13); the application says so
+   where a user might expect shielded behaviour (Receive, Send), and tells a user whose YEC is
+   shielded to unshield before minting (the v1 builder is transparent-only, I1).
 5. **Backups.** Ycash wallet encryption is experimental (E5); the application's guidance is a
    `wallet.dat` backup after every mint, and it nags until one is confirmed.
 6. **Errors are the node's words.** RPC error strings from `yed_*` are stable identifiers (§4.4,
@@ -1733,6 +1813,29 @@ mirror image the plan's text left implicit; (iii) `doc/yellowback-rpc.md` (Phase
 written from the implemented RPCs, with `yed_getstats.supplyCapCents` added at the wallet fork's
 request; (iv) the inherited Python framework needs `pyasyncore` and a `pyblake2` shim on Python
 3.12+, carried in the workspace venv rather than as framework edits.
+
+### Phase 3c — Sapling funding and destinations (revision 15, I2; ≈ 450 lines; done 2026-09-05: unit test, `yellowback_sapling.py`, the lifecycle rerun and the wallet's QTest target all pass)
+
+- [x] `src/transaction_builder.{h,cpp}`: `AddTransparentOutput(const CScript&, CAmount)`,
+      `AddTransparentInputUnsigned(COutPoint, CAmount, nSequence)`, `SetLockTime`; `Build()` skips
+      unsigned inputs. Unit test: a transaction with an unsigned input, a raw `OP_RETURN` output and
+      a lock time builds, leaves that input's `scriptSig` empty and keeps the others signed.
+- [x] `txbuilder.cpp`: `BuildMint(…, from)` — transparent (any / one `s1…` address) as before, or
+      Sapling notes of a `ys1…` address via the builder; `BuildRedeem(…, to)` — collateral to a
+      fresh key, an `s1…` address, or a `ys1…` Sapling output; `FinishSapling` (prove with no lock
+      held) and `SignRedeemInputs` shared by both shapes.
+- [x] `src/rpc/yellowbackwallet.cpp`: `yed_mint [from]`, `yed_redeem [to]`, three-phase locking;
+      `yed_submitredeem` SUB-1 compares shielded fields and `bindingSig`; `yed_cosignredeem` RED-4
+      relaxed to "no spends, no JoinSplits".
+- [x] `contrib/yellowback/yellowback-redeem --to <address>`.
+- [x] `qa/rpc-tests/yellowback_sapling.py`: node 0 shields YEC to a `ys1…` address, mints from it
+      (`vShieldedSpend` non-empty, no transparent inputs, `fundedFrom = sapling`, vault ACTIVE,
+      `z_getbalance` down by collateral + token + fee), mints from a specific `s1…` address using
+      only that address's outputs and is refused when it cannot cover the collateral, redeems to
+      the `ys1…` address through two co-signers (`vShieldedOutput` non-empty, `z_getbalance` up by
+      the collateral value, vault CLOSED), and a co-signer refuses a redemption carrying a Sapling
+      spend (RED-4).
+- [x] YecWallet: funding-source combo on Mint, destination combo in the redemption wizard (§4.7).
 
 ### Phase 4 — Federation coordinator and redemption client (≈ 900 lines Python, 0 lines C++)
 
@@ -2125,7 +2228,8 @@ by Phase 0):
 6. No `__int128` anywhere in Ycash; use `arith_uint256`.
 7. `secp256k1` built with recovery module only (`configure.ac:1282`) — no Schnorr/MuSig2.
 8. `nVersion == 4` pinned; `nExpiryHeight`, `valueBalance`, shielded vectors exist on every tx —
-   Yellowback rules must state transparency (TX-0).
+   YED is transparent-only structurally (D13), and the state rules ignore the shielded fields
+   rather than voiding on them (TX-0, I1).
 9. `createrawtransaction` has no `"data"`/`OP_RETURN` output (`rpc/rawtransaction.cpp:539-620`) —
    PRICE transactions are built by a node RPC (`yed_createpricetx`), not by the coordinator.
 10. `signrawtransaction` takes a `prevtxs` `redeemScript` only with explicit private keys
