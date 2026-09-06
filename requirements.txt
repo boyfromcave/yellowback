@@ -1,0 +1,9 @@
+# Python dependencies for the workspace venv (.venv), installed by `make bootstrap`.
+# Used by ycash-dd/qa/rpc-tests (inherited Zcash test framework) and ycash-dd/contrib/yellowback.
+# Never install these into the system Python.
+pyasyncore>=1.0.4     # `asyncore` was removed from the stdlib in Python 3.12; mininode.py imports it
+pyzmq>=25             # test framework's ZMQ test and the --nozmq path still import zmq
+requests>=2.31        # yellowback_fed.py and yellowback-redeem
+simplejson>=3.19      # test_framework/authproxy.py
+# pyblake2 is unmaintained and does not build on current Pythons; bootstrap writes a two-line
+# shim module over hashlib.blake2b into the venv instead (see scripts/bootstrap.sh).

@@ -1,4 +1,4 @@
-# ydollar-workspace
+# yellowback-workspace
 
 Bring a decentralized digital dollar to **Ycash** as **Ycash Yellowback (YED)**, using DigiByte's **DigiDollar** as the
 reference implementation — with the smallest possible change to the Ycash codebase.
@@ -9,7 +9,7 @@ targets, because Ycash users reach the node through a GUI: **YecWallet**, a Qt a
 bundles `ycashd` and drives it over RPC.
 
 ```
-ydollar-workspace/
+yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
@@ -20,8 +20,12 @@ ydollar-workspace/
 │   ├── spec/        DigiDollar's own design docs + our Ycash adaptation spec
 │   ├── plans/       the development plan (node, federation, wallet GUI, single-machine testing)
 │   └── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
-├── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
-└── Makefile         `make status` — repo state + pin verification
+├── repos.yaml       THE MANIFEST — every repo, its URL and its pin (no submodules)
+├── Makefile         `make bootstrap` — recreate the workspace; `make status` — repo state + pin check
+├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh
+├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
+├── yellowback.code-workspace   VS Code: parent + all five clones as roots, ref/ read-only
+└── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
 
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
@@ -165,11 +169,30 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ---
 
+## Getting started
+
+The workspace repo tracks only the documents, the manifest and the scripts; the five nested clones
+under `ref/`, `ycash-dd/` and `yecwallet-dd/` are plain git repositories (not submodules), gitignored
+here and recreated from [repos.yaml](repos.yaml):
+
+```bash
+git clone <this repo> yellowback-workspace && cd yellowback-workspace
+make bootstrap            # clones ref/* at their pins (read-only), the two forks on feature/digidollar,
+                          # creates .venv from requirements.txt, then runs `make status`
+make bootstrap SSH=1      # same, but the forks clone over git@github.com: so you can push
+code yellowback.code-workspace
+```
+
+Bootstrap is idempotent: repos that exist are verified against the manifest and never modified.
+It does not build anything; the node and wallet build recipes are in
+`ycash-dd/doc/yellowback.md` and `yecwallet-dd/docs/yellowback.md`.
+
 ## Commands
 
 ```bash
 make            # list targets
-make status     # git status for all four repos, and verify the ref/ pins
+make bootstrap  # recreate every clone and the venv from repos.yaml (see above)
+make status     # git status for all six repos, and verify the ref/ pins
 make pins       # one line per repo, machine-readable
 make diff       # the fork delta: ycash-legacy...feature/digidollar
 make log        # commits on the fork branch beyond the baseline
@@ -182,10 +205,12 @@ citation in `docs/mapping.md` was written against these exact revisions.
 |---|---|---|
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
+| `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
 | `ycash-dd` | branch `feature/digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
+| `yecwallet-dd` | branch `feature/digidollar` off `yecwallet-legacy` (= `v4.5.0`) | `1eb277d` |
 
-Pins are declared once at the top of the [Makefile](Makefile) and mirrored in `AGENTS.md` and
-`docs/mapping.md`. Re-pinning means updating all three.
+Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
+mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.
 
 Note that `ref/digibyte`'s `develop` branch has moved past `v9.26.5` with further DigiDollar
 fixes; `v9.26.5` is the newest non-rc `9.26.x` tag. `ref/ycash` at `v4.5.0` is also the current

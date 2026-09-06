@@ -19,6 +19,13 @@ follow to ship a working Yellowback on Ycash in `ycash-dd/`.
 | `ref/yecwallet` | tag `v4.5.0` (YecWallet, the Qt 6 full-node GUI that bundles `ycashd`) | `1eb277d` |
 | `yecwallet-dd` | branch `feature/digidollar` off `yecwallet-legacy` (= `v4.5.0`) | `1eb277d` |
 
+**Implementation status (2026-09-05, verified against the trees):** Phases 1–5 are complete on
+`ycash-dd`; Phase 6 is complete except the external review, the `rc1` tag and a CI run on GitHub;
+Phase 0 still owes the `YCASH_WR=1` build and the inherited `rpc-tests.py` baseline; Phase 5b
+(`yecwallet-dd`) compiles and its QTest passes offscreen but the GUI has never run against a live
+node, and the end-to-end QTest, release packaging and copy review remain. Phases 7–8 not started.
+The consolidated checklist is at the end of §6 ("What remains").
+
 **How to use this document.** §1 is the decision in one page. §2 is the decision record (every
 option weighed, what was chosen, what it costs). §3 is the normative protocol. §4 is the code
 architecture inside `ycash-dd`. §5 is the federation coordinator. §6 is the phased work plan with
@@ -247,10 +254,10 @@ identifier-level constants that carried the old name do:
 | mainnet address version `0x1F 0xE2` (`yd…`) | `0x1F 0xE4` (`ye…`), re-verified by exhaustive Base58 search (testnet `yt…`, regtest `yr…` unchanged) | D10 |
 | RPC prefix `yd_`, fields `ydIn`/`ydOut`, `YD_FEE` | `yed_`, `yedIn`/`yedOut`, `YELLOWBACK_FEE` | §3, §4 |
 
-**Pending:** the Phase 0–2 code already on `ycash-dd` and `yecwallet-dd` (`src/ydollar/`,
-`namespace ydollar`, `doc/ydollar.md`, `contrib/ydollar/`, `.github/workflows/ydollar-tests.yml`,
-the wallet's `ydollar=1` conf line and `YDollarController`) still uses the old names and must be
-renamed to match before Phase 2 continues; that rename is tracked in §6, Phase 2.
+**Done (2026-09-05, §6 Phase 2):** the Phase 0–2 code on `ycash-dd` and `yecwallet-dd` was
+renamed to match (`src/yellowback/`, `namespace yellowback`, `doc/yellowback.md`,
+`contrib/yellowback/`, `.github/workflows/yellowback-tests.yml`, the wallet's `yellowback=1` conf
+line and `YellowbackController`); `git grep -i ydollar` on both forks returns nothing.
 
 ### Revision 12 audit (of the YecWallet material)
 
@@ -1050,7 +1057,7 @@ functional tests, B6).
 ```
 src/yellowback/
   params.{h,cpp}      Params per network (§3.1), lookup by CChainParams::NetworkIDString()
-  amount.h            cents/µUSD typedefs, arith helpers (RequiredCollateral, Health, DcaBps,
+  math.h              cents/µUSD typedefs, arith helpers (RequiredCollateral, Health, DcaBps,
                       ErrBps, RequiredBurn) — arith_uint256 only
   payload.{h,cpp}     Encode/Decode payload (§3.2); FindPayload(const CTransaction&)
   script.{h,cpp}      RosterScript(keys,k), VaultScript(lock, owner, roster), Parse*,
@@ -1753,7 +1760,7 @@ crash) rather than in the federation test.
 
 ### Phase 5 — Protections (≈ 400 lines)
 
-- [x] DCA and ERR wired into MINT-4/5 and RED-3 (already in `amount.h`; this phase adds state
+- [x] DCA and ERR wired into MINT-4/5 and RED-3 (already in `math.h`; this phase adds state
       plumbing, snapshots, `yed_getstats` fields, `yed_getprotectionstatus`).
 - [x] Volatility breach/cooldown in SNAP and MINT-4.
 - [x] `qa/rpc-tests/yellowback_protection.py`: drive price down through 149/119/109 % and assert
@@ -1771,13 +1778,15 @@ while the reference window still reads the old level (so the last breach of a st
 
 ### Phase 5b — YecWallet fork `yecwallet-dd` (parallel to Phases 3–6; ≈ 3,200 lines incl. `.ui`)
 
-- [x] Phase 0 (wallet side): build `ref/yecwallet` unmodified two ways — plain CMake against the
+- [~] Phase 0 (wallet side): build `ref/yecwallet` unmodified two ways — plain CMake against the
       CI runner's system Qt 6 (this is the development and test configuration; confirm `Qt6::Test`
       is present) and the full static `build.sh` (release configuration, `-no-feature-testlib`,
       H1); record times; confirm it starts the `ycash-dd` `ycashd` placed beside it and that
       `--conf <playground node conf> --no-embedded` attaches to a §6.0 playground node (H2) with
       the stock Balance/Send tabs working (regtest addresses pass `isTAddress`, H3). Record the
-      baseline in `yecwallet-dd/docs/yellowback.md`.
+      baseline in `yecwallet-dd/docs/yellowback.md`. *(2026-09-05: the fork builds with CMake
+      against Homebrew Qt 6 and `Qt6::Test` is present; the static `build.sh` path has not been
+      attempted, and the GUI has not been attached to a playground node (H2/H3 verified by reading).)*
 - [x] `doc/yellowback-rpc.md` in `ycash-dd` frozen at the end of Phase 3 (wallet RPCs) and Phase 5
       (protection fields); `yed_getinfo.rpcversion = 1`; the wallet's `Settings` stores the
       version it was built for and refuses others.
@@ -1789,10 +1798,12 @@ while the reference window still reads the old level (so the last breach of a st
       playground as soon as its RPCs exist (Overview/Send/Receive/Mint after Phase 3;
       Vaults/Redeem after Phase 4; protection fields after Phase 5). Behaviour follows DigiByte's
       `src/qt/digidollar*widget.cpp` pane by pane (`mapping.md` §12), minus coin control.
-- [x] QTest end-to-end target (optional component, H1) against the playground (mint → send →
+- [~] QTest end-to-end target (optional component, H1) against the playground (mint → send →
       tier-0 lock → redeem through five local operators → abort path → expired-transaction
       display), run in `yecwallet-dd` CI on the cached node build under
-      `QT_QPA_PLATFORM=offscreen` (H5).
+      `QT_QPA_PLATFORM=offscreen` (H5). *(2026-09-05: the target exists and passes five
+      offscreen cases — instantiation, dollar parsing, amount formatting, record parsing, frozen
+      contract — none of which talks to a node; the playground flow is not written.)*
 - [ ] Release: `build.sh --package` with the `ycash-dd` `ycashd` beside the wallet binary, on
       the three platforms `build.sh` already targets (`build.sh:9-15`).
 - [ ] Copy review of every user-facing string against §8.1 (trust statement) — the wallet must
@@ -1811,6 +1822,8 @@ within the §4.7 table.
       so `make check` covers it without a fuzzing build.
 - [x] Reorg stress test: random 1–6 block reorgs over 500 blocks with random Yellowback activity on
       three nodes; assert state-hash equality after every reorg and after a cold rebuild.
+      *(Shipped with a 300-block default, 30 reorgs, seeded; `--blocks` raises it. The nightly CI
+      job runs it as "extended".)*
 - [x] DoS review: payload parse bounds, `yed_validaterawtransaction` cost and its phantom-input
       refusal (D1), `/cosign` rate limits, HTTP client timeouts, index DB size growth (snapshots
       ≈ 60 B/block ≈ 25 MB/yr; VOID-vault records per block at the mempool cost limit, D9).
@@ -1849,6 +1862,52 @@ copy review remain.
       release, applied at a published height).
 
 ### Phase B — Consensus enshrinement (separate decision, see §9)
+
+### What remains — consolidated checklist (2026-09-05)
+
+Everything below is either not started or explicitly partial; every other box in Phases 0–6 was
+re-verified on 2026-09-05 (node unit tests 31 cases green, wallet QTest green, consensus paths
+untouched, no old naming in either fork). In dependency order:
+
+**Close out locally (no external party needed)**
+
+- [ ] Phase 0: run the inherited `qa/pull-tester/rpc-tests.py` at the fork tip and record which
+      scripts pass in `doc/yellowback.md`; then trim the nightly CI step "Inherited functional
+      tests recorded as passing in Phase 0" to that list (today it runs everything, including the
+      post-Blossom scripts B6 expects to fail, so the nightly job is red by construction).
+- [ ] Phase 0: `YCASH_WR=1 zcutil/build.sh`, and `test_bitcoin --run_test='yellowback_*'` on that
+      build; record in `doc/yellowback.md`.
+- [ ] Phase 5b: attach the built GUI to a playground node (`--conf <node>/ycash.conf
+      --no-embedded`) and walk mint → send → wait → redeem through `yellowback_fed.py` operators;
+      fix whatever the round trip reveals (every reply shape so far is verified by reading only).
+- [ ] Phase 5b: write the end-to-end QTest case against that playground (mint, send, tier-0 lock,
+      redeem through operators, abort path, expired-transaction display) and add it to the wallet
+      fork's CI.
+- [ ] Phase 5b: copy review of every user-facing string against §8.1; record in
+      `yecwallet-dd/docs/yellowback.md`.
+- [ ] Phase 5b: `build.sh --package` with the `ycash-dd` `ycashd` beside the wallet binary, on
+      the three platforms `build.sh` targets; confirm the bundled node starts and the tab appears.
+- [ ] Phase 6: regenerate the diff-budget numbers in `doc/yellowback-review.md` at the final tip
+      (they drift with every commit) and write the §8.4 item-20 fault-injection test or record
+      the decision to leave it partial.
+
+**Needs GitHub**
+
+- [ ] Push both fork branches to a GitHub fork and get `yellowback-tests.yml` green on the
+      `main` job; then the nightly job.
+- [ ] Tag `yellowback-v1-rc1` on `ycash-dd` (Phase 6 exit) once CI is green.
+- [ ] Phase 6: external review request to the Ycash maintainers with
+      `doc/yellowback-review.md` and `docs/mapping.md`.
+
+**Needs operators (Phase 7)**
+
+- [ ] Key ceremony on testnet per `doc/yellowback-federation.md` §2; testnet genesis anchor;
+      fill `params.cpp` (testnet); `rc` binaries.
+- [ ] Two-week testnet soak (all tiers, daily redemptions, a rotation, a member outage, a
+      deliberate reorg, a node rebuilt from scratch), state-hash equality across operators.
+- [ ] Fix-forward; tag `yellowback-v1`.
+
+**Mainnet (Phase 8)** — as written above; nothing can start before the Phase 7 soak.
 
 ---
 
@@ -1943,7 +2002,7 @@ return — never throw into the notifier thread.
 
 1. `git diff --stat ycash-legacy...feature/digidollar` matches §4.1; zero lines in the consensus
    set.
-2. `grep -rn "GetTime\|GetAdjustedTime\|mempool\|pwalletMain\|GetArg\|double\|float" src/yellowback/state.cpp src/yellowback/amount.h src/yellowback/payload.cpp src/yellowback/script.cpp` returns nothing.
+2. `grep -rn "GetTime\|GetAdjustedTime\|mempool\|pwalletMain\|GetArg\|double\|float" src/yellowback/state.cpp src/yellowback/math.h src/yellowback/payload.cpp src/yellowback/script.cpp` returns nothing (the plan's `amount.h` is `math.h` in the tree, Phase 1).
 3. Every rule identifier in §3.7 has a unit test and every policy rule in §3.8 has a functional
    test.
 4. Apply/undo identity and cold-rebuild equality tested under reorg stress.

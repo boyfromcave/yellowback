@@ -1,0 +1,63 @@
+{
+  // Yellowback workspace for VS Code: the parent repo plus its five nested clones as roots.
+  // Open with `code yellowback.code-workspace` after `make bootstrap`. The folder names below are
+  // referenced by ${workspaceFolder:<name>} in settings and tasks, so keep them stable.
+  "folders": [
+    { "name": "workspace",     "path": "." },
+    { "name": "ycash-dd",      "path": "ycash-dd" },
+    { "name": "yecwallet-dd",  "path": "yecwallet-dd" },
+    { "name": "ref/ycash",     "path": "ref/ycash" },
+    { "name": "ref/yecwallet", "path": "ref/yecwallet" },
+    { "name": "ref/digibyte",  "path": "ref/digibyte" }
+  ],
+  "settings": {
+    // AGENTS.md rule 1: ref/ is read-only. The filesystem enforces it (chmod a-w); this makes the
+    // editor say so instead of failing on save.
+    "files.readonlyInclude": { "**/ref/digibyte/**": true, "**/ref/ycash/**": true, "**/ref/yecwallet/**": true },
+    "files.readonlyFromPermissions": true,
+
+    // The workspace venv (created by `make bootstrap`) runs the functional tests and the coordinator.
+    "python.defaultInterpreterPath": "${workspaceFolder:workspace}/.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+
+    // Build output that should never be searched, watched or indexed. The parent folder contains
+    // the nested clones, so these are excluded globally.
+    "files.exclude": { "**/.DS_Store": true },
+    "search.exclude": {
+      "**/.venv/**": true, "**/depends/built/**": true, "**/depends/sources/**": true, "**/depends/work/**": true,
+      "**/depends/*-apple-darwin*/**": true, "**/depends/*-linux-gnu*/**": true,
+      "**/target/**": true, "**/build/**": true, "**/.deps/**": true, "**/*.o": true, "**/*.a": true, "**/*.Po": true,
+      "**/src/leveldb/**": true, "**/src/secp256k1/**": true, "**/src/univalue/**": true, "**/src/crc32c/**": true
+    },
+    "files.watcherExclude": {
+      "**/.git/objects/**": true, "**/.venv/**": true, "**/depends/**": true, "**/target/**": true, "**/build/**": true
+    },
+
+    // Qt Designer forms are XML; Makefile.am and the depends recipes are Makefiles.
+    "files.associations": { "*.ui": "xml", "Makefile.*.include": "makefile", "*.mk": "makefile" },
+    "C_Cpp.default.cppStandard": "c++17",
+    "cmake.configureOnOpen": false,
+    "git.autoRepositoryDetection": "openEditors",
+    "editor.rulers": [100]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      { "label": "workspace: status",    "type": "shell", "command": "make status",
+        "options": { "cwd": "${workspaceFolder:workspace}" }, "problemMatcher": [] },
+      { "label": "workspace: bootstrap", "type": "shell", "command": "make bootstrap",
+        "options": { "cwd": "${workspaceFolder:workspace}" }, "problemMatcher": [] },
+      { "label": "workspace: fork diff", "type": "shell", "command": "make diff",
+        "options": { "cwd": "${workspaceFolder:workspace}" }, "problemMatcher": [] },
+      { "label": "node: yellowback unit tests", "type": "shell",
+        "command": "src/test/test_bitcoin --run_test='yellowback_*'",
+        "options": { "cwd": "${workspaceFolder:ycash-dd}" }, "problemMatcher": [], "group": "test" },
+      { "label": "wallet: QTest (offscreen)", "type": "shell",
+        "command": "QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure",
+        "options": { "cwd": "${workspaceFolder:yecwallet-dd}" }, "problemMatcher": [], "group": "test" }
+    ]
+  },
+  "extensions": {
+    "recommendations": ["ms-vscode.cpptools", "ms-vscode.cmake-tools", "ms-python.python", "anthropic.claude-code"]
+  }
+}

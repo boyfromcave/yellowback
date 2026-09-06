@@ -1,4 +1,4 @@
-# ydollar-workspace — agent instructions
+# yellowback-workspace — agent instructions
 
 Bring a decentralized digital dollar to **Ycash** as **Ycash Yellowback (YED)**, using DigiByte's **DigiDollar**
 as the reference implementation — in the node (`ycashd`) **and** in the full-node GUI wallet
@@ -15,7 +15,7 @@ footprint, take the smaller footprint and record what was given up.
 ## Layout
 
 ```
-ydollar-workspace/
+yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
@@ -26,6 +26,9 @@ ydollar-workspace/
 │   ├── spec/        DigiDollar upstream spec + the Yellowback adaptation spec
 │   ├── plans/       THE DEVELOPMENT PLAN (node §1–§6, wallet §4.7 and Phase 5b)
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
+├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
+├── scripts/         bootstrap.sh (`make bootstrap`), repos.sh, repo-status.sh
+├── yellowback.code-workspace   VS Code multi-root workspace (ref/ folders read-only)
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
@@ -132,8 +135,9 @@ Bitcoin/BTC or dollar/USD — never "5 yellowbacks YED", never "the YED protocol
 Do not carry `DigiDollar` / `digidollar` / `DD` naming across — it makes `git grep` ambiguous
 between "ported code" and "upstream reference" and defeats the point of the split. The one
 exception is comments that cite an upstream file. The old working name *YDollar* / `ydollar` /
-`yd_` survives only in the workspace directory name (`ydollar-workspace`) and in pre-rebrand code
-on the fork branches until the code rename lands (plan §0, revision 13).
+`yd_` no longer appears anywhere: the fork code was renamed (plan §0, revision 13) and the
+workspace directory itself went from `ydollar-workspace` to `yellowback-workspace` on 2026-09-05.
+Do not reintroduce it.
 
 ### 7. Consensus code is not refactorable.
 
@@ -149,15 +153,18 @@ Start a session with `make status`. It reports all six repos and **exits non-zer
 
 ```bash
 make            # list targets (same as `make help`)
-make status     # git status across all four repos, with pin verification
+make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
+make status     # git status across all six repos, with pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: ycash-dd and yecwallet-dd vs their -legacy baselines
 make log        # commits on each fork branch beyond its baseline
 ```
 
-The pins are declared once, at the top of the `Makefile`, and mirrored in this file and in
-`docs/mapping.md`. If you re-pin a reference repo, update all three.
+The pins are declared once, in `repos.yaml` (the `Makefile` reads them from there), and mirrored
+in this file and in `docs/mapping.md`. If you re-pin a reference repo, update all three. Never
+convert the nested clones to submodules: the read-only `ref/` trees and the independently pushed
+forks depend on each being an ordinary repository.
 
 ```bash
 # Search upstream DigiDollar (read-only)

@@ -136,7 +136,7 @@ repo_status() {
   fi
 }
 
-printf "${B}ydollar-workspace${R} ${D}— repo status${R}\n"
+printf "${B}%s${R} ${D}— repo status${R}\n" "$(basename "$ROOT")"
 printf "${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 
 repo_status "workspace"    "."            "-"                "-"

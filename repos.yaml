@@ -1,0 +1,61 @@
+# yellowback-workspace — repository manifest.
+#
+# The single source of truth for which repositories make up this workspace, where they come
+# from, and what they are pinned to. Read by scripts/repos.sh, which feeds scripts/bootstrap.sh
+# (`make bootstrap`) and the Makefile (`make status` pin checks). Not git submodules: every
+# entry is a plain nested clone, gitignored by the workspace repo, that any developer recreates
+# with `make bootstrap`.
+#
+# Kept deliberately flat so a shell script can parse it:
+#   - a repository starts with an unindented `<path>:` line
+#   - each field is exactly two spaces of indent, `key: value`, one per line
+#   - no lists, no quoting, no anchors; a trailing `# comment` on a field line is stripped
+#
+# Roles:
+#   reference  read-only. Detached at `tag`; `commit` is the tag's commit (a short prefix is
+#              enough) and is verified after checkout; the working tree is `chmod -R a-w`.
+#   fork       writable. `branch` is checked out; `base` (the pristine baseline the fork diff
+#              is measured against) is created as a local tracking branch; `base-commit` must
+#              equal the matching reference pin; `upstream` is added as a remote, not fetched.
+#
+# Re-pinning a reference is rare and deliberate: change `tag` and `commit` here, then update
+# the mirrors in AGENTS.md and docs/mapping.md — every file:line citation depends on them.
+
+ref/digibyte:
+  role: reference
+  url: https://github.com/DigiByte-Core/digibyte.git
+  tag: v9.26.5
+  commit: 05b50e229d
+  what: DigiByte, the DigiDollar reference (node + Qt GUI)
+
+ref/ycash:
+  role: reference
+  url: https://github.com/ycashfoundation/ycash.git
+  tag: v4.5.0
+  commit: 624c12814
+  what: Ycash node, pristine baseline for ycash-dd
+
+ref/yecwallet:
+  role: reference
+  url: https://github.com/ycashfoundation/yecwallet.git
+  tag: v4.5.0
+  commit: 1eb277d
+  what: YecWallet GUI (Qt 6, bundles ycashd), pristine baseline for yecwallet-dd
+
+ycash-dd:
+  role: fork
+  url: https://github.com/boyfromcave/ycash-dd.git
+  upstream: https://github.com/ycashfoundation/ycash.git
+  branch: feature/digidollar
+  base: ycash-legacy
+  base-commit: 624c12814     # = ref/ycash pin
+  what: working fork of the node (Yellowback overlay, yed_* RPCs)
+
+yecwallet-dd:
+  role: fork
+  url: https://github.com/boyfromcave/yecwallet-dd.git
+  upstream: https://github.com/ycashfoundation/yecwallet.git
+  branch: feature/digidollar
+  base: yecwallet-legacy
+  base-commit: 1eb277d       # = ref/yecwallet pin
+  what: working fork of the wallet (Yellowback tab, redemption wizard)

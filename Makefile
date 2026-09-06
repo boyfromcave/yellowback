@@ -1,27 +1,33 @@
-# ydollar-workspace
+# Workspace Makefile.
 #
-# Pins live here and are mirrored in AGENTS.md and docs/mapping.md.
-# `make status` fails if a ref/ repo drifts off its pin.
+# Repositories, URLs and pins live in repos.yaml (read through scripts/repos.sh) and are
+# mirrored in AGENTS.md and docs/mapping.md. `make status` fails if a ref/ repo drifts off
+# its pin; `make bootstrap` recreates the whole workspace on a fresh machine.
 
-DIGIBYTE_PIN  := v9.26.5
-YCASH_PIN     := v4.5.0
-YECWALLET_PIN := v4.5.0
-DD_BRANCH     := feature/digidollar
-DD_BASE       := ycash-legacy
-WALLET_BASE   := yecwallet-legacy
+REPOS         := scripts/repos.sh
+DIGIBYTE_PIN  := $(shell $(REPOS) get ref/digibyte tag)
+YCASH_PIN     := $(shell $(REPOS) get ref/ycash tag)
+YECWALLET_PIN := $(shell $(REPOS) get ref/yecwallet tag)
+DD_BRANCH     := $(shell $(REPOS) get ycash-dd branch)
+DD_BASE       := $(shell $(REPOS) get ycash-dd base)
+WALLET_BASE   := $(shell $(REPOS) get yecwallet-dd base)
+WORKSPACE     := $(notdir $(CURDIR))
 
 export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN DD_BRANCH DD_BASE WALLET_BASE
 
 .DEFAULT_GOAL := help
-.PHONY: help status status-short pins diff log
+.PHONY: help bootstrap status status-short pins diff log
 
 help: ## Show this help
-	@printf '\033[1mydollar-workspace\033[0m\n\n'
+	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 		| sort \
 		| awk -F':.*?## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  forks: %s off %s / %s\033[0m\n' \
 		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)'
+
+bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
+	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
 
 status: ## git status across all six repos, with pin verification
 	@scripts/repo-status.sh
