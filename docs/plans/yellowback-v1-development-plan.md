@@ -527,7 +527,8 @@ category `yellowback`, config prefix `-yellowback…`, types such as `Yellowback
 identifiers use `yed` (`yedIn`, `yedOut`, `yedAmount`); the RPC prefix is `yed_` (the ticker as
 namespace, as Zcash's `z_`). Payload magic is `"YB"` (§3.2) and the mainnet address prefix `ye…`
 (D10). The word *DigiDollar* appears only in comments citing upstream files (AGENTS.md rule 6).
-The original working name *YDollar* is retired; it survives only in the workspace directory name.
+The original working name *YDollar* is retired everywhere, including the workspace directory (renamed
+`ydollar-workspace` → `yellowback-workspace` on 2026-09-05).
 
 ### D16. Redemption co-signing transport
 
