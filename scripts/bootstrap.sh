@@ -88,6 +88,8 @@ bootstrap_fork() {
         *) warn "$path: $base is $(git -C "$dir" rev-parse --short "$base"), manifest says $base_commit" ;;
       esac
     else warn "$path: baseline branch $base missing (git -C $path branch --track $base origin/$base)"; fi
+    if [ -n "$upstream" ] && ! git -C "$dir" remote get-url upstream >/dev/null 2>&1; then
+      warn "$path: remote 'upstream' missing (git -C $path remote add upstream $upstream)"; fi
     return
   fi
   say "  cloning $path from $url"

@@ -171,31 +171,62 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts; the five nested clones
-under `ref/`, `ycash-dd/` and `yecwallet-dd/` are plain git repositories (not submodules), gitignored
-here and recreated from [repos.yaml](repos.yaml):
+The workspace repo tracks only the documents, the manifest and the scripts. The five nested clones
+under `ref/`, `ycash-dd/` and `yecwallet-dd/` are plain git repositories (not submodules),
+gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
+
+**Prerequisites:** `git`, `make`, and either `uv` or `python3` (3.10+) for the workspace venv.
+Nothing else is needed to bootstrap; the C++/Qt toolchains are only needed to *build*, see below.
+The five clones pull about 500 MB of git history (DigiByte is half of it), so allow
+a few minutes on the first run.
 
 ```bash
-git clone <this repo> yellowback-workspace && cd yellowback-workspace
-make bootstrap            # clones ref/* at their pins (read-only), the two forks on feature/digidollar,
-                          # creates .venv from requirements.txt, then runs `make status`
-make bootstrap SSH=1      # same, but the forks clone over git@github.com: so you can push
+git clone git@github.com:boyfromcave/yellowback.git yellowback-workspace
+cd yellowback-workspace
+make bootstrap            # clone + pin + venv, then `make status` to confirm
 code yellowback.code-workspace
 ```
 
-Bootstrap is idempotent: repos that exist are verified against the manifest and never modified.
-It does not build anything; the node and wallet build recipes are in
-`ycash-dd/doc/yellowback.md` and `yecwallet-dd/docs/yellowback.md`.
+What `make bootstrap` does, in order:
+
+1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet` — cloned over https, checked out detached at the
+   pinned tag, verified against the pinned commit (it aborts if the tag has moved upstream), then
+   `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays writable).
+2. `ycash-dd`, `yecwallet-dd` — cloned on `feature/digidollar`; the pristine baseline branch
+   (`ycash-legacy` / `yecwallet-legacy`) is created tracking `origin`, verified to equal the matching
+   `ref/` pin, and the Ycash Foundation repo is added as remote `upstream` (not fetched).
+3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
+   (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
+4. `make status-short` — a summary of all six repos, with the `ref/` pins verified.
+
+Options, passed as `make` variables:
+
+| Invocation | Effect |
+|---|---|
+| `make bootstrap SSH=1` | Clone the two forks over `git@github.com:` so you can push. `ref/` stays on https. |
+| `make bootstrap NOVENV=1` | Skip the Python venv. |
+| `make bootstrap DRY=1` | Print every command that would run, change nothing. |
+
+Bootstrap is idempotent: a repo that already exists is checked against the manifest (tag, commit,
+branch, baseline, `upstream` remote, read-only bit) and never modified, so re-running it after a
+`git pull` of the workspace is the way to see whether your clones still match `repos.yaml`. It
+exits non-zero, listing the warnings, if anything disagrees. Fixing a disagreement is a manual,
+deliberate step (see AGENTS.md rule 1 for re-pinning a reference).
+
+Bootstrap does not build anything. The build recipes, with the exact toolchain each fork needs, are
+in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends system) and
+`yecwallet-dd/docs/yellowback.md` (wallet: Qt 6 + CMake, bundling the node binary).
 
 ## Commands
 
 ```bash
-make            # list targets
-make bootstrap  # recreate every clone and the venv from repos.yaml (see above)
-make status     # git status for all six repos, and verify the ref/ pins
-make pins       # one line per repo, machine-readable
-make diff       # the fork delta: ycash-legacy...feature/digidollar
-make log        # commits on the fork branch beyond the baseline
+make                # list targets and the current pins
+make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
+make status         # git status for all six repos, with the ref/ pins verified
+make status-short   # same, without the per-file listing
+make pins           # one line per repo, machine-readable
+make diff           # fork deltas: ycash-legacy...feature/digidollar and yecwallet-legacy...feature/digidollar
+make log            # commits on each fork branch beyond its baseline
 ```
 
 `make status` **exits non-zero if a `ref/` repo drifts off its pin**, because every `file:line`
