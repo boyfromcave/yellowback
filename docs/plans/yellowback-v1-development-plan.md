@@ -1657,7 +1657,18 @@ The playground is the "local devnet": the test sets up the anchor, roster, opera
 coordinators, then leaves everything running. A Docker Compose file would be a second way to
 launch the same binaries with the same flags; it is deliberately **not** part of v1 (one more
 artifact to keep in step with the test framework, and nothing it enables is unavailable above).
-It can be added later under `contrib/yellowback/devnet/` without touching the plan.
+
+**Added 2026-09-06: `contrib/yellowback/devnet/yellowback-devnet`** (the slot reserved above).
+A `--noshutdown` test run is a poor manual demo: `yellowback_lifecycle.py` moves the price 20 %
+down and 25 % up on purpose, which trips the volatility rule and leaves minting frozen for 96
+blocks, and the test kills its coordinators on exit so the price goes stale after 48 more
+blocks. The devnet script reuses the same framework helpers (`make_regtest_roster`,
+`fund_genesis_anchor`, `yellowback_node_args`) and the same coordinator, but stops at "ready to
+mint" and leaves the coordinators running on a mock price: `up`, `status`, `mine N`, `price
+USD`, `wallet` (launches the GUI with `--conf <dir>/node0/ycash.conf --no-embedded`), `cli`,
+`down`. Nodes and coordinators run detached in their own sessions with their output in log
+files, so the command can be piped and a Ctrl-C does not take the network down. Documented for
+the GUI in `yecwallet-dd/docs/yellowback.md` ("Trying it on one laptop").
 
 **5. What one build needs.** `zcutil/build.sh` builds `depends/` and the node; `BUILD_STAGE=depends`
 builds only the dependencies (`build.sh:90-93`), which is what makes them cacheable. Nodes refuse
