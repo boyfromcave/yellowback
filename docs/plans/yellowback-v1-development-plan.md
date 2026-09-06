@@ -653,6 +653,42 @@ to something other than the local node (the operators' co-sign endpoints).
 
 ---
 
+
+### D22. Price sources (2026-09-05)
+
+Options: (a) exchange fetchers compiled into the coordinator, one class per venue, as DigiByte does
+in C++ (`ref/digibyte/src/oracle/exchange.cpp:1092-1097`, six fetchers, `FilterOutliers` at
+`:1225`) · (b) a bare `url` + JSON `path` per source in the operator's TOML · (c) presets for the
+known APIs that expand into (b), every field overridable, plus per-source guards.
+
+**Decision: (c).** The market is two venues: CoinGecko lists YEC only on SafeTrade (YEC/USDT) and
+Nonkyc (YEC/USDT, USDC, BTC), verified 2026-09-05. Both change APIs without notice and SafeTrade sits
+behind Cloudflare, so the source layer must be editable by an operator in minutes without a
+release. Presets `coingecko_simple`, `coingecko_ticker`, `nonkyc_market` and `peatio_ticker`
+(SafeTrade) are config templates in `contrib/yellowback/yellowback_fed.py`, verified against live
+replies; `generic` takes `url` + `path` verbatim. Paths carry list selectors
+(`tickers.[market.identifier=safe_trade,target=USDT].converted_last.usd`) because CoinGecko's
+ticker order is not stable. Per-source guards: `max_age` against the venue's own trade time,
+`max_spread_bps` from a spread field or bid/ask, `reject_paths` for CoinGecko's `is_stale` /
+`is_anomaly`. BTC-quoted pairs (YEC/BTC on both venues, usually the deeper book) are converted in the
+same poll with the median of a separate `[[btc_usd_sources]]` list (presets `kraken_ticker`,
+`coinbase_ticker`, plus the CoinGecko and Nonkyc ones; all four verified 2026-09-05); below
+`min_btc_sources` (2) live references the BTC pairs are dropped (`btcref`), never guessed, and the
+USD pairs carry on. Aggregation thresholds are configuration with the plan's numbers as defaults
+(`min_sources` 3, `min_venues` 2, `min_btc_sources` 2, `outlier_bps` 1000, `twap_seconds` 300,
+`silence_seconds` 120, `poll_seconds` 30). `venue` names follow CoinGecko's market identifiers so a venue read directly
+and through CoinGecko counts once toward `min_venues`. Each source's state (`ok`, `fetch`,
+`shape`, `stale`, `spread`, `flagged`) is served in `/status` and printed by `yellowback_fed.py
+sources`, which needs no node; `shape` is logged with an explicit "did the API change?" hint.
+
+What this does not change: the federation's cross-checks (2 % peer tolerance, 10 % outlier filter,
+± 10 % move clamp, fail closed below the minimums) are what bound a wrong number; a shape change
+degrades availability of new mints and nothing else. What was given up: with two venues,
+`min_sources = 3` is met by reading a venue twice, so it guards against an API breaking, not
+against one market being wrong; `min_venues` is the guard for that, and the volatility freeze
+(§3.6) is the guard behind both. Unit tests: `contrib/yellowback/test_yellowback_fed.py` against
+captured replies. Runbook: `ycash-dd/doc/yellowback-federation.md` §3.
+
 ## 3. Yellowback v1 protocol (normative)
 
 Everything in this section is deterministic given the block sequence and the parameters. Words in
@@ -1483,13 +1519,17 @@ Python 3, single file per role, no daemons beyond `ycashd`. Configuration in `ye
 
 **Price round (every 8 blocks or on a ≥ 1 % move, whichever first):**
 
-1. Each member fetches YEC/USD from every configured source (minimum three independent sources;
-   sources that quote YEC/BTC are converted with a BTC/USD median), keeps a 5-minute time-weighted
-   average per source, drops sources silent for > 120 s, removes outliers more than 10 % from the
-   median (DigiByte's `FilterOutliers`), takes the median in micro-USD. **Move clamp:** the round's
-   price is clamped to ± 10 % of the last on-chain price; a larger real move is followed over
-   several rounds, which is what makes a thin-market wick or a single compromised source unable to
-   move the collateral requirement in one step (the protocol's volatility freeze covers the rest).
+1. Each member fetches YEC/USD from every source in its own configuration (D22: presets for the
+   known APIs or a generic URL + JSON path; sources that quote YEC/BTC are converted with a BTC/USD
+   median), drops a sample whose venue trade time is older than that source's `max_age` or whose
+   spread exceeds its `max_spread_bps`, keeps a 5-minute time-weighted average per source, drops
+   sources silent for > 120 s, removes outliers more than 10 % from the median (DigiByte's
+   `FilterOutliers`), and publishes only with at least `min_sources` (3) live sources from at least
+   `min_venues` (2) distinct venues; below that it publishes nothing. The median is taken in
+   micro-USD. **Move clamp:** the round's price is clamped to ± 10 % of the last on-chain price; a
+   larger real move is followed over several rounds, which is what makes a thin-market wick or a
+   single compromised source unable to move the collateral requirement in one step (the protocol's
+   volatility freeze covers the rest).
 2. The proposer for the round is the member whose id equals `(anchorHeight // 8) mod n`, falling
    back to the next id after 2 blocks without a proposal.
 3. Proposer calls `yed_createpricetx <price> [refill]` on its node (Ycash's `createrawtransaction`

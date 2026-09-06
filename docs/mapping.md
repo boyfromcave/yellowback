@@ -294,6 +294,7 @@ not a soundness matter: the v1 wallet builder (plan D9) and the redemption co-si
 | Crypto | MuSig2 aggregate Schnorr over secp256k1; 7-of-35 threshold (`ref/digibyte/src/kernel/chainparams.cpp:305-307`) | `src/secp256k1/` is present but **Schnorr/MuSig2 modules are not enabled**; Ycash uses ECDSA for transparent sigs and RedJubjub/Groth16 for shielded |
 | Transport | dedicated P2P messages, `src/net_processing.cpp` | `src/main.cpp` P2P message handling (monolithic, older `ProcessMessage`) |
 | Block commitment | oracle bundle committed per-block; `nDigiDollarMuSig2Height` gate | Ycash commits `hashFinalSaplingRoot` / chain history root in the header — a different commitment slot |
+| Price sources | six exchange fetchers compiled in, one class each (`ref/digibyte/src/oracle/exchange.cpp:1092-1097`), sequential fetch, 10 % median outlier filter (`FilterOutliers`, `:1225`) | *(nothing)*. Yellowback: operator TOML `[[sources]]` with presets for the two venues that list YEC (SafeTrade, Nonkyc) and CoinGecko, or a generic URL + JSON path with list selectors; YEC/BTC pairs converted with a median of configured BTC/USD references; per-source freshness and spread guards; thresholds configurable (`ycash-dd/contrib/yellowback/yellowback_fed.py`, plan D22) |
 
 > **DigiByte** aggregates 7-of-35 oracle price signatures with MuSig2 (Schnorr, secp256k1) and
 > commits the bundle into the block, verified by `OracleBundleManager`. **Ycash** ships no oracle
