@@ -3,6 +3,7 @@
 | Document | What it is |
 |---|---|
 | [`yellowback-v1-development-plan.md`](yellowback-v1-development-plan.md) | **The plan.** Decision record, normative v1 protocol, code architecture in `ycash-dd`, federation coordinator, phased work plan with exit criteria, test plan, trust statement and threat model, and the later consensus-enshrinement path. Every `**OPEN**` item in `../spec/yellowback-adaptation-spec.md` is decided here. |
+| [`yellowback-v1-hardening-plan.md`](yellowback-v1-hardening-plan.md) | **Hardening (DRAFT, 2026-09-06).** Wallet-side only, Tier 0: the floor-aware YED coin selector and `yed_estimatesend` (so the $1.00 change floor, C20, is steered around rather than reported), and the coin-locking gaps that let YED be spent as plain YEC by accident (`lockunspent`, running without `-yellowback`, raw transactions, key import). Inventory of every accidental-burn path in its §3; items H1–H12. |
 
 The plan covers both forks: the node (`ycash-dd`, §1–§6) and the YecWallet GUI (`yecwallet-dd`,
 §4.7 and Phase 5b), plus the single-machine multi-operator test workflow (§6.0).
