@@ -1850,8 +1850,12 @@ admits it under abandonment (L13); returns `{txid, hex, collateralOut, to, unbac
 `hex` so the owner can also submit it to any other node); `yed_listpositions` rows =
 `yed_getvault` + `{canRedeem, canClaim, canSweep}` (`canRedeem` is true for an ACTIVE or VOID
 vault at or past `lockHeight`).
-Later, from Phase 8 (H3, H5, H10): `yed_estimatesend`, `yed_unlockcoin`, and
-`yed_getinfo.lockedOutputs`/`protectedByIndex`. **`rpcversion` rule:** additions (new commands,
+Later, from Phase 8 (H3, H4, H5, H10): `yed_estimatesend <{yedaddress: cents, …}|cents>` (the dry
+run of the selector: `{amountCents, recipients, workable, stage, inputs: [{txid, vout, cents}],
+selectedCents, changeCents, spendableCents, error, alternatives: {below, above} (null when
+workable)}`), `yed_unlockcoin <txid> <n> <acknowledgement>` (`{txid, vout, unlocked,
+wasYellowbackLocked, cents}`), `yed_getinfo.lockedOutputs`/`protectedByIndex`, and
+`yed_redeem`/`yed_claim`'s `extraBurnCents`. **`rpcversion` rule:** additions (new commands,
 new fields) never bump it; a removal or a shape change does, so Phase 8's additions land under
 `rpcversion = 2` (M8). **The contract is the document:** `doc/yellowback-rpc.md` v2 is written
 *before* the RPC code in Phase 3 (node context) and at the start of Phase 6 (wallet context),
@@ -3112,7 +3116,7 @@ in the GUI on the devnet, screenshots attached to the PR. Acceptance: exits 0 on
 
 ### Phase 8 — Hardening and review (≈ 2 weeks)
 
-- [ ] Wallet hardening H1–H12 (coin selection and coin locking; wallet tier, never consensus):
+- [x] Wallet hardening H1–H12 (coin selection and coin locking; wallet tier, never consensus):
       - **H1** Replace smallest-first accumulation with a floor-aware selector for `yed_send`,
         `yed_sendmany`, `yed_redeem` and `yed_claim` (H1 extended to `yed_claim`, which did not
         exist when the hardening plan listed three RPCs; a CLAIM selects YED like a REDEEM, N39):
