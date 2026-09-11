@@ -10,28 +10,32 @@
 | 3 — index, hooks, node RPCs | **complete and verified** (2026-09-11): all 9 checkboxes; `rpc-tests.py yellowback_index yellowback_activation yellowback_rpc_contract` exits 0 (1,519 s); the binary matches `doc/yellowback-rpc-contract.json` for all 19 node commands and all 8 node error identifiers |
 | 4 — template filter, `getblocktemplate` | **complete**, merged (found and fixed a real defect: `OverlayStateView` was implicitly copyable, so a template dry run committed into the live index; the copy ctor is now `= delete`) |
 | 5 — enforcement, the soft fork | **in progress**; the node machinery exists from Phases 3–4, the scripted safety scenarios of §7/§8.1 are being written |
-| 6 — wallet: mint, send, redeem, claim | 7 of 9 checkboxes done; `yed_mint`/`yed_send`/`yed_redeem` are **live-tested** end to end on a six-node regtest; `yellowback_claim.py` and `yellowback_pricefeed.py` written, **not yet run** |
+| 6 — wallet: mint, send, redeem, claim | **complete and verified** (2026-09-11), merged: all 9 checkboxes; `yellowback_claim`, `_pricefeed`, `_void_mint`, `_lifecycle`, `_rpc_contract`, `_sapling`, `_wallet_restore` each run to completion and pass, every named case incl. all five sweep cases, the VOID release (L14) and `assert_model_matches(full=True)`; `src/wallet/wallet.{h,cpp}` and `rpcwallet.cpp` at zero diff |
 | 7 — quote agent, pool kit, devnet, docs | **complete except the pool-stack survey** (§12 Q9), which needs the operators; `yellowback_quote.py` passes, the devnet reaches `active` with real agents, `doc/yellowback-mining.md` written |
 | 7b — YecWallet | **7b-a and 7b-b committed**; mint → send → redeem verified against a live devnet through the GUI's own code path; claim/sweep wired and offline-tested, awaiting the node RPCs |
 | 8 — hardening and review | **started**: `doc/yellowback-review.md` v2 written with measured diff-budget actuals, the 11-site hook table with each four-part check, the safety-property evidence and the §8.4 checklist scored (11 PASS / 7 PARTIAL / 4 NOT YET / 2 FAIL / 1 awaiting a reviewer), plus the §8.5 statement drafted. **Not** complete: H1–H12 wallet hardening, `yellowback_runbook.py`, the reorg-stress adaptation, the rc1 run-through, and the two FAILs below |
 | 9, 10 — testnet with real pools, mainnet | cannot be executed on one machine; they need pool operators |
 
-**Open defects found by the review pass (2026-09-11), each to be closed before rc1:**
+**Defects found by the review pass (2026-09-11) and their state:**
 
-1. **Lock-order inversion (safety).** `src/rpc/yellowbackwallet.cpp` `yed_getbalance` takes
-   `cs_yellowback` and then `mempool.cs` inside it, against the recorded order of §4.3/N25
-   ("no RPC may take `mempool.cs` after `cs_yellowback`"). `CreateNewBlock` and
-   `RemoveInvalidVaultSpends` take the opposite order, so this is a genuine deadlock pair that
-   `cs_main` being held on both sides currently masks; `DEBUG_LOCKORDER` would abort on it.
-   A tree-wide scan found no other instance. Assigned to the Phase 6 owner of that file.
-2. **Rule→test tag coverage (§8.4 item 9) fails**: `TPL-1`, `TPL-2` are tagged but indented, and
-   the acceptance grep anchors `# Rule:` at column 0; `MINTPOL-1` appears only in a docstring;
-   **`TPL-3` has no test anywhere**. Assigned to Phases 5 and 6.
+1. ~~**Lock-order inversion** in `yed_getbalance`~~ — **resolved.** The review read the main
+   tree's copy of `src/rpc/yellowbackwallet.cpp`, which the Phase 6 branch superseded; on the
+   merged tree `mempool.cs` is taken immediately before `cs_yellowback` at both sites
+   (`:320-321`, `:613-614`), each with the §4.3 order cited, and the file's header comment now
+   states the full `cs_main → cs_wallet → mempool.cs → cs_yellowback` order and why. Verified by
+   hand after the merge. The order still deserves the `DEBUG_LOCKORDER` nightly job (item 4).
+2. **Rule→test tag coverage (§8.4 item 9): `TPL-3` alone is untagged**, and has no test anywhere
+   in any tree. `MINTPOL-1` was wrongly reported untagged — it is tagged at column 0 in six
+   places across `yellowback_void_mint.py` and `yellowback_lifecycle.py`; `TPL-1`/`TPL-2` are
+   tagged and counted. **Note the grep must be `git grep -qP`**: BSD/`-qE` does not implement
+   `\b` and falsely reports all 59 identifiers untagged on macOS. TPL-3 belongs to
+   `yellowback_mining.py` (Phase 4) and item 9 stays red until it exists.
 3. `yellowback_stockparity.py` and `yellowback_stock_node.py` (§8.4 item 21) do not exist yet —
-   Phase 5.
+   Phase 5, in progress.
 4. The nightly `lockorder`, `sanitizers` and `coverage` jobs have never run: the fork branch has
    never been pushed, and Apple clang ships no libFuzzer (mapping §13.1), so the 8 CPU-hour fuzz
-   run and the coverage floors remain unevidenced on this host.
+   run and the coverage floors remain unevidenced on this host. This is the largest remaining
+   gap in the evidence a Ycash maintainer would want.
 
 Per-checkbox state is in §6; every impedance mismatch found while building is a row in `docs/mapping.md` §13.1–§13.9.
 
