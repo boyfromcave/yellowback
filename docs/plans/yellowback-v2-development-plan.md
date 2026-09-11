@@ -2836,7 +2836,7 @@ with `build_vault_spend_raw` (the *correct* spends too, with `payload=REDEEM(fee
 `fee=(addr, zat)`); the wallet-built flows are re-run in Phase 6's lifecycle and claim tests.
 `checkpoint(label)` runs after every mined block (N35).
 
-- [ ] `qa/rpc-tests/yellowback_enforcement.py` on the standard topology after `activate()`:
+- [x] `qa/rpc-tests/yellowback_enforcement.py` on the standard topology after `activate()`:
       1. node 0 mints (raw); the lock passes; node 1 (stock) mines a block containing an owner-path
          spend **without a burn** built by `build_vault_spend_raw`: nodes 0, 2–4 keep their tip,
          `assert_rejected` on each, `getpeerinfo` shows `banscore == 0` on every connection
@@ -2914,11 +2914,11 @@ with `build_vault_spend_raw` (the *correct* spends too, with `payload=REDEEM(fee
          were indexed before the rejection) and node 2 converges; **variant after a restart
          beyond a day:** `advance_clock(2 · nMaxTipAge)` on node 2, restart it, reconnect: it is
          in IBD (clause 2), accepts everything, `rejectedBlocks == 0`, `suppressedBlocks == 0`.
-- [ ] `qa/rpc-tests/yellowback_stock_node.py` (N35): node 1 has no `yed_*` in `help`; its
+- [x] `qa/rpc-tests/yellowback_stock_node.py` (N35): node 1 has no `yed_*` in `help`; its
       `getblocktemplate` has no `yellowback` key; node 1 mines and relays through every scenario
       above; with `--stock-binary=<path>` node 1 is that binary (nightly: the `ycash-legacy`
       build, P9) — `yellowback_enforcement.py` takes the same option.
-- [ ] `qa/rpc-tests/yellowback_stockparity.py` (nightly, N10): the same 300-block scripted
+- [x] `qa/rpc-tests/yellowback_stockparity.py` (nightly, N10): the same 300-block scripted
       scenario (mine, transactions, a reorg, `getblocktemplate`, `getblock`) driven against a
       `ref/ycash` v4.5.0 binary and the fork binary **without** `-yellowback`; assert equal
       `getbestblockhash`, `gettxoutsetinfo.hash_serialized`, equal `getinfo` and equal
