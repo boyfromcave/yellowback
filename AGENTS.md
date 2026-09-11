@@ -24,7 +24,9 @@ yellowback-workspace/
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/digidollar`, off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the Yellowback adaptation spec
-│   ├── plans/       THE DEVELOPMENT PLAN (node §1–§6, wallet §4.7 and Phase 5b)
+│   ├── plans/       THE DEVELOPMENT PLAN (yellowback-v2-development-plan.md; stands alone)
+│   │   └── archived/   the retired federation design — history only, never an input
+│   ├── ideation/    experimental ideas, inactive — not plans, nothing there is being built
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), repos.sh, repo-status.sh

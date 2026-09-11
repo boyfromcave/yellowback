@@ -94,11 +94,13 @@ timeouts as the escape hatch.
 That is a **weaker trust model**: a quorum that refuses to sign can censor, and a compromised
 quorum can mint unbacked dollars. Consensus enforcement is strictly stronger.
 
-Do not paper over this. The adaptation spec has to state which properties are consensus-enforced
-and which are quorum-enforced, and the answer decides whether Tier 0 is acceptable or whether the
-project has to buy its way up to Tier 2 or 3. **Decide this before writing code** — it is the
-single most consequential open question in
-[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md).
+Do not paper over this. The plan states which properties are consensus-enforced, which are
+enforced by every Yellowback-aware node, and which are enforced by the mining pools that run the
+module — the trust statement in
+[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md) §8.1 —
+and [docs/why-miner-enforced.md](docs/why-miner-enforced.md) explains why miner enforcement was
+chosen over a federation (the retired design, archived under `docs/plans/archived/`) and over a
+network upgrade.
 
 ---
 
@@ -149,11 +151,15 @@ Full detail, with `file:line` citations at both pins:
 2. **[docs/mapping.md](docs/mapping.md)** — the crosswalk. Read the relevant row *before* porting
    any symbol. It exists to stop one specific failure: grepping `ref/digibyte` for a DigiDollar
    symbol and transplanting it into a Ycash file with incompatible semantics.
-3. **[docs/why-no-consensus-change.md](docs/why-no-consensus-change.md)** — the plain-language
-   rationale for the Tier-0 decision: how every DigiDollar feature maps onto rules Ycash already
-   enforces, and the one rule (burn-before-release) that a federation enforces instead.
-4. **[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md)** — the design
-   we are writing. Currently a skeleton of open decisions.
+3. **[docs/why-miner-enforced.md](docs/why-miner-enforced.md)** — the plain-language
+   rationale for v2: why the one rule Ycash script cannot express (burn-before-release) is handed
+   to mining pools rather than to a federation or a network upgrade, what that buys
+   (self-custody, no committee on redemption, a hashpower-priced feed) and the trade-offs it
+   accepts, each with where the plan bounds it.
+4. **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)** —
+   the plan: decision record, the normative protocol (§3), the exact hook lines, the phased work
+   plan. It stands alone. `docs/plans/archived/` is the retired federation design (history only);
+   `docs/ideation/` holds inactive experimental ideas.
 5. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
 
