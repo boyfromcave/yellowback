@@ -13,10 +13,27 @@
 | 6 — wallet: mint, send, redeem, claim | 7 of 9 checkboxes done; `yed_mint`/`yed_send`/`yed_redeem` are **live-tested** end to end on a six-node regtest; `yellowback_claim.py` and `yellowback_pricefeed.py` written, **not yet run** |
 | 7 — quote agent, pool kit, devnet, docs | **complete except the pool-stack survey** (§12 Q9), which needs the operators; `yellowback_quote.py` passes, the devnet reaches `active` with real agents, `doc/yellowback-mining.md` written |
 | 7b — YecWallet | **7b-a and 7b-b committed**; mint → send → redeem verified against a live devnet through the GUI's own code path; claim/sweep wired and offline-tested, awaiting the node RPCs |
-| 8 — hardening and review | not started (H1–H12, rc1 run-through, review document) |
+| 8 — hardening and review | **started**: `doc/yellowback-review.md` v2 written with measured diff-budget actuals, the 11-site hook table with each four-part check, the safety-property evidence and the §8.4 checklist scored (11 PASS / 7 PARTIAL / 4 NOT YET / 2 FAIL / 1 awaiting a reviewer), plus the §8.5 statement drafted. **Not** complete: H1–H12 wallet hardening, `yellowback_runbook.py`, the reorg-stress adaptation, the rc1 run-through, and the two FAILs below |
 | 9, 10 — testnet with real pools, mainnet | cannot be executed on one machine; they need pool operators |
 
-Per-checkbox state is in §6; every impedance mismatch found while building is a row in `docs/mapping.md` §13.1–§13.8.
+**Open defects found by the review pass (2026-09-11), each to be closed before rc1:**
+
+1. **Lock-order inversion (safety).** `src/rpc/yellowbackwallet.cpp` `yed_getbalance` takes
+   `cs_yellowback` and then `mempool.cs` inside it, against the recorded order of §4.3/N25
+   ("no RPC may take `mempool.cs` after `cs_yellowback`"). `CreateNewBlock` and
+   `RemoveInvalidVaultSpends` take the opposite order, so this is a genuine deadlock pair that
+   `cs_main` being held on both sides currently masks; `DEBUG_LOCKORDER` would abort on it.
+   A tree-wide scan found no other instance. Assigned to the Phase 6 owner of that file.
+2. **Rule→test tag coverage (§8.4 item 9) fails**: `TPL-1`, `TPL-2` are tagged but indented, and
+   the acceptance grep anchors `# Rule:` at column 0; `MINTPOL-1` appears only in a docstring;
+   **`TPL-3` has no test anywhere**. Assigned to Phases 5 and 6.
+3. `yellowback_stockparity.py` and `yellowback_stock_node.py` (§8.4 item 21) do not exist yet —
+   Phase 5.
+4. The nightly `lockorder`, `sanitizers` and `coverage` jobs have never run: the fork branch has
+   never been pushed, and Apple clang ships no libFuzzer (mapping §13.1), so the 8 CPU-hour fuzz
+   run and the coverage floors remain unevidenced on this host.
+
+Per-checkbox state is in §6; every impedance mismatch found while building is a row in `docs/mapping.md` §13.1–§13.9.
 
 **Status:** DRAFT — revision 6 (2026-09-10; revision 5 plus one further audit — safety of the valve and the abandonment machinery against the pinned tree, followability of the wallet paths, and the mechanical strength of the test and CI gates — §0). **Ready for implementation, with four protocol adjustments applied and awaiting the product owner's confirmation (L11–L14, §0):** every open item in §12 is a parameter or a post-launch question; nothing in Phases 0–8 waits on a decision other than those four confirmations, each of which is applied in the text so that a "yes" changes nothing; every phase ends in an acceptance block whose exit code decides (§6), every safety claim of §8.1 has a scripted scenario (§7), every CI gate that must be mechanical is a command (§6.0 item 6), and the commands a developer needs on day one are in §6.0 item 0. Written against
 [`../reference/yellowback-miner-enforced-proposal.md`](../reference/yellowback-miner-enforced-proposal.md)
@@ -3533,7 +3550,9 @@ DoS 100 (N1), and `getblocktemplate` carries the tag and a `yellowback` object (
    `main.cpp` ≤ 40, `miner.cpp` ≤ 35, `rpc/mining.cpp` ≤ 35; `init.cpp` has no budget.
 2. Every inserted *statement that can change behaviour* in `main.cpp`/`miner.cpp`/`rpc/mining.cpp`
    is inside `if (g_yellowback)` or assigns `COINBASE_FLAGS`; the unguarded insertions are exactly
-   the two `#include "yellowback/index.h"` lines, the K17 `LOCK(cs_main)` and the
+   the three include lines (`yellowback/index.h` in `main.cpp` and in `rpc/mining.cpp`,
+   `yellowback/policy.h` in `miner.cpp` — corrected 2026-09-11 against the tree; the earlier
+   text said two, both `index.h`), the K17 `LOCK(cs_main)` and the
    `+ COINBASE_FLAGS` append at `miner.cpp:327` (empty without the flag) — mechanical:
    `git diff ycash-legacy...HEAD -- src/main.cpp src/miner.cpp src/rpc/mining.cpp | grep '^+' | grep -v 'g_yellowback\|#include\|LOCK(cs_main)\|COINBASE_FLAGS\|^+$\|^+++'`
    printed in the review document with every residual line justified (M11, N10); with
@@ -3568,8 +3587,13 @@ DoS 100 (N1), and `getblocktemplate` carries the tag and a `yellowback` object (
    N36) and every functional flow has a script (§7).
 10. Apply/undo identity and cold-rebuild equality under reorg stress with enforcement events.
 11. `IsStandardTx`/`AreInputsStandard` pass for every template incl. the claim path.
-12. Determinism grep empty in `state.cpp`, `math.h`, `tag.cpp`, `payload.cpp`, `script.cpp`,
-    `index.cpp`; `GetTime` only in `rpc/yellowback.cpp` and `policy.cpp` (M11).
+12. Determinism grep empty over the §3.10 set — `state.cpp`, `tag.cpp`, `payload.cpp`,
+    `script.cpp`, `view.cpp` and `state.h`, `math.h`, `tag.h`, `payload.h`, `script.h`, `view.h`,
+    exactly the set Phase 2's acceptance block greps. **`index.cpp` is deliberately not in it**
+    (corrected 2026-09-11): `ParamsFromArgs` legitimately reads `GetArg` there for the four
+    regtest-only flags, which Phase 3 places in that file, and the index is not a pure function of
+    the chain the way the state machine is. `GetTime` only in `rpc/yellowback.cpp` and
+    `policy.cpp` (M11).
 13. Coin locking: every YED output the wallet owns is locked before `CommitTransaction` (vault
     outputs are never `IsMine` and need no lock, §4.6, N39) and stays locked across a reorg, and locking covers every mine-owned token outpoint after a
     restart; a YED input is never selected by the plain `sendtoaddress`/`z_sendmany` paths, even
