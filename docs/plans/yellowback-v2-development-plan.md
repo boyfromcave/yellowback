@@ -361,8 +361,9 @@ open on a storage failure only (the block is accepted and the index is marked un
 its evaluation is total and can never throw (K1), is off until a chain-derived activation and
 while participation is below the floor (ACT-5), has a kill switch that also un-rejects blocks
 (V1, V13), trips a work valve that re-joins a rejected chain once it is six blocks heavier than
-the node's own (ACT-7, L7), never rejects a block the network has already built six blocks on
-(catch-up suppression, L11), and sunsets at a per-release height (L8). (c) The
+the node's own (ACT-7, L7), usually does not reject a block the network has already built six
+blocks on and rejoins within six blocks when it does (catch-up suppression, L11, bounded by the
+valve), and sunsets at a per-release height (L8). (c) The
 price feed's honesty rests on the honest-majority-hashpower assumption the chain already makes,
 made precise by medians and the min/max selectors (peer-median penalties and accuracy weighting
 act only through wallets' default payee choice, L1); the feed's *availability*
@@ -2058,8 +2059,11 @@ chain at the next block the network announces (P3) and its tags have lost the si
 operator's job is then to find out *why* the network did not follow — a bug in this node
 (`yed_getblockverdict`), a stale release, a real enforcing minority — and to **restart** to
 re-arm the valve once that is understood; nothing else re-arms it. **Expected after an outage
-(L11):** a node that catches up after a partition or a restart never rejects a block the network
-has already built six blocks on; it accepts it, logs `catch-up: accepted rule-breaking block …`
+(L11):** a node that catches up after a partition or a restart usually does not reject a block the
+network has already built six blocks on — suppression needs `pindexBestHeader` to have advanced
+past the block, which is the ordinary case because headers lead blocks, but a block that arrives
+before its own descendants' headers is still rejected and the valve then rejoins the node; when
+suppression does fire the node accepts the block, logs `catch-up: accepted rule-breaking block …`
 and counts it in `yed_getinfo.suppressedBlocks` with enforcement still on — a non-zero count is
 worth a look at `yed_getblockverdict` but needs no action; a node restarted after more than a
 day offline is in initial block download until its tip is a day old and rejects nothing until
@@ -3462,9 +3466,13 @@ Yellowback v2 is a miner-enforced, over-collateralised stablecoin overlay on Yca
   outruns its own by six blocks — stops enforcing for the session, rejoins the network's chain,
   raises an alert and waits for its operator; it is never stranded for more than six blocks, and
   it never bans the peers that relayed the other chain, neither for the rejected block nor for
-  its descendants. A node that catches up after an outage never rejects a block the network has
-  already built six blocks on; it accepts it, records that it did, and keeps enforcing.
-  Enforcement means "majority in fact", not "majority by count".
+  its descendants. A node that catches up after an outage *usually* does not reject a block the
+  network has already built six blocks on: when the network's headers reach it before the block
+  does — the ordinary case, since headers lead blocks — it accepts the block, records that it
+  did, and keeps enforcing. When the block arrives first it can still reject it, and the work
+  valve above is then what bounds the consequence: the node rejoins within six blocks. The valve,
+  not catch-up suppression, is the guarantee. Enforcement means "majority in fact", not "majority
+  by count".
 - Every release enforces only until a sunset height about a year past its start; past it the
   node keeps publishing quotes and accounting but rejects nothing until upgraded, so two
   releases with different rules can never both be enforcing.
