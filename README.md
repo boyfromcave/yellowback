@@ -18,12 +18,17 @@ yellowback-workspace/
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-sf` off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
-│   ├── plans/       the development plan (node, mining, wallet GUI, single-machine testing)
-│   └── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
+│   ├── plans/       THE DEVELOPMENT PLAN (v2, miner-enforced); `archived/` = the retired federation design
+│   ├── reference/   the miner-enforced proposal the v2 plan was written from
+│   ├── ideation/    inactive experimental ideas — not plans, nothing here is being built
+│   ├── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
+│   ├── why-miner-enforced.md        the plain-language rationale for the v2 design
+│   └── innovation-acknowledgements.md   what DigiDollar contributed, and where Yellowback diverges
 ├── repos.yaml       THE MANIFEST — every repo, its URL and its pin (no submodules)
 ├── Makefile         `make bootstrap` — recreate the workspace; `make status` — repo state + pin check
 ├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
+├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
 ├── yellowback.code-workspace   VS Code: parent + all five clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
@@ -31,6 +36,47 @@ yellowback-workspace/
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
 filesystem, not just documented. All work happens in `ycash-dd/` (node) and `yecwallet-dd/`
 (wallet); the `yed_*` RPC surface is the only interface between the two.
+
+---
+
+## What Yellowback is, in one page
+
+**Yellowback v2 is a miner-enforced overlay.** A minter locks YEC in a time-locked P2SH vault they
+control alone and receives YED, a dollar-denominated token on ordinary transparent outputs; burning
+the YED unlocks the YEC. The one rule Ycash script cannot express — *release this collateral only
+if the matching YED is burned* — is enforced by **mining pools**, because on a proof-of-work chain
+the miner is the only party who can refuse a transaction without a consensus change.
+
+- **Who enforces.** Any pool that runs the module. Before activation it filters its own block
+  templates (policy only, which cannot fork anything). After activation — ≥ 75 % of a 2,016-block
+  window signalling, then a 2,016-block delay — it also rejects a block containing a vault spend
+  without the matching burn. That is a soft fork in the P2SH/CLTV sense: every block an enforcing
+  pool mines is valid to a stock node, and a stock node never rejects anything it accepts today.
+- **What can invalidate a block.** Exactly one class of transaction: a spend of an ACTIVE vault
+  output whose burn or enforcement fee is wrong. Invalid mints and transfers never invalidate a
+  block, and a coinbase tag never does.
+- **Where the price comes from.** A 36-byte quote tag in the coinbase scriptSig, carried by the
+  never-assigned `COINBASE_FLAGS` global, so the internal miner, regtest `generate` and
+  `getblocktemplate` all emit it with no new plumbing. Prices are rolling medians of 96 / 576 /
+  2,016 quote-tagged blocks, fail-closed below a minimum fill. No oracle roster, no quorum, no
+  signing round.
+- **Who gets paid.** Every mint, redemption and claim pays an enforcement fee of
+  `max(0.5 YEC, 0.25 % of collateral)` to a pool that quoted recently — earned in proportion to
+  blocks quoted, so a small pool that quotes every block earns its share. Permissionless: there is
+  no slot to be granted.
+- **What nobody can do.** No operator, committee or key other than the minter's can move
+  collateral before the claim height; after it, only a burn of the vault's debt can. Nothing any
+  pool does can create YED, move a user's YED, or take collateral early.
+
+**No federation.** A 5-of-9 federation prototype was built, worked on regtest, and was **retired on
+2026-09-10** because it put a counterparty on redemption. It survives as
+`docs/plans/archived/` and as the `feature/digidollar` branch in both forks — a record, never an
+input, never built on.
+
+Rationale: [docs/why-miner-enforced.md](docs/why-miner-enforced.md). Normative protocol:
+[docs/spec/yellowback-spec.md](docs/spec/yellowback-spec.md) (generated from the plan's §3 by
+`make spec`). Lineage and divergence from DigiDollar:
+[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md).
 
 ---
 
@@ -64,6 +110,19 @@ Prefer the lowest tier that can work. Every step down the list costs review effo
 | **2** | New opcode semantics on unused `OP_NOP` slots | Soft fork; old nodes still accept | never done in Ycash |
 | **3** | New network upgrade: `UPGRADE_YELLOWBACK`, new branch ID, new tx version / version group | **Hard fork**, coordinated | Overwinter, Sapling, Ycash, Heartwood, Canopy |
 
+**Where Yellowback v2 landed: Tier 1 plus one block-validity hook — and no opcode.** Miner
+enforcement does not sit on a rung of this ladder, because it buys a soft fork's effect without a
+soft fork's code. Tier 2 is skipped entirely: there is no new opcode, no `OP_NOP` repurposing, no
+branch ID, no network upgrade, and no release the Ycash team must ship. The whole enforcement rule
+is a pure function of `(block, state, params)` called from the `ConnectBlock` window of the patched
+node, inert without `-yellowback`, and switched off with one flag. Measured against `ycash-legacy`
+(plan header, 2026-09-11): `src/main.cpp` **11** changed lines, `src/miner.cpp` **12**,
+`src/rpc/mining.cpp` **7**, and `src/consensus/`, `src/script/`, `src/primitives/`, `src/pow/`,
+`src/wallet/wallet.{h,cpp}` at **zero**. Vaults are ordinary P2SH with `CHECKLOCKTIMEVERIFY` that
+Ycash already validates in every block; YED tokens are ordinary transparent P2PKH outputs with one
+80-byte `OP_RETURN` payload that Ycash already relays; YED addresses are plain Base58Check P2PKH
+with new version bytes and no `chainparams.cpp` edit.
+
 ### Tier 0 is not hypothetical — Ycash already did it
 
 Ycash v4.5.0 ships **atomic swaps** (`src/script/atomicswap.h`), an HTLC built from nothing but
@@ -84,23 +143,38 @@ run with `-experimentalfeatures -atomicswaps`.
 
 **That is the shape to aim for.** Study `ccddd22e4` before designing anything.
 
-### What Tier 0 costs, stated honestly
+### What that minimality costs, stated honestly
 
 DigiDollar enforces collateral ratios and supply in *consensus*: the chain itself refuses an
-invalid mint. A Tier-0 Yellowback cannot do that — with no new opcodes, correctness has to rest on an
-oracle/federation quorum co-signing valid mints and redemptions under a P2SH multisig, with CLTV
-timeouts as the escape hatch.
+invalid mint, which DigiByte could add cheaply because Tapscript's `OP_SUCCESSx` gave it a
+soft-fork mechanism. Ycash has no such hook, so Yellowback's guarantees rest on hashpower instead,
+and that is a different and weaker assumption than consensus enforcement. Stated plainly:
 
-That is a **weaker trust model**: a quorum that refuses to sign can censor, and a compromised
-quorum can mint unbacked dollars. Consensus enforcement is strictly stronger.
+- **A vault is safe only while a majority of hashpower enforces the burn rule.** That is the same
+  honest-majority assumption the chain already makes for double-spends, but it is an assumption —
+  which is why minting is impossible before activation, halts when signalling falls below 60 %, and
+  block rejection itself suspends below 50 % and resumes at 60 %.
+- **The claim path is anyone-can-spend at the script level.** Its safety is the enforcement rule,
+  not the script.
+- **A bug in the hook could fork enforcing pools off the chain.** Bounded by: the hook rejects only
+  ACTIVE-vault spends, fails open on a storage failure, never bans a peer, has a kill switch that
+  also un-rejects blocks, trips a work valve that re-joins a heavier rejected chain, never rejects
+  a block the network has already built six blocks on, and sunsets at a per-release height.
+- **The feed's availability rests on pool participation**, and the design degrades to "no new
+  mints" — never to "a minter cannot redeem".
+- **YED stays on transparent outputs.** Miners cannot enforce what they cannot read, so shielded
+  YED is deferred research.
 
-Do not paper over this. The plan states which properties are consensus-enforced, which are
-enforced by every Yellowback-aware node, and which are enforced by the mining pools that run the
-module — the trust statement in
-[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md) §8.1 —
-and [docs/why-miner-enforced.md](docs/why-miner-enforced.md) explains why miner enforcement was
-chosen over a federation (the retired design, archived under `docs/plans/archived/`) and over a
-network upgrade.
+Do not paper over this. The plan states which properties are consensus-enforced, which are enforced
+by every Yellowback-aware node, and which are enforced by the mining pools that run the module —
+the trust statement in
+[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md) §8.1,
+which must be published verbatim with v2. The full trade-off table, each row with the plan citation
+that bounds it, is [docs/why-miner-enforced.md](docs/why-miner-enforced.md) §5; that document also
+explains why miner enforcement was chosen over a federation (retired, `docs/plans/archived/`) and
+over a network upgrade. **Consensus enforcement is still the destination** — the validator is
+written so a later Ycash network upgrade would change who runs the check, not what it checks
+(plan §9).
 
 ---
 
@@ -141,7 +215,9 @@ DigiByte v9.26.5 is Bitcoin Core ~v26/28 (`src/validation.cpp`, `src/kernel/`, `
 upgrades, no Qt GUI). Almost no file path maps directly.
 
 Full detail, with `file:line` citations at both pins:
-**[docs/mapping.md](docs/mapping.md)**.
+**[docs/mapping.md](docs/mapping.md)**. What DigiDollar *did* contribute to Yellowback, credited
+specifically, and where the two designs part company on principle:
+**[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)**.
 
 ---
 
@@ -160,8 +236,19 @@ Full detail, with `file:line` citations at both pins:
    the plan: decision record, the normative protocol (§3), the exact hook lines, the phased work
    plan. It stands alone. `docs/plans/archived/` is the retired federation design (history only);
    `docs/ideation/` holds inactive experimental ideas.
-5. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
+5. **[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)** — what the
+   DigiByte team contributed and what Yellowback owes them, alongside the specific points where
+   Ycash's principles (decentralization, self-sovereignty, risk aversion) sent the design
+   elsewhere. Read it before describing Yellowback to anyone outside the project.
+6. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
+
+**Where the work stands** is the execution-status table at the top of the plan, kept current by the
+coordinator — Phases 0–4, 6, 7 and 7b complete (the node builds clean, and mint / send / redeem /
+claim / sweep are proven end to end through YecWallet against a live devnet), Phase 5 (the
+enforcement scenarios) in progress, Phase 8 (hardening and review) partly done, and Phases 9–10
+(testnet and mainnet with real pools) blocked on pool operators rather than on code. Trust that
+table, not this paragraph.
 
 Before porting anything, answer four questions in writing:
 
