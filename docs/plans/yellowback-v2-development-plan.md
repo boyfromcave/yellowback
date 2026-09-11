@@ -2482,11 +2482,11 @@ crash, recorded in the PR. Acceptance: the block above exits 0 on CI jobs `main`
 
 ### Phase 2 — State machine v2 (≈ 1,200 lines)
 
-- [ ] `view.h` tables of §3.6 with the key prefixes and the `Params` record; `SCHEMA_VERSION = 2`;
+- [x] `view.h` tables of §3.6 with the key prefixes and the `Params` record; `SCHEMA_VERSION = 2`;
       `StateHash` per §3.6 *State hash* (excluding `U`, `X` and `TxLog`); `statehash_golden_vector`
       (pinned hex over a fixed synthetic sequence; N18); `AnchorRecord`/`GetAnchor` and the
       `P<height>` price table go now (the Phase 0 grep gains `genesisanchor\|AnchorRecord\|GetAnchor`).
-- [ ] `state.cpp`: `ProcessTx` with IN-1..3 (amended, incl. the MINT clause of IN-3, N19), TX-0,
+- [x] `state.cpp`: `ProcessTx` with IN-1..3 (amended, incl. the MINT clause of IN-3, N19), TX-0,
       MINT-1..8, XFER-1..3, RED-1..4 and the M3 rule (a vault-spending transaction sees no
       MINT/XFER rules); `TxLog` entries only for transactions that create or spend
       `Tokens`/`Vaults` (N7); `EligiblePayees`, `DefaultPayee` (FEE-2, FEE-W); `ComputeSnapshot`
@@ -2495,9 +2495,9 @@ crash, recorded in the PR. Acceptance: the block above exits 0 on CI jobs `main`
       undefined-value encoding and the virtual snapshot (§3.6); `EvaluateBlock` and `ApplyBlock`
       with the §4.2a signatures — **total**: every lookup that can miss returns a verdict, no
       `throw`, no `assert` on input, no unchecked division (K1); `UndoBlock`.
-- [ ] Verdict strings exactly as the §4.2a table (the wallet fork and the tests match them; the
+- [x] Verdict strings exactly as the §4.2a table (the wallet fork and the tests match them; the
       prototype's tier/ERR/volatility verdicts are deleted, N20).
-- [ ] Unit tests on synthetic blocks (in-memory view): tags and medians including the half-fill
+- [x] Unit tests on synthetic blocks (in-memory view): tags and medians including the half-fill
       boundary (`⌈W/2⌉ − 1` vs `⌈W/2⌉`); `P_mint`/`P_claim` selectors under rising and falling
       series; activation lock-in at exactly the threshold, delay, participation halt and
       hysteresis; judgement lag, penalty window edges, accuracy counts; the eligible payee set
@@ -2542,7 +2542,7 @@ crash, recorded in the PR. Acceptance: the block above exits 0 on CI jobs `main`
       (`⌈2W/3⌉ − 1` vs `⌈2W/3⌉` on the mid and slow windows, L9), `mempoolcheck_bench` (10,000
       plain transactions through `MempoolCheck` in < 1 s; a 2 MB `OP_RETURN` block through
       `EvaluateBlock` in < 200 ms, N6).
-- [ ] Totality: a fuzz target `YellowbackEvaluate` (corpus `src/fuzzing/YellowbackEvaluate/input`)
+- [x] Totality: a fuzz target `YellowbackEvaluate` (corpus `src/fuzzing/YellowbackEvaluate/input`)
       decodes its input with a fixed prefix grammar — `k ≤ 64` tags, `m ≤ 16` vaults, `n ≤ 16`
       tokens, a snapshot row and an activation record seeded into a `MemoryStateView`, regtest
       params fixed, then a serialised `CBlock` and a height `H` drawn in `[START_HEIGHT − 2,
@@ -2557,7 +2557,7 @@ crash, recorded in the PR. Acceptance: the block above exits 0 on CI jobs `main`
       Phase 2 exit criterion (K1). Also `YellowbackPayee` (FEE-W over random `Tags`/`Judgements`:
       the pick is in `E(R)`; the all-penalised fallback is never empty when `E(R)` is non-empty) —
       it guards the one wallet-side function that can make the wallet and the validator disagree.
-- [ ] CI: at this phase's first commit the four wallet-flow scripts leave the `main` job's list
+- [x] CI: at this phase's first commit the four wallet-flow scripts leave the `main` job's list
       (§6 preamble, N26), recorded in `doc/yellowback.md`; the `weekly-fuzz` job and the nightly
       fuzz smoke are added (§6.0 item 6).
 
