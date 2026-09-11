@@ -2217,7 +2217,7 @@ src/ycashd src/fuzzing/YellowbackEvaluate/output src/fuzzing/YellowbackEvaluate/
 
 A failed `make` leaves the old `test_bitcoin` in place, so "tests pass" after a failed build means
 nothing: check the make exit code. The wallet fork (Phase 7b) builds and tests with
-`cd ../yecwallet-dd && cmake -S . -B build -DCMAKE_PREFIX_PATH=$(brew --prefix qt) && cmake --build build --target yellowback_test && QT_QPA_PLATFORM=offscreen build/yellowback_test`
+`cd ../yecwallet-dd && cmake -S . -B build -DCMAKE_PREFIX_PATH=$(brew --prefix qt) && cmake --build build --target yellowback_test && QT_QPA_PLATFORM=offscreen build/bin/yellowback_test`
 (the target exists only when `Qt6::Test` is present, `CMakeLists.txt:320-338`) and packages with
 `bash build.sh macos-arm64 --package --ycashd ../ycash-dd/src/ycashd` (static Qt 6.5.8 in
 `deps/`; `build.sh` selects the newest SDK that still ships `AGL.framework`).
@@ -2350,7 +2350,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
 - [x] Update `repos.yaml` (`branch:` for both forks), `AGENTS.md` rule 2 and the layout block, the
       README pin table, `docs/mapping.md`'s pin table; `feature/digidollar` is kept as the federation
       prototype's record (`make log` may list both). `make status` clean.
-- [ ] Node: delete everything under "Removed outright" in §4.2 that nothing retained references
+- [x] Node: delete everything under "Removed outright" in §4.2 that nothing retained references
       (the §6 preamble rule: `Roster` and the roster-typed `VaultScript`/`ParseVaultScript` stay
       until Phase 1; `AnchorRecord`/`GetAnchor` live in `view.h:124-141,420` and are read by
       `state.cpp` until Phase 2); keep the tree building at every commit — in
@@ -2368,7 +2368,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
       still passes for the cases that remain. `RPC_VERSION` stays at 1 — the wallet must keep
       running against a `rpcversion 1` node until Phase 3 ships v2; the bump is Phase 7b-a's first
       commit (N27).
-- [ ] Publish §3 of this plan verbatim as `docs/spec/yellowback-spec.md` through a tool, not a
+- [x] Publish §3 of this plan verbatim as `docs/spec/yellowback-spec.md` through a tool, not a
       copy: `scripts/extract-spec.sh` copies the lines from `## 3.` up to `## 4.` **and §8.1**
       with a generated header (`Source: yellowback-v2-development-plan.md revision N; sha256:
       <hash of the body>`), writes the same file to **`ycash-dd/doc/yellowback-spec.md`** (the copy
@@ -2381,7 +2381,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
       `ycash-dd/doc/yellowback.md` (the "no consensus change, no policy change" paragraph is false
       for v2) and mark the rest "federation prototype, being replaced by phase" — **except the
       "Build and test baseline" section, which is kept and extended (§6.0 item 0), never removed.**
-- [ ] CI (`.github/workflows/yellowback-tests.yml`, N32): `on.push.branches`/`on.pull_request.branches`
+- [x] CI (`.github/workflows/yellowback-tests.yml`, N32): `on.push.branches`/`on.pull_request.branches`
       → `feature/yellowback-sf`; add `on.schedule: [{cron: '0 3 * * *'}]` and `workflow_dispatch`
       (the nightly job is otherwise dead); replace the zero-touch `test -z "$(git diff --stat …)"`
       by the line-budget loop of §6.0 item 6 plus the zero test for the consensus set; anchor the
@@ -2392,7 +2392,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
       `python`, `nightly`; `lockorder`, `sanitizers` and `coverage` come with Phase 3, `wallet`
       and `weekly-fuzz` with Phases 7b and 2); the `audit` job checks only fork-local documents
       (P4); make `main` green on the reduced tree.
-- [ ] Record the baseline (`test_bitcoin` count, which functional tests still run) in
+- [x] Record the baseline (`test_bitcoin` count, which functional tests still run) in
       `doc/yellowback.md`. Carry over the two Phase-0 leftovers of the prototype (`YCASH_WR=1` build; inherited
       `rpc-tests.py` baseline) as open items.
 
@@ -2422,7 +2422,7 @@ exits 0 on CI jobs `main` + `audit` for this PR series.
 Files: `params`, `math.h`, `tag`, `payload`, `script`, `address` (unchanged). No chain, DB or
 wallet dependencies. Four-part check for each (AGENTS.md rule 4) goes in the commit message.
 
-- [ ] `Params` per §3.1 (the field list of §4.2a) with the L6 wallet-default rows and
+- [x] `Params` per §3.1 (the field list of §4.2a) with the L6 wallet-default rows and
       `IsConfigured()`; `Params RegtestParams(int startHeight, int sigmaRefBps, int supplyCapBps,
       int enforceUntil)` **beside** the old roster-typed overload (the §6 preamble; the old one
       goes in Phase 3). Flag parsing is not here: `params.cpp` is `libbitcoin_common` and §3.10
@@ -2430,7 +2430,7 @@ wallet dependencies. Four-part check for each (AGENTS.md rule 4) goes in the com
       moves to the four regtest-only flags (`-yellowbackstartheight`, `-yellowbacksigmaref`,
       `-yellowbacksupplycapbps`, `-yellowbackenforceuntil`) in Phase 3. Every other regtest value
       is compiled into `RegtestParams` (§3.1).
-- [ ] `math.h` per the §4.2a signatures: `LowerMedian`, `IsqrtU256`, `SigmaMultBps`, `MinRatioBps`,
+- [x] `math.h` per the §4.2a signatures: `LowerMedian`, `IsqrtU256`, `SigmaMultBps`, `MinRatioBps`,
       `RequiredCollateral`, `CapCents`, `SupplyCapCents`, `GlobalRatioBps`, `IsUnderwater`, `FeeZat`
       — no `IssuedZat` (the subsidy is `EvaluateBlock`'s argument, N22) —
       (with the worked examples of §3.7 as tests, overflow tests at `MAX_MINT`/`PRICE_MIN`, the
@@ -2439,14 +2439,14 @@ wallet dependencies. Four-part check for each (AGENTS.md rule 4) goes in the com
       `fee1_min_dominates_small_vault` (`collateral < 200 YEC ⇒ FEE_MIN`) and `fee1_at_max_money`
       (no overflow); `sigma1_first_sample_at_start_height` (`s_43` exactly at `START_HEIGHT`
       defined; one below ⇒ the cap)).
-- [ ] `tag.{h,cpp}` per §4.2a (`TagPush`, not `TagScript`, N25): `EncodeTag`, `FindTag(scriptSig, nHeight)` implementing TAG-1..5 with a
+- [x] `tag.{h,cpp}` per §4.2a (`TagPush`, not `TagScript`, N25): `EncodeTag`, `FindTag(scriptSig, nHeight)` implementing TAG-1..5 with a
       table-driven test: tag right after the height, after an extranonce, after pool text, magic
       inside an extranonce with too few bytes following, two tags, bad version, reserved flag
       bit, price out of range, signal-only; and the 100-byte budget test at heights 1, 16, 17,
       65,535, 16,777,215, 16,777,216.
-- [ ] `payload.{h,cpp}` version 2 (§3.3): round-trip table, every malformed case, `feeVout`
+- [x] `payload.{h,cpp}` version 2 (§3.3): round-trip table, every malformed case, `feeVout`
       semantics, REDEEM `count` bound 14.
-- [ ] `script.{h,cpp}`: `VaultScript`, `ParseVaultScript`, `OwnerScriptSig`, `ClaimScriptSig`,
+- [x] `script.{h,cpp}`: `VaultScript`, `ParseVaultScript`, `OwnerScriptSig`, `ClaimScriptSig`,
       `ParseVaultSpendPath`; tests: sizes and sigops; `VerifyScript` under
       `STANDARD_SCRIPT_VERIFY_FLAGS` for owner path (success; early; wrong key; claim-path
       selector with a signature), claim path (success at `claimHeight`; early; `nSequence` final);
@@ -2454,7 +2454,7 @@ wallet dependencies. Four-part check for each (AGENTS.md rule 4) goes in the com
       `RegtestActivateSapling()`/`Canopy()` (`BasicTestingSetup` selects mainnet and the regtest
       fixture activates nothing, `ref/ycash/src/test/test_bitcoin.h:19`; the activation helpers are
       `ref/ycash/src/utiltest.h:40-53`, not under `src/test/`); fee output present.
-- [ ] Fuzz targets: `YellowbackTag` (new; seeds = the table cases above plus ten real Ycash mainnet
+- [x] Fuzz targets: `YellowbackTag` (new; seeds = the table cases above plus ten real Ycash mainnet
       coinbase scriptSigs from `getblock` at assorted heights, so the byte scan is fuzzed against
       pool-shaped extranonces), `YellowbackPayload` and `YellowbackScript` re-seeded (corpora under
       `src/fuzzing/<Target>/input`, Ycash's own fuzz layout, `ref/ycash/src/fuzzing/`); **the
@@ -3060,7 +3060,7 @@ claim on the devnet with the wallet alone (acceptance). **Acceptance** (from `ye
 
 ```
 cmake -S . -B build -DCMAKE_PREFIX_PATH=$(brew --prefix qt) && cmake --build build --target yellowback_test
-QT_QPA_PLATFORM=offscreen build/yellowback_test
+QT_QPA_PLATFORM=offscreen build/bin/yellowback_test
 grep -rn 'trustless' src/ | { ! grep .; }
 bash build.sh macos-arm64 --package --ycashd ../ycash-dd/src/ycashd && ls artifacts/*.dmg
 ```
