@@ -1,6 +1,16 @@
 # Ycash Yellowback (YED) v2 — Development Plan: miner-enforced Yellowback
 
-**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` is at `0d41a4a64` and builds clean: 115 `yellowback_*` unit tests green, `src/main.cpp` **11** changed lines vs `ycash-legacy` (budget 40, all six §4.3 sites, every statement under `if (g_yellowback)`, `DoS(0)` only), `src/miner.cpp` **12** (budget 35), `src/rpc/mining.cpp` **7** (budget 35), and the consensus set of §4.1 at **zero**.
+**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` builds clean with **137 `yellowback_*` unit tests green**, the full inherited `test_bitcoin` showing only the two failures that exist at the pin, and **all 59 rule identifiers carrying a tagged test**. Budgets and the consensus set:
+
+| | changed lines | budget |
+|---|---|---|
+| `src/main.cpp` | 11 | 40 |
+| `src/miner.cpp` | 12 | 35 |
+| `src/rpc/mining.cpp` | 7 | 35 |
+| `src/wallet/wallet.{h,cpp}` | 0 | 0 |
+| consensus set of §4.1 | 0 | 0 |
+
+**Phases 0–8 are implemented.** What remains of Phase 8 is the rc1 run-through, `yellowback_runbook.py`, the reorg-stress adaptation, the DoS review and a final pass over `doc/yellowback-review.md`; Phases 9–10 need real pool operators and cannot be executed on one machine.
 
 | Phase | State |
 |---|---|
