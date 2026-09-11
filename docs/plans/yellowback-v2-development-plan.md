@@ -65,6 +65,29 @@
    rule (what the payload, the burn and the fee must be) and derive the shape from what was
    actually selected.
 
+3e. **Two CI failures that local runs could not see (fixed 2026-09-11), both worth remembering.**
+   (i) `gen_yellowback_corpus.py --check` called `hashlib.new("ripemd160")`, which OpenSSL 3 moved
+   to the legacy provider and stock Linux runners disable — so the corpus check worked on the
+   developer's macOS host and had never once run on CI. It now single-sources the pure-Python
+   RIPEMD-160 the functional-test model already carried, verified byte-identical against the
+   algorithm's reference vectors, against OpenSSL, and with `hashlib`'s RIPEMD-160 forced to raise.
+   (ii) `yellowback_hardening.py` printed `Tests successful` and the suite still called it red:
+   its H6 case provokes an init refusal, the refusal reached the script's stderr, and
+   `rpc-tests.py` fails any script that writes to stderr. Running the script **directly** hides
+   this entirely. It now uses `assert_start_raises_init_error`, which captures that stderr and
+   asserts the message, so the case also proves *why* init refused instead of accepting any
+   startup failure — a slow start under load would have passed it. **Verify functional scripts
+   through `qa/pull-tester/rpc-tests.py`, not by invoking them directly.**
+
+3f. **Four suites were listed in `rpc-tests.py` but never in CI's `YELLOWBACK_SCRIPTS`** — mining,
+   stock-node, hardening and, most seriously, **`yellowback_enforcement`, the soft fork's entire
+   safety evidence**. Every phase registered its script with the runner and none updated the
+   workflow variable, so those suites passed locally and were reported as verified while CI
+   silently skipped them. Fixed 2026-09-11; the list now matches §6.0 item 6 plus hardening.
+   `yellowback_quote` remains out, with the reason recorded in the workflow: it needs Python 3.11
+   for `tomllib` while that job runs 3.10, and moving the job also moves it off the apt
+   `python3-zmq` its prerequisite step imports.
+
 4. The nightly `lockorder`, `sanitizers` and `coverage` jobs have never run: the fork branch has
    never been pushed, and Apple clang ships no libFuzzer (mapping §13.1), so the 8 CPU-hour fuzz
    run and the coverage floors remain unevidenced on this host. This is the largest remaining
