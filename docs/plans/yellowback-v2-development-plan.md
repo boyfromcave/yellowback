@@ -2747,9 +2747,13 @@ Reviewer by hand: every inserted `main.cpp` statement is inside `if (g_yellowbac
 printed in the PR and each residual line justified. Run-through on one node by hand (N28):
 `src/ycashd -regtest -experimentalfeatures -yellowback -yellowbackstartheight=1
 -yellowbackpayoutaddress=<s1…> <six -nuparams>`; `yed_setquote 50000 2`; `generate 70`;
-`yed_gettag <tip>` shows a quote tag, `yed_getprice` three defined medians at ≥ 64 blocks,
-`yed_getactivation.status == "signaling"` with `signalCount == 64`; `generate 65` more ⇒
-`locked_in`, `generate 64` ⇒ `active`; `verifychain 4 20` leaves `yed_getstatehash` unchanged.
+`yed_gettag <tip>` shows a quote tag, `yed_getprice` three defined medians at ≥ 64 blocks, and
+`yed_getactivation` is already `locked_in` with `signalCount == 64` and `lockInHeight == 64` —
+on a single signalling node ACT-2 locks in at the *first* height whose trailing window is full
+and at threshold, which is height 64, so the status is never observed as `signaling` at height
+70 (corrected 2026-09-11 against the binary; the earlier prose was one signalling window out);
+`generate 58` more ⇒ `active` at `lockInHeight + ACTIVATION_DELAY = 128`; `verifychain 4 20`
+leaves `yed_getstatehash` unchanged.
 Acceptance: the block above exits 0 on CI jobs `main` + `audit`.
 
 ### Phase 4 — Mining: tag, quote, template filter, `getblocktemplate` (≈ 400 lines + ≈ 50 in `miner.cpp`/`rpc/mining.cpp`)
