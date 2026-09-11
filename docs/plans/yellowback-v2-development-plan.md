@@ -7,7 +7,7 @@
 | 0 — strip the federation, re-baseline | **complete**, both forks |
 | 1 — protocol library v2 | **complete** (`77fa95b0b`) |
 | 2 — state machine v2 | **complete** (`f86580c2a`); the C++ state hash reproduces the independent Python model's pinned golden vector |
-| 3 — index, hooks, node RPCs | 7 of 9 checkboxes done and merged; `yellowback_activation.py` and `yellowback_rpc_contract.py` are written and committed but **not yet run** |
+| 3 — index, hooks, node RPCs | **complete and verified** (2026-09-11): all 9 checkboxes; `rpc-tests.py yellowback_index yellowback_activation yellowback_rpc_contract` exits 0 (1,519 s); the binary matches `doc/yellowback-rpc-contract.json` for all 19 node commands and all 8 node error identifiers |
 | 4 — template filter, `getblocktemplate` | **complete**, merged (found and fixed a real defect: `OverlayStateView` was implicitly copyable, so a template dry run committed into the live index; the copy ctor is now `= delete`) |
 | 5 — enforcement, the soft fork | **in progress**; the node machinery exists from Phases 3–4, the scripted safety scenarios of §7/§8.1 are being written |
 | 6 — wallet: mint, send, redeem, claim | 7 of 9 checkboxes done; `yed_mint`/`yed_send`/`yed_redeem` are **live-tested** end to end on a six-node regtest; `yellowback_claim.py` and `yellowback_pricefeed.py` written, **not yet run** |
