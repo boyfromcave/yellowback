@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) v2 — Development Plan: miner-enforced Yellowback
 
-**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` builds clean with **137 `yellowback_*` unit tests green**, the full inherited `test_bitcoin` showing only the two failures that exist at the pin, and **all 59 rule identifiers carrying a tagged test**. Budgets and the consensus set:
+**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` builds clean. **The whole `src/test/test_bitcoin` now passes outright — 559 cases, zero failures.** The two inherited cases that had failed since the pin are fixed as test defects (both proven pre-existing on a pristine v4.5.0 binary, both diagnosed to root cause, no product code touched): `subsidy_limit_test` asserted the total supply for a chain where Blossom never activates, and `rpc_z_sendmany_internals` reused one `CReserveKey` while expecting two distinct change addresses, which `CReserveKey`'s caching makes impossible. **137 `yellowback_*` unit tests green and all 59 rule identifiers carry a tagged test.** Budgets and the consensus set:
 
 | | changed lines | budget |
 |---|---|---|
