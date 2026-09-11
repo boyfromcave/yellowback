@@ -43,6 +43,18 @@
    published statement now says the ordinary case accepts and keeps enforcing, that a block
    arriving first can still be rejected, and that **the work valve, not catch-up suppression, is
    the guarantee**. §1, §4.7 and the `doc/yellowback.md` copy were corrected with it.
+3d. **A wallet-behaviour change silently invalidated older functional scripts.** H1's floor-aware
+   selector changed *which* coins the wallet spends, and three scripts written before it pinned the
+   old smallest-first selection as if it were a rule: `yellowback_claim.py` expected a
+   `change-floor` refusal that H4 now satisfies by burning the sub-dollar remainder, and
+   `yellowback_sapling.py` asserted a four-input redemption that exact-match selection reduces to
+   two, collapsing the two deliberately different REDEEM shapes of N39 into one. Both are fixed —
+   the Sapling case now consolidates the wallet's YED so no subset equals the debt, which forces
+   change and restores the with-change shape. **The lesson for the rest of Phase 8 and for rc1:**
+   coin *selection* is wallet policy and no test may assert it as if it were consensus; assert the
+   rule (what the payload, the burn and the fee must be) and derive the shape from what was
+   actually selected.
+
 4. The nightly `lockorder`, `sanitizers` and `coverage` jobs have never run: the fork branch has
    never been pushed, and Apple clang ships no libFuzzer (mapping §13.1), so the 8 CPU-hour fuzz
    run and the coverage floors remain unevidenced on this host. This is the largest remaining
