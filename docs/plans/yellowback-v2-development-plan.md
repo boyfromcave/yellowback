@@ -3049,7 +3049,7 @@ Acceptance: exits 0 on CI jobs `main` + `python`.
       v2): first commit bumps `yellowbackrpc.h` to `RPC_VERSION = 2` (N27); the status banner
       (incl. `valveTripped`, `sunset`, `abandoned`), overview, vaults and claim-list screens of
       §4.8; the offline QTest cases of §4.8 for those screens; the `wallet` CI job (§6.0 item 6).
-- [ ] **7b-b** (at Phase 6's first commit, gated on the wallet context): mint, send, redeem,
+- [x] **7b-b** (at Phase 6's first commit, gated on the wallet context): mint, send, redeem,
       claim and sweep screens and dialogs; the remaining offline QTest cases; the devnet
       end-to-end case (mint → send → redeem → claim → sweep after a forced abandonment), gated on
       `YELLOWBACK_DEVNET_DIR` and `QSKIP`ed without it (N28) — written this time (it was the
