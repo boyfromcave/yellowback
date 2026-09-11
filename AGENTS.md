@@ -160,12 +160,25 @@ Start a session with `make status`. It reports all six repos and **exits non-zer
 ```bash
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
+make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
 make status     # git status across all six repos, with pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: ycash-dd and yecwallet-dd vs their -legacy baselines
 make log        # commits on each fork branch beyond its baseline
 ```
+
+`bootstrap` is create-only: a repository that already exists is verified against the manifest and
+left alone, nothing is fetched. So it is the right command exactly once per machine — to *update* an
+existing workspace, use `make pull`. That one is fast-forward only, everywhere: it fetches `origin`,
+advances each fork's `feature/yellowback-sf` and its `-legacy` baseline, and **skips** — with the
+git command to run yourself — any repo that is dirty, has diverged, or is on the wrong branch. It
+never merges, never rebases, never discards; `git reset --hard` stays something you type by hand in
+the one repo you mean. The forks' `upstream` remote is never fetched (rebasing onto a newer Ycash is
+a deliberate act), and `ref/` is never advanced — a read-only `ls-remote` only re-checks that the
+pinned tag still resolves to the commit `repos.yaml` records. If it has moved upstream, `make pull`
+fails loudly: every `file:line` citation in `docs/mapping.md` was taken at the old commit. The `wt/`
+worktrees carry per-agent branches and are reported, never touched.
 
 The pins are declared once, in `repos.yaml` (the `Makefile` reads them from there), and mirrored
 in this file and in `docs/mapping.md`. If you re-pin a reference repo, update all three. Never

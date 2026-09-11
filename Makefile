@@ -16,7 +16,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN DD_BRANCH DD_BASE WALLET_BASE
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap status status-short pins diff log spec spec-check
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -28,6 +28,9 @@ help: ## Show this help
 
 bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
 	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
+
+pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
+	@scripts/pull.sh $(if $(DRY),--dry-run) $(if $(NOREF),--no-ref) $(if $(SHORT),--short)
 
 status: ## git status across all six repos, with pin verification and the generated-spec check
 	@scripts/repo-status.sh && scripts/extract-spec.sh --check
