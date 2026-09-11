@@ -2951,7 +2951,7 @@ node 1 among the peers. Acceptance: exits 0 on CI jobs `main` + `audit` (+ `nigh
       N39); `sweep_refused_while_enforcing` (`yed_sweep` on an ACTIVE vault with enforcement on
       ⇒ `sweep-not-abandoned`; with the wrong second argument ⇒ `sweep-acknowledgement-missing`);
       `assert_model_matches(node, full=True)` at the end (P8).
-- [ ] `yellowback_claim.py`: mint; price crash — the mock-price schedule is `price(0.01)` on all
+- [x] `yellowback_claim.py`: mint; price crash — the mock-price schedule is `price(0.01)` on all
       three pools then `mine_round_robin(64)`: `P_claim = max(pMid, pSlow)`, both must fall,
       `pSlow` is the lower median of a 64-block window at two-thirds fill so ≥ 33 low quotes are
       needed, and the divergence halt fires meanwhile without affecting claims (HALT-4 is MINT-4
@@ -2993,7 +2993,7 @@ node 1 among the peers. Acceptance: exits 0 on CI jobs `main` + `audit` (+ `nigh
       `mintpol-*` identifier (MINTPOL-1 per halt, M10); `mint6_cap_race_after_reorg` (two mints
       that together exceed the cap on different branches; the loser becomes VOID on join;
       `voidVaults == 1`, `voidReason == "mint-supply-cap"`).
-- [ ] `yellowback_pricefeed.py`: window fill boundary per window (`⌈W/2⌉` fast, `⌈2W/3⌉` mid and
+- [x] `yellowback_pricefeed.py`: window fill boundary per window (`⌈W/2⌉` fast, `⌈2W/3⌉` mid and
       slow, L9); `P_mint = min` in a rising market, falling market; divergence halt fires within
       the fast window on a crash and clears on re-convergence; global-ratio halt and
       `halt2_fires_at_exact_threshold` (`globalRatioBps == 24,999` halts, `25,000` does not);
