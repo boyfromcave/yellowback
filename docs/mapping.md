@@ -485,6 +485,18 @@ off `yecwallet-legacy`; naming follows AGENTS.md rule 6 (Yellowback for the syst
 `MainWindow` while adding the tab — add files, append to lists, hook into the two existing refresh
 branches, and keep `git diff yecwallet-legacy...feature/yellowback-sf` reviewable.
 
+### Rows added while building Phase 7b-b (2026-09-10, `feature/yellowback-sf`)
+
+| DigiByte does X (Y, mechanism M) | YecWallet equivalent Z, which lacks M | Adaptation W |
+|---|---|---|
+| DD's Qt tests drive widgets against an in-process `WalletModel` fixture (`ref/digibyte/src/qt/test/`) | every wallet RPC goes through `Connection::doRPCSafe`, which first calls `getrescaninfo` and then dereferences `this->main->getRPC()` (`ref/yecwallet/src/connection.cpp:763-790`) — a QTest has no `MainWindow`, so no `Connection` can be constructed for it | `YellowbackController::setTransport()` (the "fake Connection" of plan N28): when set, `call()` hands `(method, params, ok, err)` to it; the offline cases answer from a per-method table of contract example values and error identifiers, the devnet case posts JSON-RPC to node 0 through its own `QNetworkAccessManager` + `QEventLoop` (`yecwallet-dd/tests/yellowbacktab_test.cpp`, `DevnetTransport`) |
+| DD confirmations are `QMessageBox` calls inside the widget (`digidollarmintwidget.cpp`) and are not exercised by tests | same pattern in `yellowbacktab.cpp`; a modal box blocks an offscreen QTest | `YellowbackTab::confirmFn` / `noticeFn` (`std::function`, defaulting to `QMessageBox`); the QTest replaces them to read the copy (the §8.1 check `copyIsClean`) and answer |
+| — | `QObject::findChild<T>(name)` searches the whole tab: the Send and Mint pages both carry a `txtAmount`, and the Overview and the Mint page both carried a `lblMintStatus` (7b-a's cases found the Overview's by child order alone) | look-ups in the QTest are scoped to `YellowbackTab::page(Page)`; the Mint page's label is `lblMintPageStatus` |
+| — | plan §4.8 says the devnet case "loads its `state.json` for the RPC port and credentials"; the devnet writes `devnet.json` (`ycash-dd/contrib/yellowback/devnet/yellowback-devnet:33`) with the port seed only, no credentials | the case reads `rpcuser`, `rpcpassword`, `rpcport` from `<YELLOWBACK_DEVNET_DIR>/node0/ycash.conf` — the same file the GUI reads through `--conf` (`ref/yecwallet/src/connection.cpp:647-673`) |
+| — | the contract's `change-floor` message "names the nearest workable amounts" (structured only by H2 in Phase 8); the node at Phase 6's first commit still emits the prototype's sentence `change of N cents is below the minimum output … (C20); send A cents (all selected inputs) or at most B cents` (`ycash-dd/src/yellowback/txbuilder.cpp:229`) | `YellowbackController::parseChangeFloor` takes the two figures from either wording (`send (\d+) cents … or at most (\d+) cents`); the Send page matches the `change-floor` identifier or `(C20)` and offers both amounts |
+| — | `ycash-dd/src/yellowback/txbuilder.cpp:381` refuses every non-ACTIVE vault with `vault-not-active`, so the wallet's Release (VOID, L14) fails against the node until Phase 6 applies L14 | the wallet codes to the contract (`yed_redeem` on VOID = release, `burnedCents = 0`) and shows the identifier verbatim with its meaning; nothing to change on the wallet side once the node follows the contract |
+| — | the bundled `nlohmann::json` (`src/3rdparty`) predates `json::contains()` | `find() != end()` throughout, as `connection.cpp` already does |
+
 ## 13. Rows added while planning v2 — miner-enforced Yellowback (2026-09-10)
 
 All cites at the pinned tags. Rationale and the resulting design live in
