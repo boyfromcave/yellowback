@@ -2584,7 +2584,7 @@ block above exits 0 on CI jobs `main` + `audit`.
 `yed_claim` (Phase 6); vaults come from `build_mint_tx` and spends from `build_vault_spend_raw`
 (§6.0 item 4).
 
-- [ ] `index.{h,cpp}` per the §4.2a signatures: `CheckConnect`, `CommitConnect`, `UndoDisconnect`
+- [x] `index.{h,cpp}` per the §4.2a signatures: `CheckConnect`, `CommitConnect`, `UndoDisconnect`
       (V2 guards incl. the empty-index/`-reindex` case, exception boundary, `Rejected` with sync
       writes, the IBD/reindex suppression of BLK-2, the cache key of N9), `NoteHeaderOnRejectedChain`
       + `IsRejectedAncestor` (the N1 clause and the ACT-7 valve: the note map, the work arithmetic,
@@ -2598,22 +2598,22 @@ block above exits 0 on CI jobs `main` + `audit`.
       `ParamsFromArgs` moves to the four regtest flags and loses the anchor/roster ones (the
       whole-directory `roster` grep is this phase's exit, N26); the seed loop for `issuedZat` at
       `startHeight` (`GetBlockSubsidy` is called here, never in `state.cpp`, N22).
-- [ ] `policy.{h,cpp}` first half (moved here from Phase 4, M7): `TagScript(index)`/`BuildTagScript`
+- [x] `policy.{h,cpp}` first half (moved here from Phase 4, M7): `TagScript(index)`/`BuildTagScript`
       (MINER-1..3, incl. the valve and sunset conditions on the signal bit) and `MempoolCheck`
       (MP-1: the `O(inputs)` short-circuit, the expiry bound, the two-transaction pseudo-block of
       §4.3); the two `miner.cpp` tag lines (`COINBASE_FLAGS` assignment, `CreateCoinbaseTransaction`
       append) and the K17 lock, so `generate` emits tags.
-- [ ] `main.cpp` hooks exactly as §4.3 (six sites: the `ConnectBlock` check and commit, the
+- [x] `main.cpp` hooks exactly as §4.3 (six sites: the `ConnectBlock` check and commit, the
       `DisconnectBlock` undo, MP-1, the `AcceptBlockHeader` clause, the `ConnectTip` sweep) with
       `#include "yellowback/index.h"` (no forward declaration — the calls need the full class,
       N25); `init.cpp` options (incl. the per-network `-yellowbacksignal` default, L4, and
       `-yellowbackenforceuntil`) and the kill-switch loop ordered before the notifier thread
       (§4.3); `-reindex` and `-reindex-yellowback` behaviour; `-prune` refusal.
-- [ ] `doc/yellowback-rpc.md` v2, node context, written **first** (it is the contract, §4.5 —
+- [x] `doc/yellowback-rpc.md` v2, node context, written **first** (it is the contract, §4.5 —
       Phase 7b-a's gate, M7); then the node RPCs of §4.5 with the error identifiers and return
       shapes there, `yed_getblockverdict`'s precondition (N12), the `rpc/client.cpp` rows and a
       rebuilt `ycash-cli`.
-- [ ] Unit: `yellowback_index_tests.cpp` — a storage fault injected in `CheckConnect` accepts the
+- [x] Unit: `yellowback_index_tests.cpp` — a storage fault injected in `CheckConnect` accepts the
       block and sets unhealthy; the same in `CommitConnect` sets unhealthy without failing the
       block; `UndoDisconnect` with a mismatched tip refuses and sets unhealthy; `CheckConnect`
       with a `CBlockIndex` whose `phashBlock` is null (the `TestBlockValidity` shape) runs without
@@ -2631,7 +2631,7 @@ block above exits 0 on CI jobs `main` + `audit`.
       header on one root is answered but not noted; the sum stops growing, P2);
       `valve_ignores_lowdiff_headers` (a header whose target exceeds `132/100` of its parent's is
       answered but not noted, P2); `check_tripped_valve_never_rejects`.
-- [ ] `qa/rpc-tests/yellowback_index.py` (adapted; the crash and `verifychain` cases are new work,
+- [x] `qa/rpc-tests/yellowback_index.py` (adapted; the crash and `verifychain` cases are new work,
       not in the prototype's script, N38): tags from `generate` on nodes 2–4 land in `Tags`;
       medians appear once windows fill; reorg via `split_network`/`join_network` across a tag
       change with equal state hashes; `price1_reorg_across_fill_boundary` (split at exactly the
@@ -2703,7 +2703,7 @@ block above exits 0 on CI jobs `main` + `audit`.
       and that every documented error identifier is produced by the documented provocation
       (`quote-out-of-range` by `yed_setquote 1`, `verdict-parent-not-tip` by a buried block, …);
       the wallet context joins in Phase 6. In `main` from this phase.
-- [ ] CI: the `lockorder`, `sanitizers` and `coverage` jobs of §6.0 item 6 are added now (P6);
+- [x] CI: the `lockorder`, `sanitizers` and `coverage` jobs of §6.0 item 6 are added now (P6);
       the coverage floors are asserted from this phase for the Phase 1–3 files.
 
 Exit: green; `git diff --stat` shows `main.cpp` and `miner.cpp` within budget and nothing in the
@@ -2893,15 +2893,15 @@ node 1 among the peers. Acceptance: exits 0 on CI jobs `main` + `audit` (+ `nigh
 
 ### Phase 6 — Wallet: mint, send, redeem, claim (≈ 800 lines)
 
-- [ ] `doc/yellowback-rpc.md` v2 extended with the wallet context at the **start** of this phase
+- [x] `doc/yellowback-rpc.md` v2 extended with the wallet context at the **start** of this phase
       (Phase 7b-b's gate, M7) — every field of §4.5's wallet context, incl. `yed_sweep`.
-- [ ] `txbuilder.cpp` per §4.2a: `BuildMint` (class or lock length, fee output, payee),
+- [x] `txbuilder.cpp` per §4.2a: `BuildMint` (class or lock length, fee output, payee),
       `BuildTransfer` (reuse), `BuildRedeem` (owner path, complete), `BuildClaim`, **`BuildSweep`**
       (L10), `SignVaultSpend`, `SignerBranchId`/`VerifyAllInputs` moved here, Sapling shapes per
       §4.6; `wallet.cpp` without pending records; wallet RPCs of §4.5 incl. `yed_sweep` with its
       acknowledgement and the `IsAbandoned()` gate (§4.6), `change-floor` and
       `not-a-yellowback-address` identifiers.
-- [ ] `yellowback_lifecycle.py` (adapted; the four wallet-flow scripts return to CI now, N26): mint
+- [x] `yellowback_lifecycle.py` (adapted; the four wallet-flow scripts return to CI now, N26): mint
       class A; 0-conf lock; refHeight snapshot vs a later price drop; 2-block reorg tolerance;
       send; change floor (`change-floor` from `yed_send` and from `yed_claim`); plain-YEC burn
       recorded; under-assigned raw transfer; **one-step redeem** after the lock; `yed_redeem`
@@ -2944,7 +2944,7 @@ node 1 among the peers. Acceptance: exits 0 on CI jobs `main` + `audit` (+ `nigh
       signals: the pools' tags drop the bit past the sunset, `ENFORCEMENT` sets, and after
       `ABANDON_BLOCKS` more blocks `abandoned == true` on every node and the sweep builds);
       `assert_model_matches(node, full=True)` at the end (P8).
-- [ ] `yellowback_void_mint.py` (adapted): each failing MINT rule ⇒ VOID, one case per rule named
+- [x] `yellowback_void_mint.py` (adapted): each failing MINT rule ⇒ VOID, one case per rule named
       `mint1_`…`mint8_` (the M10 grep needs each identifier); `void_release_via_yed_redeem` (L14:
       `yed_redeem` on the VOID vault before `lockHeight` ⇒ `vault-locked`; at `lockHeight` it
       returns `{txid, burnedCents: 0, feeZat: 0, payee: null}`; the transaction has no
@@ -2973,18 +2973,18 @@ node 1 among the peers. Acceptance: exits 0 on CI jobs `main` + `audit` (+ `nigh
       `yed_listclaimable` is empty; with node 1 at 34 % of blocks and fill at two-thirds ⇒
       `pClaim` moves and the mint gate reflects it (the accepted cost of a quote-tag majority at
       the new bound); `assert_model_matches(node)` at the end (N23).
-- [ ] `yellowback_wallet_restore.py`, `yellowback_sapling.py` adapted (no co-signer path; the
+- [x] `yellowback_wallet_restore.py`, `yellowback_sapling.py` adapted (no co-signer path; the
       `ys1…` REDEEM shape's fee output wherever `feeVout` names it — `vout[2]` with YED change,
       `vout[1]` without, N39).
 
-- [ ] `yellowback_model.py`, the accounting half (P8): IN-1..3, TX-0, MINT-1..8, XFER-1..3 and
+- [x] `yellowback_model.py`, the accounting half (P8): IN-1..3, TX-0, MINT-1..8, XFER-1..3 and
       RED-1..4 modelled in Python from `getblock <hash> 2` (transparent inputs, `vout` scripts,
       the `OP_RETURN` payload decoded by a Python port of §3.3) and the snapshot half's prices;
       `assert_model_matches(node, full=True)` compares `yed_gettxinfo` for every transaction the
       model classifies as Yellowback-relevant, `yed_listvaults` and `yed_getstats` totals at the
       tip, and the state hash. Required at the end of `yellowback_lifecycle.py`,
       `yellowback_claim.py`, `yellowback_enforcement.py --extended` and `yellowback_rc1.py`.
-- [ ] `yellowback_rpc_contract.py` gains the wallet context (P7): every wallet command incl.
+- [x] `yellowback_rpc_contract.py` gains the wallet context (P7): every wallet command incl.
       `yed_sweep` under a forced abandonment and `yed_redeem` on a VOID vault.
 
 Exit: green; `src/wallet/wallet.{h,cpp}` untouched; every rule identifier in §3.8–3.9 has a test
