@@ -3099,7 +3099,7 @@ Acceptance: exits 0 on CI jobs `main` + `python`.
       end-to-end case (mint → send → redeem → claim → sweep after a forced abandonment), gated on
       `YELLOWBACK_DEVNET_DIR` and `QSKIP`ed without it (N28) — written this time (it was the
       prototype's leftover).
-- [ ] Copy review against §8.1; `build.sh --package` with the v2 `ycashd`.
+- [x] Copy review against §8.1; `build.sh --package` with the v2 `ycashd`.
 
 Exit: the offline QTest cases are green under `QT_QPA_PLATFORM=offscreen` and `build.sh
 --package` produces the artefact (mechanical); a non-developer completes mint, send, redeem and
