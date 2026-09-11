@@ -88,6 +88,22 @@
    for `tomllib` while that job runs 3.10, and moving the job also moves it off the apt
    `python3-zmq` its prerequisite step imports.
 
+3g. **CI was hiding its own failures, in two compounding ways (fixed 2026-09-11).** The `main`
+   job orders build → whole `test_bitcoin` → Yellowback functional suites → inherited stock
+   baseline, and a failing step aborts the job. Two inherited unit cases have been failing since
+   the pin, so **no functional suite has ever run on CI** — on top of the four suites that were
+   missing from `YELLOWBACK_SCRIPTS` (3f). The same masking hid the rule→test tag check behind the
+   line-budget step in `audit`, and the corpus check behind `pyflakes` in `python`. Independent
+   verification steps now carry `if: ${{ !cancelled() }}` so they run whatever happened before
+   them, while the job still fails overall; not applied where a step consumes the previous one's
+   output. **Taken together with 3e and 3f, the honest summary is that for most of this work the
+   local runs and CI were not checking the same thing, and CI was checking far less than it
+   appeared to.** The two inherited unit failures are being diagnosed properly (they block
+   everything downstream, so they are not cosmetic); note that the in-code comment claiming a
+   "permanent 5% subsidy" is stale — Ycash's subsidy changed over time and miners now receive
+   100 % of the block reward, so any derivation must follow the height-gated behaviour, not that
+   comment.
+
 4. The nightly `lockorder`, `sanitizers` and `coverage` jobs have never run: the fork branch has
    never been pushed, and Apple clang ships no libFuzzer (mapping §13.1), so the 8 CPU-hour fuzz
    run and the coverage floors remain unevidenced on this host. This is the largest remaining
