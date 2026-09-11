@@ -2682,7 +2682,7 @@ block above exits 0 on CI jobs `main` + `audit`.
       unhealthy node follows a reorg without applying; `-reindex-yellowback` catches up to the
       same hash); `verifychain 4 20` at runtime leaves the index hash and `healthy` unchanged (K6);
       `verdict_parent_not_tip` (`yed_getblockverdict` refuses for a buried block, N12).
-- [ ] `qa/rpc-tests/yellowback_activation.py`: signalling with 2 of 3 pools (below threshold)
+- [x] `qa/rpc-tests/yellowback_activation.py`: signalling with 2 of 3 pools (below threshold)
       never locks in; with 16 stock blocks interleaved, lock-in happens at exactly the block that
       brings the trailing window to 48 signals and not one earlier (K16); activation at
       `lockIn + 64` and enforcement from the block after it; participation halt when one pool
@@ -2712,7 +2712,7 @@ block above exits 0 on CI jobs `main` + `audit`.
       (after 24 signal-only blocks from node 2, `yed_listminers` omits it, `yed_getfeepayee`
       excludes it from `eligible`, `signalCount` counts it); `assert_model_matches(node)` at the
       end (N23).
-- [ ] `qa/rpc-tests/yellowback_rpc_contract.py` (P7): loads `doc/yellowback-rpc-contract.json`,
+- [x] `qa/rpc-tests/yellowback_rpc_contract.py` (P7): loads `doc/yellowback-rpc-contract.json`,
       calls every node-context command on a node past activation with one vault, one token and
       one rejected block in `Rejected` (so every optional field has a value), and asserts every
       documented key is present with the documented JSON type — recursively for nested objects —
