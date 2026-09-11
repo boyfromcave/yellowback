@@ -4,11 +4,11 @@
 verbatim so implementers and reviewers have one file to cite for rule identifiers (**MINT-1**,
 **XFER-2**, **RED-7**, …). Every design decision, the rationale for each rule, the audit history,
 the architecture, the federation coordinator, the phased work plan and the trust statement live in
-[`../plans/yellowback-v1-development-plan.md`](../plans/yellowback-v1-development-plan.md); when the two
+[`yellowback-v1-development-plan.md`](yellowback-v1-development-plan.md); when the two
 disagree, the plan wins and this file is regenerated from it.
 
 **Base:** Ycash `v4.5.0` (`624c12814`) · **Reference:** DigiByte `v9.26.5` (`05b50e229d`)
-**Mechanism crosswalk:** [`../mapping.md`](../mapping.md) — read that first.
+**Mechanism crosswalk:** [`../mapping.md`](../../mapping.md) — read that first.
 
 Section numbering below matches the plan (§3.1–§3.10) so cross-references resolve in both files.
 

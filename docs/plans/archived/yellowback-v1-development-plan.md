@@ -1,12 +1,12 @@
 # Ycash Yellowback (YED) v1 — Development Plan
 
-**Status:** DECIDED — revision 16 (revision 15 plus D23, other assets reserved but not built, §0). Revisions 3–6 were re-audited claim-by-claim against the
+**Status:** DECIDED — revision 17 (revision 16 plus the proof-opcode alternative recorded beside §9's enshrinement path, §0). Revisions 3–6 were re-audited claim-by-claim against the
 pinned trees and the code paths in `ycash-dd` that every rule, hook and RPC depends on (validation
 interface, init and shutdown, wallet spend tracking, coin selection, rebroadcast and encryption,
 raw-transaction and multisig RPCs, transaction lookup, policy, script interpreter, coins view,
 mempool limiter and expiry, chain parameters, DB wrapper, build layout, unit-test and functional
 test harnesses); §0 lists what each audit changed. This document resolves every `**OPEN**` item in
-[`../spec/yellowback-adaptation-spec.md`](../spec/yellowback-adaptation-spec.md) and is the plan to
+[`yellowback-adaptation-spec.md`](yellowback-adaptation-spec.md) and is the plan to
 follow to ship a working Yellowback on Ycash in `ycash-dd/`.
 
 **Pins this plan was written against** (verify with `make status` before trusting any line cite):
@@ -241,6 +241,12 @@ The workspace now holds it as a third read-only reference (`ref/yecwallet` @ `v4
 `yecwallet-dd`; D21 is restated; §6.0 gains the wallet's build and playground test; §10 and §11
 are updated. The node-side plan (§1–§4.6, §5, §6 Phases 0–5) is unchanged.
 
+### Revision 17 — Proof-opcode alternative to enshrinement recorded (2026-09-06)
+
+| # | Finding | Kind | Resolution |
+|---|---|---|---|
+| I4 | §9 presented enshrining the overlay in consensus as the only network-upgrade path to removing the federation's custody of collateral. A generic proof-verifying opcode achieves the same with a smaller and Yellowback-agnostic consensus footprint, and additionally removes bridge operators. | precision | Pointer paragraph at the end of §9 to the interoperability plan §10.3, where the comparison and the verification-cost analysis live. No decision changed; §9 remains the alternative. |
+
 ### Revision 16 — Other assets reserved, not built (2026-09-06)
 
 | # | Finding | Kind | Resolution |
@@ -292,10 +298,12 @@ wallet test plan; one removes code the plan had proposed; the rest are precision
 | H5 | `--headless` was described as the test mode. It hides the main window and skips the connection and shutdown dialogs (`src/main.cpp:251-257`, `connection.cpp:31-32`, `controller.cpp:849`); it does not remove the need for a display. | precision | The QTest target runs under `QT_QPA_PLATFORM=offscreen` with headless mode on — the standard Qt way to run widget tests on a CI runner. (§4.7) |
 | H6 | TLS availability for the wizard's HTTPS was asserted, not shown. | precision | The static Qt links OpenSSL statically (`build-qt.sh:147-159`) and the wallet already makes HTTPS calls (`controller.cpp:685,757`), so the wizard's `/cosign` POSTs need nothing new; the network client is `Connection::client` (`connection.cpp:221`), not line 274 as cited. (§4.7, `mapping.md` §12) |
 
-[`../why-no-consensus-change.md`](../why-no-consensus-change.md) was re-checked against revisions
+`../why-no-consensus-change.md` (v1's Tier-0 rationale) was re-checked against revisions
 4–12: none of the changes alters a claim in it (every change is inside the overlay index, the
 wallet layer, the coordinator, the test workflow or the GUI wallet; nothing moves into consensus
 or policy), and its line cites still resolve. A row for G1 is added to `docs/mapping.md` §11.
+*(That document was retired on 2026-09-10 with the move to miner enforcement and replaced by
+[`../../why-miner-enforced.md`](../../why-miner-enforced.md); its history is in git.)*
 
 ---
 
@@ -2263,6 +2271,18 @@ Nothing in the payload, scripts, or state schema changes. The federation's remai
 price feed, which is exactly DigiDollar's trust model.
 
 ---
+
+**Alternative recorded 2026-09-06 (revision 17).** The interoperability plan
+([`../../ideation/yellowback-interoperability-plan.md`](../../ideation/yellowback-interoperability-plan.md) §10.3) proposes a
+different network upgrade for the same invariant: a generic proof-verifying opcode
+(`OP_CHECKPROOFVERIFY`, Groth16 over BLS12-381, the verifier Ycash already runs for Sapling) rather
+than enshrining the Yellowback rulebook in consensus. Under it the vault script becomes "lock height,
+owner signature, proof", the user proves that the redemption burns the required amount, and every
+node verifies in milliseconds; the federation's custody of collateral is removed and it remains a
+price oracle. Consensus learns nothing about Yellowback, rule upgrades are circuit versions, and the
+same opcode makes the bridge's escrow release operator-free. That plan's §10.3 compares the two
+paths row by row and records the node-side verification cost; the choice between them is the Ycash
+team's and is not made here.
 
 ## 10. Deviations from DigiDollar (and why)
 
