@@ -16,7 +16,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN DD_BRANCH DD_BASE WALLET_BASE
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap status status-short pins diff log
+.PHONY: help bootstrap status status-short pins diff log spec spec-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -29,11 +29,17 @@ help: ## Show this help
 bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
 	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
 
-status: ## git status across all six repos, with pin verification
-	@scripts/repo-status.sh
+status: ## git status across all six repos, with pin verification and the generated-spec check
+	@scripts/repo-status.sh && scripts/extract-spec.sh --check
 
 status-short: ## Same as status, without the per-file listing
-	@scripts/repo-status.sh --short
+	@scripts/repo-status.sh --short && scripts/extract-spec.sh --check
+
+spec: ## Regenerate docs/spec/yellowback-spec.md, the fork copy and both rpc-contract copies from the plan
+	@scripts/extract-spec.sh
+
+spec-check: ## Fail if any generated spec/contract copy is stale vs the plan (run by `make status`)
+	@scripts/extract-spec.sh --check
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-14s %-20s %s\n' repo ref commit

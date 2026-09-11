@@ -14,15 +14,15 @@ yellowback-workspace/
 │   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
 │   └── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
-├── ycash-dd/        WORKING FORK of the node   — `feature/digidollar` off `ycash-legacy`     (= v4.5.0)
-├── yecwallet-dd/    WORKING FORK of the wallet — `feature/digidollar` off `yecwallet-legacy` (= v4.5.0)
+├── ycash-dd/        WORKING FORK of the node   — `feature/yellowback-sf` off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-sf` off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
-│   ├── spec/        DigiDollar's own design docs + our Ycash adaptation spec
-│   ├── plans/       the development plan (node, federation, wallet GUI, single-machine testing)
+│   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
+│   ├── plans/       the development plan (node, mining, wallet GUI, single-machine testing)
 │   └── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
 ├── repos.yaml       THE MANIFEST — every repo, its URL and its pin (no submodules)
 ├── Makefile         `make bootstrap` — recreate the workspace; `make status` — repo state + pin check
-├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh
+├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
 ├── yellowback.code-workspace   VS Code: parent + all five clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
@@ -198,7 +198,7 @@ What `make bootstrap` does, in order:
 1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet` — cloned over https, checked out detached at the
    pinned tag, verified against the pinned commit (it aborts if the tag has moved upstream), then
    `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays writable).
-2. `ycash-dd`, `yecwallet-dd` — cloned on `feature/digidollar`; the pristine baseline branch
+2. `ycash-dd`, `yecwallet-dd` — cloned on `feature/yellowback-sf`; the pristine baseline branch
    (`ycash-legacy` / `yecwallet-legacy`) is created tracking `origin`, verified to equal the matching
    `ref/` pin, and the Ycash Foundation repo is added as remote `upstream` (not fetched).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
@@ -231,8 +231,10 @@ make bootstrap      # recreate every clone and the venv from repos.yaml (see abo
 make status         # git status for all six repos, with the ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
-make diff           # fork deltas: ycash-legacy...feature/digidollar and yecwallet-legacy...feature/digidollar
+make diff           # fork deltas: ycash-legacy...feature/yellowback-sf and yecwallet-legacy...feature/yellowback-sf
 make log            # commits on each fork branch beyond its baseline
+make spec           # regenerate docs/spec/yellowback-spec.md and the fork copies from the plan (scripts/extract-spec.sh)
+make spec-check     # fail if any generated copy is stale (make status runs it)
 ```
 
 `make status` **exits non-zero if a `ref/` repo drifts off its pin**, because every `file:line`
@@ -243,8 +245,8 @@ citation in `docs/mapping.md` was written against these exact revisions.
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
-| `ycash-dd` | branch `feature/digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
-| `yecwallet-dd` | branch `feature/digidollar` off `yecwallet-legacy` (= `v4.5.0`) | `1eb277d` |
+| `ycash-dd` | branch `feature/yellowback-sf` off `ycash-legacy` (= `v4.5.0`); `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
+| `yecwallet-dd` | branch `feature/yellowback-sf` off `yecwallet-legacy` (= `v4.5.0`); `feature/digidollar` likewise | `1eb277d` |
 
 Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
 mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.

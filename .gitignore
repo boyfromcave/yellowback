@@ -13,3 +13,6 @@
 
 # Python virtual environment for the workspace (never install into the system Python).
 /.venv/
+
+# git worktrees of the forks, used by parallel agent sessions (created with `git -C ycash-dd worktree add ../wt/<name>`).
+/wt/

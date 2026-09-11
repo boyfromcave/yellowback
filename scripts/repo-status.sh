@@ -12,7 +12,7 @@ cd "$ROOT"
 DIGIBYTE_PIN="${DIGIBYTE_PIN:-v9.26.5}"
 YCASH_PIN="${YCASH_PIN:-v4.5.0}"
 YECWALLET_PIN="${YECWALLET_PIN:-v4.5.0}"
-DD_BRANCH="${DD_BRANCH:-feature/digidollar}"
+DD_BRANCH="${DD_BRANCH:-feature/yellowback-sf}"
 DD_BASE="${DD_BASE:-ycash-legacy}"
 WALLET_BASE="${WALLET_BASE:-yecwallet-legacy}"
 

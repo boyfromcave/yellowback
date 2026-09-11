@@ -2347,7 +2347,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
 ### Phase 0 — Branch, strip the federation, re-baseline (≈ 3–5 days)
 
 - [x] In both forks, `feature/yellowback-sf` exists at the prototype tip (created 2026-09-10).
-- [ ] Update `repos.yaml` (`branch:` for both forks), `AGENTS.md` rule 2 and the layout block, the
+- [x] Update `repos.yaml` (`branch:` for both forks), `AGENTS.md` rule 2 and the layout block, the
       README pin table, `docs/mapping.md`'s pin table; `feature/digidollar` is kept as the federation
       prototype's record (`make log` may list both). `make status` clean.
 - [ ] Node: delete everything under "Removed outright" in §4.2 that nothing retained references
@@ -2363,7 +2363,7 @@ feeds, wall-clock quote staleness on a live network — is Phase 9.
       `genesisanchor\|AnchorRecord\|GetAnchor` joins the grep at **Phase 2's** exit (when `view.h`
       and `state.cpp` migrate) and `roster` at **Phase 3's** (`ParamsFromArgs` parses
       `-yellowbackgenesisroster` until then; N26).
-- [ ] Wallet: delete `yellowbackredeemwizard.*`, the endpoint settings, `getRoster`/`submitRedeem`/
+- [x] Wallet: delete `yellowbackredeemwizard.*`, the endpoint settings, `getRoster`/`submitRedeem`/
       `abortRedeem`; build against Homebrew Qt 6 with the §6.0 item 0 command; the offscreen QTest
       still passes for the cases that remain. `RPC_VERSION` stays at 1 — the wallet must keep
       running against a `rpcversion 1` node until Phase 3 ships v2; the bump is Phase 7b-a's first
