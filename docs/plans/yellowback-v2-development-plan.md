@@ -3037,7 +3037,7 @@ qa/pull-tester/rpc-tests.py -j2 --nozmq yellowback_quote
 contrib/yellowback/pool/check-coinbase $(ycash-cli -regtest -datadir=$(../.venv/bin/python contrib/yellowback/devnet/yellowback-devnet cli --datadir 2) getblockcount) | grep -q 'kind: quote'
 ../.venv/bin/python contrib/yellowback/devnet/yellowback-devnet down
 ! grep -n 'no consensus change' doc/yellowback.md
-diff <(sed -n '/^## 8.1 Trust statement/,/^## /p' doc/yellowback-spec.md | sed '1d;$d') <(sed -n '/^## Trust statement/,/^## /p' doc/yellowback.md | sed '1d;$d')   # both files are in the fork (P4)
+diff <(sed -n '/^### 8.1 Trust statement/,/^### /p' doc/yellowback-spec.md | sed '1d;$d') <(sed -n '/^## Trust statement/,/^## /p' doc/yellowback.md | sed '1d;$d')   # both files are in the fork (P4)
 for w in yellowbackenforce=0 reindex valve sunset filter-only incident catch-up; do grep -q "$w" doc/yellowback-mining.md || { echo "runbook lacks $w"; exit 1; }; done
 contrib/yellowback/yellowback-quote --conf contrib/yellowback/pool/yellowback-quote.toml.sample --dry-run --mock-price /dev/stdin <<< 0.05
 ```
