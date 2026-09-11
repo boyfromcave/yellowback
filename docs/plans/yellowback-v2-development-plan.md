@@ -3003,9 +3003,9 @@ the fee output's address ∈ `yed_getfeepayee(...).eligible`. Acceptance: exits 
 
 ### Phase 7 — Quote agent, pool kit, devnet, documentation (Python and docs; 0 C++)
 
-- [ ] `contrib/yellowback/yellowback_price.py` split out; `yellowback-quote` daemon with
+- [x] `contrib/yellowback/yellowback_price.py` split out; `yellowback-quote` daemon with
       `--mock-price`; unit tests moved; `yellowback_fed.py` deleted.
-- [ ] `qa/rpc-tests/yellowback_quote.py`: the test writes `<tmpdir>/quote-<i>.toml` per pool
+- [x] `qa/rpc-tests/yellowback_quote.py`: the test writes `<tmpdir>/quote-<i>.toml` per pool
       (`rpc_url = rpc_url(i)` with the framework's `rpcuser`/`rpcpassword` — no cookie —
       `[[sources]]` = one `generic` preset pointing at nothing) and runs three `yellowback-quote
       --conf … --mock-price <file>` as `subprocess.Popen` it terminates in `tearDown` (N28); tags
@@ -3014,7 +3014,7 @@ the fee output's address ∈ `yed_getfeepayee(...).eligible`. Acceptance: exits 
       goes signal-only within a minute; `--once` exit codes.
 - [ ] Pool kit (§5): survey which stacks Ycash pools run (§12 Q9), write per-stack notes, the
       `check-coinbase` tool, monitoring snippet.
-- [ ] `yellowback-devnet` v2 with the `check` subcommand (§5); `doc/yellowback.md` (user; the
+- [x] `yellowback-devnet` v2 with the `check` subcommand (§5); `doc/yellowback.md` (user; the
       abandonment and sweep story of §8.1), `doc/yellowback-mining.md` (pool operator runbook:
       options, the mainnet signal default (L4), quote agent, monitoring, kill switch, the
       `-reindex` procedure (M12, N2), the valve and its own warning text (N11, L7, P1), catch-up
