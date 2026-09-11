@@ -2738,11 +2738,11 @@ Acceptance: the block above exits 0 on CI jobs `main` + `audit`.
 
 ### Phase 4 — Mining: tag, quote, template filter, `getblocktemplate` (≈ 400 lines + ≈ 50 in `miner.cpp`/`rpc/mining.cpp`)
 
-- [ ] `policy.{h,cpp}` second half: `FilterTemplate` (TPL-1/2, §4.2a signature; `MempoolCheck` and
+- [x] `policy.{h,cpp}` second half: `FilterTemplate` (TPL-1/2, §4.2a signature; `MempoolCheck` and
       `TagScript` arrived in Phase 3) and the index's `TemplateInfo()` (the `getblocktemplate`
       object of §4.4, N26); the `miner.cpp` filter edits and the `rpc/mining.cpp` edits as §4.3,
       **every `rpc/mining.cpp` edit under `if (g_yellowback)`** (N10).
-- [ ] `qa/rpc-tests/yellowback_mining.py`: a pool's `generate` block carries the tag
+- [x] `qa/rpc-tests/yellowback_mining.py`: a pool's `generate` block carries the tag
       (`yed_gettag`); `getblocktemplate` returns `coinbaseaux.flags` equal to the tag push,
       `mutable` contains `coinbase/append`, `coinbasetxn.data` decodes to a coinbase whose
       scriptSig contains the tag, and the `yellowback` object; a template submitted through
