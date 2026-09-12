@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) v2 — Development Plan: miner-enforced Yellowback
 
-**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` builds clean, and **CI is green end to end at `bcf989280` — the `main`, `audit` and `python` jobs all pass** (defect 4 below). **The whole `src/test/test_bitcoin` now passes outright — 559 cases, zero failures.** The two inherited cases that had failed since the pin are fixed as test defects (both proven pre-existing on a pristine v4.5.0 binary, both diagnosed to root cause, no product code touched): `subsidy_limit_test` asserted the total supply for a chain where Blossom never activates, and `rpc_z_sendmany_internals` reused one `CReserveKey` while expecting two distinct change addresses, which `CReserveKey`'s caching makes impossible. **137 `yellowback_*` unit tests green and all 59 rule identifiers carry a tagged test.** Budgets and the consensus set:
+**Execution status (2026-09-11, coordinator).** Node line `feature/yellowback-sf` builds clean, and **CI is green end to end at `e18fa04de` — the `main`, `audit` and `python` jobs all pass** (defect 4 below). **The whole `src/test/test_bitcoin` now passes outright — 559 cases, zero failures.** The two inherited cases that had failed since the pin are fixed as test defects (both proven pre-existing on a pristine v4.5.0 binary, both diagnosed to root cause, no product code touched): `subsidy_limit_test` asserted the total supply for a chain where Blossom never activates, and `rpc_z_sendmany_internals` reused one `CReserveKey` while expecting two distinct change addresses, which `CReserveKey`'s caching makes impossible. **137 `yellowback_*` unit tests green and all 59 rule identifiers carry a tagged test.** Budgets and the consensus set:
 
 | | changed lines | budget |
 |---|---|---|
@@ -104,12 +104,12 @@
    100 % of the block reward, so any derivation must follow the height-gated behaviour, not that
    comment.
 
-4. **CI is green (2026-09-11, `bcf989280`).** The `main`, `audit` and `python` jobs all pass on
+4. **CI is green (2026-09-11, `e18fa04de`).** The `main`, `audit` and `python` jobs all pass on
    the pushed `feature/yellowback-sf` branch — so 3e, 3f and 3g are closed by evidence, not by
    inspection: the whole `test_bitcoin` suite, every Yellowback functional suite in
    `YELLOWBACK_SCRIPTS` (`yellowback_enforcement` included), the inherited stock baseline, the
    rule→test tag check and the corpus check have now each actually executed on CI and passed.
-   Getting there also required pinning addrman's `nKey` in `caddrdb_read`, an inherited case that
+   (The green run was observed at `bcf989280`; that commit was rewritten to `e18fa04de` — identical tree — when a stray author email was corrected out of the history.) Getting there also required pinning addrman's `nKey` in `caddrdb_read`, an inherited case that
    failed a few percent of runs (mapping §13.13). `yellowback_quote` remains out of CI for the
    Python-version reason recorded in the workflow.
 
