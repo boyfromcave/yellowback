@@ -13,9 +13,11 @@ when the coordinator has merged the chunk and seen its tests run.
 | A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **complete, merged** (2026-09-13): 24 unit cases pass, pyflakes clean; the merge needed two coordinator fixes before `yellowback_framework_smoke.py` was green on the merged tree (`reconnect()` and `_cross_edges()` indexed nodes 6–7 in a six-node run); the node-driving helpers (`feed`, `register_and_arm`, `build_bundle`) are written against the §4.5 names and first run at A2 |
 | A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **complete, merged** (2026-09-13); `make spec-check` clean; the v3 rule-tag CI step is soft until A1's exit |
 | A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **in progress** (agent `a0-glue`); until it merges `statehash_golden_vector` is **red** on the integration branch (8 assertions; the payload version bump alone causes it) and `yellowback_rpc_contract.py` is red for the A2 commands the contract already names |
-| A4 `agent` — `contrib/yellowback/attest/` Rust crate | **in progress** (agent `a4-agent`; independent of A0–A3) |
+| A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
 | A1, A2, A3, A5, A6 | not started (A1 waits for A0's merge) |
 | A7, A8 | need real attestors; cannot run on one machine |
+
+**A4 findings applied (2026-09-13):** `iroh-gossip` has no topic discovery, so the `[transport]` table gains `peers` (bootstrap endpoint ids) and `secret_key_file` (stable id); `topic` is `topic_override`; the attestor polls sources every `poll_seconds` and signs only at a due tick, so the price window fills between ticks (§5). **Incident:** the agent's clean-build step ran `cargo clean` against the machine's global shared cargo target directory and removed other projects' build artifacts (≈ 26 GiB, nothing unrecoverable — rebuild time only); the briefing now forbids `cargo clean` outside the crate's own target.
 
 **Golden vector (coordinator, revised 2026-09-13):** the payload version bump alone invalidates
 the v2 golden vector (its raw transactions carry version-2 payloads, which v3 reads as
@@ -704,8 +706,8 @@ ycash-cli yed_registerattestor 20000 420480 0       # once; wait BOND_MATURITY
 yellowback-attest attest --conf attest.toml          # forever: polls, yed_signattestation, gossips
 ```
 
-`attest.toml`: `[node] rpc_url, rpc_cookie`; `[attest] every_blocks = 10, fail_polls = 2`;
-`[[sources]]` as the quote agent; `[transport] kind = "iroh" | "dir", relays = [...], topic`.
+`attest.toml`: `[node] rpc_url, rpc_cookie`; `[attest] seq, every_blocks = 10, fail_polls = 2, poll_seconds = 15`;
+`[[sources]]` as the quote agent; `[transport] kind = "iroh" | "dir", relays = [...], peers = [...], secret_key_file, topic_override`.
 No inbound port, no domain, no funded hot wallet beyond the node's own for `yed_revive` (rare).
 A bond cannot be topped up; to change it an attestor registers a new identity (new `seq`, age
 from zero) and lets the old one go dormant and withdraw at its locktime.
