@@ -5,7 +5,10 @@ Run through scripts/extract-spec.sh (`make spec` / `make spec-check`), always wi
 
 READS
   docs/plans/yellowback-v2-development-plan.md       the plan (the wording of record)
-  ycash-dd/doc/yellowback-rpc.md                     optional: the fork's RPC contract document (Phase 3+)
+  docs/plans/yellowback-v3-development-plan.md       optional: the v3 delta plan (Phase A0+); its section 3 is
+                                                     appended to the spec and its 4.5 heading supplies rpcversion
+  ycash-dd/doc/yellowback-rpc.md                     optional: the fork's RPC contract document (Phase 3+); from
+                                                     Phase A0 its "Error identifiers" tables are the error table
 
 WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or stale)
   docs/spec/yellowback-spec.md                       the spec: header + body (below)
@@ -15,19 +18,25 @@ WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or st
 
 THE SPEC FILE
   line 1      `Source: yellowback-v2-development-plan.md revision N; sha256: <64 hex>`
+              (with the v3 plan present: `… revision N + yellowback-v3-development-plan.md revision M; sha256: …`)
   line 2      a "generated, do not edit" note (never the bare string `---`)
   line 3      `---`
   body        the plan's lines from the line `## 3. …` up to (not including) the line `## 4. …`,
               then one blank line, then the lines from `### 8.1 …` up to (not including) `### 8.2 …`,
-              verbatim, each line terminated by "\n".
+              verbatim, each line terminated by "\n";  then, when the v3 plan exists, one blank line, a
+              `## v3 delta …` heading line written by this script, and the v3 plan's lines from `## 3. …`
+              up to (not including) `## 4. …` (its 3.1–3.10; v2 rules where it is silent).
   N is the highest `### Revision N` heading of the plan's §0.  The sha256 is over exactly the body
   bytes, so the fork-local check   sed '1,/^---$/d' FILE | sha256sum   reproduces it (§6.0 item 6).
 
 THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in both forks)
   {
-    "rpcversion": <int>,            from the §4.5 heading "(`rpcversion = N`)"
-    "source": {"plan": "...", "revision": N, "section": "4.5", "rpcdoc": <path or null>},
-    "errors": {"<identifier>": {"raisedBy": ["yed_…", …], "when": "…"}, …},   the §4.5 error table
+    "rpcversion": <int>,            from the §4.5 heading "(`rpcversion = N`)" — of the v3 plan when it exists
+    "source": {"plan": "...", "revision": N, "section": "4.5", "rpcdoc": <path or null>,
+               "planV3": <path or null>, "revisionV3": <M or null>},
+    "errors": {"<identifier>": {"raisedBy": ["yed_…", …], "when": "…"}, …},   the §4.5 error table, then every
+                                    table under the rpc doc's `## Error identifiers` heading merged over it
+                                    (identifier by identifier; the doc wins) — the v3 identifiers live only there
     "yed_<name>": {"args": "<argument list as written, may be empty>", "returns": <shape>},  one per command
   }
   <shape> is a JSON object mapping each documented field name to
@@ -46,7 +55,9 @@ THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in 
        backticks (the first such span on that line) is parsed as JSON and becomes that command's
        "returns" verbatim (an example value is a shape too: field names and nesting are what
        matter).  A list result is written as a one-element array in the doc as well.  Phase 3
-       writes the node context of that document in this form; Phase 6 the wallet context.
+       writes the node context of that document in this form; Phase 6 the wallet context.  A
+       command heading `### `yed_<name> <args>`` in that document supplies "args" (the doc wins
+       over the plan; Phase A0 changed `yed_mint`'s and added commands the v2 plan never named).
     2. Plan §4.5, deterministically: the text from the `### 4.5` heading up to the line that
        starts `**Error identifiers` is scanned for backtick spans in order.  A span matching
        `yed_<name>` optionally followed by whitespace and arguments names the current command
@@ -59,6 +70,10 @@ THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in 
        marks a list result.
   The wallet's field names (yecwallet-dd/src/yellowbackrpc.h) are checked against this file by
   the `wallet` CI job from Phase 7b; the node's registered `yed_*` names must all be keys (`audit`).
+
+WORKTREES
+  EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_WALLET_DIR override `ycash-dd` / `yecwallet-dd` (absolute paths), so
+  an agent working in wt/<name> can write and check the copies of its own worktree.  Unset = the main trees.
 """
 import hashlib
 import json
@@ -68,15 +83,18 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLAN = os.path.join(ROOT, "docs", "plans", "yellowback-v2-development-plan.md")
-RPCDOC = os.path.join(ROOT, "ycash-dd", "doc", "yellowback-rpc.md")
+PLAN_V3 = os.path.join(ROOT, "docs", "plans", "yellowback-v3-development-plan.md")
+NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
+WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
+RPCDOC = os.path.join(NODE_DIR, "doc", "yellowback-rpc.md")
 
 SPEC_OUT = [
     os.path.join(ROOT, "docs", "spec", "yellowback-spec.md"),
-    os.path.join(ROOT, "ycash-dd", "doc", "yellowback-spec.md"),
+    os.path.join(NODE_DIR, "doc", "yellowback-spec.md"),
 ]
 JSON_OUT = [
-    os.path.join(ROOT, "ycash-dd", "doc", "yellowback-rpc-contract.json"),
-    os.path.join(ROOT, "yecwallet-dd", "docs", "yellowback-rpc-contract.json"),
+    os.path.join(NODE_DIR, "doc", "yellowback-rpc-contract.json"),
+    os.path.join(WALLET_DIR, "docs", "yellowback-rpc-contract.json"),
 ]
 
 
@@ -87,9 +105,14 @@ def die(msg):
 
 # ── the plan ───────────────────────────────────────────────────────────────────────────────
 
-def read_plan():
-    with open(PLAN, encoding="utf-8") as f:
+def read_plan(path=PLAN):
+    with open(path, encoding="utf-8") as f:
         return f.read().split("\n")
+
+
+def read_plan_v3():
+    """The v3 delta plan's lines, or None before Phase A0."""
+    return read_plan(PLAN_V3) if os.path.exists(PLAN_V3) else None
 
 
 def revision(lines):
@@ -110,21 +133,33 @@ def section(lines, start_re, end_re):
     return lines[start:end]
 
 
-def spec_body(lines):
+def spec_body(lines, lines_v3=None):
     s3 = section(lines, r"## 3\. ", r"## 4\. ")
     s81 = section(lines, r"### 8\.1 ", r"### 8\.2 ")
-    return "\n".join(s3) + "\n\n" + "\n".join(s81) + "\n"
+    body = "\n".join(s3) + "\n\n" + "\n".join(s81) + "\n"
+    if lines_v3 is not None:
+        d3 = section(lines_v3, r"## 3\. ", r"## 4\. ")
+        body += (
+            "\n## v3 delta - bond-weighted price attestation (yellowback-v3-development-plan.md revision %d, "
+            "section 3; v2 above rules where it is silent)\n\n" % revision(lines_v3)
+        ) + "\n".join(d3) + "\n"
+    return body
 
 
-def spec_text(lines):
-    body = spec_body(lines)
+def spec_text(lines, lines_v3=None):
+    body = spec_body(lines, lines_v3)
     digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    src = "yellowback-v2-development-plan.md revision %d" % revision(lines)
+    frm = "docs/plans/yellowback-v2-development-plan.md section 3 and section 8.1"
+    if lines_v3 is not None:
+        src += " + yellowback-v3-development-plan.md revision %d" % revision(lines_v3)
+        frm += " and docs/plans/yellowback-v3-development-plan.md section 3"
     header = (
-        "Source: yellowback-v2-development-plan.md revision %d; sha256: %s\n"
-        "Generated by scripts/extract-spec.sh (make spec) from docs/plans/yellowback-v2-development-plan.md "
-        "section 3 and section 8.1 - do not edit this file, edit the plan and rerun; "
+        "Source: %s; sha256: %s\n"
+        "Generated by scripts/extract-spec.sh (make spec) from %s"
+        " - do not edit this file, edit the plan and rerun; "
         "verify with: sed '1,/^---$/d' FILE | sha256sum\n"
-        "---\n" % (revision(lines), digest)
+        "---\n" % (src, digest, frm)
     )
     return header + body
 
@@ -274,14 +309,12 @@ def commands_from_plan(sec):
     return cmds
 
 
-def errors_from_plan(sec):
-    start = next((i for i, l in enumerate(sec) if l.startswith("**Error identifiers")), None)
+def errors_from_table(lines, stop_at_first_table=True):
+    """Identifier rows of the markdown table(s) in lines: `| ids | raised by | when |`."""
     errors = {}
-    if start is None:
-        return errors
-    for l in sec[start:]:
+    for l in lines:
         if not l.startswith("|"):
-            if errors:
+            if errors and stop_at_first_table:
                 break
             continue
         cells = [c.strip() for c in l.strip().strip("|").split("|")]
@@ -295,13 +328,40 @@ def errors_from_plan(sec):
     return errors
 
 
-def commands_from_rpcdoc(path):
-    """Fenced ```json blocks whose nearest preceding non-blank line names a `yed_*` command."""
-    out = {}
+def errors_from_plan(sec):
+    start = next((i for i, l in enumerate(sec) if l.startswith("**Error identifiers")), None)
+    return errors_from_table(sec[start:]) if start is not None else {}
+
+
+def errors_from_rpcdoc(path):
+    """Every table under the rpc doc's `## Error identifiers` heading (up to the next `## `)."""
     if not os.path.exists(path):
-        return None, out
+        return {}
     with open(path, encoding="utf-8") as f:
         lines = f.read().split("\n")
+    start = next((i for i, l in enumerate(lines) if l.startswith("## Error identifiers")), None)
+    if start is None:
+        return {}
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    return errors_from_table(lines[start:end], stop_at_first_table=False)
+
+
+RPCDOC_REL = "ycash-dd/doc/yellowback-rpc.md"   # the recorded path is the canonical one, whatever tree was read
+
+
+def commands_from_rpcdoc(path):
+    """Fenced ```json blocks whose nearest preceding non-blank line names a `yed_*` command,
+    and the heading `### `yed_<name> <args>`` of each command (args = the text after the name)."""
+    out = {}
+    args = {}
+    if not os.path.exists(path):
+        return None, out, args
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    for l in lines:
+        m = re.match(r"^### `(yed_[a-z]+)((?: [^`]*)?)`", l)
+        if m and m.group(1) not in args:
+            args[m.group(1)] = m.group(2).strip()
     i = 0
     while i < len(lines):
         if lines[i].startswith("```json"):
@@ -319,19 +379,29 @@ def commands_from_rpcdoc(path):
                     die("%s: bad JSON in the block for %s: %s" % (path, m.group(1), e))
             i = k
         i += 1
-    return os.path.relpath(path, ROOT), out
+    return RPCDOC_REL, out, args
 
 
-def contract_text(lines):
+def contract_text(lines, lines_v3=None):
     ver, sec = rpc_section(lines)
     cmds = commands_from_plan(sec)
-    rpcdoc, overrides = commands_from_rpcdoc(RPCDOC)
+    rev_v3 = None
+    if lines_v3 is not None:
+        ver, _ = rpc_section(lines_v3)  # the v3 heading states the current rpcversion (W14)
+        rev_v3 = revision(lines_v3)
+    rpcdoc, overrides, doc_args = commands_from_rpcdoc(RPCDOC)
     for name, shape in overrides.items():
         cmds.setdefault(name, {"args": "", "returns": {}})["returns"] = shape
+    for name, a in doc_args.items():
+        if name in cmds:
+            cmds[name]["args"] = a
+    errors = errors_from_plan(sec)
+    errors.update(errors_from_rpcdoc(RPCDOC))
     doc = {
         "rpcversion": ver,
-        "source": {"plan": os.path.relpath(PLAN, ROOT), "revision": revision(lines), "section": "4.5", "rpcdoc": rpcdoc},
-        "errors": errors_from_plan(sec),
+        "source": {"plan": os.path.relpath(PLAN, ROOT), "revision": revision(lines), "section": "4.5", "rpcdoc": rpcdoc,
+                   "planV3": os.path.relpath(PLAN_V3, ROOT) if lines_v3 is not None else None, "revisionV3": rev_v3},
+        "errors": errors,
     }
     doc.update(cmds)
     return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
@@ -344,7 +414,8 @@ def main(argv):
     if mode not in ("--write", "--check"):
         die("usage: extract_spec.py [--write|--check]")
     lines = read_plan()
-    outputs = [(p, spec_text(lines)) for p in SPEC_OUT] + [(p, contract_text(lines)) for p in JSON_OUT]
+    lines_v3 = read_plan_v3()
+    outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     stale = []
     for path, text in outputs:
         rel = os.path.relpath(path, ROOT)
@@ -365,7 +436,9 @@ def main(argv):
         if stale:
             print("spec-check: STALE — run `make spec`:\n  " + "\n  ".join(stale))
             return 1
-        print("spec-check: docs/spec, ycash-dd/doc and yecwallet-dd/docs copies match the plan (revision %d)" % revision(lines))
+        print("spec-check: docs/spec, %s/doc and %s/docs copies match the plan (revision %d%s)" % (
+            os.path.relpath(NODE_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT), revision(lines),
+            "" if lines_v3 is None else "; v3 revision %d" % revision(lines_v3)))
     return 0
 
 
