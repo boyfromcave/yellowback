@@ -1,6 +1,27 @@
 # Ycash Yellowback (YED) v3 — Development Plan: bond-weighted price attestation
 
-**Status (2026-09-13, revision 1).** Plan only; no code. Builds on the delivered v2 (miner-enforced
+**Execution status (2026-09-13, coordinator).** Implementation began 2026-09-13 with parallel
+subagents, one per non-overlapping chunk, each in its own `wt/<name>` worktree off
+`feature/yellowback-price-attest` (the v2 pattern; the shared briefing is the orchestrator's
+`BRIEFING.md`). This table is the authoritative state; the checkboxes in §6 are flipped only
+when the coordinator has merged the chunk and seen its tests run.
+
+| Phase / chunk | State |
+|---|---|
+| A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **in progress** (agent `a0-proto`) |
+| A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **in progress** (agent `a0-crypto`) |
+| A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **in progress** (agent `a0-pyfw`) |
+| A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **in progress** (agent `a0-docs`) |
+| A4 `agent` — `contrib/yellowback/attest/` Rust crate | **in progress** (agent `a4-agent`; independent of A0–A3) |
+| A1, A2, A3, A5, A6 | not started (A1 waits for A0's merge) |
+| A7, A8 | need real attestors; cannot run on one machine |
+
+**Deferred inside A0 (coordinator's call, 2026-09-13):** the two regtest flags join the state-hash
+preimage at **A1**, not A0, so that the golden vector is regenerated once (the plan's own rule) and
+A0 leaves `statehash_golden_vector` untouched. `Params` gains the fields in A0; the preimage and
+the model change together in A1.
+
+**Status (2026-09-13, revision 1).** Plan only at revision 1; implementation status above. Builds on the delivered v2 (miner-enforced
 Yellowback, `docs/plans/yellowback-v2-development-plan.md` revision 6, Phases 0–8 implemented on
 `feature/yellowback-sf`) and implements `docs/reference/yellowback-price-attestation.md`
 revision 6 ("the proposal") — the second price population, decided by the product owner on
