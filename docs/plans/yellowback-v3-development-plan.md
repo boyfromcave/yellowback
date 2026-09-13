@@ -8,18 +8,20 @@ when the coordinator has merged the chunk and seen its tests run.
 
 | Phase / chunk | State |
 |---|---|
-| A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **in progress** (agent `a0-proto`) |
-| A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **in progress** (agent `a0-crypto`) |
+| A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **complete, merged** (2026-09-13); `ParamsFromArgs` (index.cpp) and the golden vector are in the `glue` chunk |
+| A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **complete, merged** (2026-09-13): 15 new unit cases; fuzz target compiled and replayed by hand, not yet in the CI target list (`glue`) |
 | A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **complete, merged** (2026-09-13): 24 unit cases pass, pyflakes clean; the merge needed two coordinator fixes before `yellowback_framework_smoke.py` was green on the merged tree (`reconnect()` and `_cross_edges()` indexed nodes 6–7 in a six-node run); the node-driving helpers (`feed`, `register_and_arm`, `build_bundle`) are written against the §4.5 names and first run at A2 |
-| A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **in progress** (agent `a0-docs`) |
+| A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **complete, merged** (2026-09-13); `make spec-check` clean; the v3 rule-tag CI step is soft until A1's exit |
+| A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **in progress** (agent `a0-glue`); until it merges `statehash_golden_vector` is **red** on the integration branch (8 assertions; the payload version bump alone causes it) and `yellowback_rpc_contract.py` is red for the A2 commands the contract already names |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **in progress** (agent `a4-agent`; independent of A0–A3) |
 | A1, A2, A3, A5, A6 | not started (A1 waits for A0's merge) |
 | A7, A8 | need real attestors; cannot run on one machine |
 
-**Deferred inside A0 (coordinator's call, 2026-09-13):** the two regtest flags join the state-hash
-preimage at **A1**, not A0, so that the golden vector is regenerated once (the plan's own rule) and
-A0 leaves `statehash_golden_vector` untouched. `Params` gains the fields in A0; the preimage and
-the model change together in A1.
+**Golden vector (coordinator, revised 2026-09-13):** the payload version bump alone invalidates
+the v2 golden vector (its raw transactions carry version-2 payloads, which v3 reads as
+non-Yellowback), so "regenerate once at A1" was not achievable. It is regenerated in the A0
+`glue` chunk together with the two regtest flags joining the preimage, and once more at A1 when
+`Snapshots` gains its fields. Two regenerations, each with the C++ and the Python model agreeing.
 
 **Status (2026-09-13, revision 1).** Plan only at revision 1; implementation status above. Builds on the delivered v2 (miner-enforced
 Yellowback, `docs/plans/yellowback-v2-development-plan.md` revision 6, Phases 0–8 implemented on
@@ -75,6 +77,7 @@ over.
 | S15 | The dormancy predicate scanned `DORMANCY_BLOCKS` snapshots per seated attestor per block. | `seatedSince` carried per record; evaluated every `DORMANCY_CHECK` blocks over the `BundleLog` window (§3.7). |
 | S16 | An attestor could eject itself by an agent restart signing a second price for one height. | `yed_signattestation` persists what it signed and refuses a conflicting request (§4.5). |
 | S17 | Arming was irreversible with no release-level way back — unacceptable for a risk-averse deployment. | `ATTEST_REQUIRED` per parameter set (W15). |
+| S20 | `AreInputsStandard` is not "sigops only" for P2SH: `policy.cpp:156` runs `EvalScript` over the scriptSig, so a push over 520 bytes is refused at relay too (`interpreter.cpp:277`); `pubkey.cpp`'s verify context is in an anonymous namespace, not `extern`; Ycash 4.5 has no `Span`; the vectors need six distinct keys because `dup` forbids a repeated `seq`; `yed_revive` needs `<seq> <priceMicroUsd>`; `yed_getnotice` returns `{found: false}`; the contract gained `attest-malformed`, `bundle-malformed`, `bond-spent`. Found by the `a0-crypto` and `a0-docs` agents. | Fixed in §1, §4.2a, §4.5, Appendix A; `attest.cpp` owns a function-local verify context. |
 | S19 | Carrier script length was stated as 72 (it is 71); the A0 payload-size list disagreed with §3.3; `CECKey.sign` is non-deterministic so it cannot make vectors; the zero-weight fallback was stated for the initial pool only. Found by the `a0-pyfw` agent. | Fixed in §3.4, §3.7, §6.0 item 4 and the A0 checklist. |
 | S12 | The v2 `yellowback_model.py` reproduces snapshots only; bundle statistics live in `TxLog`, which the model does not read. | The model gains `TxLog` bundle fields via `yed_gettxinfo` under `full=True` and the new snapshot fields; the golden vector is regenerated once, in Phase A1, and pinned (§7). |
 
@@ -95,8 +98,9 @@ over.
    RED-1..5" (V3, extended by one rule). A cheaper tier does not exist: this *is* Tier 0 plus the
    v2 soft-fork rule set.
 3. **Why the surgical footprint holds.** The bundle rides in the scriptSig of a P2SH input that
-   every stock node relays today (`IsStandardTx` ≤ 1,650 push-only bytes, `AreInputsStandard`
-   sigops only — proposal §8.1); the attestor's bond is a P2SH CLTV output; registration,
+   every stock node relays today (`IsStandardTx` ≤ 1,650 push-only bytes; `AreInputsStandard`
+   evaluates the scriptSig's pushes, so the 520-byte element cap binds at relay as well as at
+   execution, and checks P2SH sigops — proposal §8.1); the attestor's bond is a P2SH CLTV output; registration,
    notices, equivocation proofs and revivals are ≤ 80-byte `OP_RETURN` payloads. Nothing
    Yellowback needs from the node is new; the node needs one more thing from `libsecp256k1` it
    already links (compact ECDSA verify).
@@ -589,33 +593,33 @@ through `key.cpp`); everything else as v2. Nothing in `libbitcoin_common` calls
 // attest.h
 struct Attestation { uint16_t seq; uint32_t priceMicroUsd; uint32_t citedHeight; std::array<unsigned char,64> sig; };
 uint256 AttestMessage(uint16_t seq, uint32_t price, uint32_t citedHeight, const uint256& blockHash);
-bool VerifyCompactSig(const CPubKey& pk, const uint256& msg, const std::array<unsigned char,64>& sig); // false on high-S
+bool VerifyCompactSig(const CPubKey& pk, const uint256& msg, const std::array<unsigned char,64>& sig); // false on high-S; own verify-only context (pubkey.cpp's is in an anonymous namespace)
 std::vector<unsigned char> EncodeAttestation(const Attestation&);                    // 74 bytes
-std::optional<Attestation> DecodeAttestation(Span<const unsigned char>);
+std::optional<Attestation> DecodeAttestation(const std::vector<unsigned char>&);
 
 // bundle.h
 struct Bundle { uint8_t version; std::vector<Attestation> atts; };
 std::vector<unsigned char> EncodeBundle(const Bundle&);                                 // ≤ 448
-std::optional<Bundle> DecodeBundle(Span<const unsigned char>);
+std::optional<Bundle> DecodeBundle(const std::vector<unsigned char>&);
 enum class BundleSource { SCRIPTSIG, OP_RETURN };
 std::optional<std::pair<std::vector<unsigned char>, BundleSource>>
-    ExtractBundle(const CTransaction&, BundleCarrier mode, bool skipVin0, Span<const unsigned char> payloadTail);
+    ExtractBundle(const CTransaction&, BundleCarrier mode, bool skipVin0, const std::vector<unsigned char>& payloadTail);
 struct BundleVerdict { bool ok; std::string reason; std::vector<Attestation> C; std::optional<MicroUsd> aMint, aClaim; };
 BundleVerdict VerifyBundle(const StateView&, const Params&, const CTransaction&, int R,
-                           Span<const unsigned char> selector, const std::vector<uint16_t>& selected,
+                           const std::vector<unsigned char>& selector, const std::vector<uint16_t>& selected,
                            std::function<std::optional<uint256>(int)> blockHashAt, BundleCache* cache /* nullable */);
 
 // state.h
-std::vector<uint16_t> Selected(const StateView&, const Params&, int R, Span<const unsigned char> selector);   // W9
+std::vector<uint16_t> Selected(const StateView&, const Params&, int R, const std::vector<unsigned char>& selector);   // W9
 std::vector<uint16_t> Seated(const StateView&, const Params&, int H);
 arith_uint256 BondWeight(const AttestorRecord&, const AttestState&, const Params&, int H);
-std::optional<uint16_t> DefaultAttestPayee(const StateView&, const Params&, int R, Span<const unsigned char> selector,
+std::optional<uint16_t> DefaultAttestPayee(const StateView&, const Params&, int R, const std::vector<unsigned char>& selector,
                                            const std::vector<uint16_t>& A, const AttestPolicy&);           // AFEE-W
 
 // index.h
 bool AddAttestation(const Attestation&, std::string& reason);           // pool; verifies vs tip; cs_yellowback
 std::vector<Attestation> PoolAttestations() const;
-std::optional<Bundle> BuildBundle(int R, Span<const unsigned char> selector, std::string& reason);
+std::optional<Bundle> BuildBundle(int R, const std::vector<unsigned char>& selector, std::string& reason);
 ```
 
 Verdict strings (§4.2a of v2 extended): `mint9-no-bundle`, `mint9-bundle-<reason>`,
@@ -648,7 +652,7 @@ operator's only v3 change is upgrading `ycashd`.
 | `yed_addattestation <hex>` | verify and pool one 74-byte attestation; errors `attest-unknown-seq`, `attest-not-eligible`, `attest-stale`, `attest-bad-sig`, `attest-range` | `{accepted, seq, replaced}` |
 | `yed_buildbundle <refHeight> <selectorHex>` | the bundle the node would build: `{hex, seqs, aMint, aClaim, missing[]}`; error `bundle-insufficient` with `missing` | |
 | `yed_getselection <refHeight> <selectorHex>` | `selected(R, selector)` with weights — the wallet's "3 of 6 reachable" display | |
-| `yed_getnotice <vaultTxid>` | the `Notices` record or null | |
+| `yed_getnotice <vaultTxid>` | the `Notices` record, or `{found: false}` (always an object, as `yed_gettag`) | |
 | `yed_gettxinfo` | + `aMint, aClaim, bundleSeqs, attestFeeZat, attestPayee, residualZat, notice` | |
 | `yed_decodepayload` | v3 types | |
 | `yed_estimatecollateral` | + `aMint, source ∈ {x, a}`; error `bundle-insufficient` when ARMED and no bundle can be built | |
@@ -657,9 +661,9 @@ operator's only v3 change is upgrading `ycashd`.
 | `yed_sweepcarriers` (wallet) | reclaim outstanding carriers whose window lapsed | `{txid, count}` |
 | `yed_registerattestor <bondYec> <lockBlocks> [flags]` (wallet) | §3.5; errors `bond-below-min`, `lock-below-min` | `{txid, seq?, attestorPubKey, bondAddress}` (`seq` once confirmed via `yed_listattestors`) |
 | `yed_withdrawbond <seq> [to]` (wallet) | spend the bond after `bondLocktime`; error `bond-locked` | `{txid}` |
-| `yed_revive` (wallet, attestor node) | §3.5; error `not-dormant` | `{txid}` |
+| `yed_revive <seq> <priceMicroUsd>` (wallet, attestor node) | §3.5; errors `not-dormant`, `attest-key-not-held` | `{txid, seq, citedHeight, priceMicroUsd, hex}` |
 | `yed_reportequivocation <hexA> <hexB>` (wallet) | §3.5; error `not-equivocation` | `{txid, seq}` |
-| `yed_signattestation <seq> <priceMicroUsd> [citedHeight]` (wallet, attestor node) | signs with the attestor hot key held in the wallet; **the agent's RPC** so the key never leaves the node. **Equivocation guard (S16):** the node persists `(seq, citedHeight, price)` for everything it has signed in `<datadir>/yellowback/attest-signed.dat` (fsync before returning) and refuses a second signature for the same `citedHeight` at a different price with `equivocation-guard`, returning the earlier one instead; errors `attest-key-not-held`, `equivocation-guard` | `{hex, seq, citedHeight, reused}` |
+| `yed_signattestation <seq> <priceMicroUsd> [citedHeight]` (wallet, attestor node) | signs with the attestor hot key held in the wallet; **the agent's RPC** so the key never leaves the node. **Equivocation guard (S16):** the node persists `(seq, citedHeight, price)` for everything it has signed in `<datadir>/yellowback/attest-signed.dat` (fsync before returning) and refuses a second signature for the same `citedHeight` at a different price with `equivocation-guard`, same price ⇒ `reused: true` with the recorded signature, different price ⇒ refused; errors `attest-key-not-held`, `equivocation-guard` | `{hex, seq, citedHeight, reused}` |
 | `yed_listpositions`, `yed_listclaimable` | + `noticed, noticeHeight, emergencyOpenAt` | |
 
 Unhealthy allow-list unchanged. `yed_addattestation` and `yed_signattestation` are RPC-auth
@@ -1274,12 +1278,12 @@ The proposal was updated in place on 2026-09-13 to match this plan on four point
 
 | Mechanism | DigiByte (`ref/digibyte`) | Ycash (`ref/ycash`) | v3 adaptation |
 |---|---|---|---|
-| Oracle bundle carrier | `OP_RETURN OP_ORACLE …` coinbase output (`src/oracle/bundle_manager.cpp:815-828`) | 80-byte `OP_RETURN` relay policy (`policy.cpp:51-53`); 1,650-byte push-only scriptSig (`:88-97`); P2SH inputs on sigops (`:178`) | scriptSig carrier input (§3.4) |
+| Oracle bundle carrier | `OP_RETURN OP_ORACLE …` coinbase output (`src/oracle/bundle_manager.cpp:816-829`) | 80-byte `OP_RETURN` relay policy (`policy.cpp:51-53`); 1,650-byte push-only scriptSig (`:92-99`); P2SH inputs: sigops (`:178`) and the scriptSig pushes evaluated (`:156` → `interpreter.cpp:277`, the 520-byte cap at relay) | scriptSig carrier input (§3.4) |
 | Oracle signatures | Schnorr / MuSig2 (`src/oracle/`) | `configure.ac:1282` enables `recovery` only | compact ECDSA via `VerifyCompactSig` |
 | Oracle staking / slashing | none in DigiByte either | no covenants | CLTV bond, ejection only |
 | Oracle set selection | DigiByte's fixed registry | — | bond-weighted seating, hash-selected bundle (W9) |
 | Data push limits | Taproot annex/witness | `MAX_SCRIPT_ELEMENT_SIZE = 520` at execution only (`script.h:23`) | `BUNDLE_MAX = 6` |
-| Wallet ownership of script outputs | descriptor wallets | `IsMine` recurses only into standard redeem scripts (`ismine.cpp:80-90`) | carriers and bonds tracked by the Yellowback wallet layer, signed by hand (W7) |
+| Wallet ownership of script outputs | descriptor wallets | `IsMine` recurses only into standard redeem scripts (`ismine.cpp:76-86`) | carriers and bonds tracked by the Yellowback wallet layer, signed by hand (W7) |
 
 ## Appendix B — Glossary (additions)
 
