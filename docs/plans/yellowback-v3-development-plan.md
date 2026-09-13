@@ -10,7 +10,7 @@ when the coordinator has merged the chunk and seen its tests run.
 |---|---|
 | A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **in progress** (agent `a0-proto`) |
 | A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **in progress** (agent `a0-crypto`) |
-| A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **in progress** (agent `a0-pyfw`) |
+| A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **complete, merged** (2026-09-13): 24 unit cases pass, pyflakes clean; the merge needed two coordinator fixes before `yellowback_framework_smoke.py` was green on the merged tree (`reconnect()` and `_cross_edges()` indexed nodes 6–7 in a six-node run); the node-driving helpers (`feed`, `register_and_arm`, `build_bundle`) are written against the §4.5 names and first run at A2 |
 | A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **in progress** (agent `a0-docs`) |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **in progress** (agent `a4-agent`; independent of A0–A3) |
 | A1, A2, A3, A5, A6 | not started (A1 waits for A0's merge) |
@@ -75,6 +75,7 @@ over.
 | S15 | The dormancy predicate scanned `DORMANCY_BLOCKS` snapshots per seated attestor per block. | `seatedSince` carried per record; evaluated every `DORMANCY_CHECK` blocks over the `BundleLog` window (§3.7). |
 | S16 | An attestor could eject itself by an agent restart signing a second price for one height. | `yed_signattestation` persists what it signed and refuses a conflicting request (§4.5). |
 | S17 | Arming was irreversible with no release-level way back — unacceptable for a risk-averse deployment. | `ATTEST_REQUIRED` per parameter set (W15). |
+| S19 | Carrier script length was stated as 72 (it is 71); the A0 payload-size list disagreed with §3.3; `CECKey.sign` is non-deterministic so it cannot make vectors; the zero-weight fallback was stated for the initial pool only. Found by the `a0-pyfw` agent. | Fixed in §3.4, §3.7, §6.0 item 4 and the A0 checklist. |
 | S12 | The v2 `yellowback_model.py` reproduces snapshots only; bundle statistics live in `TxLog`, which the model does not read. | The model gains `TxLog` bundle fields via `yed_gettxinfo` under `full=True` and the new snapshot fields; the golden vector is regenerated once, in Phase A1, and pinned (§7). |
 
 ---
@@ -281,7 +282,7 @@ vault outpoint; **the `selector` of §3.7 is always the 36-byte serialised `COut
 Added beside the vault script:
 
 ```
-carrierScript(pk, h) = OP_SWAP OP_SHA256 <h 32> OP_EQUALVERIFY <pk 33> OP_CHECKSIG   (72 bytes; h = SHA256(bundle))
+carrierScript(pk, h) = OP_SWAP OP_SHA256 <h 32> OP_EQUALVERIFY <pk 33> OP_CHECKSIG   (71 bytes; h = SHA256(bundle))
 carrier output       = P2SH(HASH160(carrierScript)), nValue = CARRIER_VALUE
 carrier scriptSig    = <bundle ≤ 520> <sig> <carrierScript>                          (push-only, MINIMALDATA)
 bondScript(k, L)   = <L> OP_CHECKLOCKTIMEVERIFY OP_DROP <k 33> OP_CHECKSIG      (v2 vault owner path without the claim branch)
@@ -297,7 +298,7 @@ Consequence: **a carrier is created per transaction, after the bundle is chosen*
 there is no reusable carrier and no `bundleHash16` in the payload. Execution: `[bundle, sig]` →
 `OP_SWAP` → `[sig, bundle]` → `OP_SHA256` → `[sig, h']` → push `h`, `OP_EQUALVERIFY` → `[sig]` →
 `OP_CHECKSIG`. **The carrier is identified by shape:** a scriptSig of exactly three pushes whose
-third is a 72-byte script matching `carrierScript(·, ·)`. A REDEEM's `vin[0]` (the vault) is
+third is a 71-byte script matching `carrierScript(·, ·)` (1+1+33+1+34+1; matched structurally, not by length alone). A REDEEM's `vin[0]` (the vault) is
 never considered. Two carriers in one transaction ⇒ BUNDLE-1 false. Both scripts are verified by
 consensus under `P2SH | CLTV` exactly as the vault is (`ref/ycash/src/main.cpp:2931`); unit
 tests run every template through `VerifyScript` with `STANDARD_SCRIPT_VERIFY_FLAGS` and through
@@ -393,9 +394,11 @@ never a recomputation** (R11: a status change after `R` must not change a bundle
 `pool ≠ ∅`: `seed_i = UintToArith256(SHA256(blockHash(R) ‖ selector ‖ "S" ‖ u8 i))`, `pick = seed_i
 mod Σ_{s∈pool} weight(s, R)` (256-bit throughout, R10: weights reach `4·10¹⁷` per bond at
 `AGE_CAP`, so a 64-bit `pick` would never reach the upper part of the cumulative range), `chosen` = first `s` in ascending `seq` order whose cumulative
-weight exceeds `pick`; append; remove from `pool`. If `Σ weight = 0` (every candidate at zero
-age — impossible after arming since `armHeight > triggerHeight`, stated for totality) selection
-is the first `M_SELECT + K_SLACK` by `seq`.
+weight exceeds `pick`; append; remove from `pool`. If `Σ weight = 0` over the remaining pool at any
+round (every remaining candidate at zero age — impossible after arming since `armHeight >
+triggerHeight`, stated for totality) the remaining draws are the lowest `seq` first. The seed is
+read as `UintToArith256(hash)`, i.e. the 32 digest bytes **little-endian**; the Python model does
+`int.from_bytes(digest, 'little')`.
 
 **Bundle statistic.** Over the verified bundle's attestations `C` (BUNDLE-1 guarantees they are
 from `selected`, unique, fresh, signed): if `|C| < M_SELECT` undefined; else sort by price
@@ -840,9 +843,11 @@ connects nodes 6–7 into the star on node 1. Constants: the §3.1 regtest value
 reproducible), `build_register_tx(node, hot_pubkey, bond_pubkey, bond_zat, lock_blocks, flags)`
 (raw; the bond P2SH built in Python; used by A1–A2 before the RPC exists, S10),
 `sign_attestation(hot_secret, seq, price, cited_height, blockhash) -> 74 bytes` (Python
-`CECKey.sign` returns OpenSSL DER with **no low-S normalisation**, `key.py:150`; the helper
-parses the DER, sets `s = n − s` when `s > n/2`, and emits `r ‖ s`; both branches have a
-known-answer vector, R18; the reference implementation the C++ is tested against),
+`CECKey.sign` is OpenSSL with a **random nonce**, so it cannot produce known-answer vectors;
+the helper signs with RFC 6979 in pure Python — byte-identical to `secp256k1_ecdsa_sign`'s
+default nonce function and to the Rust `secp256k1` crate — then sets `s = n − s` when `s > n/2`
+and emits `r ‖ s`; both branches have a known-answer vector, R18; `CECKey` remains the
+independent verifier; the reference implementation the C++ is tested against),
 `feed(node, seq, price, cited=None)` (= `sign_attestation` + `yed_addattestation`),
 `feed_all(node, prices: dict[seq → usd])`, `register_and_arm(nodes, n=3)` (registers on node 6/7,
 mines to ELIGIBLE, asserts `TRIGGERED` at the exact block, mines `ATTEST_ARM_DELAY`, asserts
@@ -914,7 +919,7 @@ exchange feeds — is A7.
       malleation case, R2; `IsStandardTx` and
       `AreInputsStandard` **called directly** for a mint with a carrier input and a claim with
       carrier + residual; a 521-byte push fails `MAX_SCRIPT_ELEMENT_SIZE` at execution — proving
-      the cap is real), `yellowback_payload_tests.cpp` v3 (every type, sizes exactly 68/57/75/20/78,
+      the cap is real), `yellowback_payload_tests.cpp` v3 (every type, sizes exactly 52/41/75/4/78 and `11 + 5·count`,
       version-2 payload decodes to non-Yellowback), `yellowback_math_tests.cpp` additions
       (quantile at the boundary — cumulative weight exactly at the threshold; residual at
       110 % is 0; overflow at `PRICE_MIN`).
