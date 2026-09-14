@@ -14,10 +14,14 @@ when the coordinator has merged the chunk and seen its tests run.
 | A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **complete, merged** (2026-09-13); `make spec-check` clean; the v3 rule-tag CI step is soft until A1's exit |
 | A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **complete, merged** (2026-09-13): 162 unit cases green, corpus check green, `yellowback_pricefeed.py` ends with `assert_model_matches(full=True)` against the v3 node. **A0 is complete.** `yellowback_rpc_contract.py` is deliberately red until A2 ships the commands and bumps `rpcversion` to 3 (the exact missing fields are listed in the A2 brief) |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
-| A1 — state machine v3 (`view`, `state`, model, golden) | **in progress** (agent `a1-state`, started 2026-09-13 after A0's merge) |
+| A1 — state machine v3 (`view`, `state`, model, golden) | **complete, merged** (2026-09-13): 211 unit cases green (49 new, one tagged case per v3 identifier), model and golden regenerated (440 blocks: registration, arming, bundled mint, VOID mint, notice, emergency claim with residual, dormancy, equivocation, revival, bond spends; hash `abe131e0…a4fe`), fuzz corpus +12, the v3 rule-tag CI step now blocking; `yellowback_index/activation/pricefeed/lifecycle/claim/void_mint.py` all pass **unarmed** — v2 behaviour intact |
+| A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **in progress** (agent `a2-index`, started 2026-09-13) |
+| A3 — wallet builders and RPCs | **in progress** (agent `a3-wallet`, started 2026-09-13 in parallel; builders take explicit bundle bytes until A2's `BuildBundle` is wired at merge) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
-| A2, A3, A5, A6 | not started (A2 waits for A1) |
+| A5, A6 | not started (A5's read-only views at A2's exit) |
 | A7, A8 | need real attestors; cannot run on one machine |
+
+**A1 decisions confirmed by the coordinator (2026-09-13):** (i) key prefixes `A<u16 seq>` for `Attestors` and `W<u32 height>` for `BundleLog` — the plan's `T`/`L` were already Tip and TxLog; hash order after `P`: A, N, M, W, E. (ii) **R15's evaluation order applies only when `Snapshots[R]` is ARMED**; unarmed, MINT keeps the exact v2 clause order, because moving MINT-5 behind MINT-8 changed v2 verdicts (`yellowback_void_mint.py` caught it). (iii) AFEE-1 runs after MINT-9 (it needs `A`), so the order when ARMED is MINT-2,3,4,6,7,8 → MINT-9 → AFEE-1 → MINT-5 → MINT-10; MINT-6's cap reads `xMint`. (iv) `ageOrigin` reads `Snapshots[R].attest`, a pure function of `R`. (v) `Snapshot.pMint/pClaim` keep their names and are the cross-section (`xMint/xClaim` in the RPC). (vi) `groups()` ignores nodes a script appends after setup (the A0 framework's `SPLIT_HALVES` change had broken `yellowback_index.py`'s late node 6).
 
 **A4 findings applied (2026-09-13):** `iroh-gossip` has no topic discovery, so the `[transport]` table gains `peers` (bootstrap endpoint ids) and `secret_key_file` (stable id); `topic` is `topic_override`; the attestor polls sources every `poll_seconds` and signs only at a due tick, so the price window fills between ticks (§5). **Incident:** the agent's clean-build step ran `cargo clean` against the machine's global shared cargo target directory and removed other projects' build artifacts (≈ 26 GiB, nothing unrecoverable — rebuild time only); the briefing now forbids `cargo clean` outside the crate's own target.
 
@@ -376,8 +380,8 @@ TxLog        + { aMint, aClaim, bundleSeqs[], attestFeeZat, attestPayee, residua
 
 `Params` (the `P` record) gains `attestArmMin u32 ‖ bundleCarrier u8` after v2's four fields
 (scriptsig 0, opreturn 1, either 2) — landed in A0 with the golden vector regenerated. Key
-prefixes: `T<u16 seq>` Attestors, `B<outpoint>` BondIndex, `N` AttestorSeq, `M` Attest,
-`L<u32 height>` BundleLog, `E<outpoint>` Notices. `SCHEMA_VERSION = 3`: a v2 index directory is
+prefixes: `A<u16 seq>` Attestors, `B<outpoint>` BondIndex, `N` AttestorSeq, `M` Attest,
+`W<u32 height>` BundleLog, `E<outpoint>` Notices (`T` and `L` were taken by Tip and TxLog). `SCHEMA_VERSION = 3`: a v2 index directory is
 rebuilt from the chain at first start (`SyncToChain`'s wipe-and-rebuild path), as v2 did for v1.
 
 **State hash order** (after v2's `Params`): every `Attestors` record by `seq`; `AttestorSeq`;
@@ -474,7 +478,7 @@ REV-1, PIN-1/2, AFEE-0/1, RED-5**; changed: **RED-1, RED-3, RED-4, MINT-8, PRICE
   and Rust signers are tested against the same vectors). Order of checks: shape →
   hash → count → membership/uniqueness → freshness/range → signatures (W8, each signature
   through the per-attestation cache).
-- **Evaluation order (R15):** MINT-1..4, MINT-6..8 first — the payload, the vault output, the
+- **Evaluation order (R15, when ARMED only — unarmed keeps v2's exact order):** MINT-1..4, MINT-6..8 first — the payload, the vault output, the
   activation snapshot, the cap and the **pool fee of at least `FEE_MIN` (0.5 YEC)** — then MINT-9,
   then MINT-5 (which needs `pMint`) and MINT-10. Bundle signatures are therefore verified only
   for a transaction that has already paid a real fee to a pool and locked a real P2SH output, so
@@ -943,18 +947,18 @@ exchange feeds — is A7.
 
 ### Phase A1 — State machine v3 (≈ 1,100 lines)
 
-- [ ] `view.{h,cpp}`: the §3.6 tables, prefixes, `SCHEMA_VERSION = 3`, state-hash order, undo for
+- [x] `view.{h,cpp}`: the §3.6 tables, prefixes, `SCHEMA_VERSION = 3`, state-hash order, undo for
       every new write (`Attestors` status, `Attest`, `BundleLog`, `Notices`, `AttestorSeq`).
-- [ ] `state.{h,cpp}`: REG-A1, IN-2 bond spend, NOT-1, EQV-1, REV-1; `Seated`, `Selected` (W9),
+- [x] `state.{h,cpp}`: REG-A1, IN-2 bond spend, NOT-1, EQV-1, REV-1; `Seated`, `Selected` (W9),
       `BondWeight`; MINT-9/10 and the MINT-8 clause; RED-1/3/4/5 clauses; PRICE-2 per
       transaction; `TxLog` fields; `ComputeSnapshot` order of §3.8 (judgement, activation, maturity, ARM-1/2,
       PIN-1/2, seating, medians minus pinned, σ, issuance, halts, dormancy); `BundleLog` row per height; `DefaultAttestPayee`
       (AFEE-W).
-- [ ] `yellowback_model.py`: every new snapshot field and table; `Selected` in Python (the second
+- [x] `yellowback_model.py`: every new snapshot field and table; `Selected` in Python (the second
       implementation); bundle statistics from `yed_gettxinfo`; regenerate
       `yellowback_golden.json` **once**, with the fixed regtest keys, and pin; `statehash_golden_vector`
       updated.
-- [ ] Unit: `yellowback_state_tests.cpp` additions, one case per identifier, tagged: `rega1_*`
+- [x] Unit: `yellowback_state_tests.cpp` additions, one case per identifier, tagged: `rega1_*`
       (bare bond script refused, below-min, duplicate hot key vs WITHDRAWN vs EJECTED — the
       loophole case `rega1_ejected_then_spent_stays_barred`), `arm1_triggers_at_exact_block`,
       `arm2_arms_after_delay`, `arm_never_reverses`, `founding_cohort_origin` (registered before
@@ -976,9 +980,9 @@ exchange feeds — is A7.
       (two mints at one `R` with different owner keys share `selected`), `cache_hit_equals_cold` (the same
       attestation on two branches: two cache entries, both agreeing with cold verification), `undo_identity_v3` (apply/undo over a sequence covering every
       table), `overlay_equivalence_v3`.
-- [ ] Fuzz: `YellowbackEvaluate` corpus extended with v3 payloads and carriers; the four K1
+- [x] Fuzz: `YellowbackEvaluate` corpus extended with v3 payloads and carriers; the four K1
       properties re-asserted (no throw, no assert, deterministic, undo-identity).
-- [ ] **Exit:** unit suite green; `yellowback_index.py` and `yellowback_activation.py` green
+- [x] **Exit:** unit suite green; `yellowback_index.py` and `yellowback_activation.py` green
       unarmed; the golden vector reproduced by C++ and Python; determinism grep empty over §3.10.
 
 ### Phase A2 — Index, pool, node RPCs (≈ 600 lines)
