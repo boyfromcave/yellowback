@@ -46,7 +46,7 @@ ycash-dd:
   role: fork
   url: https://github.com/boyfromcave/ycash-dd.git
   upstream: https://github.com/ycashfoundation/ycash.git
-  branch: feature/yellowback-sf
+  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
   base: ycash-legacy
   base-commit: 624c12814     # = ref/ycash pin
   what: working fork of the node (Yellowback overlay, yed_* RPCs)
@@ -55,7 +55,7 @@ yecwallet-dd:
   role: fork
   url: https://github.com/boyfromcave/yecwallet-dd.git
   upstream: https://github.com/ycashfoundation/yecwallet.git
-  branch: feature/yellowback-sf
+  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
   base: yecwallet-legacy
   base-commit: 1eb277d       # = ref/yecwallet pin
   what: working fork of the wallet (Yellowback tab)

@@ -20,8 +20,8 @@ yellowback-workspace/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
 │   └── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
-├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-sf`, off `ycash-legacy`     (= v4.5.0)
-├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-sf`, off `yecwallet-legacy` (= v4.5.0)
+├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
@@ -55,11 +55,17 @@ The file you want is under `ycash-dd/`.
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/` and `yecwallet-dd/`, on their `feature/yellowback-sf` branches.
+### 2. All work happens in `ycash-dd/` and `yecwallet-dd/`, on their `feature/yellowback-price-attest` branches.
+
+The current branch in both forks is `feature/yellowback-price-attest` — the v3 price-attestation
+work, cut from `feature/yellowback-sf`. **`feature/yellowback-sf` is now a baseline, not a
+workspace:** it is the delivered v2 (miner-enforced) fork, and the v3 plan measures its diff
+budgets and frozen-file zero-delta checks against it, so never commit to it either. The branch is
+declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
 `ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines — **never commit to
-them.** They exist so you can always `git diff <legacy>...feature/yellowback-sf` to see the entire
-fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
+them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
 only; wallet code goes in `yecwallet-dd` only; the `yed_*` RPC surface is the sole interface

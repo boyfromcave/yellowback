@@ -9,12 +9,17 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-DIGIBYTE_PIN="${DIGIBYTE_PIN:-v9.26.5}"
-YCASH_PIN="${YCASH_PIN:-v4.5.0}"
-YECWALLET_PIN="${YECWALLET_PIN:-v4.5.0}"
-DD_BRANCH="${DD_BRANCH:-feature/yellowback-sf}"
-DD_BASE="${DD_BASE:-ycash-legacy}"
-WALLET_BASE="${WALLET_BASE:-yecwallet-legacy}"
+# repos.yaml is the single source of truth. The Makefile exports these; when the script is
+# run directly, read the manifest rather than repeat its values here — a stale copy in this
+# file is how `make status` came to report a branch expectation nothing else believed.
+manifest() { "$ROOT/scripts/repos.sh" get "$1" "$2" 2>/dev/null; }
+DIGIBYTE_PIN="${DIGIBYTE_PIN:-$(manifest ref/digibyte tag)}"
+YCASH_PIN="${YCASH_PIN:-$(manifest ref/ycash tag)}"
+YECWALLET_PIN="${YECWALLET_PIN:-$(manifest ref/yecwallet tag)}"
+DD_BRANCH="${DD_BRANCH:-$(manifest ycash-dd branch)}"
+WALLET_BRANCH="${WALLET_BRANCH:-$(manifest yecwallet-dd branch)}"
+DD_BASE="${DD_BASE:-$(manifest ycash-dd base)}"
+WALLET_BASE="${WALLET_BASE:-$(manifest yecwallet-dd base)}"
 
 SHORT=0
 [ "${1:-}" = "--short" ] && SHORT=1
@@ -28,7 +33,7 @@ else
 fi
 
 OK="${GRN}✔${R}"; WARN="${YEL}●${R}"; BAD="${RED}✘${R}"
-DIRTY_ANY=0; PIN_DRIFT=0
+DIRTY_ANY=0; PIN_DRIFT=0; BRANCH_DRIFT=0
 
 field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 
@@ -76,6 +81,7 @@ repo_status() {
       head_desc="$head_desc  ${OK}"
     else
       head_desc="$head_desc  ${WARN} ${YEL}expected branch $want_branch${R}"
+      BRANCH_DRIFT=1
     fi
   fi
   field "HEAD" "$(printf '%b' "$head_desc")"
@@ -144,12 +150,17 @@ repo_status "ref/digibyte" "ref/digibyte" "$DIGIBYTE_PIN"    "-"
 repo_status "ref/ycash"    "ref/ycash"    "$YCASH_PIN"       "-"
 repo_status "ref/yecwallet" "ref/yecwallet" "$YECWALLET_PIN" "-"
 repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"    "$DD_BASE"
-repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$DD_BRANCH"    "$WALLET_BASE"
+repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$WALLET_BRANCH" "$WALLET_BASE"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 if [ "$PIN_DRIFT" -ne 0 ]; then
   printf "${BAD} ${RED}pin drift${R} — a ref/ repo is not at its expected tag.\n"
   printf "  ${D}Pins are recorded in AGENTS.md and docs/mapping.md. Re-pin, or update both.${R}\n"
+  exit 1
+elif [ "$BRANCH_DRIFT" -ne 0 ]; then
+  printf "${WARN} ${YEL}branch drift${R} — a fork is not on the branch repos.yaml records.\n"
+  printf "  ${D}Check out the expected branch, or update repos.yaml (and its mirrors in AGENTS.md and README.md).${R}\n"
+  [ "$DIRTY_ANY" -ne 0 ] && printf "  ${D}Uncommitted changes are also present.${R}\n"
   exit 1
 elif [ "$DIRTY_ANY" -ne 0 ]; then
   printf "${WARN} pins OK; uncommitted changes present.\n"
