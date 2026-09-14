@@ -18,7 +18,7 @@ when the coordinator has merged the chunk and seen its tests run.
 | A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **complete, merged** (2026-09-13): 216 unit cases green; `yellowback_attest.py` (512 blocks, model match `full=True`), `yellowback_attest_enforcement.py`, `yellowback_rpc_contract.py` (every node command; the wallet shapes pending A3, non-fatal), `yellowback_index.py` (+3 cases), `yellowback_stock_node.py` all green; `rpcversion` 3; `mempoolcheck_bench` 6 ms / 10k plain transactions |
 | A3 — wallet builders and RPCs | **in progress** (agent `a3-wallet`, started 2026-09-13 in parallel; builders take explicit bundle bytes until A2's `BuildBundle` is wired at merge) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
-| A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **in progress** (agent `a5a-wallet`, started 2026-09-13 against the contract; the actions are A5-b after A3) |
+| A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases pass offline. A5-b (two-step mint flow, notice action, subscriber launcher, packaging) waits for A3 |
 | A5-b, A6 | not started |
 
 **Note (2026-09-13):** the A2 and A3 agents were terminated once by the API session limit with their C++ committed and their functional scripts uncommitted; both were resumed with context intact and no work was lost.
@@ -1082,7 +1082,7 @@ exchange feeds — is A7.
 
 ### Phase A5 — YecWallet (`yecwallet-dd`; ≈ 500 lines changed)
 
-- [ ] `RPC_VERSION = 3`; contract copy; `yellowbackrpc.h` fields.
+- [x] `RPC_VERSION = 3`; contract copy; `yellowbackrpc.h` fields.
 - [ ] Mint page, Positions, Attestors view, Settings of §4.8; the subscriber launcher beside the
       bundled `ycashd` (the `yellowback-attest` binary packaged by `build.sh`; a missing binary
       disables the launcher with a message, never the wallet).
