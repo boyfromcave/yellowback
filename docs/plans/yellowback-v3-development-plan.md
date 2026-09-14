@@ -15,7 +15,7 @@ when the coordinator has merged the chunk and seen its tests run.
 | A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **complete, merged** (2026-09-13): 162 unit cases green, corpus check green, `yellowback_pricefeed.py` ends with `assert_model_matches(full=True)` against the v3 node. **A0 is complete.** `yellowback_rpc_contract.py` is deliberately red until A2 ships the commands and bumps `rpcversion` to 3 (the exact missing fields are listed in the A2 brief) |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
 | A1 — state machine v3 (`view`, `state`, model, golden) | **complete, merged** (2026-09-13): 211 unit cases green (49 new, one tagged case per v3 identifier), model and golden regenerated (440 blocks: registration, arming, bundled mint, VOID mint, notice, emergency claim with residual, dormancy, equivocation, revival, bond spends; hash `abe131e0…a4fe`), fuzz corpus +12, the v3 rule-tag CI step now blocking; `yellowback_index/activation/pricefeed/lifecycle/claim/void_mint.py` all pass **unarmed** — v2 behaviour intact |
-| A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **in progress** (agent `a2-index`, started 2026-09-13) |
+| A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **complete, merged** (2026-09-13): 216 unit cases green; `yellowback_attest.py` (512 blocks, model match `full=True`), `yellowback_attest_enforcement.py`, `yellowback_rpc_contract.py` (every node command; the wallet shapes pending A3, non-fatal), `yellowback_index.py` (+3 cases), `yellowback_stock_node.py` all green; `rpcversion` 3; `mempoolcheck_bench` 6 ms / 10k plain transactions |
 | A3 — wallet builders and RPCs | **in progress** (agent `a3-wallet`, started 2026-09-13 in parallel; builders take explicit bundle bytes until A2's `BuildBundle` is wired at merge) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
 | A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **in progress** (agent `a5a-wallet`, started 2026-09-13 against the contract; the actions are A5-b after A3) |
@@ -25,6 +25,8 @@ when the coordinator has merged the chunk and seen its tests run.
 | A7, A8 | need real attestors; cannot run on one machine |
 
 **A1 decisions confirmed by the coordinator (2026-09-13):** (i) key prefixes `A<u16 seq>` for `Attestors` and `W<u32 height>` for `BundleLog` — the plan's `T`/`L` were already Tip and TxLog; hash order after `P`: A, N, M, W, E. (ii) **R15's evaluation order applies only when `Snapshots[R]` is ARMED**; unarmed, MINT keeps the exact v2 clause order, because moving MINT-5 behind MINT-8 changed v2 verdicts (`yellowback_void_mint.py` caught it). (iii) AFEE-1 runs after MINT-9 (it needs `A`), so the order when ARMED is MINT-2,3,4,6,7,8 → MINT-9 → AFEE-1 → MINT-5 → MINT-10; MINT-6's cap reads `xMint`. (iv) `ageOrigin` reads `Snapshots[R].attest`, a pure function of `R`. (v) `Snapshot.pMint/pClaim` keep their names and are the cross-section (`xMint/xClaim` in the RPC). (vi) `groups()` ignores nodes a script appends after setup (the A0 framework's `SPLIT_HALVES` change had broken `yellowback_index.py`'s late node 6).
+
+**A2 findings applied (2026-09-13):** a reorged citation usually fails BUNDLE-1 at *membership* (the selection is seeded by `blockHash(R)`, which the reorg changes) — `sig` only when the two selections intersect; `attest_reorg_across_arming` splits before the third registration (both branches pass a height-based `armHeight`); a registration undone by a reorg is dead on the winning chain (REG-A1's lock distance), so the wallet must rebuild it; PIN-1 pins any pool quoting one constant price whenever attestors move over 5 % — the mining runbook must say so; `seatedCount` drops one block after a DORMANT verdict (SNAP seats before the dormancy pass). New shared helpers: `src/rpc/yellowbackrpc.h` (`PushNoticeFields`, `EstimateClaim`), `index.BuildBundleInfo`, `InsufficientMessage()`, framework `send_and_lock` (fixed a double-spend in `register_and_arm`), `build_vault_spend_raw(carrier=…)`, `withdraw_bond_raw`.
 
 **A4 findings applied (2026-09-13):** `iroh-gossip` has no topic discovery, so the `[transport]` table gains `peers` (bootstrap endpoint ids) and `secret_key_file` (stable id); `topic` is `topic_override`; the attestor polls sources every `poll_seconds` and signs only at a due tick, so the price window fills between ticks (§5). **Incident:** the agent's clean-build step ran `cargo clean` against the machine's global shared cargo target directory and removed other projects' build artifacts (≈ 26 GiB, nothing unrecoverable — rebuild time only); the briefing now forbids `cargo clean` outside the crate's own target.
 
@@ -990,16 +992,16 @@ exchange feeds — is A7.
 
 ### Phase A2 — Index, pool, node RPCs (≈ 600 lines)
 
-- [ ] `index.{h,cpp}`: `AttestationPool` (last three per `seq`, freshness vs tip, `AddAttestation`
+- [x] `index.{h,cpp}`: `AttestationPool` (last three per `seq`, freshness vs tip, `AddAttestation`
       verifying against `Attestors` — any status but EJECTED/WITHDRAWN, S4), `BundleCache` (W8),
       `BuildBundle` (W9 selection over the pool; `missing[]`), `MempoolCheck` fills the cache;
       `SCHEMA_VERSION` mismatch ⇒ wipe-and-rebuild with a log line and `yed_getinfo.rebuilt`.
-- [ ] `policy.{h,cpp}`: TPL-2 additions; `FilterTemplate` fills the cache.
-- [ ] Node RPCs of §4.5 (`yed_listattestors`, `yed_getattestations`, `yed_addattestation`,
+- [x] `policy.{h,cpp}`: TPL-2 additions; `FilterTemplate` fills the cache.
+- [x] Node RPCs of §4.5 (`yed_listattestors`, `yed_getattestations`, `yed_addattestation`,
       `yed_buildbundle`, `yed_getselection`, `yed_getnotice`, `yed_gettxinfo`/`yed_getprice`/
       `yed_getinfo`/`yed_estimatecollateral`/`yed_decodepayload` fields); `client.cpp` rows;
       `ycash-cli` rebuilt; `init.cpp` flags and registration.
-- [ ] `qa/rpc-tests/yellowback_attest.py` (raw builders; the core v3 flow): register five
+- [x] `qa/rpc-tests/yellowback_attest.py` (raw builders; the core v3 flow): register five
       attestors raw on nodes 6–7; `TRIGGERED` at the exact block the third matures; `ARMED` after
       8; `feed_all`; `yed_buildbundle` equals the Python bundle; a raw mint with the bundle in a
       carrier confirms ACTIVE with `aMint` recorded, `attestFeeZat` paid; the same mint mined by
@@ -1016,18 +1018,18 @@ exchange feeds — is A7.
       DORMANT, `revive_raw` ⇒ ELIGIBLE; bond spend after locktime ⇒ WITHDRAWN and the ejected
       case stays EJECTED; `assert_model_matches(full=True)` at the end; `checkpoint()` after
       every block.
-- [ ] `qa/rpc-tests/yellowback_attest_enforcement.py`: node 1 mines a claim without a bundle
+- [x] `qa/rpc-tests/yellowback_attest_enforcement.py`: node 1 mines a claim without a bundle
       after arming ⇒ rejected `yellowback-vault-spend` by 0, 2–4, followed by node 5; DoS 0; a
       claim paying no residual ⇒ rejected; a correct claim from node 1's mempool ⇒ accepted; the
       valve still clears after six blocks (v2 case 9 re-run armed); `unarmed_v2_behaviour`
       (no registrations: every v2 enforcement case passes unchanged — run by importing v2's
       cases).
-- [ ] `yellowback_rpc_contract.py`: v3 commands and every new error identifier provoked.
-- [ ] `yellowback_index.py` additions: `schema3_rebuilds_v2_index` (a v2 datadir from the cache
+- [x] `yellowback_rpc_contract.py`: v3 commands and every new error identifier provoked.
+- [x] `yellowback_index.py` additions: `schema3_rebuilds_v2_index` (a v2 datadir from the cache
       starts, rebuilds, matches a fresh node's hash), `attest_tables_survive_kill9`,
       `attest_reorg_across_arming` (split at `armHeight − 1`; one branch arms, the other does
       not; join; hashes agree with the winner).
-- [ ] **Exit:** the four scripts green in `main`; `yellowback_stockparity.py` nightly unchanged
+- [x] **Exit:** the four scripts green in `main`; `yellowback_stockparity.py` nightly unchanged
       (node 1 unaffected); `mempoolcheck_bench` within v2's bound for non-vault transactions.
 
 ### Phase A3 — Wallet builders and RPCs (≈ 700 lines)
