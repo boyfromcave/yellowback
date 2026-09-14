@@ -1,31 +1,44 @@
 # Ycash Yellowback (YED) v3 — Development Plan: bond-weighted price attestation
 
-**Execution status (2026-09-13, coordinator).** Implementation began 2026-09-13 with parallel
+**Execution status (2026-09-14, coordinator).** Implementation began 2026-09-13 with parallel
 subagents, one per non-overlapping chunk, each in its own `wt/<name>` worktree off
 `feature/yellowback-price-attest` (the v2 pattern; the shared briefing is the orchestrator's
 `BRIEFING.md`). This table is the authoritative state; the checkboxes in §6 are flipped only
 when the coordinator has merged the chunk and seen its tests run.
 
+**Where it stands: A0–A5 are implemented and merged in both forks.** On the node's
+`feature/yellowback-price-attest`: 224 unit cases green, the corpus check green, and
+`yellowback_rpc_contract`, `yellowback_attest`, `yellowback_attest_wallet`,
+`yellowback_attest_enforcement`, `yellowback_index`, `yellowback_stock_node`,
+`yellowback_wallet_restore` and the four v2 flow scripts in **both** unarmed and `--armed` modes
+all pass. Frozen files are at **zero** delta against `feature/yellowback-sf`, and `main.cpp` (11),
+`miner.cpp` (12) and `rpc/mining.cpp` (7) are unchanged from v2 against `ycash-legacy`; `init.cpp`
+gained 14 lines. On the wallet's: 83 QTest cases green offline, contract check green.
+**What remains: A4's devnet chunk, A6 (hardening, packaging, the review document and the rc
+run-through), and A7–A8, which need real attestors and cannot run on one machine.**
+
 | Phase / chunk | State |
 |---|---|
-| A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **complete, merged** (2026-09-13); `ParamsFromArgs` (index.cpp) and the golden vector are in the `glue` chunk |
-| A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **complete, merged** (2026-09-13): 15 new unit cases; fuzz target compiled and replayed by hand, not yet in the CI target list (`glue`) |
-| A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **complete, merged** (2026-09-13): 24 unit cases pass, pyflakes clean; the merge needed two coordinator fixes before `yellowback_framework_smoke.py` was green on the merged tree (`reconnect()` and `_cross_edges()` indexed nodes 6–7 in a six-node run); the node-driving helpers (`feed`, `register_and_arm`, `build_bundle`) are written against the §4.5 names and first run at A2 |
-| A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **complete, merged** (2026-09-13); `make spec-check` clean; the v3 rule-tag CI step is soft until A1's exit |
-| A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **complete, merged** (2026-09-13): 162 unit cases green, corpus check green, `yellowback_pricefeed.py` ends with `assert_model_matches(full=True)` against the v3 node. **A0 is complete.** `yellowback_rpc_contract.py` is deliberately red until A2 ships the commands and bumps `rpcversion` to 3 (the exact missing fields are listed in the A2 brief) |
-| A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
-| A1 — state machine v3 (`view`, `state`, model, golden) | **complete, merged** (2026-09-13): 211 unit cases green (49 new, one tagged case per v3 identifier), model and golden regenerated (440 blocks: registration, arming, bundled mint, VOID mint, notice, emergency claim with residual, dormancy, equivocation, revival, bond spends; hash `abe131e0…a4fe`), fuzz corpus +12, the v3 rule-tag CI step now blocking; `yellowback_index/activation/pricefeed/lifecycle/claim/void_mint.py` all pass **unarmed** — v2 behaviour intact |
-| A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **complete, merged** (2026-09-13): 216 unit cases green; `yellowback_attest.py` (512 blocks, model match `full=True`), `yellowback_attest_enforcement.py`, `yellowback_rpc_contract.py` (every node command; the wallet shapes pending A3, non-fatal), `yellowback_index.py` (+3 cases), `yellowback_stock_node.py` all green; `rpcversion` 3; `mempoolcheck_bench` 6 ms / 10k plain transactions |
-| A3 — wallet builders and RPCs | **complete, merged** (2026-09-14): carriers.dat, attest-signed.dat guard, every builder and wallet RPC, the two-step flow (`wait`, `-yellowbackcarriertimeout`), `yellowback_attest_wallet.py` green, all flow scripts green in both modes in its worktree; merged onto A2 by union (four conflicts, all additive); 224 unit cases green on the combined tree |
-| A2/A3 integration — the `BuildBundle` seam, `canNotice` via `EstimateClaim`, contract exemptions removed, full re-run | **in progress** (agent `a23-integrate`) |
-| A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
-| A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases pass offline. A5-b (two-step mint flow, notice action, subscriber launcher, packaging) waits for A3 |
-| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases pass offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
-| A4 `devnet` — devnet with attestors, `yellowback_attest_agent.py`, mining-doc note | not started (after the seam) |
-| A6 | not started |
+| A0 `proto` — `params`, `payload` v3, `math.h`, corpus | **complete, merged** (2026-09-13); `ParamsFromArgs` (index.cpp) and the golden vector landed in the `glue` chunk |
+| A0 `crypto` — `script` carrier/bond, `attest`, `bundle`, vectors, fuzz target | **complete, merged** (2026-09-13): 15 new unit cases; the `YellowbackBundle` fuzz target is in the CI target list since `glue` |
+| A0 `pyfw` — `test_framework/yellowback_attest.py`, `yellowback_util.py` v3, runner pass-through | **complete, merged** (2026-09-13): 24 unit cases, pyflakes clean; the merge needed two coordinator fixes before `yellowback_framework_smoke.py` was green (`reconnect()` and `_cross_edges()` indexed nodes 6–7 in a six-node run) |
+| A0 `docs` — `doc/yellowback-rpc.md` v3, contract JSON, mapping rows, frozen-file list, CI audit/agent jobs | **complete, merged** (2026-09-13); `make spec-check` clean |
+| A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **complete, merged** (2026-09-13): 162 unit cases green, `yellowback_pricefeed.py` ends with `assert_model_matches(full=True)` against the v3 node. **A0 complete.** |
+| A1 — state machine v3 (`view`, `state`, model, golden) | **complete, merged** (2026-09-13): 211 unit cases (49 new, one tagged case per v3 identifier), model and golden regenerated (440 blocks: registration, arming, bundled mint, VOID mint, notice, emergency claim with residual, dormancy, equivocation, revival, bond spends; hash `abe131e0…a4fe`), fuzz corpus +12, the v3 rule-tag CI step blocking; the six v2 flows pass **unarmed** — v2 behaviour intact |
+| A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **complete, merged** (2026-09-13): 216 unit cases; `yellowback_attest.py` (512 blocks, model match `full=True`), `yellowback_attest_enforcement.py`, `yellowback_rpc_contract.py`, `yellowback_index.py` (+3 cases), `yellowback_stock_node.py` green; `rpcversion` 3; `mempoolcheck_bench` 6 ms / 10k plain transactions |
+| A3 — wallet builders and RPCs | **complete, merged** (2026-09-14): carriers.dat, the attest-signed.dat guard, every builder and wallet RPC, the two-step flow (`wait`, `-yellowbackcarriertimeout`); merged onto A2 by union (four conflicts, all additive) |
+| A2/A3 integration — the `BuildBundle` seam, `canNotice` via `EstimateClaim`, contract exemptions removed, full re-run | **complete, merged** (2026-09-14): the wallet's builders take their bundle from the node's pool when no `bundleHex` is given; `yed_listpositions` judges claimability through the shared `EstimateClaim`; every contract exemption removed and every documented command exercised; twelve functional scripts re-run green on the combined tree; frozen-file proof empty. The coordinator additionally registered `yellowback_attest_wallet.py` with the runner — A3 had shipped it unregistered, so CI would never have run it |
+| A4 `agent` — `contrib/yellowback/attest/` Rust crate | **complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (toolchain pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean. A crate-local `.cargo/config.toml` undoes the node's vendored-sources redirect so the crate builds inside a built checkout |
+| A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide, contrib README | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
+| A4 `devnet` — devnet that arms, `yellowback_attest_agent.py` (nightly), `check` extended | **not started.** The two doc items of this checklist row (the attestor guide, `contrib/yellowback/README.md`) are done; the mining-doc PIN-1 note is done |
+| A5-a — YecWallet read-only views | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases offline |
+| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
+| A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **not started** |
+| A7, A8 — testnet with real attestors, then mainnet | need real attestors; cannot run on one machine |
 
-**Note (2026-09-13):** the A2 and A3 agents were terminated once by the API session limit with their C++ committed and their functional scripts uncommitted; both were resumed with context intact and no work was lost.
-| A7, A8 | need real attestors; cannot run on one machine |
+**Note (2026-09-13/14):** the A2 and A3 agents were each terminated once by an API session limit
+with their C++ committed and their functional scripts uncommitted; both were resumed with context
+intact and no work was lost.
 
 **A1 decisions confirmed by the coordinator (2026-09-13):** (i) key prefixes `A<u16 seq>` for `Attestors` and `W<u32 height>` for `BundleLog` — the plan's `T`/`L` were already Tip and TxLog; hash order after `P`: A, N, M, W, E. (ii) **R15's evaluation order applies only when `Snapshots[R]` is ARMED**; unarmed, MINT keeps the exact v2 clause order, because moving MINT-5 behind MINT-8 changed v2 verdicts (`yellowback_void_mint.py` caught it). (iii) AFEE-1 runs after MINT-9 (it needs `A`), so the order when ARMED is MINT-2,3,4,6,7,8 → MINT-9 → AFEE-1 → MINT-5 → MINT-10; MINT-6's cap reads `xMint`. (iv) `ageOrigin` reads `Snapshots[R].attest`, a pure function of `R`. (v) `Snapshot.pMint/pClaim` keep their names and are the cross-section (`xMint/xClaim` in the RPC). (vi) `groups()` ignores nodes a script appends after setup (the A0 framework's `SPLIT_HALVES` change had broken `yellowback_index.py`'s late node 6).
 
@@ -1066,8 +1079,10 @@ exchange feeds — is A7.
 - [x] The v2 flow scripts (`yellowback_lifecycle.py`, `yellowback_claim.py`,
       `yellowback_void_mint.py`, `yellowback_sapling.py`) gain an `--armed` mode that calls
       `register_and_arm` first; both modes in CI.
-- [ ] **Exit:** the wallet scripts green in both modes; `src/wallet/wallet.{h,cpp}` and
-      `rpcwallet.cpp` at zero v3 delta.
+- [x] **Exit:** the wallet scripts green in both modes; `src/wallet/wallet.{h,cpp}` and
+      `rpcwallet.cpp` at zero v3 delta. *Met 2026-09-14 on the integrated tree: every flow script
+      green in both modes, and `git diff feature/yellowback-sf...HEAD -- $(cat
+      qa/yellowback-frozen-files.txt)` is empty.*
 
 ### Phase A4 — Agents, devnet, docs (Rust and Python; 0 C++)
 
@@ -1078,10 +1093,11 @@ exchange feeds — is A7.
       against nodes 6–7's `yed_signattestation`, one `subscribe` beside node 0; `poolFresh`
       reaches 3 within two polls; a mint builds from the pool; stopping one agent leaves
       `K_SLACK` covering; stopping two refuses with `missing`.
-- [ ] Devnet changes of §5; `check` extended; `doc/yellowback-attestor.md` finished (bond key
-      hygiene, the one-day arming notice, dormancy and revival, equivocation consequences);
-      `doc/yellowback-mining.md` note: "v3 needs nothing from a pool but the upgrade";
-      `contrib/yellowback/README.md`.
+- [ ] Devnet changes of §5; `check` extended. *The rest of this row is done (2026-09-13/14):
+      `doc/yellowback-attestor.md` finished (bond key hygiene, the one-day arming notice, dormancy
+      and revival, equivocation consequences, the one-hot-key-one-node warning first), the
+      `doc/yellowback-mining.md` note, and `contrib/yellowback/README.md`; both docs also carry the
+      PIN-1 paragraph — a constant quote is pinned once the other side moves.*
 - [x] Calibration scripts (proposal §16): `contrib/yellowback/attest/calibrate/spreads.py` and
       `pinrate.py`, with a README on how to run them for two weeks and read the result.
 - [ ] **Exit:** `agent` job green; devnet `check` exits 0 ARMED; `yellowback_attest_agent.py`
@@ -1096,9 +1112,12 @@ exchange feeds — is A7.
 - [x] QTest: offline cases for every new element with a fake `Connection`; the devnet case
       extended (mint ARMED, notice, emergency claim, attestor outage banner), skipped without
       `YELLOWBACK_DEVNET_DIR`.
-- [ ] `build.sh --package` includes `yellowback-attest`; `grep -rn 'trustless\|verified price'
-      src/` empty.
-- [ ] **Exit:** `wallet` job green; the devnet case passes by hand and is recorded.
+- [x] `build.sh --package` includes `yellowback-attest`; `grep -rn 'trustless\|verified price'
+      src/` empty. *`build.sh --attest PATH` implemented and its argument handling tested; the grep
+      is empty. Running `--package --attest` end to end is an A6 item.*
+- [ ] **Exit:** `wallet` job green; the devnet case passes by hand and is recorded. *The offline
+      half is met (83 QTest cases, contract check, copy rule); the devnet case QSKIPs until the
+      A4 devnet chunk exists.*
 
 ### Phase A6 — Hardening and review (≈ 2 weeks)
 
