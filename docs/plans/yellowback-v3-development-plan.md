@@ -18,7 +18,10 @@ when the coordinator has merged the chunk and seen its tests run.
 | A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **in progress** (agent `a2-index`, started 2026-09-13) |
 | A3 — wallet builders and RPCs | **in progress** (agent `a3-wallet`, started 2026-09-13 in parallel; builders take explicit bundle bytes until A2's `BuildBundle` is wired at merge) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
-| A5, A6 | not started (A5's read-only views at A2's exit) |
+| A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **in progress** (agent `a5a-wallet`, started 2026-09-13 against the contract; the actions are A5-b after A3) |
+| A5-b, A6 | not started |
+
+**Note (2026-09-13):** the A2 and A3 agents were terminated once by the API session limit with their C++ committed and their functional scripts uncommitted; both were resumed with context intact and no work was lost.
 | A7, A8 | need real attestors; cannot run on one machine |
 
 **A1 decisions confirmed by the coordinator (2026-09-13):** (i) key prefixes `A<u16 seq>` for `Attestors` and `W<u32 height>` for `BundleLog` — the plan's `T`/`L` were already Tip and TxLog; hash order after `P`: A, N, M, W, E. (ii) **R15's evaluation order applies only when `Snapshots[R]` is ARMED**; unarmed, MINT keeps the exact v2 clause order, because moving MINT-5 behind MINT-8 changed v2 verdicts (`yellowback_void_mint.py` caught it). (iii) AFEE-1 runs after MINT-9 (it needs `A`), so the order when ARMED is MINT-2,3,4,6,7,8 → MINT-9 → AFEE-1 → MINT-5 → MINT-10; MINT-6's cap reads `xMint`. (iv) `ageOrigin` reads `Snapshots[R].attest`, a pure function of `R`. (v) `Snapshot.pMint/pClaim` keep their names and are the cross-section (`xMint/xClaim` in the RPC). (vi) `groups()` ignores nodes a script appends after setup (the A0 framework's `SPLIT_HALVES` change had broken `yellowback_index.py`'s late node 6).
