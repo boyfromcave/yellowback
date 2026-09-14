@@ -16,10 +16,13 @@ when the coordinator has merged the chunk and seen its tests run.
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
 | A1 — state machine v3 (`view`, `state`, model, golden) | **complete, merged** (2026-09-13): 211 unit cases green (49 new, one tagged case per v3 identifier), model and golden regenerated (440 blocks: registration, arming, bundled mint, VOID mint, notice, emergency claim with residual, dormancy, equivocation, revival, bond spends; hash `abe131e0…a4fe`), fuzz corpus +12, the v3 rule-tag CI step now blocking; `yellowback_index/activation/pricefeed/lifecycle/claim/void_mint.py` all pass **unarmed** — v2 behaviour intact |
 | A2 — index, pool, node RPCs, MP-1/TPL-2 wiring | **complete, merged** (2026-09-13): 216 unit cases green; `yellowback_attest.py` (512 blocks, model match `full=True`), `yellowback_attest_enforcement.py`, `yellowback_rpc_contract.py` (every node command; the wallet shapes pending A3, non-fatal), `yellowback_index.py` (+3 cases), `yellowback_stock_node.py` all green; `rpcversion` 3; `mempoolcheck_bench` 6 ms / 10k plain transactions |
-| A3 — wallet builders and RPCs | **in progress** (agent `a3-wallet`, started 2026-09-13 in parallel; builders take explicit bundle bytes until A2's `BuildBundle` is wired at merge) |
+| A3 — wallet builders and RPCs | **complete, merged** (2026-09-14): carriers.dat, attest-signed.dat guard, every builder and wallet RPC, the two-step flow (`wait`, `-yellowbackcarriertimeout`), `yellowback_attest_wallet.py` green, all flow scripts green in both modes in its worktree; merged onto A2 by union (four conflicts, all additive); 224 unit cases green on the combined tree |
+| A2/A3 integration — the `BuildBundle` seam, `canNotice` via `EstimateClaim`, contract exemptions removed, full re-run | **in progress** (agent `a23-integrate`) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
 | A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases pass offline. A5-b (two-step mint flow, notice action, subscriber launcher, packaging) waits for A3 |
-| A5-b, A6 | not started |
+| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **in progress** (agent `a5b-wallet`; devnet case skips until `a4-devnet`) |
+| A4 `devnet` — devnet with attestors, `yellowback_attest_agent.py`, mining-doc note | not started (after the seam) |
+| A6 | not started |
 
 **Note (2026-09-13):** the A2 and A3 agents were terminated once by the API session limit with their C++ committed and their functional scripts uncommitted; both were resumed with context intact and no work was lost.
 | A7, A8 | need real attestors; cannot run on one machine |
@@ -27,6 +30,8 @@ when the coordinator has merged the chunk and seen its tests run.
 **A1 decisions confirmed by the coordinator (2026-09-13):** (i) key prefixes `A<u16 seq>` for `Attestors` and `W<u32 height>` for `BundleLog` — the plan's `T`/`L` were already Tip and TxLog; hash order after `P`: A, N, M, W, E. (ii) **R15's evaluation order applies only when `Snapshots[R]` is ARMED**; unarmed, MINT keeps the exact v2 clause order, because moving MINT-5 behind MINT-8 changed v2 verdicts (`yellowback_void_mint.py` caught it). (iii) AFEE-1 runs after MINT-9 (it needs `A`), so the order when ARMED is MINT-2,3,4,6,7,8 → MINT-9 → AFEE-1 → MINT-5 → MINT-10; MINT-6's cap reads `xMint`. (iv) `ageOrigin` reads `Snapshots[R].attest`, a pure function of `R`. (v) `Snapshot.pMint/pClaim` keep their names and are the cross-section (`xMint/xClaim` in the RPC). (vi) `groups()` ignores nodes a script appends after setup (the A0 framework's `SPLIT_HALVES` change had broken `yellowback_index.py`'s late node 6).
 
 **A2 findings applied (2026-09-13):** a reorged citation usually fails BUNDLE-1 at *membership* (the selection is seeded by `blockHash(R)`, which the reorg changes) — `sig` only when the two selections intersect; `attest_reorg_across_arming` splits before the third registration (both branches pass a height-based `armHeight`); a registration undone by a reorg is dead on the winning chain (REG-A1's lock distance), so the wallet must rebuild it; PIN-1 pins any pool quoting one constant price whenever attestors move over 5 % — the mining runbook must say so; `seatedCount` drops one block after a DORMANT verdict (SNAP seats before the dormancy pass). New shared helpers: `src/rpc/yellowbackrpc.h` (`PushNoticeFields`, `EstimateClaim`), `index.BuildBundleInfo`, `InsufficientMessage()`, framework `send_and_lock` (fixed a double-spend in `register_and_arm`), `build_vault_spend_raw(carrier=…)`, `withdraw_bond_raw`.
+
+**A3 findings (2026-09-14):** `canNotice`/`canClaim` under clause (b) were judged from `xClaim` alone in A3's worktree (a sufficient condition) — the integration chunk switches them to A2's `EstimateClaim`; the carrier's two-step means every regtest script calling `yed_mint` must mine from another thread or use `wait=false` (the framework's `two_step` does the former); `CarrierConfirmed` requires both the chain and the wallet's notifier to have seen the carrier, else the mint would re-spend the carrier's funding input; `-yellowbackcarrierpool` has no semantics and is not implemented.
 
 **A4 findings applied (2026-09-13):** `iroh-gossip` has no topic discovery, so the `[transport]` table gains `peers` (bootstrap endpoint ids) and `secret_key_file` (stable id); `topic` is `topic_override`; the attestor polls sources every `poll_seconds` and signs only at a due tick, so the price window fills between ticks (§5). **Incident:** the agent's clean-build step ran `cargo clean` against the machine's global shared cargo target directory and removed other projects' build artifacts (≈ 26 GiB, nothing unrecoverable — rebuild time only); the briefing now forbids `cargo clean` outside the crate's own target.
 
@@ -1034,15 +1039,15 @@ exchange feeds — is A7.
 
 ### Phase A3 — Wallet builders and RPCs (≈ 700 lines)
 
-- [ ] `wallet.{h,cpp}`: carrier and bond tracking (W7: `carriers.dat`, outstanding carriers,
+- [x] `wallet.{h,cpp}`: carrier and bond tracking (W7: `carriers.dat`, outstanding carriers,
       bonds through `Attestors`); `yed_sweepcarriers` at startup.
-- [ ] `txbuilder.{h,cpp}`: `BuildMint`/`BuildClaim` with carrier, bundle (index or `bundleHex`),
+- [x] `txbuilder.{h,cpp}`: `BuildMint`/`BuildClaim` with carrier, bundle (index or `bundleHex`),
       attestor fee, residual; `BuildClaimNotice`, `BuildRegisterAttestor`, `BuildWithdrawBond`,
       `BuildRevive`, `BuildEquivocation`, `BuildCarrier` (the carrier step, W7) and the
       two-transaction flow with `wait`; `SignCarrierInput`; the dry run extended to MINT-9/10 and RED-5; Sapling shapes (S11).
-- [ ] Wallet RPCs of §4.5; `yed_signattestation` (hot key lookup by `attestorPubKey` held in the
+- [x] Wallet RPCs of §4.5; `yed_signattestation` (hot key lookup by `attestorPubKey` held in the
       wallet); `-yellowbackpreferredattestor`, `-yellowbackcarrierpool`.
-- [ ] `qa/rpc-tests/yellowback_attest_wallet.py`: `yed_registerattestor` on nodes 6–7 → the same
+- [x] `qa/rpc-tests/yellowback_attest_wallet.py`: `yed_registerattestor` on nodes 6–7 → the same
       records the raw path produced; `yed_mint` with the node-built bundle (two transactions, one
       block apart; ACTIVE, both fees, `bundleSeqs`), from `ys1…` (one transparent input, the
       carrier), `wait=false` then completion on the next block, a carrier whose window lapses
@@ -1056,7 +1061,7 @@ exchange feeds — is A7.
       one; restore (`yellowback_wallet_restore.py` additions: bonds reappear after `importprivkey` +
       `-rescan` through `Attestors` by `bondPubKey`; an outstanding carrier survives a restart via
       `carriers.dat` and is orphaned, not lost to a third party, when that file is absent, W7).
-- [ ] The v2 flow scripts (`yellowback_lifecycle.py`, `yellowback_claim.py`,
+- [x] The v2 flow scripts (`yellowback_lifecycle.py`, `yellowback_claim.py`,
       `yellowback_void_mint.py`, `yellowback_sapling.py`) gain an `--armed` mode that calls
       `register_and_arm` first; both modes in CI.
 - [ ] **Exit:** the wallet scripts green in both modes; `src/wallet/wallet.{h,cpp}` and
