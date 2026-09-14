@@ -20,7 +20,7 @@ when the coordinator has merged the chunk and seen its tests run.
 | A2/A3 integration — the `BuildBundle` seam, `canNotice` via `EstimateClaim`, contract exemptions removed, full re-run | **in progress** (agent `a23-integrate`) |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
 | A5-a — YecWallet read-only views (Attestors, arming banner, source prices, notices) | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases pass offline. A5-b (two-step mint flow, notice action, subscriber launcher, packaging) waits for A3 |
-| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **in progress** (agent `a5b-wallet`; devnet case skips until `a4-devnet`) |
+| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases pass offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
 | A4 `devnet` — devnet with attestors, `yellowback_attest_agent.py`, mining-doc note | not started (after the seam) |
 | A6 | not started |
 
@@ -32,6 +32,8 @@ when the coordinator has merged the chunk and seen its tests run.
 **A2 findings applied (2026-09-13):** a reorged citation usually fails BUNDLE-1 at *membership* (the selection is seeded by `blockHash(R)`, which the reorg changes) — `sig` only when the two selections intersect; `attest_reorg_across_arming` splits before the third registration (both branches pass a height-based `armHeight`); a registration undone by a reorg is dead on the winning chain (REG-A1's lock distance), so the wallet must rebuild it; PIN-1 pins any pool quoting one constant price whenever attestors move over 5 % — the mining runbook must say so; `seatedCount` drops one block after a DORMANT verdict (SNAP seats before the dormancy pass). New shared helpers: `src/rpc/yellowbackrpc.h` (`PushNoticeFields`, `EstimateClaim`), `index.BuildBundleInfo`, `InsufficientMessage()`, framework `send_and_lock` (fixed a double-spend in `register_and_arm`), `build_vault_spend_raw(carrier=…)`, `withdraw_bond_raw`.
 
 **A3 findings (2026-09-14):** `canNotice`/`canClaim` under clause (b) were judged from `xClaim` alone in A3's worktree (a sufficient condition) — the integration chunk switches them to A2's `EstimateClaim`; the carrier's two-step means every regtest script calling `yed_mint` must mine from another thread or use `wait=false` (the framework's `two_step` does the former); `CarrierConfirmed` requires both the chain and the wallet's notifier to have seen the carrier, else the mint would re-spend the carrier's funding input; `-yellowbackcarrierpool` has no semantics and is not implemented.
+
+**A5-b findings (2026-09-14), for A6:** a `pending: true` reply names only `carrierTxid`, so the GUI follows a pending action heuristically through `yed_listtransactions`; a node-side `carrierTxid` on `yed_listtransactions` rows (or `mainTxid` once built) would make it exact — contract + node change, scheduled in A6. `yed_gettxinfo` has no `source`; the GUI derives it. `yed_listattestors` does not mark the wallet's own records; the node's `attest-key-not-held` answers.
 
 **A4 findings applied (2026-09-13):** `iroh-gossip` has no topic discovery, so the `[transport]` table gains `peers` (bootstrap endpoint ids) and `secret_key_file` (stable id); `topic` is `topic_override`; the attestor polls sources every `poll_seconds` and signs only at a due tick, so the price window fills between ticks (§5). **Incident:** the agent's clean-build step ran `cargo clean` against the machine's global shared cargo target directory and removed other projects' build artifacts (≈ 26 GiB, nothing unrecoverable — rebuild time only); the briefing now forbids `cargo clean` outside the crate's own target.
 
@@ -1088,10 +1090,10 @@ exchange feeds — is A7.
 ### Phase A5 — YecWallet (`yecwallet-dd`; ≈ 500 lines changed)
 
 - [x] `RPC_VERSION = 3`; contract copy; `yellowbackrpc.h` fields.
-- [ ] Mint page, Positions, Attestors view, Settings of §4.8; the subscriber launcher beside the
+- [x] Mint page, Positions, Attestors view, Settings of §4.8; the subscriber launcher beside the
       bundled `ycashd` (the `yellowback-attest` binary packaged by `build.sh`; a missing binary
       disables the launcher with a message, never the wallet).
-- [ ] QTest: offline cases for every new element with a fake `Connection`; the devnet case
+- [x] QTest: offline cases for every new element with a fake `Connection`; the devnet case
       extended (mint ARMED, notice, emergency claim, attestor outage banner), skipped without
       `YELLOWBACK_DEVNET_DIR`.
 - [ ] `build.sh --package` includes `yellowback-attest`; `grep -rn 'trustless\|verified price'
