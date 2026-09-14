@@ -25,7 +25,8 @@ yellowback-workspace/
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
-│   ├── plans/       THE DEVELOPMENT PLAN (yellowback-v2-development-plan.md; stands alone)
+│   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
+│   │                implementation; v2 = the delivered miner-enforced plan v3 is a delta on)
 │   │   └── archived/   the retired federation design — history only, never an input
 │   ├── ideation/    experimental ideas, inactive — not plans, nothing there is being built
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
@@ -177,7 +178,8 @@ make log        # commits on each fork branch beyond its baseline
 `bootstrap` is create-only: a repository that already exists is verified against the manifest and
 left alone, nothing is fetched. So it is the right command exactly once per machine — to *update* an
 existing workspace, use `make pull`. That one is fast-forward only, everywhere: it fetches `origin`,
-advances each fork's `feature/yellowback-sf` and its `-legacy` baseline, and **skips** — with the
+advances each fork's branch of record (now `feature/yellowback-price-attest`) and its `-legacy`
+baseline, and **skips** — with the
 git command to run yourself — any repo that is dirty, has diverged, or is on the wrong branch. It
 never merges, never rebases, never discards; `git reset --hard` stays something you type by hand in
 the one repo you mean. The forks' `upstream` remote is never fetched (rebasing onto a newer Ycash is

@@ -18,8 +18,8 @@ yellowback-workspace/
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
-│   ├── plans/       THE DEVELOPMENT PLAN (v2, miner-enforced); `archived/` = the retired federation design
-│   ├── reference/   the miner-enforced proposal the v2 plan was written from
+│   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) and v2 (miner-enforced, delivered)
+│   ├── reference/   the proposals the plans were written from (miner-enforced = v2, price attestation = v3)
 │   ├── ideation/    inactive experimental ideas — not plans, nothing here is being built
 │   ├── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
 │   ├── why-miner-enforced.md        the plain-language rationale for the v2 design
@@ -73,8 +73,22 @@ the miner is the only party who can refuse a transaction without a consensus cha
 `docs/plans/archived/` and as the `feature/digidollar` branch in both forks — a record, never an
 input, never built on.
 
+**Yellowback v3 adds a second price population.** In v2 every price comes from one place — the
+YEC/USD quotes mining pools publish in their coinbases — so the trust statement rests entirely on
+honest-majority hashpower. v3 adds **bonded attestors**: anyone who posts a long time-locked bond
+may sign prices off-chain, and a minter or claimant carries four to six of those signatures into
+the transaction that needs them, in the scriptSig of a small P2SH *carrier* input that every stock
+node relays today. Enforcing nodes combine the bond-weighted quantile with the pool medians by
+`min` for mints and `max` for claims, so moving the price in the direction that pays now requires a
+hashpower majority **and** a bond-weighted majority of the selected attestors at the same time.
+Attestors pay nothing beyond the bond — no periodic transactions, no domain, no open port — and the
+party who needs an attested price pays for it. No new line in any consensus, mining or policy file
+of the node. Design: [docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md).
+Plan and status: [docs/plans/yellowback-v3-development-plan.md](docs/plans/yellowback-v3-development-plan.md)
+(Phases A0–A5 merged in both forks; A4's devnet and A6–A8 remain).
+
 Rationale: [docs/why-miner-enforced.md](docs/why-miner-enforced.md). Normative protocol:
-[docs/spec/yellowback-spec.md](docs/spec/yellowback-spec.md) (generated from the plan's §3 by
+[docs/spec/yellowback-spec.md](docs/spec/yellowback-spec.md) (generated from the plans' §3 by
 `make spec`). Lineage and divergence from DigiDollar:
 [docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md).
 
@@ -232,10 +246,16 @@ specifically, and where the two designs part company on principle:
    to mining pools rather than to a federation or a network upgrade, what that buys
    (self-custody, no committee on redemption, a hashpower-priced feed) and the trade-offs it
    accepts, each with where the plan bounds it.
-4. **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)** —
-   the plan: decision record, the normative protocol (§3), the exact hook lines, the phased work
-   plan. It stands alone. `docs/plans/archived/` is the retired federation design (history only);
-   `docs/ideation/` holds inactive experimental ideas.
+4. **[docs/plans/yellowback-v3-development-plan.md](docs/plans/yellowback-v3-development-plan.md)** —
+   the current plan (price attestation): its status table, decision record W1–W15, the normative
+   protocol delta (§3), the concurrent one-machine test workflow (§6.0) and the phased work plan.
+   It is a **delta on v2**, so keep
+   **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)**
+   beside it — the delivered plan, whose §3 still governs everything v3 does not restate, and whose
+   `feature/yellowback-sf` branch is the diff baseline. `docs/plans/archived/` is the retired
+   federation design (history only); `docs/ideation/` holds inactive experimental ideas.
+   **[docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md)**
+   is the proposal v3 implements, and its audit companion records what three review passes changed.
 5. **[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)** — what the
    DigiByte team contributed and what Yellowback owes them, alongside the specific points where
    Ycash's principles (decentralization, self-sovereignty, risk aversion) sent the design
@@ -243,12 +263,15 @@ specifically, and where the two designs part company on principle:
 6. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
 
-**Where the work stands** is the execution-status table at the top of the plan, kept current by the
-coordinator — Phases 0–4, 6, 7 and 7b complete (the node builds clean, and mint / send / redeem /
-claim / sweep are proven end to end through YecWallet against a live devnet), Phase 5 (the
-enforcement scenarios) in progress, Phase 8 (hardening and review) partly done, and Phases 9–10
-(testnet and mainnet with real pools) blocked on pool operators rather than on code. Trust that
-table, not this paragraph.
+**Where the work stands** is the execution-status table at the top of each plan, kept current by the
+coordinator. In short: **v2 is delivered** (Phases 0–8; `feature/yellowback-sf` in both forks, with
+mint / send / redeem / claim / sweep proven end to end through YecWallet against a live devnet), and
+**v3 is in implementation** on `feature/yellowback-price-attest` — Phases A0–A5 merged in both
+forks, with the node at 224 green unit cases, the full functional suite green in both unarmed and
+armed modes, frozen files at zero delta, and the wallet at 83 green offline QTest cases; A4's
+devnet chunk and A6 (hardening, packaging, the review document) remain, and A7–A8 (testnet and
+mainnet, for both v2's pools and v3's attestors) are blocked on real operators rather than on code.
+Trust those tables, not this paragraph.
 
 Before porting anything, answer four questions in writing:
 
