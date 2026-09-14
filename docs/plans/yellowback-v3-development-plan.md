@@ -15,7 +15,7 @@ when the coordinator has merged the chunk and seen its tests run.
 | A0 `glue` — golden vector at payload v3 + preimage, `ParamsFromArgs`, `PayloadToJSON` v3, `BundleStat` → `math.h`, fuzz target in CI | **complete, merged** (2026-09-13): 162 unit cases green, corpus check green, `yellowback_pricefeed.py` ends with `assert_model_matches(full=True)` against the v3 node. **A0 is complete.** `yellowback_rpc_contract.py` is deliberately red until A2 ships the commands and bumps `rpcversion` to 3 (the exact missing fields are listed in the A2 brief) |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **crate complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean; the CI `agent` job merged from two overlapping definitions into one. Remaining A4 items (nightly agent script, devnet, docs, calibration scripts) wait for A2/A3 |
 | A1 — state machine v3 (`view`, `state`, model, golden) | **in progress** (agent `a1-state`, started 2026-09-13 after A0's merge) |
-| A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **in progress** (agent `a4-calibrate`; independent) |
+| A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide finished | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs; the guide reconciled with the crate's config. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
 | A2, A3, A5, A6 | not started (A2 waits for A1) |
 | A7, A8 | need real attestors; cannot run on one machine |
 
@@ -653,7 +653,7 @@ operator's only v3 change is upgrading `ycashd`.
 |---|---|---|
 | `yed_getinfo` | + `attest {status, triggerHeight, armHeight, seatedCount, poolSize, poolFresh, carrierMode}`, `halts` unchanged | |
 | `yed_getprice [height]` | + `xMint, xClaim, pinnedKeys, pinnedSeqs, seated` (per-tx values are in `yed_gettxinfo`) | |
-| `yed_listattestors [height]` | every `Attestors` record: `seq, attestorPubKey, bondAddress, bondZat, bondLocktime, flags{tier, pool}, registerHeight, status, statusHeight, weight, seated, pinned, lastBundleHeight, poolFresh` | |
+| `yed_listattestors [height]` | every `Attestors` record: `seq, attestorPubKey, bondAddress (the bond output's P2SH), bondKeyAddress (P2PKH of bondPubKey: the fee payee), bondZat, bondLocktime, flags{tier, pool}, registerHeight, status, statusHeight, weight, seated, pinned, lastBundleHeight, poolFresh` | |
 | `yed_getattestations` | the node's pool: `[{seq, price, citedHeight, receivedHeight, seated}]` | |
 | `yed_addattestation <hex>` | verify and pool one 74-byte attestation; errors `attest-unknown-seq`, `attest-not-eligible`, `attest-stale`, `attest-bad-sig`, `attest-range` | `{accepted, seq, replaced}` |
 | `yed_buildbundle <refHeight> <selectorHex>` | the bundle the node would build: `{hex, seqs, aMint, aClaim, missing[]}`; error `bundle-insufficient` with `missing` | |
@@ -665,7 +665,7 @@ operator's only v3 change is upgrading `ycashd`.
 | `yed_mint … [bundleHex]`, `yed_claim … [bundleHex]` (wallet) | + optional bundle; errors `bundle-insufficient`, `mint10-diverged` (refused before build); optional `wait=false` | + `carrierTxid, bundleSeqs, attestFeeZat, attestPayee, residualZat, claimPath` |
 | `yed_claimnotice <vaultTxid>` (wallet) | Step 1 of §10.3; errors as `yed_claim`, `notice-standing`, `notice-not-underwater` | `{txid, refHeight, pEmerg}` |
 | `yed_sweepcarriers` (wallet) | reclaim outstanding carriers whose window lapsed | `{txid, count}` |
-| `yed_registerattestor <bondYec> <lockBlocks> [flags]` (wallet) | §3.5; errors `bond-below-min`, `lock-below-min` | `{txid, seq?, attestorPubKey, bondAddress}` (`seq` once confirmed via `yed_listattestors`) |
+| `yed_registerattestor <bondYec> <lockBlocks> [flags]` (wallet) | §3.5; errors `bond-below-min`, `lock-below-min` | `{txid, seq?, attestorPubKey, bondAddress, bondKeyAddress}` (`seq` once confirmed via `yed_listattestors`; `bondKeyAddress` is what an operator exports to take the bond key cold) |
 | `yed_withdrawbond <seq> [to]` (wallet) | spend the bond after `bondLocktime`; error `bond-locked` | `{txid}` |
 | `yed_revive <seq> <priceMicroUsd>` (wallet, attestor node) | §3.5; errors `not-dormant`, `attest-key-not-held` | `{txid, seq, citedHeight, priceMicroUsd, hex}` |
 | `yed_reportequivocation <hexA> <hexB>` (wallet) | §3.5; error `not-equivocation` | `{txid, seq}` |
@@ -1066,7 +1066,7 @@ exchange feeds — is A7.
       hygiene, the one-day arming notice, dormancy and revival, equivocation consequences);
       `doc/yellowback-mining.md` note: "v3 needs nothing from a pool but the upgrade";
       `contrib/yellowback/README.md`.
-- [ ] Calibration scripts (proposal §16): `contrib/yellowback/attest/calibrate/spreads.py` and
+- [x] Calibration scripts (proposal §16): `contrib/yellowback/attest/calibrate/spreads.py` and
       `pinrate.py`, with a README on how to run them for two weeks and read the result.
 - [ ] **Exit:** `agent` job green; devnet `check` exits 0 ARMED; `yellowback_attest_agent.py`
       green nightly.
