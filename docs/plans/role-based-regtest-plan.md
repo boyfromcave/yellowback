@@ -1,13 +1,22 @@
 # Role-based regtest plan — walking in each participant's shoes
 
-**Status:** revision 2 (2026-09-20), scheduled — **build now, alongside A6** (owner decision
-D-4). This is a plan for a *testing and feedback* capability, not a change to Yellowback itself:
+**Status:** revision 3 (2026-09-20), **in implementation** — see §8 for what is built, what is
+running and what remains; every chunk's row there is updated as it lands. Revision 2 scheduled the
+work (owner decision D-4). This is a plan for a *testing and feedback* capability, not a change to Yellowback itself:
 nothing here touches consensus, mining or policy code. It exists so the product owner can occupy
 each seat in the Yellowback economy in turn and give grounded feedback before real attestors are
 recruited (v3 plan Phase A7), and so that the comprehensive regression coverage those scenarios
 imply exists in CI rather than in someone's terminal history.
 
 ## 0. Revision log
+
+### Revision 3 (2026-09-20) — implementation begins; two deviations recorded
+
+| # | Deviation from revision 2 | Why |
+|---|---|---|
+| I-1 | **Eleven nodes, not ten**, in every role preset: the simulated population is node 9 and the liquidator node 10 in *every* preset, and node 0 is the owner's seat (`user`) or the funding and subscriber node (`attestor`, `pool`). | §3.2 put the population on node 0 in two presets and left it without a node in the third. Scenario 1 step 7 ("someone else's vault claimed … as a bystander") needs the personas' vaults to belong to a wallet that is not the owner's, so the population can never share node 0 with the owner; one map for all three presets is also one map to get wrong. |
+| I-2 | **The inherited port helper caps a run at 8 nodes** (`test_framework/util.py`, `MAX_NODES`, asserted in `p2p_port`). The devnet raises it in one place before any port is computed and **writes every node's RPC URL into `devnet.json`**, so the simulator, the regression suite and any other process read ports from the state file instead of recomputing them. | A second process recomputing ports with a different cap would land on different ports silently. Recorded in `docs/mapping.md` §14.2. |
+| I-3 | **Risk appetite is the term class.** `yed_mint` always locks exactly the minimum collateral for the class (there is no over-collateralise argument), so "close to the minimum ratio" and "2–3× over-collateralised" are not choices a wallet can make. The leveraged minter takes **class C** (300 %, the longest terms), the conservative minter **class A** (500 %, the shortest), which is exactly the plan's contrast by a different lever. | §3.4 was written as if collateral were a free parameter. It is not; the class ranges are (`src/yellowback/params.cpp`). |
 
 ### Revision 2 (2026-09-20) — the owner's four decisions
 
@@ -439,3 +448,48 @@ Still open, and each answerable by walking a scenario rather than by discussion:
 3. **Should the personas persist across `up` runs?** A chain with history — vaults minted weeks
    ago, an attestor who has been dormant twice — is more instructive than one born five minutes
    ago, but it means a seeded replay of prior blocks at startup and a slower `up`.
+
+---
+
+## 8. Implementation status
+
+Updated as each chunk lands. "Built" means the code exists on `feature/yellowback-price-attest`
+in `ycash-dd`; "verified" means it was run end to end on one laptop and the result is recorded.
+
+| # | Chunk | Status | Where | Notes |
+|---|---|---|---|---|
+| R1 | Heartbeat | **built, verified** | `contrib/yellowback/devnet/yellowback-devnet`: `heartbeat {start\|stop\|rate N\|status}`, `up --heartbeat-rate N`, `--no-heartbeat`; `<dir>/heartbeat.log`, `heartbeat.json`; `status` reports it | Halts on `liveness()` (narrower than `check`: F-1), and deliberate `attestor N stop` / `pool N quote stop` are recorded so they do not halt it (F-2). Run at 15 s, 3 s and 2 s per block |
+| R2 | Role presets | **built, verified** | `up --role {user,attestor,pool}` (eleven nodes, I-1), the seat banner in `status`, `wallet --node N` and `YELLOWBACK_WALLET_BIN`, `--lean`, the footprint line, `pool N {configure\|signal on\|off\|quote start\|stop}`, `attestor 8` refused on the attestor seat, `attest-8.toml` template | RPC URLs published in `devnet.json` (I-2). `up --role user` ran end to end: ARMED at 250 with 4 attestors, 3 subscribers (nodes 0, 9, 10), heartbeat, walk and simulator up, `check` green |
+| R3 | Personas | **built, verified** | `contrib/yellowback/devnet/yellowback-sim` (six personas, seeded, per-persona tally in `<dir>/sim-stats.json`, `sim stats` shouts at an all-failing persona); started by `up --role`, `sim {start\|stop\|stats}`; profiles `demo` / `fast` | Risk appetite is the term class (I-3). On the first run every persona acted within two minutes; after a −70 % shock the liquidator posted notices on and **claimed three class C vaults** (the absentee's and both of the leveraged minter's) by clause (a). Refusals seen and tallied honestly: `insufficient-yec` (single-coin wallet, F-3), `mintpol-global-ratio` after the shock, one mempool-settle race |
+| R4 | Price walk | **built, verified** | `price --walk [start\|stop] [--drift] [--vol] [--tick]`, `price --shock=PCT`, `up --walk-*`, `--no-walk`; `<dir>/walk.log` | Writes the pools' mock file and every automated attestor's together; the seat's attestor file is never written. `--shock` must be written with `=` (F-4) |
+| R5 | Scenario scripts | **built** | `contrib/yellowback/devnet/scenarios/{1-user,2a-attestor-gui,2b-attestor-headless,3-pool}.md`; `scenario [NAME]`; `up --role` creates `<dir>/session-<role>-<date>/NOTES.md` seeded with the role's checklist(s), seed and fork commits; `report` writes `REPORT.md` and a tarball | Verified: `scenario`, the seeded `NOTES.md` and `report` (tarball with session, `devnet.json`, tally, every agent log and every node's `debug.log`). The walk-throughs themselves are the owner's to walk (§4) |
+| R6 | Docs | **built** | `contrib/yellowback/devnet/README.md` (new: commands, the rule, the node map, heartbeat, walk, personas, pool and attestor seats, sessions, the suite); `doc/yellowback-devnet.md` (the stale "v3 not built" text replaced, a §5 on walking the roles); `contrib/yellowback/README.md` row; `docs/mapping.md` §14.2 (seven rows) | The 2b walk-through cites `doc/yellowback-attestor.md` step by step and leaves that document unchanged: reading it *is* the test |
+| R7 | Regression suite | **built; run twice, red on F-7** | `qa/rpc-tests/yellowback_devnet_roles.py`, executable, in `EXTENDED_SCRIPTS`, run by the nightly job after the agent script and named in the audit's allow-list | Drives the devnet script itself; per preset: seat empty, heartbeat on automated pools only, every persona's characteristic action, a redeem at maturity, the shock and the liquidator's claim, walk agreement, `check` before the shock, every node alive, state hash and liveness after. First full run (2026-09-20, seed 7): `user` and `pool` passed every assertion up to and including the liquidator's clause-(b) claim, then **found F-7** (the claimant's node segfaults on its next RPC); the suite is red on that bug by design until A6 fixes it. The `attestor` preset's run is recorded in §8.2 |
+| R8 | Pool status view | deferred (D-2) | — | not built until Scenario 3 asks for it |
+
+### 8.2 Runs of the regression suite (2026-09-20, seed 7, heartbeat 2 s, `fast` personas)
+
+| Preset | Seat empty | Heartbeat | Walk | `check` | Personas | Redeem at maturity | Shock and liquidation | End state |
+|---|---|---|---|---|---|---|---|---|
+| `user` | ✔ (11 nodes, 4 attestors, 3 pools eligible, node 0 funded) | ✔ 6 blocks on 3 automated pools | ✔ pools = attestors, moving | ✔ | ✔ every minter minted, the trader moved YED | ✔ | notice + clause-(b) claim of a persona's vault returned success; **node 10 then segfaulted (F-7)** | red on F-7 |
+| `pool` | ✔ (node 4 a plain miner, 2 pools eligible) | ✔ on nodes 2 and 3 only | ✔ | ✔ | ✔ | ✔ | same as `user`, on the leveraged vault | red on F-7 |
+| `attestor` | ✔ (node 8 funded, unregistered, no agent, conf template written; 3 attestors) | ✔ | ✔ (node 8's price file untouched) | ✔ | ✔ | ✔ | same | red on F-7 |
+
+Everything the plan asked the suite to prove about the *tooling* held on all three presets; the
+one red assertion is a node defect the tooling found. Two suite bugs were fixed along the way
+(`yed_gettag` wants its height as a string; the vault lookup on node 0 must wait a block for the
+index), and the suite gained "every node alive at the end" so F-7 is named, not inferred.
+
+### 8.1 Found while building
+
+Each also has a row in `docs/mapping.md` §14.2.
+
+| # | Found | Fix |
+|---|---|---|
+| F-1 | §3.3 said the heartbeat "stops when `check` would fail". `check` asserts `mintingAllowed`, and the scenarios' central move — a price shock — halts minting for a window (`DIVERGENCE`, then `GLOBAL_RATIO`). A heartbeat gated on `check` stops exactly when the chain must keep moving | The heartbeat gates on a narrower `liveness()`: node 0 up, activation active, ARMED, automated agents alive. The regression suite runs `check` before the shock and asserts only the state hash and liveness after |
+| F-2 | On the first run, `attestor 5 stop` — the outage demo the plan asks for — killed the heartbeat five seconds later: `HALTING: attest-5 is dead` | Deliberate stops (`attestor N stop`, `pool N quote stop`) are recorded in `devnet.json` (`stopped_agents`); the heartbeat and `check` ignore them; `start` clears the record |
+| F-3 | The population wallet was funded with one 260 YEC coin. A two-step mint spends the whole coin and its change is unconfirmed for a block, so every other persona refused with `insufficient-yec: have 0.00 confirmed and unlocked` for a block after each action | `up` funds the population and the liquidator as six coins each; the personas that share a wallet also serialise their spending calls |
+| F-4 | `price --shock -70%` is refused by `argparse`, which reads `-70%` as a flag | `price --shock=-70%`; the help text and the docs say so |
+| F-5 | The `pool` command's docstring used `%d` with a `%`-format and crashed on the `%` in `60 %` | Plain text |
+| F-7 | **The claimant's node segfaults on the RPC after a clause-(b) claim.** Twice out of two runs of the regression suite (`user` and `pool` presets, seed 7): the liquidator's `yed_claim` by clause (b) returned success (`CommitTransaction` and `Relaying wtx` logged on node 10), and the *next* two-step RPC on that node, a few hundred milliseconds later — a second `yed_claim` in one run, a `yed_claimnotice` in the other — died with `EXC_BAD_ACCESS` at address `0x8` in `CScript::IsPayToScriptHash` ← `Solver` ← `IsMineInner` ← `CWallet::IsMine(CTxOut)` ← `CWalletTx::IsTrusted` ← `CWallet::AvailableCoins` ← `yellowback::Context::SelectYec` ← `yellowback::BuildCarrier` ← `CarrierStep` ← `yed_claim` (macOS crash reports `ycashd-2026-09-20-141847.ips`, `…-143053.ips`). `IsTrusted` reads `parent->vout[prevout.n]` for each input of an unconfirmed own transaction; a fault at `0x8` with `n = 0` means a wallet transaction whose `vout` is **empty** — the just-committed claim's parent at index 0 is either the vault outpoint (not this wallet's) or the carrier. Clause (a) claims (three in a row in the manual run, §8 R3) never crashed. **The claim was lost:** the node died before the transaction left it, so on every other node the vault stayed ACTIVE with the notice standing (verified on the pool devnet's node 0 after the run: `ACTIVE`, `noticed: true`, no CLAIMED vaults) — and `notice-standing` then blocks a second notice for `EMERGENCY_NOTICE_TTL` blocks | **Not fixed here** (wallet-tier C++; this plan is `contrib/` and `qa/` only). Graduated to the v3 plan §6.2 for A6 with the recipe: `up --role user --seed 7 --heartbeat-rate 2 --sim-profile fast`, wait for the leveraged vault's `claimHeight − 12`, `price --shock=-70%`, watch node 10. The suite now asserts every node is alive at the end and names the dead one, so it stays **red on this bug until A6 fixes it** |
+| F-6 | *(product feedback, for the walk-throughs)* After a −70 % shock, `yed_listclaimable` listed nothing for ≈ 30 blocks while `xClaim` (the mid and slow windows) caught up, then the liquidator's notice and the clause-(a) claim landed within six blocks of each other. The emergency tier and the ordinary claim opened at almost the same moment on regtest because `EMERGENCY_PERSIST` (4) ≈ the window lag; on mainnet (48 vs 576/2,016-block windows) the emergency tier leads by hours. Worth watching in Scenario 1 step 7 | none needed; noted for §7 question 1 (the walk's drift and volatility are the knobs) |

@@ -1190,6 +1190,17 @@ passed — the v2 half of `check` judging a chain deliberately broken, not a fal
 
 ---
 
+### 6.2 Found by walking the roles (2026-09-20)
+
+The role-based regtest tooling (`docs/plans/role-based-regtest-plan.md`, §8) ran the simulated
+economy — six personas, a heartbeat, a price walk, a −70 % shock — on the finished A0–A5 code.
+Its findings that are product defects, not tooling, graduate here for A6:
+
+| # | Found | For A6 |
+|---|---|---|
+| D-R-1 | **The claimant's node segfaults on the two-step RPC that follows a clause-(b) claim** (regtest plan F-7). Reproduced twice: the liquidator's `yed_claim` by RED-4 clause (b) returns success (committed and logged as relayed) and the next `yed_claim` or `yed_claimnotice` on that node, a few hundred milliseconds later, dies in `CWalletTx::IsTrusted` → `CWallet::IsMine` reading `parent->vout[0]` of a wallet transaction whose `vout` is empty (`EXC_BAD_ACCESS` at `0x8`), reached from `yellowback::Context::SelectYec` → `AvailableCoins`. Clause-(a) claims never crashed. The crash lands before the claim leaves the node: network-wide the vault stays ACTIVE with the notice standing, and `notice-standing` blocks a fresh notice for `EMERGENCY_NOTICE_TTL` blocks — a liquidator who crashes here loses both the claim and the window | Fix in the wallet layer (A3 code: `src/rpc/yellowbackwallet.cpp`, the wallet's carrier and claim builders). Add a functional case to `yellowback_attest_wallet.py`: a clause-(b) claim followed by any two-step RPC on the same wallet. Recipe: `yellowback-devnet up --role user --seed 7 --heartbeat-rate 2 --sim-profile fast`, wait for the leveraged vault's `claimHeight − 12`, `price --shock=-70%`, watch node 10 |
+| D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
+
 ## 7. Test plan (v3 additions)
 
 | Layer | Location | Covers |
