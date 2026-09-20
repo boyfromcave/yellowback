@@ -1,10 +1,26 @@
 # Role-based regtest plan — walking in each participant's shoes
 
-**Status:** draft, revision 1 (2026-09-20). Not yet implemented. This is a plan for a *testing
-and feedback* capability, not a change to Yellowback itself: nothing here touches consensus,
-mining or policy code, and nothing here is a prerequisite for A6, A7 or A8. It exists so the
-product owner can occupy each seat in the Yellowback economy in turn and give grounded feedback
-before real attestors are recruited (v3 plan Phase A7).
+**Status:** revision 2 (2026-09-20), scheduled — **build now, alongside A6** (owner decision
+D-4). This is a plan for a *testing and feedback* capability, not a change to Yellowback itself:
+nothing here touches consensus, mining or policy code. It exists so the product owner can occupy
+each seat in the Yellowback economy in turn and give grounded feedback before real attestors are
+recruited (v3 plan Phase A7), and so that the comprehensive regression coverage those scenarios
+imply exists in CI rather than in someone's terminal history.
+
+## 0. Revision log
+
+### Revision 2 (2026-09-20) — the owner's four decisions
+
+| # | Decision | Applied |
+|---|---|---|
+| D-1 | **The attestor scenario is walked twice: GUI *and* headless.** An attestor will likely use the GUI for the initial bond, but operates from the command line thereafter. | §4.2 splits into 2a (the bonding ceremony, GUI) and 2b (operation, `ycash-cli` + the agent). 2b is walked by following `doc/yellowback-attestor.md` literally, so the scenario also tests the operator documentation. |
+| D-2 | **Pools stay daemon-first; a dashboard is optional.** Most pools will run `ycashd` as a daemon. | §4.3 is unchanged in emphasis; the optional read-only view becomes R8, a terminal status view rather than a GUI page, explicitly deferred and not blocking. |
+| D-3 | **The simulated users must be realistic**, not a random action walk. | §3.4 replaced with six personas, including a third-party liquidator — without which nobody ever claims an underwater vault and the attested price has no consequence. |
+| D-4 | **Build it now.** Comprehensive regtests are wanted immediately; "before or alongside A6" is not a distinction worth drawing. | §6 reordered and the regression script promoted from a footnote to its own chunk (R7). |
+
+### Revision 1 (2026-09-20) — first draft
+
+The triangle, the one-manual-seat rule, the three gaps, the three scenarios, R1–R6.
 
 **Audience:** whoever implements this, and the owner walking the scenarios. Read
 [`yellowback-v3-development-plan.md`](yellowback-v3-development-plan.md) §5 (the devnet) and
@@ -83,37 +99,51 @@ liquidation, which is the emotional core of the product — depends on a price t
 ### 3.1 Role presets
 
 `up` gains `--role {user,attestor,pool,none}` (default `none` = today's fully-automated demo).
-The preset decides three things: how many nodes start, which participant's automation is
-*withheld*, and where `wallet` points.
+The preset decides three things: which nodes start and as what, which participant's automation
+is *withheld*, and where `wallet` points.
 
-| Preset | Your seat | Your node | Automated for you |
+| Preset | Your seat | Your node | Withheld from the automation |
 |---|---|---|---|
-| `user` | a minter and holder of YED | 0 (the funded wallet) | 3 pools, 4 attestors, heartbeat, price walk |
-| `attestor` | one bonded attestor | 8 (a fourth attestor node, unregistered at `up`) | 3 pools, 3 attestors, heartbeat, price walk, **synthetic users** |
-| `pool` | one mining pool | 4 (a pool that neither quotes nor mines until you say so) | 2 pools, 4 attestors, heartbeat (excluding your pool), price walk, **synthetic users** |
-| `none` | — (today's behaviour) | 0 | everything |
+| `user` | a minter and holder of YED | 0 | nothing — pools, attestors, heartbeat, price walk and the simulated population all run |
+| `attestor` | one bonded attestor | 8, unregistered at `up` | your registration, your bond, your agent |
+| `pool` | one mining pool | 4, with no payout address and no signalling | your quote, your signalling, your blocks |
+| `none` | — (today's behaviour) | 0 | nothing; no simulator, no heartbeat |
 
 `status` prints a banner naming your seat and your node, because the single most likely mistake
-is driving the wrong node.
+in this whole design is driving the wrong node.
 
 ### 3.2 Node budget
 
-The `attestor` preset needs a ninth node. The counts are forced by the regtest parameters
-(`src/yellowback/params.cpp`, v3 plan §3.1): `ATTEST_ARM_MIN = 3`, `N_SLOTS = 5`,
-`M_SELECT = 2`, `K_SLACK = 1`.
+Ten nodes in every role preset. The allocation shifts, the count does not:
 
-- **Attestor preset.** If you occupy one of only three attestor slots and stop signing,
+| Node | `user` | `attestor` | `pool` |
+|---|---|---|---|
+| 0 | **you** (minter) | sim population | sim population |
+| 1 | stock (no `-yellowback`) | stock | stock |
+| 2–4 | 3 pools, automated | 3 pools, automated | 2 pools automated, **4 is you** |
+| 5–7 | 3 attestors, automated | 3 attestors, automated | 3 attestors, automated |
+| 8 | 4th attestor, automated | **you** (attestor) | 4th attestor, automated |
+| 9 | sim liquidator | sim liquidator | sim liquidator |
+
+The counts are forced by the regtest parameters (`src/yellowback/params.cpp`, v3 plan §3.1):
+`ATTEST_ARM_MIN = 3`, `N_SLOTS = 5`, `M_SELECT = 2`, `K_SLACK = 1`.
+
+- **Four attestors, not three.** If you occupy one of only three slots and stop signing,
   `poolFresh` falls to exactly `M_SELECT` — minting still works, but with zero slack, so any
-  hiccup in the other two looks like *your* fault. A fourth attestor (three automated + you)
-  keeps a real margin and makes your absence legible rather than catastrophic. `N_SLOTS = 5`
-  leaves room.
-- **Pool preset.** Three pools is already right: if your pool stops signalling, 2 of 3 = 67 %
-  is above the 60 % minting-pause threshold, so the chain survives you — and if you *also*
-  stop the second, you cross the threshold deliberately and watch minting pause. That is a
-  scenario, not an accident.
+  hiccup in the other two looks like *your* fault. A fourth keeps a real margin and makes your
+  absence legible rather than catastrophic. `N_SLOTS = 5` leaves room.
+- **Three pools, not four.** If your pool stops signalling, 2 of 3 = 67 % stays above the 60 %
+  minting-pause threshold, so the chain survives you — and stopping a second crosses the
+  threshold deliberately. That is a scenario, not an accident.
+- **A separate liquidator node** because claiming your own vault is a different path from a
+  third party claiming an underwater one (§3.4).
+- **The stock node stays stock.** It is the evidence that a node without `-yellowback` is
+  unaffected, and borrowing it for a persona would destroy that.
 
-Nine `ycashd` processes plus up to five agent processes is the ceiling. On a laptop this is
-fine for regtest, but `up --role attestor` should say so before it starts.
+Ten `ycashd` processes plus up to seven agent and simulator processes is the ceiling. The A4
+devnet already runs eight nodes comfortably on a laptop, but `up --role` should print the
+expected footprint before it starts, and `--lean` should drop the price walk and halve the
+heartbeat rate for a constrained machine.
 
 ### 3.3 The heartbeat (G1)
 
@@ -130,30 +160,38 @@ round-robin across the **automated** pools only, so your pool's blocks are alway
 dormancy evaluation about every minute — slow enough to watch, fast enough to feel alive.
 `rate` exists because the pool scenario wants it faster and the user scenario slower.
 
-### 3.4 Synthetic users (G2)
+### 3.4 Synthetic users (G2) — personas, not a random walk
 
-A `yellowback-sim` process driving node 0's wallet (and, in the `user` preset, a second wallet
-node so *your* actions are not the only ones): on a timer, with a seeded RNG so a run is
-reproducible, it picks a weighted action:
+A random action walk produces a Positions list where every vault looks the same, and a chain
+where nothing ever quite goes wrong. `yellowback-sim` instead runs **personas**: each is a small
+strategy with its own risk appetite, its own cadence, and its own characteristic failure. The
+RNG is seeded, so a run is reproducible and a bug found in one is reproducible in another.
 
-| Action | RPC | Notes |
+| Persona | Behaviour | Why it is in the set |
 |---|---|---|
-| mint | `yed_mint` | random term class and size within the collateral it holds; two-step, so it must handle `pending` |
-| redeem a matured vault | `yed_redeem` | at or after `lockHeight` |
-| claim an underwater vault | `yed_claim` | only when `yed_listpositions` says claimable — this is what makes your attested price *matter* |
-| post a notice | `yed_claimnotice` | the emergency path, occasionally |
-| send YED | `yed_send` | wallet-to-wallet, so balances move |
-| sweep carriers | `yed_sweepcarriers` | housekeeping, so the run does not leak |
+| **the leveraged minter** | mints close to the minimum collateral ratio, on the longest term, and never tops up | the first to go underwater on a downswing — it is what makes liquidation happen *to someone* without anyone staging it |
+| **the conservative minter** | over-collateralises 2–3×, short terms, redeems at maturity | the happy path, and the contrast that makes the leveraged one legible in a Positions list |
+| **the exiter** | redeems the moment `lockHeight` passes; releases VOID vaults with `yed_redeem` | exercises the exit path and keeps supply from growing without bound |
+| **the trader** | never mints; holds YED and moves it between addresses with `yed_send`/`yed_sendmany` | transfer payloads, balances, and the fact that most YED holders are not minters |
+| **the liquidator** | watches every vault it does not own, posts `yed_claimnotice` when one is underwater, and claims after `EMERGENCY_PERSIST` | **the economically essential one.** Without a third party willing to claim, an underwater vault just sits there and the attested price has no consequence at all — which would quietly gut both the attestor and pool scenarios |
+| **the absentee** | mints, then goes quiet: leaves carriers outstanding, never sweeps, never redeems | orphaned carriers, `yed_sweepcarriers` housekeeping, and what an abandoned vault looks like from outside |
 
-It must be **honest about failure**: a refused mint (`bundle-insufficient`, `mint10-diverged`,
-`insufficient-yec`) is logged and counted, never retried blindly, because those refusals are
-exactly the signal the attestor and pool scenarios exist to show you. `sim stats` prints the
-tally.
+**The liquidator must be a different wallet from the minters.** Claiming your own vault is a
+different code path (clause (a), the owner path) from a third party claiming an underwater one
+(clause (b)), and only the second is the one the price actually governs. So the simulator drives
+**two** wallet nodes: a *population* node hosting the five minter/holder personas on distinct
+addresses, and a *liquidator* node that owns none of their vaults.
 
-A hard constraint from A3: every bundle-carrying command is two-step, so the simulator must
-either use `wait=false` and complete on the next block, or run with the heartbeat mining its
-carriers (see `two_step` in `test_framework/yellowback_attest.py`). The heartbeat makes this
-natural; without it the simulator would deadlock.
+**Honest about failure.** A refused action — `bundle-insufficient`, `mint10-diverged`,
+`notice-not-underwater`, `insufficient-yec` — is logged and counted, never retried blindly,
+because those refusals are precisely the signal the attestor and pool scenarios exist to show
+you. `sim stats` prints the tally per persona, and a persona whose actions are *all* failing is
+reported loudly rather than left to look busy.
+
+**Two-step aware.** Every bundle-carrying command is two-step (A3, W7), so each persona either
+uses `wait=false` and completes on a later block, or relies on the heartbeat to mine its carrier
+(`two_step` in `test_framework/yellowback_attest.py`). Without the heartbeat the simulator would
+deadlock, which is why R1 comes first.
 
 ### 3.5 The price walk (G4)
 
@@ -179,8 +217,9 @@ on a node other than 0 and one may want two GUIs side by side.
 
 ## 4. The scenarios
 
-Each is a script you can run start to finish in about half an hour, with a checklist of what to
-notice. The value is in the noticing, so each ends with the questions we actually want answered.
+Four walk-throughs across three seats (the attestor is walked twice, D-1). Each runs start to
+finish in about half an hour, with a checklist of what to notice — the value is in the noticing,
+so each ends with the questions we actually want answered.
 
 ### 4.1 Scenario 1 — "I want to mint"
 
@@ -213,35 +252,63 @@ without frightening them away?
 
 ### 4.2 Scenario 2 — "I am an attestor"
 
+Walked **twice** (D-1), because that is how a real attestor will meet the product: the bond is a
+one-off ceremony where a GUI earns its place, and everything after it is a server that has to
+keep running for `bondMinLock` blocks. A design that is pleasant in one half and hostile in the
+other is not a design an operator will accept.
+
 ```bash
 yellowback-devnet up --role attestor
+```
+
+**Automated:** 3 pools, 3 other attestors, heartbeat, price walk, and the full simulated
+population minting and being liquidated against the prices you help set.
+
+#### 4.2a The bonding ceremony (GUI)
+
+```bash
 yellowback-devnet wallet          # opens on node 8, your attestor node
 ```
 
-**Automated:** 3 pools, 3 other attestors, heartbeat, price walk, synthetic users minting and
-claiming against the prices you help set.
+1. Open the **Attestors** page. Before registering, read it as someone who has not read the
+   spec: is it clear what an attestor *is*, and what you are about to commit?
+2. Register (`btnRegister` → `yed_registerattestor`). The bond locks for `bondMinLock = 200`
+   blocks and earns nothing while locked. **Is that clear before you click, or only after?**
+3. The wallet warns to back up `wallet.dat` — both keys come from the keypool and a backup taken
+   a minute earlier does not contain them. **Is that warning proportionate to the consequence?**
+   Losing it loses the bond.
+4. Wait out `BOND_MATURITY` (8 blocks, ~2 min at the default heartbeat) and watch PENDING →
+   ELIGIBLE, then the arming delay.
 
-**Walk-through.**
-1. Register from the wallet's **Attestors** page (`btnRegister` → `yed_registerattestor`): post
-   the bond, then wait out `BOND_MATURITY` (8 blocks, ~2 min) and `ATTEST_ARM_DELAY`.
-   **Is it clear what you have committed and for how long?** The bond locks for
-   `bondMinLock = 200` blocks and earns nothing.
-2. Start your agent — either the Settings page's subscriber plus a hand-run
-   `yellowback-attest attest --conf …`, or a devnet convenience wrapper. Configure it against
-   the mock price so you can choose what you attest.
-3. Watch your `seq` get selected for real transactions. `yed_getselection` and the wallet's
-   selection line show when you were picked; the fee you earn appears when you were.
-4. **Stop signing for a while.** Watch your record go DORMANT after `DORMANCY_BLOCKS`, and
-   revive it (`btnRevive` → `yed_revive`). Does the wallet tell you *before* you are ejected,
-   or only after?
-5. Attest a price 20 % away from everyone else and watch your attestations get dropped from
-   selections while the honest three carry on.
-6. Try to withdraw the bond before its locktime (`bond-locked`), then let it mature and withdraw.
+#### 4.2b Operation (headless)
+
+Now close the GUI and **follow `doc/yellowback-attestor.md` literally**, using only
+`ycash-cli` and the agent. The scenario is as much a test of that document as of the software:
+if a step is missing, ambiguous, or assumes knowledge the reader does not have, that is the
+finding. Its "Quick reference" table is the checklist.
+
+```bash
+yellowback-devnet cli --node 8 -- yed_listattestors
+yellowback-attest attest --conf attest.toml       # your agent, run by you, in your terminal
+```
+
+1. Configure and start your own agent against the mock price, so you choose what you attest.
+   `yellowback-attest sources --conf …` and `check-config` before `attest`, as the doc says.
+2. Watch your `seq` get selected for real transactions (`yed_getselection`) and the attest fee
+   arrive when it is. Is the connection between "I signed" and "I was paid" visible from the
+   command line alone?
+3. **Stop signing.** Watch DORMANT arrive after `DORMANCY_BLOCKS`, then revive with
+   `yed_revive`. Does anything warn you *before* dormancy, or only after?
+4. Attest 20 % away from the others and watch your attestations dropped from selections while
+   the honest three carry on.
+5. Try `yed_withdrawbond` before the locktime (`bond-locked`), then after.
+6. Kill the agent uncleanly and restart it: the equivocation guard (S16) must refuse to sign a
+   second price for a height you already signed. **This is the failure that ejects a real
+   attestor**, so it is worth provoking deliberately.
 
 **What we want to know.** Is the economic proposition legible — what you risk, what you earn,
-what gets you ejected? Is running an agent something a competent operator would actually
-sign up for? This scenario is the dress rehearsal for A7 recruiting, and the feedback from it
-should shape the recruiting pitch.
+what gets you ejected? Would a competent operator run this for a year? This scenario is the
+dress rehearsal for A7 recruiting, and its output should shape the recruiting pitch.
 
 ### 4.3 Scenario 3 — "I am a mining pool"
 
@@ -252,7 +319,12 @@ yellowback-devnet cli --node 4 -- yed_getinfo
 ```
 
 **Automated:** 2 other pools, 4 attestors, heartbeat on the *other* two pools only, price walk,
-synthetic users.
+the simulated population and liquidator.
+
+Pools are **daemon-first** (D-2): this scenario is deliberately a terminal one, because that is
+how a pool operator will actually meet Yellowback — as one more process, one more config file
+and one more thing that can page them at 3 a.m. Any dashboard is a convenience layered on that,
+never a substitute for it (R8).
 
 **Walk-through.**
 1. Start with your pool configured as a plain miner: no payout address, no signalling. Mine a
@@ -270,9 +342,13 @@ synthetic users.
    questions this exercise raised.
 
 **What we want to know.** Is the operational burden on a pool acceptable — one more agent, one
-more config, one more thing to monitor? Are the failure modes discoverable from
-`yed_getinfo` alone? A pool that finds this annoying simply will not run it, and the whole
-design rests on pools running it.
+more config, one more thing to monitor? Are the failure modes discoverable from `yed_getinfo`
+alone, without a dashboard, since that is what a daemon operator has? A pool that finds this
+annoying simply will not run it, and the whole design rests on pools running it.
+
+If the answer to "discoverable from `yed_getinfo` alone" turns out to be *no*, the fix is more
+likely to be better fields and a clearer mining runbook than a GUI — which is exactly the
+finding R8 is waiting on before anything is built.
 
 ---
 
@@ -281,7 +357,8 @@ design rests on pools running it.
 A scenario you cannot report on is a scenario wasted. Each run writes
 `<dir>/session-<role>-<date>/` containing the devnet state, every agent log, the simulator's
 tally, and a `NOTES.md` seeded with the walk-through checklist so observations can be typed
-against the step that prompted them.
+against the step that prompted them. The simulator's seed goes in the header, so a scenario that
+produced an interesting liquidation can be replayed exactly.
 
 `yellowback-devnet report` bundles that directory into something attachable, with the parameter
 set and both fork commits recorded at the top, so a note from three weeks ago can be placed.
@@ -293,44 +370,72 @@ are impedance mismatches rather than product feedback, into `docs/mapping.md`.
 
 ## 6. Implementation
 
-Six chunks, roughly a week in total, in this order — the first three are what make any scenario
-work at all, and each is independently useful.
+**Scheduled now, alongside A6 (D-4).** The two do not contend: A6 is hardening, measurement and
+the review document in `ycash-dd/src` and `doc/`; this is `contrib/` and `qa/` tooling. They
+share only the owner's attention, and the scenarios are what generate the feedback A6's review
+document should be answering.
+
+Eight chunks. R1–R3 are the minimum that makes any scenario work at all; R7 is what makes this
+a regression suite rather than a demo, and ships with them rather than after.
 
 | # | Chunk | Deliverable | Effort |
 |---|---|---|---|
-| R1 | Heartbeat (G1) | `heartbeat` process and subcommand; `status` reports it; stops on a failing `check` | ~0.5 d |
-| R2 | Role presets (G3) | `up --role`, the ninth node, `wallet --node`, the status banner | ~1 d |
-| R3 | Synthetic users (G2) | `yellowback-sim`, seeded, two-step aware, with an honest failure tally | ~2 d |
-| R4 | Price walk (G4) | `price --walk`, `--shock`; both populations move together | ~0.5 d |
-| R5 | Scenario scripts | the three walk-throughs as runnable checklists; session directory and `NOTES.md` | ~1 d |
-| R6 | Docs | `contrib/yellowback/devnet/README.md` role section; a short "walking the roles" page | ~0.5 d |
+| R1 | Heartbeat (G1) | `heartbeat` process and subcommand; `status` reports it; halts on a failing `check` and says why | ~0.5 d |
+| R2 | Role presets (G3) | `up --role`, the ten-node maps of §3.2, `wallet --node`, the seat banner, `--lean` | ~1.5 d |
+| R3 | Personas (G2, D-3) | `yellowback-sim`: six personas over a population node and a separate liquidator node, seeded, two-step aware, per-persona failure tally | ~3 d |
+| R4 | Price walk (G4) | `price --walk`, `--shock`; both populations move together and honestly | ~0.5 d |
+| R5 | Scenario scripts | the four walk-throughs (1, 2a, 2b, 3) as runnable checklists; session directory and seeded `NOTES.md` | ~1 d |
+| R6 | Docs | `contrib/yellowback/devnet/README.md` role section; a "walking the roles" page; the 2b walk-through cross-checked against `doc/yellowback-attestor.md` | ~0.5 d |
+| **R7** | **Regression suite** | `qa/rpc-tests/yellowback_devnet_roles.py` — see below | ~1.5 d |
+| R8 | *(optional, deferred)* pool status view | a terminal `pool` view over `yed_getinfo`/`yed_listminers`. **Not built until Scenario 3 says it is needed** (D-2) | ~1 d if wanted |
 
-**Testing.** R1–R4 are devnet tooling, so they are covered the way the devnet is: a nightly
-script (`yellowback_devnet_roles.py`) that brings up each preset, asserts the right
-participants are automated and the right seat is empty, runs the heartbeat and simulator for a
-fixed number of blocks, and asserts the chain is still healthy and `check` passes. That script
-is the regression test for this entire plan and belongs in `EXTENDED_SCRIPTS`.
+About 8–9 days of work excluding R8, and R1/R2/R4 are independently useful the day they land.
 
-**Constraints inherited from the devnet.** Zero C++ (this is `contrib/` and `qa/` only); the
-frozen-file set stays at zero delta; the plan's naming rules apply (Yellowback the system, YED
-the unit); and the simulator must never be mistaken for a load test — it exists to make the
-world feel inhabited, not to measure throughput. DoS and cost measurement is A6's job and uses
-purpose-built scripts.
+### 6.1 R7 — the comprehensive regression suite
+
+This is the deliverable that outlives the feedback exercise, so it is a chunk, not a footnote.
+`yellowback_devnet_roles.py` (nightly, `EXTENDED_SCRIPTS`) brings up each preset in turn and
+asserts, for each:
+
+- the right seat is **empty** and every other participant is automated — the preset's node map
+  matches §3.2, your node holds no registration/payout/quote as the preset promises;
+- the heartbeat advances the chain **without any help from the test**, and only on the automated
+  pools;
+- the simulator's personas each perform their characteristic action at least once over a fixed
+  block budget, and the per-persona failure tally is within expected bounds — in particular
+  **the liquidator actually liquidates something**, which is the assertion that proves the
+  attested price has consequences;
+- the price walk moves both populations together and never manufactures a divergence;
+- `check` passes at the end, and the state hash agrees across every enforcing node.
+
+It runs with a fixed seed so a failure is reproducible, and it is the regression test for
+everything in this plan. Like `yellowback_attest_agent.py` it needs the Rust binary, so it SKIPs
+without one and the nightly job builds the crate first.
+
+**Constraints inherited from the devnet.** Zero C++ (`contrib/` and `qa/` only); the frozen-file
+set stays at zero delta against `feature/yellowback-sf`; the naming rules apply (Yellowback the
+system, YED the unit); and the simulator is never a load test — it exists to make the world feel
+inhabited, not to measure throughput. DoS and cost measurement is A6's job with purpose-built
+scripts.
 
 ---
 
-## 7. Open questions for the owner
+## 7. Decisions taken, and what is still open
 
-1. **Is the GUI the right surface for the attestor scenario?** The wallet has a full Attestors
-   page, but a real attestor is likelier to be a headless operator running the agent on a
-   server. Walking it in the GUI may teach us about the wrong attestor. Worth doing both?
-2. **Should the pool scenario get any GUI at all?** Today it is pure terminal, which is honest.
-   If pool operators would expect a dashboard, that is a product finding we should surface now
-   rather than after A7.
-3. **How real should the simulated users be?** A seeded random walk of actions is cheap. Giving
-   them personalities — a leveraged minter who rides the price down, a cautious one who
-   over-collateralises — is more work but produces a far more instructive Positions list and
-   much better liquidation scenarios.
-4. **Does this run before or alongside A6?** It is not on the critical path and A7 recruiting is,
-   but the attestor scenario is the best rehearsal we have for the recruiting pitch, which
-   argues for doing it early.
+The four questions raised in revision 1 were answered by the owner on 2026-09-20 and are
+recorded as D-1 to D-4 in §0. In short: **both** GUI and headless for the attestor; pools stay
+daemon-first with any dashboard optional and evidence-led; the simulated users get real
+personas; and the work starts now.
+
+Still open, and each answerable by walking a scenario rather than by discussion:
+
+1. **Does the leveraged minter persona produce liquidations at a believable rate?** Too many and
+   the product looks dangerous; too few and Scenario 1's most important moment never arrives.
+   The price walk's drift and volatility are the knobs; expect to tune them once against a real
+   walk-through.
+2. **Is one liquidator enough?** A single one always wins the race. Two would show the
+   competition a real claim path has, which is a materially different experience for the vault
+   owner watching it happen.
+3. **Should the personas persist across `up` runs?** A chain with history — vaults minted weeks
+   ago, an attestor who has been dormant twice — is more instructive than one born five minutes
+   ago, but it means a seeded replay of prior blocks at startup and a slower `up`.
