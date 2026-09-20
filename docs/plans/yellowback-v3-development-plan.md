@@ -14,8 +14,8 @@ when the coordinator has merged the chunk and seen its tests run.
 all pass. Frozen files are at **zero** delta against `feature/yellowback-sf`, and `main.cpp` (11),
 `miner.cpp` (12) and `rpc/mining.cpp` (7) are unchanged from v2 against `ycash-legacy`; `init.cpp`
 gained 14 lines. On the wallet's: 83 QTest cases green offline, contract check green.
-**What remains: A4's devnet chunk, A6 (hardening, packaging, the review document and the rc
-run-through), and A7–A8, which need real attestors and cannot run on one machine.**
+**A4 is complete as of 2026-09-20.** What remains: A6 (hardening, packaging, the review document
+and the rc run-through), and A7–A8, which need real attestors and cannot run on one machine.
 
 | Phase / chunk | State |
 |---|---|
@@ -30,7 +30,7 @@ run-through), and A7–A8, which need real attestors and cannot run on one machi
 | A2/A3 integration — the `BuildBundle` seam, `canNotice` via `EstimateClaim`, contract exemptions removed, full re-run | **complete, merged** (2026-09-14): the wallet's builders take their bundle from the node's pool when no `bundleHex` is given; `yed_listpositions` judges claimability through the shared `EstimateClaim`; every contract exemption removed and every documented command exercised; twelve functional scripts re-run green on the combined tree; frozen-file proof empty. The coordinator additionally registered `yellowback_attest_wallet.py` with the runner — A3 had shipped it unregistered, so CI would never have run it |
 | A4 `agent` — `contrib/yellowback/attest/` Rust crate | **complete, merged** (2026-09-13): `attest`/`subscribe`, real `iroh-gossip 0.101` on `iroh 1.2` (toolchain pin 1.91.0) plus the `dir` transport, aggregator port equal to the Python reference on three recorded scenarios, 34 `cargo test` cases, clippy and fmt clean. A crate-local `.cargo/config.toml` undoes the node's vendored-sources redirect so the crate builds inside a built checkout |
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide, contrib README | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
-| A4 `devnet` — devnet that arms, `yellowback_attest_agent.py` (nightly), `check` extended | **not started.** The two doc items of this checklist row (the attestor guide, `contrib/yellowback/README.md`) are done; the mining-doc PIN-1 note is done |
+| A4 `devnet` — devnet that arms, `yellowback_attest_agent.py` (nightly), `check` extended | **complete, merged** (2026-09-20): the devnet is eight nodes, registers 5–7 with `yed_registerattestor 10 200`, mines through `BOND_MATURITY` and `ATTEST_ARM_DELAY`, and starts three real `yellowback-attest attest` agents plus one `subscribe` on the `dir` transport. Run end to end on one laptop: TRIGGERED at 242, ARMED at 250, `poolFresh` 3, and a mint with **no** `bundleHex` built from the agents' pool (`bundleSeqs [0,1,2]`, `aMint` the attested price, the attest fee paid to a selected attestor's `bondKeyAddress`). `attestor N stop\|start\|price`, `notice` and the extended `check` all exercised; `--no-attest` keeps the five-node v2 devnet. **0 C++**, frozen files at zero delta. Three defects found by running it — see §6.1 |
 | A5-a — YecWallet read-only views | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases offline |
 | A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
 | A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **not started** |
@@ -1089,11 +1089,15 @@ exchange feeds — is A7.
 - [x] `contrib/yellowback/attest/`: the Rust crate (§5) with `attest`/`subscribe`, `iroh` and
       `dir` transports, the source aggregator port, fixtures and the cross-check; `rust-toolchain.toml`,
       `Cargo.lock`; the `agent` CI job.
-- [ ] `qa/rpc-tests/yellowback_attest_agent.py` (nightly): three `attest` processes on `dir://`
+- [x] `qa/rpc-tests/yellowback_attest_agent.py` (nightly): three `attest` processes on `dir://`
       against nodes 6–7's `yed_signattestation`, one `subscribe` beside node 0; `poolFresh`
       reaches 3 within two polls; a mint builds from the pool; stopping one agent leaves
-      `K_SLACK` covering; stopping two refuses with `missing`.
-- [ ] Devnet changes of §5; `check` extended. *The rest of this row is done (2026-09-13/14):
+      `K_SLACK` covering; stopping two refuses with `missing`. *Registered in
+      `EXTENDED_SCRIPTS` and run by the `nightly` job, which builds the crate first and fails if
+      the binary is absent — the script itself SKIPs without one, so the job must not. Green
+      locally in 198 s: three agents published 7/6/4 times and the subscriber accepted 17
+      attestations across the outage and recovery steps.*
+- [x] Devnet changes of §5; `check` extended. *The rest of this row is done (2026-09-13/14):
       `doc/yellowback-attestor.md` finished (bond key hygiene, the one-day arming notice, dormancy
       and revival, equivocation consequences, the one-hot-key-one-node warning first), the
       `doc/yellowback-mining.md` note, and `contrib/yellowback/README.md`; both docs also carry the
@@ -1160,6 +1164,29 @@ exchange feeds — is A7.
       `yed_listattestors` (overlap disclosure, proposal §7.5).
 - [ ] The enshrinement note (§9) filed with the Ycash maintainers together with the separate
       relay-policy and toolchain recommendations (proposal §8.1, §13).
+
+### 6.1 Found by running the A4 devnet (2026-09-20)
+
+Three defects and one usability finding, all in test and tooling code — no node change. Rows in
+`docs/mapping.md` §14.1.
+
+| # | Found | Fix |
+|---|---|---|
+| D-A4-1 | The third attestor's `yed_registerattestor` failed with `insufficient-yec: need 10.00001, have 0.00`. `sync_blocks` waits on block height and does **not** relay mempools, so node 0's third funding transaction had not reached the pool that mined the next block | `sync_mempools` before the funding and registration blocks, plus a per-node balance assertion that names the node rather than surfacing an RPC error two steps later |
+| D-A4-2 | `qa/rpc-tests/yellowback_enforcement.py` failed in CI at case 6 with `IndexError: list index out of range`. `EDGES` declares the **eight**-node v3 topology (the attestor slots 6–7 joined it in A0) but that script runs six nodes; three framework methods filtered privately while the script iterated `EDGES` raw in five places | One accessor, `live_edges()`, filtered by the started node count, used by every edge walk in the framework and the script. The `audit` job now greps for `in self.EDGES` outside the accessor, so no future script can reintroduce it |
+| D-A4-3 | The `audit` job's Determinism step failed on `src/rpc/yellowbackwallet.cpp`. Its M11 exclusion was written with unescaped dots (`rpc/yellowback.cpp`) and so never covered A3's file, whose two `GetTimeMillis()` calls are `WaitForCarrier`'s `-yellowbackcarriertimeout` deadline — wallet-tier, user-facing, and no consensus value depends on it | A third home, anchored and escaped, plus a narrower grep asserting `GetTimeMillis` is the only clock symbol in that file. The pure modules' and `index.cpp`'s stricter checks are untouched |
+| D-A4-5 | **CI had never run the v3 attestation suite.** `yellowback_attest.py`, `yellowback_attest_enforcement.py` and `yellowback_attest_wallet.py` — the whole of the A1–A3 test evidence — were registered in `qa/pull-tester/rpc-tests.py` but absent from `YELLOWBACK_SCRIPTS`, and all three were non-executable, which the runner (it `exec`s each script directly) turns into `PermissionError` before the framework starts. The identical omission is already recorded in the workflow for mining/enforcement/stock_node/hardening on 2026-09-11; it recurred for v3 | All three `chmod +x` and added to `YELLOWBACK_SCRIPTS`. The `audit` job now walks `qa/rpc-tests/yellowback_*.py` and fails on any script that is not executable **or** that no job runs, so neither half can recur |
+| D-A4-4 | A `seq` is assigned on chain in the order registrations land in their block, **not** in node order: the devnet's node 6 drew seq 0 and node 5 drew seq 2. Reading `node7` as `seq 7` misreads every status line | `status` and the `attestor` command messages print the seq beside the node |
+
+Two further traps cost a run each while writing `yellowback_attest_agent.py`, both recorded in
+`docs/mapping.md` §14.1: `two_step` appends `wait` after whatever arguments it is given (so every
+positional before it must be passed, and it returns the RPC's full result dict, not a txid), and
+the regtest price is not a convention — `yellowback_attest_wallet.py` uses $50 while
+`yellowback_attest.py` uses $0.50, and the collateral a mint needs scales inversely.
+
+The devnet's `check` was also confirmed to fail correctly: after `price 1.00` crashed the quote
+98 %, it reported halted minting and a pool off eligibility while the attestation half still
+passed — the v2 half of `check` judging a chain deliberately broken, not a false green.
 
 ---
 
