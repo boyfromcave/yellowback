@@ -90,6 +90,16 @@ node; every new rule is overlay state shared by enforcing miners, exactly as v2'
 
 ## 0. Revision log
 
+### Revision 2 (2026-09-21) — W16: the global-ratio halt keeps the best-backed class open
+
+The owner's first walk of Scenario 1 (`role-based-regtest-plan.md` §8) hit the global-ratio
+halt after a 40 % shock and asked the right question: a halt that stops *every* mint leaves the
+system unable to recapitalise except by hoping the price recovers. The arithmetic agrees and is
+stronger than the objection — every class minimum (300/400/500 %) exceeds the halt floor
+(250 %), so any mint the halt forbids would have *raised* the ratio. Decision W16, parameter
+`RECAP_RATIO_BPS`, HALT-2 amended in §3.8, `mintableClasses` on `yed_getstats`,
+`globalRatioHaltBps`/`recapRatioBps` on `yed_getinfo.params`. Owner decision D-R-3, §6.2.
+
 ### Revision 1 (2026-09-13) — first draft
 
 Written from proposal revision 6 after two audits (`docs/reference/yellowback-price-attestation-audit.md`
@@ -261,6 +271,24 @@ mechanism as every parameter change (K10, L8): a start height above every valida
 inside the previous sunset. Tested: `attest_required_false_reads_x_only`. Rejected: an
 operator flag (a per-node switch over an enforcer-shared rule would fork the enforcing set).
 
+### W16. The global-ratio halt stops leverage, not recapitalisation (owner decision D-R-3, 2026-09-21)
+HALT-2 as the proposal wrote it (§5.6: "minting halts until it recovers") stops every mint
+while the aggregate ratio is below `GLOBAL_RATIO_HALT_BPS`. Its stated purpose is to bound
+total exposure; it never claimed a new mint could lower the ratio, and none can: a mint locks
+exactly its class minimum, every class minimum exceeds the halt floor, and adding a position
+above a weighted average raises the average. So the rule forbade exactly the transactions that
+repair the condition, and left price recovery and liquidations as the only exits — a system
+that "sits there stagnant", in the owner's words. **Amended:** under `GLOBAL_RATIO` a MINT is
+accepted iff `minRatioBps(class, S) ≥ RECAP_RATIO_BPS` (50,000 on every network: twice the halt
+floor, so on regtest and mainnet alike only class A, 500 %, mints through a halt; at a sigma
+multiplier above 1.25× class B qualifies too, because the floor is judged on the ratio the mint
+actually locks, not the class label). The halt bit itself is unchanged and still drives
+`mintingAllowed`, the banner and `check`; `yed_getstats.mintableClasses` says what can mint
+now. Rejected: dropping HALT-2's effect on mints entirely (every class would qualify; the halt
+would bound nothing) and 1.5× (class B, 90–365-day locks, entering during stress). Tests:
+`mint4_divergence_and_global_ratio`, `recap_floor_is_the_class_minimum_with_sigma`,
+`yellowback_void_mint.py` (a class A mint through the halt raises the ratio; class C stays VOID).
+
 ### W14. Payload version 3, `rpcversion` 3
 One release; a v2 node ignores v3 payloads (V23). The wallet refuses an `rpcversion` mismatch as
 today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
@@ -285,6 +313,7 @@ today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
 | `DIVERGE_BPS_ATTEST` | 1,500 | same | MINT-10 |
 | `EMERGENCY_RATIO_BPS` / `EMERGENCY_PERSIST` / `EMERGENCY_NOTICE_TTL` | 10,500 / 48 / 1,152 | 10,500 / 4 / 64 | NOT-1, RED-4(b) |
 | `RESIDUAL_MIN_ZAT` | 100,000 | same | RED-5 |
+| `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt |
 | `ATTEST_FEE_BPS` | 2,500 | same | AFEE-1; D-3 |
 | `BOND_MIN` | 20,000 YEC | 10 YEC | |
 | `BOND_MIN_LOCK` / `BOND_MATURITY` | 420,480 / 16,128 | 200 / 8 | |
@@ -490,7 +519,16 @@ BundleLog[h].selectedSeqs}| ≥ DORMANCY_MIN_BUNDLES`, and `seq ∉ BundleLog[h]
 ### 3.8 Rules (added or changed)
 
 Totality as v2. New identifiers: **ARM-1/2, REG-A1, BUNDLE-1, MINT-9, MINT-10, NOT-1, EQV-1,
-REV-1, PIN-1/2, AFEE-0/1, RED-5**; changed: **RED-1, RED-3, RED-4, MINT-8, PRICE-2, SNAP, IN-2**.
+REV-1, PIN-1/2, AFEE-0/1, RED-5**; changed: **RED-1, RED-3, RED-4, MINT-8, PRICE-2, SNAP, IN-2,
+HALT-2 / MINT-4** (revision 2, W16).
+
+- **HALT-2 / MINT-4 (amended, W16).** The `GLOBAL_RATIO` bit of `haltMask` is set exactly as
+  in v2 (`supplyCents > 0`, `pMint` defined, `globalRatioBps < GLOBAL_RATIO_HALT_BPS`). MINT-4
+  reads it differently: with `GLOBAL_RATIO` set, a MINT whose `minRatioBps(class, S) <
+  RECAP_RATIO_BPS` has verdict `mint-halted-global-ratio` (before HALT-3's check, as before);
+  one at or above the floor passes this clause and is judged by the remaining halts as if the bit
+  were clear. The other bits keep their v2 effect: any of them set is still a halted mint.
+  MINTPOL-1 mirrors it (`mintpol-global-ratio` names the classes that would go through).
 
 - **IN-2 (amended).** A spend of an outpoint in `BondIndex` sets that attestor `WITHDRAWN`
   (`bondSpentHeight = H`) unless EJECTED (then only `bondSpentHeight`); the record stays. When an
@@ -1207,6 +1245,8 @@ Its findings that are product defects, not tooling, graduate here for A6:
 | # | Found | For A6 |
 |---|---|---|
 | D-R-1 | **The claimant's node segfaults on the two-step RPC that follows a clause-(b) claim** (regtest plan F-7). Reproduced twice: the liquidator's `yed_claim` by RED-4 clause (b) returns success (committed and logged as relayed) and the next `yed_claim` or `yed_claimnotice` on that node, a few hundred milliseconds later, dies in `CWalletTx::IsTrusted` → `CWallet::IsMine` reading `parent->vout[0]` of a wallet transaction whose `vout` is empty (`EXC_BAD_ACCESS` at `0x8`), reached from `yellowback::Context::SelectYec` → `AvailableCoins`. Clause-(a) claims never crashed. The crash lands before the claim leaves the node: network-wide the vault stays ACTIVE with the notice standing, and `notice-standing` blocks a fresh notice for `EMERGENCY_NOTICE_TTL` blocks — a liquidator who crashes here loses both the claim and the window | **Fixed 2026-09-20.** Cause: the frozen `CWallet::CommitTransaction` indexes `mapWallet` by every input's txid (`mapWallet[txin.prevout.hash]`, safe upstream where a wallet spends only its own coins) and so inserted a blank `CWalletTx` under the vault's id. Fix on the fork's side: `YellowbackWallet::Commit` wraps `CommitTransaction` and erases the blank entries it leaves for inputs the wallet never held; both fork commit sites use it. Regression case in `yellowback_attest_wallet.py`; the `user` preset of `yellowback_devnet_roles.py` is green. The A6 review should still read `wallet.cpp` for other `mapWallet[...]` reads on a foreign input — `GetAddressGroupings` is guarded by `IsMine(txin)`, `MarkAffectedTransactionsDirty` by `count()`; nothing else was found |
+| D-R-3 | **The global-ratio halt stopped every mint, including the ones that would have repaired it** (Scenario 1 step 6: "if minting is globally halted, it is very difficult for the system to recapitalize; it just sits there stagnant"). Every class minimum exceeds the 250 % floor, so no mint can lower the ratio and the rule forbade only improvements | **Decided and applied 2026-09-21 as W16**: `RECAP_RATIO_BPS` = 50,000; under the halt a mint is accepted iff its class minimum ratio reaches the floor — class A on every network. Owner chose 2× over 1.5× (class B too) and 1× (every class) |
+| D-R-4 | Wallet findings from the same walk (regtest plan F-9 to F-12): clipped long values on the Overview and Mint pages, no per-vault collateral ratio, a self-send shown as "Sent $0.00", a stale "Minted" line | **Fixed 2026-09-21** in `yecwallet-dd`: wrapped form rows and growing labels (a layout QTest guards it), **Ratio now** and **Underwater below** columns on Positions, a **self-transfer** label, the status cleared two blocks on. Five new QTest cases |
 | D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
 
 ## 7. Test plan (v3 additions)
