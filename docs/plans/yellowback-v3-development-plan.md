@@ -14,8 +14,15 @@ when the coordinator has merged the chunk and seen its tests run.
 all pass. Frozen files are at **zero** delta against `feature/yellowback-sf`, and `main.cpp` (11),
 `miner.cpp` (12) and `rpc/mining.cpp` (7) are unchanged from v2 against `ycash-legacy`; `init.cpp`
 gained 14 lines. On the wallet's: 83 QTest cases green offline, contract check green.
-**A4 is complete as of 2026-09-20.** What remains: A6 (hardening, packaging, the review document
-and the rc run-through), and A7–A8, which need real attestors and cannot run on one machine.
+**A4 is complete as of 2026-09-20, and the role-based regtest tooling
+(`role-based-regtest-plan.md`, R1–R7) is built, verified and green the same day**: the devnet
+leaves one seat empty (`up --role {user,attestor,pool}`), a heartbeat, a price walk and six
+simulated personas keep the economy moving, and the nightly `yellowback_devnet_roles.py` proves
+all of it on three presets — including a third-party liquidation by the emergency clause. Running
+that economy found and fixed one wallet-tier defect the A0–A5 suites had never reached (D-R-1,
+§6.2). What remains: the owner walking the four scenarios (Phase A7's rehearsal), A6 (hardening,
+packaging, the review document and the rc run-through), and A7–A8, which need real attestors and
+cannot run on one machine.
 
 | Phase / chunk | State |
 |---|---|
@@ -33,7 +40,8 @@ and the rc run-through), and A7–A8, which need real attestors and cannot run o
 | A4 `devnet` — devnet that arms, `yellowback_attest_agent.py` (nightly), `check` extended | **complete, merged** (2026-09-20): the devnet is eight nodes, registers 5–7 with `yed_registerattestor 10 200`, mines through `BOND_MATURITY` and `ATTEST_ARM_DELAY`, and starts three real `yellowback-attest attest` agents plus one `subscribe` on the `dir` transport. Run end to end on one laptop: TRIGGERED at 242, ARMED at 250, `poolFresh` 3, and a mint with **no** `bundleHex` built from the agents' pool (`bundleSeqs [0,1,2]`, `aMint` the attested price, the attest fee paid to a selected attestor's `bondKeyAddress`). `attestor N stop\|start\|price`, `notice` and the extended `check` all exercised; `--no-attest` keeps the five-node v2 devnet. **0 C++**, frozen files at zero delta. Three defects found by running it — see §6.1 |
 | A5-a — YecWallet read-only views | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases offline |
 | A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
-| A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **not started** |
+| Role-based regtest (`role-based-regtest-plan.md`) — role presets, heartbeat, price walk, `yellowback-sim` personas, scenario checklists, `yellowback_devnet_roles.py` | **complete, verified** (2026-09-20): all seven chunks built; the suite green on `user`, `attestor` and `pool` (seed 7): seat empty, heartbeat on automated pools only, every persona acting, a redeem at maturity, a −70 % shock, a clause-(b) liquidation by a third party, one state hash on ten enforcing nodes. Found D-R-1 (§6.2) — a claimant-node segfault after an emergency claim — fixed the same day in the wallet layer with a regression case in `yellowback_attest_wallet.py`. 0 consensus lines; `wallet.cpp` untouched. R8 (a pool terminal view) stays deferred until Scenario 3 asks for it |
+| A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **not started** — the scenario walk-throughs' findings (regtest plan §5) are its input |
 | A7, A8 — testnet with real attestors, then mainnet | need real attestors; cannot run on one machine |
 
 **Note (2026-09-13/14):** the A2 and A3 agents were each terminated once by an API session limit
