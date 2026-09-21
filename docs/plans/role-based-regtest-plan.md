@@ -479,7 +479,9 @@ Everything the plan asked the suite to prove about the *tooling* held on all thr
 one red assertion was a node defect the tooling found, fixed the same day (F-7). **After the
 fix** (seed 7 again): `user` **PASSED** end to end — liquidated by clause (b), tally absentee 1 /
 conservative 6 / exiter 15 / leveraged 2 / liquidator 3 / trader 36, heartbeat alive, one state
-hash on 10 enforcing nodes, nothing pinned; `attestor` and `pool` re-run recorded below. Two suite bugs were fixed along the way
+hash on 10 enforcing nodes, nothing pinned; `attestor` **PASSED** (liquidator 4, trader 34, state
+hash agreed at 441) and `pool` **PASSED** (liquidator 4, exiter 17, state hash agreed at 446) the
+same way. The suite is green on all three presets with the fix. Two suite bugs were fixed along the way
 (`yed_gettag` wants its height as a string; the vault lookup on node 0 must wait a block for the
 index), and the suite gained "every node alive at the end" so F-7 is named, not inferred.
 
