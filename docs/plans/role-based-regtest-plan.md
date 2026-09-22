@@ -178,7 +178,7 @@ RNG is seeded, so a run is reproducible and a bug found in one is reproducible i
 
 | Persona | Behaviour | Why it is in the set |
 |---|---|---|
-| **the leveraged minter** | mints close to the minimum collateral ratio, on the longest term, and never tops up | the first to go underwater on a downswing — it is what makes liquidation happen *to someone* without anyone staging it |
+| **the leveraged minter** | mints close to the minimum collateral ratio, on the longest term, and never redeems early (a vault cannot be topped up: v2 plan V15) | the first to go underwater on a downswing — it is what makes liquidation happen *to someone* without anyone staging it |
 | **the conservative minter** | over-collateralises 2–3×, short terms, redeems at maturity | the happy path, and the contrast that makes the leveraged one legible in a Positions list |
 | **the exiter** | redeems the moment `lockHeight` passes; releases VOID vaults with `yed_redeem` | exercises the exit path and keeps supply from growing without bound |
 | **the trader** | never mints; holds YED and moves it between addresses with `yed_send`/`yed_sendmany` | transfer payloads, balances, and the fact that most YED holders are not minters |
