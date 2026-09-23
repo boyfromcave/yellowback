@@ -90,6 +90,15 @@ node; every new rule is overlay state shared by enforcing miners, exactly as v2'
 
 ## 0. Revision log
 
+### Revision 3 (2026-09-22) — W17: MINT-10 reads the fast median
+
+The owner's walk hit a second stall: after a +100 % shock the pools' fast and mid medians were at
+the new price, the slow one still at the old, and MINT-10 compared the attestors (at the new
+price) with `xMint` = the *minimum* of the three windows — a 100 % "disagreement" that would
+last a whole slow window: 64 blocks here, ≈ 42 hours on mainnet. Decision W17: the agreement
+test reads `pFast(R)`, the current market; MINT-5 keeps pricing collateral at the minimum.
+Owner decision D-R-8, §6.2.
+
 ### Revision 2 (2026-09-21) — W16: the global-ratio halt keeps the best-backed class open
 
 The owner's first walk of Scenario 1 (`role-based-regtest-plan.md` §8) hit the global-ratio
@@ -270,6 +279,23 @@ the tables keep being maintained so a later set can switch back without a cold s
 mechanism as every parameter change (K10, L8): a start height above every validated height,
 inside the previous sunset. Tested: `attest_required_false_reads_x_only`. Rejected: an
 operator flag (a per-node switch over an enforcer-shared rule would fork the enforcing set).
+
+### W17. MINT-10 compares the attestors with the market, not with the conservative minimum (owner decision D-R-8, 2026-09-22)
+MINT-10 exists to refuse a mint when pools and attestors disagree, because disagreement is what
+an attack on either population looks like. As written it compared `aMint` with `xMint(R)`, the
+**minimum** of the fast, mid and slow pool medians — the figure MINT-5 sizes collateral at, and
+one that lags a rally by a whole slow window on purpose. So an honest +100 % move produced a
+"disagreement" of 100 % for 2,016 blocks on mainnet, during which nothing could be minted; "if
+this becomes the global economy we can't have a day and a half pause" (the owner). **Amended:**
+MINT-10 reads `pFast(R)`: `|pFast(R) − aMint| · 10⁴ ≤ DIVERGE_BPS_ATTEST · min(pFast(R), aMint)`.
+The attestors now have to agree with what the pools say the market is *now*, which is the
+comparison the rule meant; a rally passes as soon as the fast window fills (8 blocks on regtest,
+96 on mainnet). MINT-5 is untouched: collateral is still sized at `pMint = min(xMint, aMint)`,
+the lagging minimum, so a mint into a spike posts the larger collateral. A genuine pool/attestor
+disagreement is still caught, since it shows in the fast median too. `pFast` is defined whenever
+`xMint` is (PRICE-1 needs all three windows). `yed_estimatecollateral.divergenceBps` reads the
+same pair. Tests: `mint10_reads_the_fast_median_so_a_rally_mints`, the rally case in
+`yellowback_attest_wallet.py`; the existing steady-price cases are unchanged (fast = minimum).
 
 ### W16. The global-ratio halt stops leverage, not recapitalisation (owner decision D-R-3, 2026-09-21)
 HALT-2 as the proposal wrote it (§5.6: "minting halts until it recovers") stops every mint
@@ -555,8 +581,10 @@ HALT-2 / MINT-4** (revision 2, W16).
   for a transaction that has already paid a real fee to a pool and locked a real P2SH output, so
   bundle-verification spam costs the attacker at least `FEE_MIN` per transaction.
 - **MINT-9** if `Snapshots[R].attest.status == ARMED`: BUNDLE-1 with the empty selector (W9),
-  and `aMint` defined. **MINT-10** if ARMED: `|xMint(R) − aMint| · 10⁴ ≤ DIVERGE_BPS_ATTEST ·
-  min(xMint(R), aMint)`. MINT-5 reads `pMint` of PRICE-2 (revised). Failure ⇒ VOID with
+  and `aMint` defined. **MINT-10** (amended, W17) if ARMED: `|pFast(R) − aMint| · 10⁴ ≤
+  DIVERGE_BPS_ATTEST · min(pFast(R), aMint)` — the attestors against the pools' *fast* median,
+  the current market, not the lagging minimum. MINT-5 reads `pMint` of PRICE-2 (revised), still
+  `min(xMint, aMint)`. Failure ⇒ VOID with
   `voidReason` naming the rule.
 - **MINT-8 / RED-3 (amended)** add: if ARMED and `A ≠ ∅`: `attestFeeVout ≠ 0xFF`, `<
   vout.size()`, `vout[attestFeeVout]` is `P2PKH(bondPubKey(s))` for some `s ∈ A`, `nValue ≥
@@ -1250,6 +1278,7 @@ Its findings that are product defects, not tooling, graduate here for A6:
 | D-R-5 | **`claimable` is node-local under the fallback.** `EstimateClaim` judges RED-4 clause (b) with the bundle this node's pool can build; when it cannot (`bundleOk` false) `pEmerg` falls back to the cross-section `xClaim`, so a vault the attested price has put deep underwater reads "not claimable" on a node whose pool is empty or stale, while a claimant with a fed pool claims it (seen on the owner's own vault: attested $3 against a cross-section of $40, claimed by clause (b)) | For A6: report the fallback on the row (`claimEstimate: "pool" \| "cross-section"`) so wallets can say "this node cannot judge the emergency clause: run a subscriber", and consider judging (b) from the standing notice's recorded `pEmerg` when no bundle can be built |
 | D-R-6 | Owner decision 2026-09-21: the mainnet grace period stays at 30 days (`GRACE` = 34,560); the wallet makes the deadline visible (regtest plan F-17) rather than the protocol lengthening the window an underwater vault sits unclaimable | none; a second walk with the Act-by column in place revisits the number |
 | D-R-7 | Owner decision 2026-09-22: **YecWallet's YEC/USD rate is the Yellowback protocol price** (the pools' fast median at the tip) whenever the node is enabled, activated and has one; CoinGecko is the fallback (pre-activation, undefined price, or a protocol price older than 15 minutes). One market, one number, across the Balance tab and the Yellowback tab (regtest plan F-23) | Wallet only (`Settings::setYellowbackPrice` / `setCoinGeckoPrice`, the controller's push on every stats and activation reply); no node change |
+| D-R-8 | **A rally paused minting for a whole slow window.** After a +100 % shock MINT-10 compared the attestors (at the new price) with `xMint`, the minimum of the windows, still at the old price for 64 blocks (2,016 on mainnet ≈ 42 h) | **Decided and applied 2026-09-22 as W17**: MINT-10 reads `pFast(R)`; collateral is still sized at the minimum |
 | D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
 
 ## 7. Test plan (v3 additions)
