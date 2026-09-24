@@ -695,6 +695,34 @@ proposal); a Go indexer (D-L-2).
 
 ---
 
+## 10. The yodl baseline and the re-port (revision 7; survey of `187a267`)
+
+`ref/lightwalletd` is now zcash/lightwalletd 0.4.6 plus four Ycash commits. What differs from
+the tree §1.1 described, and what each L0–L3 file becomes:
+
+| Old baseline (yecdev, §1.1) | yodl `187a267` | Re-port |
+|---|---|---|
+| `cmd/server/main.go`, hand-rolled `flag` | `main.go` → `cmd/root.go` (cobra + viper): each option is a flag registration, a `viper.BindPFlag`/`SetDefault` pair and a `common.Options` field (`cmd/root.go:325-400`, `common/common.go:29-49`); the darkside switch `darkside-very-insecure` is the template (`:346`, `:395-396`, `Options.Darkside`) | `--yellowback` the same three ways; `Options.Yellowback` |
+| service registered in `main` | `startServer` registers `CompactTxStreamer` then, under `opts.Darkside`, `DarksideStreamer` (`cmd/root.go:247-265`) — the precedent for a second service | a third block: `if opts.Yellowback { RegisterYellowbackStreamerServer }` |
+| `RawRequest` reached through an interface I defined | `common.RawRequest` is a **package-level function variable** with the same signature (`common/common.go:51-54`), assigned from btcd's client at `cmd/root.go:206`; tests assign a stub (`common/common_test.go:112`, `frontend/frontend_test.go:162`); darkside replaces it wholesale (`common/darkside.go:70`) | `CallYed` calls `common.RawRequest` directly; the offline suite installs a stub the same way; no interface, no adapter |
+| errors: `*btcjson.RPCError` type-asserted | nothing outside `vendor/` imports `btcjson`; handlers propagate the raw error | `CallYed` maps by the `"code: message"` text form (already the fallback) and keeps the type assertion out |
+| `.pb.go` from protoc-gen-go v1.3.2, `plugins=grpc`, one file | protoc-gen-go **v1.26.0** + protoc-gen-go-grpc, `paths=source_relative`, `_grpc.pb.go` beside each `.pb.go`, the new `google.golang.org/protobuf` API; `Makefile` `proto`/`update-grpc` targets; server structs embed `Unimplemented…Server` (`frontend/service.go:30,41`); `walletrpc/generate.go` is stale and not the style | regenerate `yellowback.proto` with the tree's toolchain; add it to `GENERATED_FILES`, `proto`, `update-grpc`, `doc`, `simpledoc`; embed `UnimplementedYellowbackStreamerServer`; `check-generated.sh` pins v1.26.0 |
+| `GetAddressTxids` with my regex patch (D-L-4) | `GetTaddressTxids`, and the Ycash `s…` regex is **already upstream** in `checkTaddress` (`frontend/service.go:49-56`), used by taddr txids, balance and utxos | **drop the D-L-4 edit** to the existing handler; `frontend/yellowback.go` reuses `checkTaddress`; the YED→transparent mapping becomes a client concern unless a `GetTaddressTxids` wrapper is wanted later — D-L-4 re-decided as "no edit" under the new tree |
+| `GetSaplingInfo` (`getblockchaininfo`) | `common.FirstRPC()` + `common.GetLightdInfo()` (`getinfo` + `getblockchaininfo`); regtest sapling height resolves to 0 (`common/common.go:190-194`); vendor string "ECC LightWalletD" | the probe runs after `GetLightdInfo`; `getexperimentalfeatures` + `yed_getinfo` as before |
+| conf keys `rpcbind/rpcport/rpcuser/rpcpassword` | the same four (`frontend/rpc_client.go:40-73`), or all four `--rpc*` flags bypass the conf; `--data-dir` **must be writable** (default `/var/lib/lightwalletd`); `--no-tls-very-insecure`, `--grpc-bind-addr`, `--log-file` | the devnet subcommand passes `--rpc*` flags (no conf file), `--data-dir <devnet>/lightwalletd`, `--no-tls-very-insecure`, `--grpc-bind-addr 127.0.0.1:<port>`, `--log-file` |
+| in-memory cache, `GetLatestBlock` empty for 5 s | on-disk cache under `data-dir/db/<chain>`, ingest from sapling height (0 on regtest); waits 20 s if no block at the start height | mine one block before starting; the `openDevnet` wait stays |
+| no CI, no tests outside `parser/` | `.gitlab-ci.yml` + Tekton (no GitHub Actions); `go test ./...` across seven packages, RPCs stubbed; `make test/race/lint/proto` | the GitHub workflow is net-new (keep it small: `make build test`, the generated-code check); `go vet` clean at the baseline |
+| `cmd/lwdinfo` | no equivalent; `cmd/version.go` is the subcommand template; `testtools/*/main.go` are separate mains | `cmd/lwdinfo` as a cobra subcommand `lightwalletd probe` or a `testtools/lwdinfo` main; `GetLightdInfo` gains fields (`estimatedHeight`, `zcashdBuild`, …) the probe may print |
+| `GetAddressUtxos` absent | present (`GetAddressUtxos(Arg{addresses[], startHeight, maxEntries})`) | unrelated to YED tokens (a UTXO is not a token); `GetAddressTokens` stays as designed (D-L-7) |
+| `LightdInfo` 7 fields | 14 fields; no Yellowback field (adding field 15 would be safe) | unchanged decision (D-L-1): capability via `GetYellowbackInfo` |
+
+**Budget for the re-port** (files that exist at `187a267`): `cmd/root.go` ≤ 25 (flag, bind,
+default, options, registration block); `common/common.go` +1 (`Options.Yellowback`);
+`Makefile` ≤ 10 (targets and lists); `frontend/service.go` **0** (no regex edit); both
+`.proto` files, `parser/`, `common/cache.go`, `common/common.go` otherwise **0**; `go.mod`/
+`vendor/` **0** (the base58 package is not needed once D-L-4's edit is dropped; `btcutil` is a
+direct dependency here already). Phase R0 in §7 carries the checklist.
+
 ## 9. Open questions
 
 1. **Should `GetAddressTokens` also stream *spent* history** (`TxLog.spentTokens`) so a client
