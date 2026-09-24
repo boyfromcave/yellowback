@@ -14,6 +14,8 @@
 # Roles:
 #   reference  read-only. Detached at `tag`; `commit` is the tag's commit (a short prefix is
 #              enough) and is verified after checkout; the working tree is `chmod -R a-w`.
+#              A repository that publishes no tags omits `tag`: it is detached at `commit`
+#              itself, and `branch` records which upstream branch that commit was taken from.
 #   fork       writable. `branch` is checked out; `base` (the pristine baseline the fork diff
 #              is measured against) is created as a local tracking branch; `base-commit` must
 #              equal the matching reference pin; `upstream` is added as a remote, not fetched.
@@ -42,6 +44,13 @@ ref/yecwallet:
   commit: 1eb277d
   what: YecWallet GUI (Qt 6, bundles ycashd), pristine baseline for yecwallet-dd
 
+ref/lightwalletd:
+  role: reference
+  url: https://github.com/yecdev/lightwalletd.git
+  branch: master             # upstream publishes no tags; pinned by commit
+  commit: ec3b96f12
+  what: Ycash lightwalletd (Go, gRPC light-client server), pristine baseline for lightwalletd-dd
+
 ycash-dd:
   role: fork
   url: https://github.com/boyfromcave/ycash-dd.git
@@ -59,3 +68,12 @@ yecwallet-dd:
   base: yecwallet-legacy
   base-commit: 1eb277d       # = ref/yecwallet pin
   what: working fork of the wallet (Yellowback tab)
+
+lightwalletd-dd:
+  role: fork
+  url: https://github.com/boyfromcave/lightwalletd.git
+  upstream: https://github.com/yecdev/lightwalletd.git
+  branch: feature/yellowback-price-attest   # cut from master (= ec3b96f12), the same name as the other forks
+  base: lightwalletd-legacy
+  base-commit: ec3b96f12     # = ref/lightwalletd pin
+  what: working fork of lightwalletd (Yellowback light-client support)

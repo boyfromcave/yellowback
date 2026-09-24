@@ -14,8 +14,10 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | DigiByte | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | Ycash | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | YecWallet (GUI) | `ref/yecwallet` | tag `v4.5.0` (2026-04-07; upstream `master` is 7 build-only commits later) | `1eb277d` |
+| Ycash lightwalletd | `ref/lightwalletd` | `master` @ commit (2020-12-06; upstream publishes no tags) | `ec3b96f12` |
 | Working fork (node) | `ycash-dd` | branch `feature/yellowback-sf` off `ycash-legacy` (= `v4.5.0`); `feature/digidollar` is the retired federation prototype, kept as a record | `624c12814` |
 | Working fork (wallet) | `yecwallet-dd` | branch `feature/yellowback-sf` off `yecwallet-legacy` (= `v4.5.0`); `feature/digidollar` likewise | `1eb277d` |
+| Working fork (lightwalletd) | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin) | `ec3b96f12` |
 
 Line numbers below were read at these pins. If a pin moves, re-verify before trusting them.
 

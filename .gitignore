@@ -3,6 +3,7 @@
 /ref/
 /ycash-dd/
 /yecwallet-dd/
+/lightwalletd-dd/
 
 # macOS
 .DS_Store

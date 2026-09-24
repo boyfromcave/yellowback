@@ -1,19 +1,21 @@
 {
-  // Yellowback workspace for VS Code: the parent repo plus its five nested clones as roots.
+  // Yellowback workspace for VS Code: the parent repo plus its seven nested clones as roots.
   // Open with `code yellowback.code-workspace` after `make bootstrap`. The folder names below are
   // referenced by ${workspaceFolder:<name>} in settings and tasks, so keep them stable.
   "folders": [
     { "name": "workspace",     "path": "." },
     { "name": "ycash-dd",      "path": "ycash-dd" },
     { "name": "yecwallet-dd",  "path": "yecwallet-dd" },
+    { "name": "lightwalletd-dd", "path": "lightwalletd-dd" },
     { "name": "ref/ycash",     "path": "ref/ycash" },
     { "name": "ref/yecwallet", "path": "ref/yecwallet" },
-    { "name": "ref/digibyte",  "path": "ref/digibyte" }
+    { "name": "ref/digibyte",  "path": "ref/digibyte" },
+    { "name": "ref/lightwalletd", "path": "ref/lightwalletd" }
   ],
   "settings": {
     // AGENTS.md rule 1: ref/ is read-only. The filesystem enforces it (chmod a-w); this makes the
     // editor say so instead of failing on save.
-    "files.readonlyInclude": { "**/ref/digibyte/**": true, "**/ref/ycash/**": true, "**/ref/yecwallet/**": true },
+    "files.readonlyInclude": { "**/ref/digibyte/**": true, "**/ref/ycash/**": true, "**/ref/yecwallet/**": true, "**/ref/lightwalletd/**": true },
     "files.readonlyFromPermissions": true,
 
     // The workspace venv (created by `make bootstrap`) runs the functional tests and the coordinator.

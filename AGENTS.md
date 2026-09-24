@@ -19,10 +19,12 @@ yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
-│   └── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
+│   ├── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
+│   └── lightwalletd/ READ-ONLY. Ycash lightwalletd (Go, gRPC), no upstream tags: pinned to master @ ec3b96f12
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
+├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= ec3b96f12)
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
@@ -48,29 +50,29 @@ copy: DigiByte's widgets read in-process wallet models; YecWallet reads everythi
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All three `ref/` checkouts are pinned to a tag in detached HEAD and their working trees are
-`chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
+All four `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, whose
+upstream publishes no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
 
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/` and `yecwallet-dd/`, on their `feature/yellowback-price-attest` branches.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches.
 
-The current branch in both forks is `feature/yellowback-price-attest` — the v3 price-attestation
+The current branch in all three forks is `feature/yellowback-price-attest` — the v3 price-attestation
 work, cut from `feature/yellowback-sf`. **`feature/yellowback-sf` is now a baseline, not a
 workspace:** it is the delivered v2 (miner-enforced) fork, and the v3 plan measures its diff
 budgets and frozen-file zero-delta checks against it, so never commit to it either. The branch is
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
-`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines — **never commit to
-them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, and `lightwalletd-legacy`
+is upstream `master` at the pin — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
 the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
-only; wallet code goes in `yecwallet-dd` only; the `yed_*` RPC surface is the sole interface
-between them (plan §4.7).
+only; wallet code goes in `yecwallet-dd` only; light-client server code goes in `lightwalletd-dd`
+only; the `yed_*` RPC surface is the sole interface between the node and either client (plan §4.7).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -160,7 +162,7 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-Start a session with `make status`. It reports all six repos and **exits non-zero if a
+Start a session with `make status`. It reports all eight repos and **exits non-zero if a
 `ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
 `docs/mapping.md`.
 
@@ -168,10 +170,10 @@ Start a session with `make status`. It reports all six repos and **exits non-zer
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all six repos, with pin verification
+make status     # git status across all eight repos, with pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
-make diff       # fork deltas: ycash-dd and yecwallet-dd vs their -legacy baselines
+make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline
 make log        # commits on each fork branch beyond its baseline
 ```
 

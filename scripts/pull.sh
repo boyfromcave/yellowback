@@ -141,8 +141,15 @@ pull_fork() {
 # these clones has a read-only .git too, where `git fetch` cannot even open FETCH_HEAD.
 pull_ref() {
   local path="$1" tag="$2" commit="$3" url="$4"
-  head2 "$path" "reference, pinned $tag"
+  head2 "$path" "reference, pinned ${tag:-commit $commit}"
   [ -e "$path/.git" ] || { bad "not a git repository — run 'make bootstrap'"; return; }
+  if [ -z "$tag" ]; then   # pinned by commit: nothing upstream can move it, only local drift matters
+    case "$(git -C "$path" rev-parse HEAD)" in
+      "$commit"*) ok "still pinned at $commit; nothing to pull" ;;
+      *) bad "HEAD is $(git -C "$path" rev-parse --short HEAD), not the pin $commit ${D}(local drift — see AGENTS.md rule 1)${R}" ;;
+    esac
+    return
+  fi
   if [ "$DRY" -eq 1 ]; then item "${D}\$ git ls-remote --tags $url refs/tags/$tag${R}"; return; fi
   local out at
   out="$(git ls-remote --tags "$url" "refs/tags/$tag" "refs/tags/$tag^{}" 2>/dev/null)" \

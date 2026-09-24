@@ -16,10 +16,13 @@ manifest() { "$ROOT/scripts/repos.sh" get "$1" "$2" 2>/dev/null; }
 DIGIBYTE_PIN="${DIGIBYTE_PIN:-$(manifest ref/digibyte tag)}"
 YCASH_PIN="${YCASH_PIN:-$(manifest ref/ycash tag)}"
 YECWALLET_PIN="${YECWALLET_PIN:-$(manifest ref/yecwallet tag)}"
+LWD_PIN="${LWD_PIN:-$(manifest ref/lightwalletd commit)}"      # no upstream tag: pinned by commit
 DD_BRANCH="${DD_BRANCH:-$(manifest ycash-dd branch)}"
 WALLET_BRANCH="${WALLET_BRANCH:-$(manifest yecwallet-dd branch)}"
 DD_BASE="${DD_BASE:-$(manifest ycash-dd base)}"
 WALLET_BASE="${WALLET_BASE:-$(manifest yecwallet-dd base)}"
+LWD_BRANCH="${LWD_BRANCH:-$(manifest lightwalletd-dd branch)}"
+LWD_BASE="${LWD_BASE:-$(manifest lightwalletd-dd base)}"
 
 SHORT=0
 [ "${1:-}" = "--short" ] && SHORT=1
@@ -37,7 +40,8 @@ DIRTY_ANY=0; PIN_DRIFT=0; BRANCH_DRIFT=0
 
 field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 
-# repo_status <label> <path> <expected-tag|-> <expected-branch|-> [fork-base]
+# repo_status <label> <path> <expected-tag-or-commit|-> <expected-branch|-> [fork-base]
+# The pin is a tag, or — for a reference whose upstream publishes no tags — a commit prefix.
 repo_status() {
   local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:-$DD_BASE}"
 
@@ -69,7 +73,7 @@ repo_status() {
 
   # pin / branch expectations
   if [ "$want_tag" != "-" ]; then
-    if [ "$tag" = "$want_tag" ]; then
+    if [ "$tag" = "$want_tag" ] || case "$("${g[@]}" rev-parse HEAD)" in "$want_tag"*) true ;; *) false ;; esac; then
       head_desc="$head_desc  ${OK} ${D}pinned${R}"
     else
       head_desc="$head_desc  ${BAD} ${RED}expected $want_tag${R}"
@@ -149,8 +153,10 @@ repo_status "workspace"    "."            "-"                "-"
 repo_status "ref/digibyte" "ref/digibyte" "$DIGIBYTE_PIN"    "-"
 repo_status "ref/ycash"    "ref/ycash"    "$YCASH_PIN"       "-"
 repo_status "ref/yecwallet" "ref/yecwallet" "$YECWALLET_PIN" "-"
+repo_status "ref/lightwalletd" "ref/lightwalletd" "$LWD_PIN" "-"
 repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"    "$DD_BASE"
 repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$WALLET_BRANCH" "$WALLET_BASE"
+repo_status "lightwalletd-dd" "lightwalletd-dd" "-"          "$LWD_BRANCH"   "$LWD_BASE"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 if [ "$PIN_DRIFT" -ne 0 ]; then

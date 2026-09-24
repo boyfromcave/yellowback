@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Recreate this workspace on a fresh machine from repos.yaml: the read-only reference clones at
-# their pins, the two working forks on their feature branch, and the Python venv.
+# their pins, the working forks on their feature branch, and the Python venv.
 #
 #   scripts/bootstrap.sh [--ssh] [--no-venv] [--dry-run]
 #
@@ -57,23 +57,24 @@ head_is() {  # <path> <short-commit>: HEAD starts with the pinned prefix
 
 bootstrap_reference() {
   local path="$1" url="$2" tag="$3" commit="$4" dir="$WORKSPACE/$path"
+  # No tag (the manifest omits it): the pin is the commit itself, detached.
   if [ -e "$dir/.git" ]; then
     local have; have="$(git -C "$dir" describe --tags --exact-match HEAD 2>/dev/null || true)"
-    if [ "$have" = "$tag" ] && head_is "$dir" "$commit"; then ok "$path exists at $tag ($commit)"
-    else warn "$path exists but is at '${have:-$(git -C "$dir" rev-parse --short HEAD)}', expected $tag ($commit) — see AGENTS.md rule 1 to re-pin"; fi
+    if [ "$have" = "$tag" ] && head_is "$dir" "$commit"; then ok "$path exists at ${tag:-commit} $commit"
+    else warn "$path exists but is at '${have:-$(git -C "$dir" rev-parse --short HEAD)}', expected ${tag:-commit} $commit — see AGENTS.md rule 1 to re-pin"; fi
     if [ -w "$dir" ]; then warn "$path is writable; it should be read-only (chmod -R a-w, .git kept writable)"; fi
     return
   fi
   say "  cloning $path from $url"
   run git -c advice.detachedHead=false clone --quiet "$url" "$dir"
-  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "tags/$tag"
-  if [ "$DRY" -eq 0 ]; then
+  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "${tag:+tags/$tag}${tag:-$commit}"
+  if [ "$DRY" -eq 0 ] && [ -n "$tag" ]; then
     head_is "$dir" "$commit" || die "$path: tag $tag resolves to $(git -C "$dir" rev-parse --short HEAD), manifest says $commit — the tag moved upstream; do not proceed without updating the pin deliberately"
   fi
   # Enforce "never edit the reference" on the filesystem; git itself still needs its metadata.
   run chmod -R a-w "$dir"
   run chmod -R u+w "$dir/.git"
-  ok "$path cloned, detached at $tag, read-only"
+  ok "$path cloned, detached at ${tag:-$commit}, read-only"
 }
 
 bootstrap_fork() {

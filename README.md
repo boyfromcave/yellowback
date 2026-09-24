@@ -13,9 +13,11 @@ yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
-│   └── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
+│   ├── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
+│   └── lightwalletd/ READ-ONLY lightwalletd @ master ec3b96f12 (no upstream tags) — the pristine light-client server
 ├── ycash-dd/        WORKING FORK of the node   — `feature/yellowback-price-attest` off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
+├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= ec3b96f12)
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) and v2 (miner-enforced, delivered)
@@ -29,13 +31,14 @@ yellowback-workspace/
 ├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
 ├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
-├── yellowback.code-workspace   VS Code: parent + all five clones as roots, ref/ read-only
+├── yellowback.code-workspace   VS Code: parent + all seven clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
 
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
-filesystem, not just documented. All work happens in `ycash-dd/` (node) and `yecwallet-dd/`
-(wallet); the `yed_*` RPC surface is the only interface between the two.
+filesystem, not just documented. All work happens in `ycash-dd/` (node), `yecwallet-dd/`
+(wallet) and `lightwalletd-dd/` (light-client server); the `yed_*` RPC surface is the only
+interface between the node and its clients.
 
 ---
 
@@ -287,13 +290,13 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts. The five nested clones
-under `ref/`, `ycash-dd/` and `yecwallet-dd/` are plain git repositories (not submodules),
+The workspace repo tracks only the documents, the manifest and the scripts. The seven nested clones
+under `ref/`, `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` are plain git repositories (not submodules),
 gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
 
 **Prerequisites:** `git`, `make`, and either `uv` or `python3` (3.10+) for the workspace venv.
 Nothing else is needed to bootstrap; the C++/Qt toolchains are only needed to *build*, see below.
-The five clones pull about 500 MB of git history (DigiByte is half of it), so allow
+The seven clones pull about 500 MB of git history (DigiByte is half of it), so allow
 a few minutes on the first run.
 
 ```bash
@@ -305,21 +308,24 @@ code yellowback.code-workspace
 
 What `make bootstrap` does, in order:
 
-1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet` — cloned over https, checked out detached at the
-   pinned tag, verified against the pinned commit (it aborts if the tag has moved upstream), then
-   `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays writable).
-2. `ycash-dd`, `yecwallet-dd` — cloned on `feature/yellowback-price-attest`; the pristine baseline branch
-   (`ycash-legacy` / `yecwallet-legacy`) is created tracking `origin`, verified to equal the matching
-   `ref/` pin, and the Ycash Foundation repo is added as remote `upstream` (not fetched).
+1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet`, `ref/lightwalletd` — cloned over https, checked
+   out detached at the pinned tag (or, for `ref/lightwalletd`, whose upstream publishes no tags,
+   at the pinned commit), verified against the pinned commit (it aborts if a tag has moved
+   upstream), then `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays
+   writable).
+2. `ycash-dd`, `yecwallet-dd`, `lightwalletd-dd` — cloned on `feature/yellowback-price-attest`; the
+   pristine baseline branch (`ycash-legacy` / `yecwallet-legacy` / `lightwalletd-legacy`) is created
+   tracking `origin`, verified to equal the matching `ref/` pin, and the upstream repo (Ycash
+   Foundation, or `yecdev` for lightwalletd) is added as remote `upstream` (not fetched).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
-4. `make status-short` — a summary of all six repos, with the `ref/` pins verified.
+4. `make status-short` — a summary of all eight repos, with the `ref/` pins verified.
 
 Options, passed as `make` variables:
 
 | Invocation | Effect |
 |---|---|
-| `make bootstrap SSH=1` | Clone the two forks over `git@github.com:` so you can push. `ref/` stays on https. |
+| `make bootstrap SSH=1` | Clone the three forks over `git@github.com:` so you can push. `ref/` stays on https. |
 | `make bootstrap NOVENV=1` | Skip the Python venv. |
 | `make bootstrap DRY=1` | Print every command that would run, change nothing. |
 
@@ -338,7 +344,7 @@ in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends syst
 ```bash
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
-make status         # git status for all six repos, with the ref/ pins verified
+make status         # git status for all eight repos, with the ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
 make diff           # fork deltas: each fork's branch vs its -legacy baseline
@@ -356,8 +362,10 @@ is not on the branch `repos.yaml` records.
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
+| `ref/lightwalletd` | `master` @ commit (2020-12-06; upstream publishes no tags) | `ec3b96f12` |
 | `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); `feature/yellowback-sf` = the delivered v2, now a diff baseline; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
 | `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise | `1eb277d` |
+| `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); no earlier branches | `ec3b96f12` |
 
 Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
 mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.
