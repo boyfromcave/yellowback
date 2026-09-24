@@ -1,6 +1,21 @@
 # Ycash Yellowback (YED) — lightwalletd Development Plan: a light-client relay for Yellowback
 
-**Status (2026-09-24, revision 6).** **Phases L0–L3 and N1 complete** (§7). The server has the
+**Status (2026-09-24, revision 7). BASELINE SWITCHED — the L0–L3 code must be re-ported.**
+On 2026-09-24 the owner re-created `boyfromcave/lightwalletd` as a fork of
+**`yodl/lightwalletd`** (`master` `187a26765e`, 2021-07-13: `zcash/lightwalletd` 0.4.6 plus four
+commits, the last adapting the transparent-address regex to Ycash's `s…`). That is the ECC
+lineage, a different codebase from the yecdev/Zecwallet-derived server this plan was written
+against and on which Phases L0–L3 were built and verified. The workspace is reconfigured
+(`repos.yaml`, `ref/lightwalletd` re-pinned, `lightwalletd-dd` re-cloned with
+`lightwalletd-legacy` = `187a267`, the mirrors updated). The delivered yecdev-based tree is
+kept locally at `wt/lightwalletd-dd-yecdev-baseline` (its branches no longer exist on the
+remote); §1.1, the budget table and the file-level findings F-1..F-10 describe the OLD
+baseline and are superseded by the re-port survey (§10, pending). The node side (N1,
+`yed_listtokens`, the devnet subcommand, `lwd-rawmint`) is unaffected; the devnet's
+`lightwalletd` subcommand and the nightly step call `cmd/lwdinfo`, which the new fork does not
+have until the re-port. **Next: Phase R0 (§7), the re-port.** The record below stands as the
+history of what was proven on the old baseline. Previous status:
+**Phases L0–L3 and N1 complete** (§7). The server has the
 nineteen-method `YellowbackStreamer` incl. `GetAddressTokens`, a per-peer rate limit, edge
 validation, the regtest suite (`scripts/devnet-test.sh`: the `GetBlockRange` byte-equality gate,
 wallet and raw-parts mints through the server) green on a five-node devnet, the review packet
@@ -60,6 +75,17 @@ New files in `lightwalletd-dd` (≈ 900 lines of Go excluding generated code and
 ---
 
 ## 0. Revision log
+
+### Revision 7 (2026-09-24) — baseline switched to yodl/lightwalletd; re-port scheduled
+
+The fork's source moved (status paragraph). Design decisions D-L-1..D-L-8 stand: they were
+made about *how* to add Yellowback to a lightwalletd, not about which lightwalletd. What
+changes is every file-level fact: layout, entry point, RPC client, generated-code toolchain,
+tests, the address regex's home, and the diff-budget rows. §10 (to be written from the survey)
+lists them; Phase R0 re-ports L0–L3 file by file, keeping the same acceptance evidence (offline
+suite against the contract, the byte-equality gate against a `lightwalletd-legacy` = `187a267`
+binary, the devnet integration cases). Nothing from the old tree is copied blindly: each file is
+re-derived against the new baseline's conventions, and the old tree is a reference only.
 
 ### Revision 6 (2026-09-24) — Phases L2 and L3 executed
 
@@ -626,6 +652,20 @@ path is §9 Q6.
 `service.go` 17 [12 + F-1], `go.mod` 1, `generate.go` 1, `README.md` 2, everything else 0;
 the release candidate is the tip of `feature/yellowback-price-attest` (a tag is the owner's
 call at L4).
+
+### Phase R0 — Re-port L0–L3 onto the yodl baseline (after the §10 survey)
+- [ ] L0 again: baseline build/test/vet on `187a267`; `build-baseline.sh` from the new
+      `lightwalletd-legacy`; generator pin re-established for this tree's `.pb.go` toolchain;
+      CI skeleton in this tree's conventions.
+- [ ] L1 again: `yellowback.proto` and the service registered beside `CompactTxStreamer` the way
+      this tree registers its second (darkside) service; `common`/`frontend` files re-derived
+      against this tree's RPC client and test stubs; `-yellowback` in this tree's flag/config
+      system; the address mapping where this tree's `s…` regex lives; the offline suite.
+- [ ] L2 again: `GetAddressTokens`; `cmd/lwdinfo` (so the devnet subcommand and nightly work
+      again); the regtest suite and driver.
+- [ ] L3 again: rate limit, edge validation, review packet and runbook rewritten for this tree.
+**Acceptance:** the same evidence as L0–L3, on the new baseline; old-baseline records marked
+historical.
 
 ### Phase L4 — Testnet (with v3 Phase A7; ≥ 4 weeks)
 - [ ] A public server against a testnet `ycash-dd` node with real attestors (A7's network).
