@@ -46,10 +46,10 @@ ref/yecwallet:
 
 ref/lightwalletd:
   role: reference
-  url: https://github.com/yecdev/lightwalletd.git
-  branch: master             # upstream publishes no tags; pinned by commit
-  commit: ec3b96f12
-  what: Ycash lightwalletd (Go, gRPC light-client server), pristine baseline for lightwalletd-dd
+  url: https://github.com/yodl/lightwalletd.git
+  branch: master             # zcash/lightwalletd 0.4.6 + 4 commits (Ycash s-address regex); the commit carries no tag
+  commit: 187a26765e
+  what: Ycash lightwalletd (yodl's fork of zcash/lightwalletd; Go, gRPC light-client server), pristine baseline for lightwalletd-dd
 
 ycash-dd:
   role: fork
@@ -72,8 +72,8 @@ yecwallet-dd:
 lightwalletd-dd:
   role: fork
   url: https://github.com/boyfromcave/lightwalletd.git
-  upstream: https://github.com/yecdev/lightwalletd.git
-  branch: feature/yellowback-price-attest   # cut from master (= ec3b96f12), the same name as the other forks
+  upstream: https://github.com/yodl/lightwalletd.git
+  branch: feature/yellowback-price-attest   # cut from master (= 187a26765e), the same name as the other forks
   base: lightwalletd-legacy
-  base-commit: ec3b96f12     # = ref/lightwalletd pin
+  base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)

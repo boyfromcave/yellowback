@@ -14,10 +14,10 @@ yellowback-workspace/
 │   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
 │   ├── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
-│   └── lightwalletd/ READ-ONLY lightwalletd @ master ec3b96f12 (no upstream tags) — the pristine light-client server
+│   └── lightwalletd/ READ-ONLY yodl/lightwalletd @ master 187a26765e (0.4.6 + 4, no tag) — the pristine light-client server
 ├── ycash-dd/        WORKING FORK of the node   — `feature/yellowback-price-attest` off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
-├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= ec3b96f12)
+├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= 187a26765e)
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) and v2 (miner-enforced, delivered)
@@ -316,7 +316,7 @@ What `make bootstrap` does, in order:
 2. `ycash-dd`, `yecwallet-dd`, `lightwalletd-dd` — cloned on `feature/yellowback-price-attest`; the
    pristine baseline branch (`ycash-legacy` / `yecwallet-legacy` / `lightwalletd-legacy`) is created
    tracking `origin`, verified to equal the matching `ref/` pin, and the upstream repo (Ycash
-   Foundation, or `yecdev` for lightwalletd) is added as remote `upstream` (not fetched).
+   Foundation, or `yodl` for lightwalletd) is added as remote `upstream` (not fetched).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
 4. `make status-short` — a summary of all eight repos, with the `ref/` pins verified.
@@ -362,10 +362,10 @@ is not on the branch `repos.yaml` records.
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
-| `ref/lightwalletd` | `master` @ commit (2020-12-06; upstream publishes no tags) | `ec3b96f12` |
+| `ref/lightwalletd` | `master` @ commit (2021-07-13; zcash/lightwalletd 0.4.6 + 4 commits, the last the Ycash `s…` regex; the commit carries no tag) | `187a26765e` |
 | `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); `feature/yellowback-sf` = the delivered v2, now a diff baseline; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
 | `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise | `1eb277d` |
-| `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); no earlier branches | `ec3b96f12` |
+| `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); re-forked from `yodl/lightwalletd` on 2026-09-24 — the earlier yecdev-based work is kept locally under `wt/lightwalletd-dd-yecdev-baseline` | `187a26765e` |
 
 Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
 mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.
