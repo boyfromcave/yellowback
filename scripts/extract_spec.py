@@ -15,6 +15,7 @@ WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or st
   ycash-dd/doc/yellowback-spec.md                    byte-identical copy the fork's CI can see (P4)
   ycash-dd/doc/yellowback-rpc-contract.json          the RPC contract (P7)
   yecwallet-dd/docs/yellowback-rpc-contract.json     byte-identical copy for the wallet fork
+  lightwalletd-dd/testdata/yellowback/contract.json  byte-identical copy for the light-client server (its offline suite's fixture)
 
 THE SPEC FILE
   line 1      `Source: yellowback-v2-development-plan.md revision N; sha256: <64 hex>`
@@ -89,6 +90,7 @@ PLAN = os.path.join(ROOT, "docs", "plans", "yellowback-v2-development-plan.md")
 PLAN_V3 = os.path.join(ROOT, "docs", "plans", "yellowback-v3-development-plan.md")
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
+LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
 RPCDOC = os.path.join(NODE_DIR, "doc", "yellowback-rpc.md")
 
 SPEC_OUT = [
@@ -98,6 +100,7 @@ SPEC_OUT = [
 JSON_OUT = [
     os.path.join(NODE_DIR, "doc", "yellowback-rpc-contract.json"),
     os.path.join(WALLET_DIR, "docs", "yellowback-rpc-contract.json"),
+    os.path.join(LWD_DIR, "testdata", "yellowback", "contract.json"),
 ]
 
 
@@ -448,7 +451,7 @@ def main(argv):
         if stale:
             print("spec-check: STALE — run `make spec`:\n  " + "\n  ".join(stale))
             return 1
-        print("spec-check: docs/spec, %s/doc and %s/docs copies match the plan (revision %d%s)" % (
+        print("spec-check: docs/spec, %s/doc, %s/docs and lightwalletd-dd/testdata copies match the plan (revision %d%s)" % (
             os.path.relpath(NODE_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT), revision(lines),
             "" if lines_v3 is None else "; v3 revision %d" % revision(lines_v3)))
     return 0
