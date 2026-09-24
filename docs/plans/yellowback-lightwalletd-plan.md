@@ -1,6 +1,10 @@
 # Ycash Yellowback (YED) — lightwalletd Development Plan: a light-client relay for Yellowback
 
-**Status (2026-09-24, revision 7). BASELINE SWITCHED — the L0–L3 code must be re-ported.**
+**Status (2026-09-24, revision 8). Phase R0 complete: L0–L3 re-ported onto the yodl baseline
+and proven again on regtest** (§7 R0; `lightwalletd-dd/docs/yellowback.md` and `docs/review.md`
+are rewritten for this tree). Remaining: L4 (testnet with real attestors) and §9 Q6 (the armed
+carrier path). The revision-7 note, kept for the record:
+**BASELINE SWITCHED — the L0–L3 code must be re-ported.**
 On 2026-09-24 the owner re-created `boyfromcave/lightwalletd` as a fork of
 **`yodl/lightwalletd`** (`master` `187a26765e`, 2021-07-13: `zcash/lightwalletd` 0.4.6 plus four
 commits, the last adapting the transparent-address regex to Ycash's `s…`). That is the ECC
@@ -75,6 +79,21 @@ New files in `lightwalletd-dd` (≈ 900 lines of Go excluding generated code and
 ---
 
 ## 0. Revision log
+
+### Revision 8 (2026-09-24) — Phase R0 executed
+
+Every L0–L3 file re-derived against `187a267` (§10 map): the proto regenerated with the tree's
+protoc-gen-go v1.26.0 / protoc-gen-go-grpc v1.1.0 (`YedAddressList`, since `service.proto` owns
+`AddressList`), `CallYed` over the tree's `common.RawRequest`, the service embedding
+`UnimplementedYellowbackStreamerServer` and registered after the darkside block, `--yellowback`
+in cobra/viper, D-L-4 kept (owner, 2026-09-24) as `taddrOf` before `checkTaddress` at the three
+taddr call sites, the offline suite over the tree's stub pattern, `testtools/lwdinfo`, the
+scripts and the workflow in this tree's conventions, the devnet subcommand on this lineage's
+flags. Baseline finding **F-R1**: the tree's own `frontend` tests fail and hang at `187a267`
+(the Ycash regex commit invalidated upstream test data); CI runs the Yellowback tests by name.
+The regtest suite needed three harness fixes of its own (mapping §15): a pool miner, fresh
+quotes and price warm-up, relay and index waits. All four cases green: 388 compact blocks
+byte-identical, both mints `ok`.
 
 ### Revision 7 (2026-09-24) — baseline switched to yodl/lightwalletd; re-port scheduled
 
@@ -654,18 +673,20 @@ the release candidate is the tip of `feature/yellowback-price-attest` (a tag is 
 call at L4).
 
 ### Phase R0 — Re-port L0–L3 onto the yodl baseline (after the §10 survey)
-- [ ] L0 again: baseline build/test/vet on `187a267`; `build-baseline.sh` from the new
-      `lightwalletd-legacy`; generator pin re-established for this tree's `.pb.go` toolchain;
-      CI skeleton in this tree's conventions.
-- [ ] L1 again: `yellowback.proto` and the service registered beside `CompactTxStreamer` the way
-      this tree registers its second (darkside) service; `common`/`frontend` files re-derived
-      against this tree's RPC client and test stubs; `-yellowback` in this tree's flag/config
-      system; the address mapping where this tree's `s…` regex lives; the offline suite.
-- [ ] L2 again: `GetAddressTokens`; `cmd/lwdinfo` (so the devnet subcommand and nightly work
-      again); the regtest suite and driver.
-- [ ] L3 again: rate limit, edge validation, review packet and runbook rewritten for this tree.
-**Acceptance:** the same evidence as L0–L3, on the new baseline; old-baseline records marked
-historical.
+- [x] L0 again: baseline builds, vets and tests (`cmd`, `common`, `parser`, `walletrpc`; the
+      `frontend` package's own tests are F-R1); `build-baseline.sh` from `lightwalletd-legacy` =
+      `187a267`; generators pinned (v1.26.0 / v1.1.0 reproduce every checked-in file);
+      `.github/workflows/yellowback-tests.yml`.
+- [x] L1 again: `yellowback.proto` (+ `yellowback_grpc.pb.go`), the service after the darkside
+      block, `CallYed` over `common.RawRequest`, `--yellowback` in cobra/viper, D-L-4 as
+      `taddrOf` at the three taddr sites, the offline suite (11 tests).
+- [x] L2 again: `GetAddressTokens`; `testtools/lwdinfo`; the devnet subcommand on this lineage's
+      flags; the regtest suite and driver.
+- [x] L3 again: rate limit, edge validation, `docs/review.md` and the runbook for this tree.
+**Acceptance — met 2026-09-24:** offline suite green; `git diff --stat lightwalletd-legacy` in
+files that existed: `cmd/root.go` +21, `common/common.go` +1, `frontend/service.go` +19 −3,
+`Makefile` +8, `go.mod` +1, `README.md` +2, all else 0; regtest: 388 compact blocks
+byte-identical, baseline `UNIMPLEMENTED`, wallet mint and raw-parts mint `ok`.
 
 ### Phase L4 — Testnet (with v3 Phase A7; ≥ 4 weeks)
 - [ ] A public server against a testnet `ycash-dd` node with real attestors (A7's network).
