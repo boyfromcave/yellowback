@@ -1,7 +1,12 @@
 # Ycash Yellowback (YED) — lightwalletd Development Plan: a light-client relay for Yellowback
 
-**Status (2026-09-23, revision 2).** Plan only; nothing implemented. Owner decisions D-L-4,
-D-L-7, D-L-8 and §9 Q3 taken on 2026-09-23 (§0); the plan is ready for Phase L0. Written after a survey of
+**Status (2026-09-23, revision 3).** **Phase L0 complete** (§7): Go 1.27.1 builds and tests the
+untouched baseline; the baseline binary is built from `lightwalletd-legacy`; the generator pin
+(protoc-gen-go v1.3.2) reproduces both generated files; CI skeleton in place; the node's devnet
+gained `lightwalletd start|stop|status` and `check` probes the server; on a five-node regtest
+devnet the fork build and the baseline binary answered `GetLightdInfo`/`GetLatestBlock`
+identically. Owner decisions D-L-4, D-L-7, D-L-8 and §9 Q3 taken on 2026-09-23 (§0). Next: L1
+(the `YellowbackStreamer` service) and N1 (`yed_listtokens`), in parallel. Written after a survey of
 `lightwalletd-dd` at its baseline (`lightwalletd-legacy` = upstream `master` `ec3b96f12`,
 2020-12-06) and of the delivered Yellowback node (`ycash-dd` `feature/yellowback-price-attest`,
 `rpcversion 3`). Work branch: **`feature/yellowback-price-attest`** in `lightwalletd-dd`, cut from
@@ -42,6 +47,19 @@ New files in `lightwalletd-dd` (≈ 900 lines of Go excluding generated code and
 ---
 
 ## 0. Revision log
+
+### Revision 3 (2026-09-23) — Phase L0 executed
+
+L0's five items are done and checked in §7; `lightwalletd-dd/docs/yellowback.md` is the record.
+Findings: F-6 was wrong (`TestBlockParser` passes at the baseline; the fixture is not missing);
+new F-8 (a `go vet` finding in `bytestring.ReadByte`; CI vets with `-stdmethods=false`), F-9
+(`vendor/` is stale against `go.mod`, so builds resolve through `go.sum`, never `-mod=vendor`;
+left alone under D-L-6), F-10 (`GetLatestBlock` returns an empty hash, baseline behaviour). The
+generated-code gate masks the gzipped descriptor block, which changes with the protoc release
+while the Go API does not (D-L-6 refined). The devnet's `lightwalletd` subcommand writes its own
+four-key conf beside node 0's `ycash.conf`, and node 0 now starts with `-insightexplorer -txindex`.
+Testing on regtest only; the running role-session devnet was never touched (a second devnet,
+`--dir ~/yb-devnet-lwd --portseed 8`).
 
 ### Revision 2 (2026-09-23) — owner decisions, regtest rule, context trimmed
 
@@ -469,20 +487,25 @@ server; N1 in the node in parallel with L1; L3 after both.** Each chunk ends wit
 green and a mapping row (Appendix A) for every impedance mismatch met.
 
 ### Phase L0 — Toolchain, baseline capture, CI skeleton (≈ 1 day; 0 lines in existing Go)
-- [ ] Install Go (`brew install go`; the machine has none) and record the version in
-      `docs/yellowback.md`; `go build ./cmd/server` and `go test ./...` on the untouched
-      baseline; record which tests pass and that `TestBlockParser` lacks its fixture (F-6).
-- [ ] Build the **baseline binary** to `wt/lightwalletd-legacy-bin` from `lightwalletd-legacy`
-      (a script under `scripts/` in the fork) — the reference for the byte-equality gate.
-- [ ] `.github/workflows/yellowback-tests.yml` with vet/test/build only.
-- [ ] Pin the generator: find the `protoc-gen-go` version that reproduces the checked-in
-      `service.pb.go` byte for byte (`golang/protobuf v1.3.2`'s), record `protoc` version; CI
-      step "regenerate and diff" for the two existing files proves the pin before any new file.
-- [ ] Devnet: node 0 gains `insightexplorer=1 txindex=1`; `yellowback-devnet lightwalletd`
-      subcommand starts the server; `check` asserts `GetLightdInfo` answers. (ycash-dd,
-      `contrib/` only.)
-**Acceptance:** CI green on the baseline plus workflow file; baseline binary serving the devnet;
-regenerate-and-diff clean.
+- [x] Go 1.27.1 installed by the owner; recorded in `docs/yellowback.md`; `go build ./cmd/server`
+      (≈ 8 s) and `go test ./...` on the untouched baseline: 7 parser cases pass, no other
+      package has tests. `TestBlockParser` passes — F-6 corrected.
+- [x] Baseline binary: `scripts/build-baseline.sh` exports `lightwalletd-legacy` with `git archive`
+      and builds it into `wt/lightwalletd-legacy-bin/lightwalletd-legacy` (+ `COMMIT`).
+- [x] `.github/workflows/yellowback-tests.yml`: static build, `go vet -stdmethods=false` (F-8),
+      `go test`, `cmd/lwdinfo` builds, generated-code check.
+- [x] Generator pinned: protoc-gen-go v1.3.2 reproduces both `.pb.go` files' Go API exactly;
+      only the embedded gzipped descriptor differs by protoc release, so
+      `scripts/check-generated.sh` masks that block (and comment re-wrapping) and CI runs it.
+- [x] Devnet: node 0 starts with `-insightexplorer -txindex`; `yellowback-devnet lightwalletd
+      start|stop|status [--baseline] [--port] [--extra]` runs the fork build (or the legacy
+      binary) against node 0 with its own `lightwalletd.conf`; `check` probes `GetLightdInfo`
+      and `GetLatestBlock` through `cmd/lwdinfo` (waits up to 20 s for the cache); `down` stops
+      it. (ycash-dd, `contrib/` only.)
+**Acceptance — met 2026-09-23:** baseline build, vet, test and the generated-code check green
+locally (CI runs on push); on a five-node `--no-attest` regtest devnet the fork build (9067) and
+the baseline binary (9068) answered `GetLightdInfo`/`GetLatestBlock` identically at height 232;
+`check` passed.
 
 ### Phase L1 — `YellowbackStreamer`, read-only set (≈ 4 days; ≈ 800 lines new, ≤ 42 changed)
 - [ ] `walletrpc/yellowback.proto`: every method of §4.1 except `GetAddressTokens`; generate.
@@ -553,7 +576,10 @@ proposal); a Go indexer (D-L-2).
 | F-3 | `common/common.go:158-159` | ingestor's `case <-stopChan: break` breaks the `select`, not the loop | recorded |
 | F-4 | `parser/block.go:71-95` | coinbase height extraction assumes `vtx[0].vin[0]` and a BIP34 push | recorded; every Ycash coinbase has both |
 | F-5 | `frontend/service.go:91-93` | client string spliced into the JSON-RPC params; the regex is the only guard | D-L-4 keeps the regex as the last check after conversion; L3 validates lengths at the edge |
-| F-6 | `testdata/blocks` | empty directory; `TestBlockParser`'s fixture is missing | recorded in L0; not restored (not ours) |
+| F-6 | `testdata/blocks` | *(withdrawn in L0)* the first draft said the block-parser fixture was missing; `TestBlockParser` passes at the baseline | none |
+| F-8 | `parser/internal/bytestring/bytestring.go:66` | `ReadByte(out *byte) bool` fails `go vet`'s standard-method check | CI vets with `-stdmethods=false`; not on the YED path, not changed |
+| F-9 | `vendor/modules.txt` vs `go.mod` | the vendored tree is stale (`ini.v1 v1.41.0` / `golang/protobuf v1.2.0` vendored, `v1.48.0` / `v1.3.2` required), so `-mod=vendor` cannot build; module-aware Go resolves through `go.sum` | left alone (D-L-6: no dependency change); `docs/yellowback.md` says builds are `go.sum`-reproducible, never vendor |
+| F-10 | `frontend/service.go` `GetLatestBlock` | answers the height with an empty `hash` (never set from the cache) | recorded; clients use the height; not on the YED path |
 | F-7 | `README.md` | describes the pre-fork server; no Ycash or Yellowback operator guidance | `docs/yellowback.md` is the operator guide; README gains one link line (L3) |
 
 ---

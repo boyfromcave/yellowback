@@ -803,3 +803,18 @@ revision 3). Zero C++.
 | `price --shock -35%` (plan §3.5) | `argparse` reads `-35%` as an option flag and refuses the command | `price --shock=-35%`; the help text says so |
 | A wallet-built transaction spends the wallet's own coins, so `CWallet::CommitTransaction` may index `mapWallet` by every input's txid to notify the GUI (`ref/ycash/src/wallet/wallet.cpp`, "Notify that old coins are spent": `CWalletTx& coin = mapWallet[txin.prevout.hash]`) | A Yellowback **claim** spends the vault output, which belongs to the vault owner's wallet, and `yed_withdrawbond` after a restore spends a bond whose registration is not in `mapWallet` either. `std::map::operator[]` inserts a default `CWalletTx` — no inputs, no outputs, depth −1 — under that txid. `CWalletTx::IsTrusted` (reached by `getbalance` and every `AvailableCoins(fOnlyConfirmed)`) then reads `parent->vout[prevout.n]` of the blank entry while the spend is unconfirmed and the node segfaults at address `0x8` (regtest plan F-7; three of three runs). `wallet.cpp` is in the CI zero-delta set and cannot be patched | `YellowbackWallet::Commit` (`ycash-dd/src/yellowback/wallet.cpp`): note the inputs absent from `mapWallet`, call `CommitTransaction`, erase the blank entries it left (never `AddToWallet`'ed, never on disk, so erasing is the whole undo). Both fork commit sites (`Commit()` in `src/rpc/yellowbackwallet.cpp`, the startup sweep) use it. The regression case sits in `yellowback_attest_wallet.py` right after the clause-(b) claim, before the next block — the only moment the walk happens |
 
+---
+
+## 15. lightwalletd — `ref/lightwalletd` → `lightwalletd-dd`
+
+The light-client server's plan is `docs/plans/yellowback-lightwalletd-plan.md`; Appendix A there
+lists the design-level rows. These are the mismatches met while executing it.
+
+| Upstream / node mechanism | lightwalletd-dd at the baseline | Adaptation |
+|---|---|---|
+| The node's `ycash.conf` (written by `qa/rpc-tests/test_framework/util.py:170-183`) has `rpcuser`, `rpcpassword`, `rpcport`, no `rpcbind` | `frontend/rpc_client.go:17-22` reads exactly `rpcbind`, `rpcport`, `rpcuser`, `rpcpassword` from a conf file | the devnet's `lightwalletd` subcommand writes a sibling `node0/lightwalletd.conf` with the four keys; the node's conf is untouched |
+| `GetAddressTxids` calls `getaddresstxids`, which needs `-insightexplorer` (experimental) and `-txindex`; both must be set before the datadir is first synced | devnet nodes start with `-experimentalfeatures -yellowback …` only | node 0 of every devnet adds `-insightexplorer -txindex` (`yellowback-devnet`, `up`); fresh datadir, so no reindex |
+| `walletrpc/generate.go` says `protoc … --go_out=plugins=grpc:.`; the checked-in `.pb.go` were made by protoc-gen-go v1.3.2 | protoc 36.1 (2026) embeds a different gzipped `FileDescriptorProto` for the same `.proto`; the Go API is byte-identical | `scripts/check-generated.sh` masks the descriptor block and comment re-wrapping; the pin is the plugin version, not the protoc version (plan D-L-6) |
+| `go.mod` `go 1.12` with a `vendor/` tree | `vendor/modules.txt` disagrees with `go.mod` (F-9); `-mod=vendor` fails, module mode builds from `go.sum` | build in module mode; never pass `-mod=vendor`; no re-vendoring (no dependency change) |
+| argparse `REMAINDER` for "extra server flags" | swallows every later option (`--dir`, `--baseline`, `--print`) and launched the server with them as its own flags against the default devnet directory | `--extra "<one quoted string>"`, split with `shlex` (`yellowback-devnet`, `lightwalletd`) |
+
