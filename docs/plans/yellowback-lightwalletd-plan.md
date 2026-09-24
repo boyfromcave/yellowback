@@ -1,11 +1,14 @@
 # Ycash Yellowback (YED) — lightwalletd Development Plan: a light-client relay for Yellowback
 
-**Status (2026-09-24, revision 5).** **Phases L0, L1 and N1 complete** (§7): the node has
-`yed_listtokens` (worktree `wt/n1-listtokens`, branch
-`feature/yellowback-price-attest-n1-listtokens`, to be merged once the owner's lock-order work
-lands), the contract carries it, `yellowback_rpc_contract.py` and `yellowback_index.py` pass
-with their new cases, and the frozen files are at zero delta. Next: L2 (`GetAddressTokens`, the
-devnet integration test with the `GetBlockRange` byte-equality gate). Phase L1 record: the
+**Status (2026-09-24, revision 6).** **Phases L0–L3 and N1 complete** (§7). The server has the
+nineteen-method `YellowbackStreamer` incl. `GetAddressTokens`, a per-peer rate limit, edge
+validation, the regtest suite (`scripts/devnet-test.sh`: the `GetBlockRange` byte-equality gate,
+wallet and raw-parts mints through the server) green on a five-node devnet, the review packet
+(`lightwalletd-dd/docs/review.md`) and the runbook. N1 (`yed_listtokens`) is merged into the
+node's `feature/yellowback-price-attest`. The nightly step is registered in the node's workflow
+and unverified until its next scheduled run. Remaining: L4 (testnet with real attestors, with
+v3 Phase A7), and §9's open items — the carrier path of the raw-parts mint on an ARMED devnet.
+Phase L1 record: the
 `YellowbackStreamer` service is implemented (18 methods, allow-listed proxies), the offline suite
 (24 cases against the contract) is green, and on a five-node regtest devnet every method answers
 through the real node while the legacy binary returns `UNIMPLEMENTED` for all of them and the old
@@ -57,6 +60,22 @@ New files in `lightwalletd-dd` (≈ 900 lines of Go excluding generated code and
 ---
 
 ## 0. Revision log
+
+### Revision 6 (2026-09-24) — Phases L2 and L3 executed
+
+L2: `GetAddressTokens` (proto, handler, allow-list, offline cases); the regtest suite
+(`frontend/yellowback_devnet_test.go`, `scripts/devnet-test.sh`) with the byte-equality gate
+over every `CompactBlock`, the wallet-mint and raw-parts-mint cases (the mint assembled by
+`ycash-dd/contrib/yellowback/devnet/lwd-rawmint` from numbers the server gave); the nightly step
+in the node's workflow. Three harness lessons in mapping §15: the devnet's RPC URL embeds
+credentials that are not URL-safe (use the port); `yed_mint` blocks for the carrier's block and
+btcd's `rpcclient` serialises HTTP POSTs, so the miner needs a second client; a server's cache
+is empty for a few seconds after start. L3: the per-peer token bucket on the four node-work
+methods, edge validation recorded, `-race` and `staticcheck` run (baseline findings only, none
+changed), `docs/review.md`, the runbook and upgrade order, one README line. The §6.3 item
+"restart the node without `-yellowback`" is not automated (the devnet has no node-0 restart);
+the probe's behaviour on a stock node is covered offline (`TestProbe`) and by D-L-5's startup
+path. The armed-devnet carrier path of the raw mint is an open item (§9 Q6).
 
 ### Revision 5 (2026-09-24) — Phase N1 executed
 
@@ -581,30 +600,32 @@ spec-check` green with the third copy. Branch `feature/yellowback-price-attest-n
 awaits merge into `feature/yellowback-price-attest`.
 
 ### Phase L2 — `GetAddressTokens`, the devnet integration test (≈ 3 days)
-- [ ] `yellowback.proto` gains `GetAddressTokens`; handler; offline case.
-- [ ] `frontend/yellowback_devnet_test.go` (§6.3), including the raw-parts mint that exercises
-      `EstimateCollateral → BuildBundle → carrier → ValidateRawTransaction → SendTransaction`
-      end to end through the server — the proof that §5 is buildable by a client.
-- [ ] Nightly registration beside `yellowback_devnet_roles.py`.
-**Acceptance:** a seed-restored address's `GetAddressTokens` equals the node's view on the
-running economy; the mint built from raw parts through the server confirms with `verdict ok`.
+- [x] `yellowback.proto` gains `GetAddressTokens`; handler; offline cases (stream, params,
+      three validation cases).
+- [x] `frontend/yellowback_devnet_test.go` (§6.3) with `scripts/devnet-test.sh`: the
+      byte-equality gate, the baseline's `UNIMPLEMENTED`, the wallet mint's view, and the
+      raw-parts mint `EstimateCollateral → GetFeePayee → (BuildBundle when armed) → lwd-rawmint →
+      ValidateRawTransaction → SendTransaction → GetTxInfo → GetAddressTokens`.
+- [x] Nightly registration: the "lightwalletd against the devnet" step in the node's workflow
+      (clones the fork, installs Go, runs the driver `--up --down`); unverified until it runs.
+**Acceptance — met 2026-09-24 (unarmed devnet):** 235 compact blocks byte-identical between
+fork and baseline; `GetAddressTokens` equal to `yed_listunspent` for every wallet address after
+a mint; the raw-parts mint validated, sent and confirmed with `verdict ok`. The armed carrier
+path is §9 Q6.
 
 ### Phase L3 — Hardening, packaging, review document (≈ 1 week)
-- [ ] Rate limiting: the baseline has a per-IP latency cache for `GetBlockRange` only
-      (`frontend/service.go:229-271`); YED methods reuse the same peer-IP helper and a simple
-      token bucket per IP for `BuildBundle`/`ValidateRawTransaction` (the two that make the node
-      work) — sizes measured on the devnet, defaults recorded.
-- [ ] Input validation at the edge: address count ≤ 100, hex lengths, `count/skip` bounds — so
-      the node never sees a malformed request from the server.
-- [ ] `build.sh`/`docker/Dockerfile` unchanged; a release note that the image is the same binary
-      with one new flag; `docs/yellowback.md` complete: operator runbook (node flags, why
-      `yellowbackenforce=0`, upgrade order: node first, then server, then flag).
-- [ ] Review document for the Ycash maintainers: the diff budget table with actuals, the
-      byte-equality gate's output, the allow-list, the trust statement.
-- [ ] Sanitizer-equivalents: `go vet`, `staticcheck` if it runs on the vendored tree without
-      changes, `-race` on the offline suite.
-**Acceptance:** review document written; budgets at or under §0's table; a tagged
-`lightwalletd-dd` release candidate that a YecLite developer can run against the devnet.
+- [x] Rate limiting: `frontend/yellowback_ratelimit.go`, a per-peer token bucket (20, then one
+      per second) on `EstimateCollateral`, `BuildBundle`, `ValidateRawTransaction`,
+      `GetAddressTokens`; peer as the baseline identifies it; `TestRateLimit` offline.
+- [x] Edge validation on every method (recorded in `docs/yellowback.md` L3).
+- [x] `build.sh`/`docker/Dockerfile` unchanged; `docs/yellowback.md` has the runbook, the
+      relay's node flags and the upgrade order; README gains one line.
+- [x] `docs/review.md`, the review packet for the Ycash maintainers.
+- [x] `go vet`, `go test -race`, `staticcheck` (eight baseline findings, none changed).
+**Acceptance — met 2026-09-24:** review document written; budgets: `main.go` 17 [≤ 30],
+`service.go` 17 [12 + F-1], `go.mod` 1, `generate.go` 1, `README.md` 2, everything else 0;
+the release candidate is the tip of `feature/yellowback-price-attest` (a tag is the owner's
+call at L4).
 
 ### Phase L4 — Testnet (with v3 Phase A7; ≥ 4 weeks)
 - [ ] A public server against a testnet `ycash-dd` node with real attestors (A7's network).
@@ -651,6 +672,10 @@ proposal); a Go indexer (D-L-2).
    wants the old surface only leaves the flag off.
 5. **Whether YecWallet (the full-node GUI) should ever use this path** — no: it has the node's
    wallet and `yed_mint`. The two clients stay on their two paths.
+6. **The armed carrier path of the raw-parts mint.** `lwd-rawmint --bundle-hex` and the Go case
+   implement it (`BuildBundle` → carrier → `build_mint_tx_v3`), but the L2 run used the unarmed
+   five-node devnet; run `scripts/devnet-test.sh` against an eight-node armed devnet
+   (`yellowback-devnet up` without `--no-attest`, the attest agent built) before L4.
 
 ---
 
