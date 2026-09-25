@@ -166,15 +166,18 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-Start a session with `make status`. It reports all nine repos and **exits non-zero if a
-`ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
-`docs/mapping.md`.
+Start a session with `make status`. It fetches `origin` for every writable repo (remote-tracking
+refs only — nothing is merged or checked out), reports each one as in sync, behind, ahead
+(unpushed) or diverged with the command that fixes it, and **exits non-zero if a `ref/` repo has
+drifted off its pin** — which would silently invalidate every line citation in `docs/mapping.md` —
+or if a repo has diverged from its remote. Behind means run `make pull`. `NOFETCH=1 make status`
+compares against the last fetch instead, for working offline.
 
 ```bash
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all nine repos, with pin verification
+make status     # git status across all nine repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline

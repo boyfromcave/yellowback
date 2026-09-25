@@ -345,7 +345,7 @@ in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends syst
 ```bash
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
-make status         # git status for all nine repos, with the ref/ pins verified
+make status         # git status for all nine repos: fetches origin, ahead/behind, ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
 make diff           # fork deltas: each fork's branch vs its -legacy baseline

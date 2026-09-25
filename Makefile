@@ -37,7 +37,7 @@ bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 
 pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
 	@scripts/pull.sh $(if $(DRY),--dry-run) $(if $(NOREF),--no-ref) $(if $(SHORT),--short)
 
-status: ## git status across all nine repos, with pin verification and the generated-spec check
+status: ## git status across all nine repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
 	@scripts/repo-status.sh && scripts/extract-spec.sh --check
 
 status-short: ## Same as status, without the per-file listing
