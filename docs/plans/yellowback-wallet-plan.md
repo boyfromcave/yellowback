@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-24, revision 5). W0a, W0b, W0c and W1 complete** (§7): the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+**Status (2026-09-24, revision 6). W0a, W0b, W0c, W1 and W2 complete** (§7): the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,23 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 6 (2026-09-24) — W2 delivered
+
+`yew` `73dec0a`, `e9ae926`. Acceptance met in full on the armed devnet (`scripts/devnet-w2.sh`),
+§7. Rules recorded (README "Rules recorded in W2"): **TOKEN has one source** and an unlisted
+`TOKEN_VALUE` own output stays HELD; **PENDING_TOKEN at broadcast** by `PreLock`, re-derived each
+sync; **locked outputs are in neither balance** (a refinement of §3.4); **the gate has two layers**
+(local class check, then `ValidateRawTransaction`) and validates plain YEC sends too, the one
+asymmetry being a server without the service (YEC proceeds on the local layer, YED refused);
+**labels come from verdicts**; `GetAddressTokens` never lists spent tokens (IN-1), so the wallet
+keeps its own spent-token table to value a "sent" row (a token created and spent between two
+syncs reads as its change only). Devnet traps for §6: stale pool quotes tag blocks `signal` and
+drain the price windows even on pool-mined blocks, so re-quote before each block and warm until
+`GetPrice(tip − refLag).pMint` is defined; `yed_mint wait=false` then two pool blocks; node 1 is
+stock on the armed devnet (node 5 is the wallet node for import tests);
+`getreceivedbyaddress` counts token value. `flutter_rust_bridge` 2.13.0 (stable) is the version
+W3 pins; its codegen is installed.
 
 ### Revision 5 (2026-09-24) — W0 and W1 delivered; rules recorded
 
@@ -649,10 +666,10 @@ the node holds exactly the bytes the core built → restore from seed reproduces
 UTXO set; `export-wif` equals `dumpprivkey`, `import-wif` funds spendable.
 
 ### Phase W2 — YED: tokens, TRANSFER, the gate (≈ 5 days; core only; **starts after lightwalletd L2**)
-- [ ] `net/yellowback.rs` (all 18 + `GetAddressTokens`), contract rule 1 handling.
-- [ ] `payload.rs` (from `payload.cpp`), `sync.rs` YED set from `GetAddressTokens` only, history
+- [x] `net/yellowback.rs` (all 18 + `GetAddressTokens`), contract rule 1 handling.
+- [x] `payload.rs` (from `payload.cpp`), `sync.rs` YED set from `GetAddressTokens` only, history
       labels from verdicts, `PreLock` pending rule.
-- [ ] `coins.rs` classes TOKEN/PENDING_TOKEN/UNKNOWN_P2SH and the hold rule; `coinselect.rs`
+- [x] `coins.rs` classes TOKEN/PENDING_TOKEN/UNKNOWN_P2SH and the hold rule; `coinselect.rs`
       with the node's test tables as vectors; `build/yed_transfer.rs`, `gate.rs` full rule;
       `yew-cli send-yed`, `history`, `price`, `coins` (debug listing by class).
 **Acceptance:** devnet: YED minted on node 0's wallet arrives at a YEW address and shows as YED
@@ -664,7 +681,9 @@ coin sets), a YEC send never spends the reserve unless overridden, `coinselect.r
 sub-dollar is refused with the same alternatives the node reports; **key round trip**: `yew-cli export-wif` of an
 address holding YEC and YED, `importprivkey` with rescan on node 1, `dumpprivkey` returns the
 same WIF, `getbalance`/`yed_getbalance` on node 1 show the address's YEC and YED, and node 1
-can `yed_send` them (§8.6); `git diff --stat` of the three forks shows only the
+can `yed_send` them (§8.6); **met 2026-09-24** (node 5 in place of the stock node 1; 100
+`yed_estimatesend` comparisons over three coin sets; malformed TRANSFER refused
+`transfer-over-assigned`; sub-dollar refusal with the node's alternatives; 56 unit + 4 vector tests); `git diff --stat` of the three forks shows only the
 W0 `contrib/` helper.
 
 ### Phase W3 — The app, M1 (≈ 2 weeks; app + `api.rs`)
