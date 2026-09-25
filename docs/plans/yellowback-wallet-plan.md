@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-24, revision 3).** Draft, nothing started; ready for chunked execution (W0a/b/c are independent, one repo each). Written after the
+**Status (2026-09-24, revision 4).** In execution: W0a/b/c started 2026-09-24. Revision 4 re-bases the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage) the relay switched to on 2026-09-24. Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -21,7 +21,7 @@ main currency**: balance, receive, send, history for both, and later the Yellowb
 anything shielded, and never builds a transaction byte outside the Rust core. Everything it
 knows about YED comes through `lightwalletd-dd`'s `YellowbackStreamer`; everything it knows
 about YEC comes through the untouched `CompactTxStreamer` transparent path
-(`GetAddressTxids` + `GetTransaction`). The Rust core is the only place the wire and script
+(`GetAddressUtxos` + `GetTaddressTxids`). The Rust core is the only place the wire and script
 bytes exist, is tested byte-for-byte against `ycash-dd` on the regtest devnet, and is reusable by
 a desktop client later.
 
@@ -35,6 +35,19 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 4 (2026-09-24) — the yodl baseline; execution started
+
+The lightwalletd fork's baseline switched on 2026-09-24 to `yodl/lightwalletd` (`zcash/lightwalletd`
+0.4.6 + 4 commits, `187a26765e`; lightwalletd plan revision 7–8, Phase R0 re-port complete).
+The transparent surface is richer than the 2020 server this plan assumed: `GetTaddressTxids`
+**streams the raw transactions with heights** (no per-txid `GetTransaction` round trip),
+`GetTaddressBalance`, **`GetAddressUtxos`** (the YEC UTXO set directly, `{txid, index, script,
+valueZat, height}`), and `GetMempoolTx` exist. §1.4, §3.2 and §3.6 are updated: the core's sync
+uses `GetAddressUtxos` for the YEC set and `GetTaddressTxids` for history, and the mempool method
+is recorded as available but still unused (D-W-8: pending state remains the app's own for M1;
+a "pending incoming" view is a W5 candidate). Execution: W0a/b/c spawned as parallel agents;
+Flutter installed on the owner's machine; Xcode and the Android SDK are `[owner]` installs.
 
 ### Revision 3 (2026-09-24) — executable by chunks
 
@@ -120,7 +133,7 @@ shielded (§1.5).
 
 | Tier | Server requirement | YEW capability |
 |---|---|---|
-| **T0** | any Ycash lightwalletd (2020 baseline), node with `-insightexplorer -txindex` | YEC balance, receive, send, history (`GetAddressTxids`, `GetTransaction`, `SendTransaction`, `GetLightdInfo.consensusBranchId`) |
+| **T0** | any Ycash lightwalletd of the yodl/ECC lineage (0.4.6+), node with `-insightexplorer -txindex` | YEC balance, receive, send, history (`GetAddressUtxos`, `GetTaddressTxids`, `GetTaddressBalance`, `SendTransaction`, `GetLightdInfo.consensusBranchId`) |
 | **T1** | `lightwalletd-dd` Phase L1 (`-yellowback`) | price, stats, verdict per transaction (`GetTxInfo`), dry run (`ValidateRawTransaction`), decode |
 | **T2** | Phase L2 (`GetAddressTokens`, needs node N1) | **authoritative YED balance and UTXO set**; YED send (TRANSFER) |
 | **T3** | same server; nothing new | mint (two-step with carrier), vault list, redeem, claim, bundle verification |
@@ -139,7 +152,7 @@ warp-sync engine, and six git submodules (`native/zcash-sync`, `native/zcash-par
 | Taken from Ywallet | Left in Ywallet |
 |---|---|
 | **Seed and transparent derivation** (D-W-7): BIP39 English, optional passphrase, `m/44'/347'/account'/0/index` — so the two wallets restore each other | every shielded key, address and scanner (`zcash-sync`, `librustzcash`, `orchard`, `halo2`) |
-| **Transparent sync method**: `GetAddressTxids` + `GetTransaction` per address (`zcash-sync/src/taddr.rs`), the same T0 path §3.2 uses | warp sync, note commitment trees, the GPU code |
+| **Transparent sync method**: per-address txid/transaction fetch (`zcash-sync/src/taddr.rs`), the shape of §3.2 (YEW uses the 0.4.6 methods) | warp sync, note commitment trees, the GPU code |
 | **The shape**: Flutter UI, Rust core, `flutter_rust_bridge` | multi-coin, Ledger, contacts, payment URIs, price charts, the plugin list of its `pubspec.yaml` (≈ 60 packages; YEW's is ≈ 12) |
 | **Network constants** as a cross-check (`zcash_primitives/src/consensus/ycash.rs`: coin type 347, prefixes `0x1C28`/`0x1C2C`, testnet `0x1C95`/`0x1C2A`; Ycash branch IDs) — all confirmed equal to `ref/ycash/src/chainparams.cpp:149-151,409-411` | the submodule pins themselves: YEW depends on none of these repositories |
 
@@ -299,15 +312,19 @@ yew/
 ### 3.2 The sync model (why this is small)
 
 1. Derive external and change addresses up to the gap limit.
-2. For each, `GetAddressTxids(start = birthday, end = tip)` (the 2020 method; requires the
-   server's node to run `-insightexplorer -txindex`, which the devnet's node 0 already does).
-3. `GetTransaction` for each new txid; parse the raw bytes in Rust; update the YEC UTXO set
-   (outputs to our keys minus spent) and the history table.
-4. `GetAddressTokens(addresses)` for the YED token set (T2); `GetTxInfo` for every transaction
-   in the history that carries a `"YB"` payload, to label it (mint, sent 5 YED, received 5 YED,
+2. `GetAddressUtxos(addresses, startHeight = birthday)` → the confirmed transparent UTXO set of
+   all own addresses in one call (`{address, txid, index, script, valueZat, height}`); this is
+   the YEC candidate set before classification (§3.7). Requires the server's node to run
+   `-insightexplorer -txindex`, which the devnet's node 0 already does.
+3. `GetTaddressTxids(address, range = [lastSynced + 1, tip])` per address → a stream of raw
+   transactions with their heights; parse each in Rust for the history table (direction,
+   amounts, the `"YB"` payload if any). No second round trip.
+4. `GetAddressTokens(addresses)` for the YED token set (T2); `GetTxInfo` for every history
+   transaction that carries a `"YB"` payload, to label it (mint, sent 5 YED, received 5 YED,
    VOID, burned) — the verdict is the server's, the label is derived from it, never from the
    payload alone (contract rule 3).
-5. `GetLatestBlock` on a timer and on app foreground; re-run 2–4 for the delta.
+5. `GetLatestBlock` on a timer and on app foreground; re-run 2–4 for the delta. `GetMempoolTx`
+   exists on this baseline and is not used in M1 (D-W-8).
 
 No compact blocks, no trial decryption, no note commitment tree. A full restore is
 proportional to the wallet's own history, not the chain's.
@@ -592,7 +609,8 @@ re-verify with `signrawtransaction` on the node; `yew/core/tests/vectors/` popul
       (`src/main.h` / `src/amount.h`, and what `yed_getinfo` params expose), confirm on the
       devnet, and fix `FEE_ZAT` and `RESERVE_MIN` in `core/src/params.rs` with the citation.
 - [ ] `keys.rs`, `script.rs` (P2PKH/P2SH), `tx.rs`: serializer, ZIP-243, signer (§3.6 sources).
-- [ ] `net/compact.rs`: the T0 methods over TLS/plain; `net/tls.rs`.
+- [ ] `net/compact.rs`: the T0 methods (`GetLightdInfo`, `GetLatestBlock`, `GetAddressUtxos`,
+      `GetTaddressTxids`, `GetTaddressBalance`, `SendTransaction`) over TLS/plain; `net/tls.rs`.
 - [ ] `sync.rs` (YEC only), `store.rs` (schema v1 incl. the lock set), `coins.rs` (classes YEC/FEE_RESERVE,
       the reserve rule, `SelectYec`), `build/yec_send.rs`, `gate.rs` (YEC path).
 - [ ] `yew-cli`: `status`, `address`, `balance`, `send-yec`, `sync`.
@@ -693,7 +711,7 @@ baseline); `make status` reports it.
 
 | Reference behaviour | Ycash / YEW reality | Adaptation |
 |---|---|---|
-| Ywallet: compact-block scan, trial decryption in Rust (`zcash-sync`) | YEW is transparent-only (D-W-2) | `GetAddressTxids` + `GetTransaction`; no scanner |
+| Ywallet: compact-block scan, trial decryption in Rust (`zcash-sync`) | YEW is transparent-only (D-W-2) | `GetAddressUtxos` + `GetTaddressTxids`; no scanner |
 | Ywallet: one transparent address per account at `m/44'/347'/a'/0/0` (`zcash-sync/src/zip32.rs`), addresses beyond found by scan | YEW needs fresh keys per mint and change | same root path, external and change chains with gap 20; primary address identical (D-W-7) |
 | Ywallet: six submodules (`librustzcash` fork, `orchard`, `halo2`, …) for the shielded pools | YEW has no shielded pool | zero submodules; the §3.3 allow-list |
 | librustzcash transaction builder | branch IDs and features are Zcash's; YEW needs ≈ 400 lines | hand-written v4 transparent serializer + ZIP-243, node vectors (D-W-3) |
