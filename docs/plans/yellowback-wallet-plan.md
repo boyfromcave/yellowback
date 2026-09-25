@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-25, revision 7). W0–W3 complete; W4 core in progress** (§7): the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+**Status (2026-09-25, revision 8). W0–W3 and the W4 core complete; W4 app in progress** (§7): mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,28 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 8 (2026-09-25) — W4 core delivered; §8.6, §8.7 and lightwalletd Q6 answered
+
+`yew` `5b503bf`, `e1847a7` (branch `w4-core`, merged `67d0cc2`), `6c6f122`. Acceptance items 1–9
+of the W4 core run all pass (271 s on the armed devnet, `scripts/devnet-w4.sh test`). Findings:
+**§8.6 closed — yes**: after `importprivkey` of the vault owner key on a node wallet,
+`yed_listvaults` lists the YEW-minted vault, `yed_redeem` refuses before `lockHeight`
+(`vault-locked`) and succeeds at it; the node recognises the vault by owner pubkey; nothing to
+change in `ycash-dd`. **§8.7 closed**: the claim's carrier scriptSig is 373 bytes — `OP_PUSHDATA1`
+of the 226-byte three-attestation bundle, the DER signature, the carrier redeem script — and the
+maximum bundle (448 B) stays under the 520 B element limit. **lightwalletd Q6 closed**: the armed
+carrier path works end to end through the relay (mint, resumed mint, claim, sweep, all `ok`;
+nothing needed the node wallet). One rule changed: the remote gate is **burn-aware** — a redeem
+or claim plans its burn and the gate requires `burned == planned` (a transfer plans 0); the
+W2 `burned == 0` rule refused the first real redeem. Also recorded: VAULT and CARRIER outputs
+are P2SH and never appear in `GetAddressUtxos`, so the sync loop synthesises them from the
+`mints`/`vaults` tables (a restore from seed finds its vaults through `GetVault` on every
+history row the server labelled `mint` whose owner key is its own); only the sync loop advances a
+mint row; the window rule is the node's `CheckExpiry` (`tip + 1 + 3 ≤ R + REF_WINDOW`); the
+bundle is verified before the carrier is funded, high-S refused. The W4 core agent ran out of
+context before its acceptance; a second agent finished it (the lesson for §7: acceptance runs
+are their own chunk).
 
 ### Revision 7 (2026-09-25) — W3 delivered (unlaunched)
 
@@ -715,12 +737,14 @@ imports under `app/lib` (CI-checked), 15 widget tests; **not met**: the §6.3 fl
 platform and the device installs — blocked on Xcode / Android SDK (`[owner]`).
 
 ### Phase W4 — Yellowback operations, M2 (≈ 2 weeks; core + app)
-- [ ] `bundle.rs`, `script.rs` vault and carrier scripts, `build/mint.rs` state machine,
+- [x] `bundle.rs`, `script.rs` vault and carrier scripts, `build/mint.rs` state machine,
       `build/redeem.rs`, `build/claim.rs`; the sweep — each translated from its §3.6 source.
 - [ ] Screens of §5.3.
-**Acceptance:** devnet: mint, redeem after lock, claim after shock, forced lapse and sweep, app
-killed mid-mint and resumed; bundle with one bad signature refused; node-built MINT/REDEEM
-templates reproduced byte-for-byte except keys and amounts.
+**Acceptance — core met 2026-09-25** (`scripts/devnet-w4.sh test`): mint $100/48 blocks
+(collateral 10 YEC, verdict ok, VAULT and TOKEN listed), redeem at lock (burned 10,000 cents,
+9.50009 YEC back), claim of node 0's vault after a −80 % shock (verdict ok, `CLAIMED`), forced
+lapse → sweep returns `CARRIER_VALUE − FEE_ZAT`, kill-and-resume finishes the mint, mutated
+bundle refused naming the attestor, templates reproduced (vectors test). **App half pending.**
 
 ### Phase W5 — Hardening and release (≈ 2 weeks; then testnet with v3 A7 and lightwalletd L4)
 - [ ] Threat review of `core/` (seed handling, gate, TLS), dependency audit (`cargo audit`),
@@ -743,14 +767,16 @@ Shielded anything (D-W-2); a desktop shell over `yew-core` (natural, later); mem
    on which port/certificate (lightwalletd plan §9 Q4). Needed by W5, not before.
 5. **Spent-token history** (lightwalletd §9 Q1): if `GetAddressTokens` never streams spent
    tokens, the core keeps deriving "sent" rows from `GetTxInfo`; fine for M1, revisit after W3.
-6. **Vault ownership after key import** (D-W-11): does `ycash-dd`'s wallet view list a vault
+6. *(closed 2026-09-25, revision 8: yes — the node lists and redeems an imported vault.)*
+   **Vault ownership after key import** (D-W-11): does `ycash-dd`'s wallet view list a vault
    whose owner key arrived by `importprivkey`, and can YecWallet redeem it? The vault is P2SH
    over the owner key, so the wallet must recognise the vault output as its own by the owner
    pubkey (the fork's `src/yellowback/wallet.cpp` / `view.cpp` logic), not only by address.
    Tested in W4 on the devnet: mint in YEW, export, import into node 1, `yed_listvaults` and
    `yed_redeem` from node 1. If it fails, the fix is a wallet-side (non-consensus) change in
    `ycash-dd` and gets its own row in the v3 plan.
-7. **Bundle size in `scriptSig`**: the carrier spend pushes `<bundle>` as one element; the node's
+7. *(closed 2026-09-25, revision 8: 373-byte scriptSig, 448 B max bundle < 520 B.)*
+   **Bundle size in `scriptSig`**: the carrier spend pushes `<bundle>` as one element; the node's
    template already respects the script element limit, and the core copies the node's push
    encoding exactly (W4 template equality). Recorded here so W4 checks it first.
 
