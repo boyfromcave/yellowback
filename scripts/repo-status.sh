@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Pretty per-repo git status for the Yellowback (YED) workspace.
 #
-# Usage: scripts/repo-status.sh [--short]
+# Usage: scripts/repo-status.sh [--short] [--no-fetch]
 # Pins are supplied by the Makefile via the environment; the defaults here
 # keep the script useful when run directly.
+#
+# Every writable repo with an `origin` is fetched (quietly, --prune) before its branch is
+# compared with the remote — without that, `@{u}` is only as fresh as the last fetch and the
+# script happily reports "in sync" against a stale remote-tracking ref. A fetch writes only
+# remote-tracking refs; nothing is merged, checked out or discarded (that is `make pull`).
+# --no-fetch (or NOFETCH=1) compares against the last fetch instead, e.g. when offline.
+# ref/ repos are never fetched: they are detached at a pin and their .git is read-only.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,8 +32,15 @@ LWD_BRANCH="${LWD_BRANCH:-$(manifest lightwalletd-dd branch)}"
 LWD_BASE="${LWD_BASE:-$(manifest lightwalletd-dd base)}"
 YEW_BRANCH="${YEW_BRANCH:-$(manifest yew branch)}"
 
-SHORT=0
-[ "${1:-}" = "--short" ] && SHORT=1
+SHORT=0; FETCH=1
+[ -n "${NOFETCH:-}" ] && FETCH=0
+for arg in "$@"; do
+  case "$arg" in
+    --short)    SHORT=1 ;;
+    --no-fetch) FETCH=0 ;;
+    *) printf 'usage: %s [--short] [--no-fetch]\n' "$0" >&2; exit 2 ;;
+  esac
+done
 
 # --- colour -----------------------------------------------------------------
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]; then
@@ -38,6 +52,8 @@ fi
 
 OK="${GRN}✔${R}"; WARN="${YEL}●${R}"; BAD="${RED}✘${R}"
 DIRTY_ANY=0; PIN_DRIFT=0; BRANCH_DRIFT=0
+BEHIND_ANY=0; AHEAD_ANY=0; DIVERGED_ANY=0; FETCH_FAILED=0
+ACTIONS=()   # one suggested command per out-of-sync repo, printed in the summary
 
 field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 
@@ -114,15 +130,34 @@ repo_status() {
   field "tree" "$(printf '%b' "$tree")"
 
   # --- upstream ---
-  local up counts behind ahead rel
+  # Fetch first (writable repos only): the remote-tracking ref is the thing being compared
+  # against, and it is stale until somebody fetches. Failure (offline, no origin) is reported
+  # on the line, not hidden — a comparison against a stale ref is then labelled as such.
+  local up counts behind ahead rel fetched="" fnote=""
   up="$("${g[@]}" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+  if [ -n "$up" ] && [ "$FETCH" -eq 1 ] && [ -w "$path/.git" ]; then
+    if "${g[@]}" fetch --quiet --prune origin 2>/dev/null; then
+      fetched=1
+    else
+      FETCH_FAILED=1; fnote=" ${RED}(fetch failed — offline? comparing against last fetch)${R}"
+    fi
+  elif [ -n "$up" ] && [ "$FETCH" -eq 0 ]; then
+    fnote=" ${D}(not fetched — as of last fetch)${R}"
+  fi
   if [ -n "$up" ]; then
     counts="$("${g[@]}" rev-list --left-right --count "${up}...HEAD" 2>/dev/null)"
     behind="${counts%%	*}"; ahead="${counts##*	}"
     if [ "$behind" = "0" ] && [ "$ahead" = "0" ]; then
-      rel="${OK} in sync with ${up}"
+      rel="${OK} in sync with ${up}${fnote}"
+    elif [ "$ahead" = "0" ]; then
+      rel="${WARN} ${YEL}${behind} behind${R} ${up}${fnote} ${D}— run \`make pull\` (or: git -C ${path} merge --ff-only ${up})${R}"
+      BEHIND_ANY=1; ACTIONS+=("${path}: ${behind} behind ${up} → make pull   (or: git -C ${path} merge --ff-only ${up})")
+    elif [ "$behind" = "0" ]; then
+      rel="${WARN} ${YEL}${ahead} ahead${R} of ${up}${fnote} ${D}— unpushed: git -C ${path} push${R}"
+      AHEAD_ANY=1; ACTIONS+=("${path}: ${ahead} unpushed commit(s) → git -C ${path} push")
     else
-      rel="${WARN} ${ahead} ahead, ${behind} behind ${up}"
+      rel="${BAD} ${RED}diverged${R} — ${ahead} ahead, ${behind} behind ${up}${fnote} ${D}— git -C ${path} rebase ${up}${R}"
+      DIVERGED_ANY=1; ACTIONS+=("${path}: diverged (${ahead} ahead, ${behind} behind ${up}) → git -C ${path} rebase ${up}, then push")
     fi
   else
     rel="${D}no upstream tracking branch${R}"
@@ -162,6 +197,11 @@ repo_status "lightwalletd-dd" "lightwalletd-dd" "-"          "$LWD_BRANCH"   "$L
 repo_status "yew"          "yew"          "-"                "$YEW_BRANCH"   "-"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
+print_actions() {
+  local a
+  for a in "${ACTIONS[@]}"; do printf "  ${D}%s${R}\n" "$a"; done
+}
+[ "$FETCH_FAILED" -ne 0 ] && printf "${WARN} ${YEL}fetch failed${R} for at least one repo — remote comparisons there are against the last fetch.\n"
 if [ "$PIN_DRIFT" -ne 0 ]; then
   printf "${BAD} ${RED}pin drift${R} — a ref/ repo is not at its expected tag.\n"
   printf "  ${D}Pins are recorded in AGENTS.md and docs/mapping.md. Re-pin, or update both.${R}\n"
@@ -171,8 +211,21 @@ elif [ "$BRANCH_DRIFT" -ne 0 ]; then
   printf "  ${D}Check out the expected branch, or update repos.yaml (and its mirrors in AGENTS.md and README.md).${R}\n"
   [ "$DIRTY_ANY" -ne 0 ] && printf "  ${D}Uncommitted changes are also present.${R}\n"
   exit 1
+elif [ "$DIVERGED_ANY" -ne 0 ]; then
+  printf "${BAD} ${RED}diverged from remote${R} — local and origin both have commits the other lacks. \`make pull\` will skip these; resolve by hand:\n"
+  print_actions
+  exit 1
+elif [ "$BEHIND_ANY" -ne 0 ] || [ "$AHEAD_ANY" -ne 0 ]; then
+  if [ "$BEHIND_ANY" -ne 0 ]; then
+    printf "${WARN} ${YEL}behind remote${R} — origin has newer commits. Run ${B}make pull${R} (fast-forward only; a dirty repo is skipped, commit or stash first).\n"
+  fi
+  if [ "$AHEAD_ANY" -ne 0 ]; then
+    printf "${WARN} ${YEL}unpushed commits${R} — local commits origin does not have yet. Push when ready.\n"
+  fi
+  print_actions
+  [ "$DIRTY_ANY" -ne 0 ] && printf "  ${D}Uncommitted changes are also present.${R}\n"
 elif [ "$DIRTY_ANY" -ne 0 ]; then
-  printf "${WARN} pins OK; uncommitted changes present.\n"
+  printf "${WARN} pins OK, in sync with remotes; uncommitted changes present.\n"
 else
-  printf "${OK} all repos clean and at expected pins.\n"
+  printf "${OK} all repos clean, at expected pins and in sync with their remotes.\n"
 fi
