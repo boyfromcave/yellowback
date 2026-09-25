@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-24, revision 6). W0a, W0b, W0c, W1 and W2 complete** (§7): the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+**Status (2026-09-25, revision 7). W0–W3 complete; W4 core in progress** (§7): the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,23 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 7 (2026-09-25) — W3 delivered (unlaunched)
+
+`yew` `e5f1eb9`, `8c6cb08`, `81200bb`. Verified: 58 unit + 4 vector tests, clippy clean, 16
+direct Rust deps (frb added), `flutter analyze` clean, 15 widget tests over a fake bridge,
+`check-app-imports.sh` (no grpc/crypto/sqlite/http/sockets under `app/lib`, the bridge called
+from one file) and `check-trust-text.sh` (`app/lib/trust_text.dart` == `docs/trust.md`) in CI.
+Unrun: the app on any device, the M1 integration test, both mobile build scripts, the plugin
+behaviour (keystore, biometrics, camera). Deviations recorded: api functions are blocking `fn`s
+over a private tokio runtime (the store is not `Send` across awaits) — Dart still sees
+`Future`/`Stream`; `i64` for cents and heights (`u64` maps to `BigInt`); a mnemonic the core
+itself generated is returned once so the app can store it in the keystore; Dart deps are 7
+(`flutter_rust_bridge`, `flutter_secure_storage`, `local_auth`, `qr_flutter`, `mobile_scanner`,
+`path_provider`, `cupertino_icons`), no router package, no `intl`; Settings sub-pages in their
+own files to keep screens ≤ 300 lines; the default server is a placeholder until W5 (§8.4);
+`docs/trust.md` is the agent's draft pending owner review. W4 core runs in a worktree
+(`wt/yew-w4`, branch `w4-core`) in parallel and merges after.
 
 ### Revision 6 (2026-09-24) — W2 delivered
 
@@ -687,15 +704,15 @@ can `yed_send` them (§8.6); **met 2026-09-24** (node 5 in place of the stock no
 W0 `contrib/` helper.
 
 ### Phase W3 — The app, M1 (≈ 2 weeks; app + `api.rs`)
-- [ ] `api.rs` and the generated bridge; `state/` (one store, streams from the core).
-- [ ] `theme.dart`, the six screens of §5.1, QR scan/show, secure storage, biometrics.
-- [ ] Integration test of §6.3 on the Android emulator and iOS simulator.
+- [x] `api.rs` and the generated bridge; `state/` (one store, streams from the core).
+- [x] `theme.dart`, the six screens of §5.1, QR scan/show, secure storage, biometrics.
+- [~] Integration test of §6.3 (written, not run — no simulator/emulator on the build machine) on the Android emulator and iOS simulator.
 - [ ] `[owner]` a signed iOS build on one physical device (the agent delivers the simulator
       build and the Android APK).
-- [ ] `docs/trust.md` text reviewed by the owner.
-**Acceptance:** the §6.3 M1 flow passes on both platforms against the devnet; a release build
-installs on one physical device of each platform; screens ≤ 300 lines; no crypto or networking
-import under `app/lib`.
+- [ ] `[owner]` `docs/trust.md` text reviewed (draft written).
+**Acceptance — partly met 2026-09-25:** screens ≤ 300 lines (largest 294), no crypto/networking
+imports under `app/lib` (CI-checked), 15 widget tests; **not met**: the §6.3 flow on either
+platform and the device installs — blocked on Xcode / Android SDK (`[owner]`).
 
 ### Phase W4 — Yellowback operations, M2 (≈ 2 weeks; core + app)
 - [ ] `bundle.rs`, `script.rs` vault and carrier scripts, `build/mint.rs` state machine,
