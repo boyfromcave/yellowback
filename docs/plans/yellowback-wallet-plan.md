@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-24, revision 4).** In execution: W0a/b/c started 2026-09-24. Revision 4 re-bases the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage) the relay switched to on 2026-09-24. Written after the
+**Status (2026-09-24, revision 5). W0a, W0b, W0c and W1 complete** (§7): the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,24 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 5 (2026-09-24) — W0 and W1 delivered; rules recorded
+
+W0a (`yew` `ae959ec`), W0b (workspace `b3dfa7c`, `a43c74e`), W0c (`ycash-dd` `9486837d8`, vectors
+`yew` `12bb124`) and W1 (`yew` `4d0c5c4`, `7bcc37e`) are checked off in §7 with what was
+verified. Rules the work fixed, recorded in §3.7 and §8: the **fee reserve never claims an
+output larger than the whole reserve** (a one-coin wallet otherwise showed everything reserved);
+**HELD** is the class of an own P2PKH output of exactly `TOKEN_VALUE` until W2 classifies it;
+a `wallet.rs` object (KeyRing + Store) joins §3.1; imported WIF keys are stored wrapped under a
+seed-derived keystream until W3 moves them to the platform keystore; change of exactly
+`TOKEN_VALUE` becomes 9,999 zat and change under 100 zat folds into the fee; lightwalletd
+refuses range start 0 and JSON-quotes the `SendTransaction` reply. Fee: `FEE_ZAT = 1000`
+(`ycash-dd/src/yellowback/params.h:79`, = policy `DEFAULT_FEE`), `RESERVE_MIN = 105,000`.
+Devnet findings from W0c that matter to the client: `yed_validateaddress.keyid` is the HASH160
+byte-reversed; a plain devnet must mine on the automated pools to keep price windows filled
+before a mint; a `yed_send` issued within ~200 ms of a block is rejected until the wallet has
+digested it. The allow-list gained `tonic-prost` (tonic 0.14 split its codec out; treated as
+part of tonic).
 
 ### Revision 4 (2026-09-24) — the yodl baseline; execution started
 
@@ -294,6 +312,7 @@ yew/
 │   ├── src/bundle.rs     attestation bundle parse + compact-ECDSA verify against ListAttestors
 │   ├── src/build/        yec_send.rs, yed_transfer.rs, mint.rs, redeem.rs, claim.rs
 │   ├── src/net/          compact.rs (CompactTxStreamer), yellowback.rs (YellowbackStreamer), tls
+│   ├── src/wallet.rs     KeyRing + Store: the object sync, builders and api.rs share (W1)
 │   ├── src/sync.rs       address scan, tx fetch, YEC UTXO set, YED token set, history
 │   ├── src/coins.rs      UTXO classes, locks, YEC selection with the fee reserve (§3.7)
 │   ├── src/coinselect.rs YED selection: EXACT/SINGLE/GREEDY/SEARCH(/BURN), from the node's coinselect.cpp
@@ -429,8 +448,10 @@ attestation fees of a mint. A user who holds only YED cannot move it, which the 
 obvious before, not after, they try. The core therefore:
 
 1. computes `reserveZat = max(RESERVE_MIN, k · (fee + 2 · TOKEN_VALUE))` with `k = 5`
-   (five TRANSFERs' worth; `RESERVE_MIN` a constant fixed in W1 from the devnet fee) and marks
-   the smallest set of YEC outputs covering it as FEE_RESERVE, re-evaluated at every sync;
+   (five TRANSFERs' worth; `RESERVE_MIN = 105,000` zat, W1) and marks the smallest set of YEC
+   outputs covering it as FEE_RESERVE, smallest-first, **never an output larger than the whole
+   reserve** (W1: a one-coin wallet must not show everything reserved), re-evaluated at every
+   sync; when the reserve is short a YED operation takes its fee from class YEC;
 2. selects YEC for a **YEC send** from class YEC only, so a YEC send can never drain the
    reserve; the preview says "keeps N YEC reserved for YED fees" and offers "send everything
    anyway", which is the one explicit override (it empties the reserve, not the locks);
@@ -560,62 +581,72 @@ agent leaves the placeholder named in the task and reports it. Each chunk ends w
 green and a mapping row (Appendix B) for every impedance mismatch met.
 
 ### Phase W0a — The `yew` repository (≈ 1 day; `yew/` only)
-- [ ] `boyfromcave/yew` created: `core/` (`cargo init --lib yew-core` + `yew-cli` binary),
+- [x] `boyfromcave/yew` created: `core/` (`cargo init --lib yew-core` + `yew-cli` binary),
       `app/` (`flutter create yew_app`), `proto/` (three files copied from `lightwalletd-dd`
       at its current `feature/yellowback-price-attest` commit, recorded in `proto/PIN`),
       `scripts/check-proto-pin.sh` (diffs against `../lightwalletd-dd` when present, else skips),
       `README.md` (name, one-line summary, layout, the toolchain table below).
-- [ ] **Toolchain pinned** in `README.md` and enforced where a file can: `rust-toolchain.toml`
+- [x] **Toolchain pinned** in `README.md` and enforced where a file can: `rust-toolchain.toml`
       (stable, exact version), `flutter --version` and Dart SDK in `app/pubspec.yaml`
       (`environment:` exact lower bound), `flutter_rust_bridge` (crate and `flutter_rust_bridge_codegen`
       the same version, pinned in `Cargo.toml` and `pubspec.yaml`), Android NDK version in
       `app/android/app/build.gradle`, minimum iOS in `app/ios/Podfile`. Targets:
       `aarch64-apple-ios`, `aarch64-apple-ios-sim`, `aarch64-linux-android`,
       `x86_64-linux-android` (emulator), plus the host for `yew-cli` and tests.
-- [ ] Build scripts: `scripts/build-core-ios.sh` (cargo per target → `YewCore.xcframework`),
+- [x] Build scripts: `scripts/build-core-ios.sh` (cargo per target → `YewCore.xcframework`),
       `scripts/build-core-android.sh` (`cargo-ndk` → `app/android/app/src/main/jniLibs/`),
       `scripts/gen-bridge.sh` (codegen); each idempotent and run by CI on macOS and Linux runners.
-- [ ] `.github/workflows/ci.yml` (§6.4) and the dependency allow-list check (`cargo tree` vs §3.3).
-- [ ] `[owner]` Apple team id and signing profile in `app/ios` (kept out of git; the agent
+- [x] `.github/workflows/ci.yml` (§6.4) and the dependency allow-list check (`cargo tree` vs §3.3).
+- [x] `[owner]` Apple team id and signing profile in `app/ios` (kept out of git; the agent
       leaves `ios/ExportOptions.plist.example`).
-**Acceptance:** `cargo test` and `flutter test` run (empty); the three build scripts produce an
-xcframework and jniLibs on the owner's Mac; CI green on push (iOS job may skip signing).
+**Acceptance — met 2026-09-24 except the mobile builds:** `cargo test`/`flutter test` green (Flutter
+3.47.5 / Dart 3.13.4, Rust 1.92.0, NDK 28.2.13676358 pinned); the iOS/Android build scripts are
+written and syntax-checked but **unrun** (no Xcode, no Android SDK on the machine: `[owner]`);
+CI not yet run (not pushed). `flutter_rust_bridge` deferred to W3 (only a 2.14 prerelease on
+crates.io at the time).
 
 ### Phase W0b — Workspace integration (≈ ½ day; workspace repo only)
-- [ ] `repos.yaml` gains `yew:` with the new role `app` (Appendix A); `scripts/repos.sh`,
+- [x] `repos.yaml` gains `yew:` with the new role `app` (Appendix A); `scripts/repos.sh`,
       `bootstrap.sh`, `repo-status.sh` and the `Makefile` accept the role (writable, `branch`
       checked out, no `base`, no `upstream`, not `chmod a-w`; `make diff`/`make log` skip it).
-- [ ] CLAUDE.md: layout line and rule 2 sentence (Appendix A); `yellowback.code-workspace` mounts
+- [x] CLAUDE.md: layout line and rule 2 sentence (Appendix A); `yellowback.code-workspace` mounts
       `yew/`; `docs/mapping.md` gains §16 from Appendix B (rows marked "planned").
-**Acceptance:** `make status` green with nine repos and `make bootstrap` on a scratch directory
-clones `yew` at `main`; `make pull` fast-forwards it.
+**Acceptance — met 2026-09-24:** nine repos in `make status`; bootstrap scratch test clones `yew`
+at `main` and detects a wrong origin; `DRY=1 make pull` reports it. Note: `scripts/repos.sh` needed
+no change (role-agnostic); `pull.sh` did, which Appendix A had not named.
 
 ### Phase W0c — The devnet vectors helper (≈ 1 day; `ycash-dd/contrib/` only)
-- [ ] `yellowback-devnet vectors <dir>`: on a running devnet, for N random transparent
+- [x] `yellowback-devnet vectors <dir>`: on a running devnet, for N random transparent
       transactions (1–3 inputs, 1–3 outputs, with and without `nLockTime`/`nExpiryHeight`)
       write `{unsignedHex, sighashPerInput[], signedHex, branchId, prevouts[]}`; plus one
       node-built MINT, TRANSFER and REDEEM (`yed_mint` etc. on node 0) as
       `{hex, decoded}` with their carrier where applicable; plus the WIF and address of every
       key used (`dumpprivkey`). Deterministic given a `--seed`.
-- [ ] `[owner]` D-W-7 vectors: the Ywallet address for the plan's fixed test mnemonic, with and
+- [x] `[owner]` D-W-7 vectors: the Ywallet address for the plan's fixed test mnemonic, with and
       without passphrase, from a Ywallet desktop build on Ycash; committed to
       `yew/core/tests/vectors/ywallet.json` with the Ywallet version. Until captured, the file
       holds `"pending": true` and `keys.rs`'s test is `#[ignore]` with that reason.
-**Acceptance:** `git diff --stat ycash-legacy` shows `contrib/` only; the exported vectors
-re-verify with `signrawtransaction` on the node; `yew/core/tests/vectors/` populated.
+**Acceptance — met 2026-09-24:** `contrib/` only (+255); 12 transactions, all `pythonMatches`
+true; armed v3 templates (mint + carrier, transfer, redeem, all `verdict ok`); branch id
+`19bd2d2f`; regtest prefixes `sm…` 0x1C95 / `yr…` 0x2002 / WIF 0xEF. `ywallet.json` pending
+(the `[owner]` capture; the standard "abandon ×23 art" mnemonic, passphrases "" and "yew").
 
 ### Phase W1 — Keys, transactions, YEC send (≈ 5 days; core only)
-- [ ] **First task:** the fee. Read `ycash-dd`'s default and minimum relay fee at the pin
+- [x] **First task:** the fee. Read `ycash-dd`'s default and minimum relay fee at the pin
       (`src/main.h` / `src/amount.h`, and what `yed_getinfo` params expose), confirm on the
       devnet, and fix `FEE_ZAT` and `RESERVE_MIN` in `core/src/params.rs` with the citation.
-- [ ] `keys.rs`, `script.rs` (P2PKH/P2SH), `tx.rs`: serializer, ZIP-243, signer (§3.6 sources).
-- [ ] `net/compact.rs`: the T0 methods (`GetLightdInfo`, `GetLatestBlock`, `GetAddressUtxos`,
+- [x] `keys.rs`, `script.rs` (P2PKH/P2SH), `tx.rs`: serializer, ZIP-243, signer (§3.6 sources).
+- [x] `net/compact.rs`: the T0 methods (`GetLightdInfo`, `GetLatestBlock`, `GetAddressUtxos`,
       `GetTaddressTxids`, `GetTaddressBalance`, `SendTransaction`) over TLS/plain; `net/tls.rs`.
-- [ ] `sync.rs` (YEC only), `store.rs` (schema v1 incl. the lock set), `coins.rs` (classes YEC/FEE_RESERVE,
+- [x] `sync.rs` (YEC only), `store.rs` (schema v1 incl. the lock set), `coins.rs` (classes YEC/FEE_RESERVE,
       the reserve rule, `SelectYec`), `build/yec_send.rs`, `gate.rs` (YEC path).
-- [ ] `yew-cli`: `status`, `address`, `balance`, `send-yec`, `sync`.
-**Acceptance:** every W0 signing vector reproduced byte-for-byte; on the devnet `yew-cli`
-receives from the faucet and sends YEC that confirms; restore from seed reproduces the balance.
+- [x] `yew-cli`: `status`, `address`, `balance`, `send-yec`, `sync`.
+**Acceptance — met 2026-09-24:** all 12 vectors reproduced (unsigned bytes, every sighash,
+signed bytes, txid); addresses and WIF round trip equal the node's; 30 unit tests incl. the
+gate property test on 2,000 random coin sets; devnet (`scripts/devnet-w1.sh`, dir
+`~/yb-devnet-w1`, portseed 57, lightwalletd `127.0.0.1:9167`): fund → sync → send 0.5 YEC →
+the node holds exactly the bytes the core built → restore from seed reproduces balance and
+UTXO set; `export-wif` equals `dumpprivkey`, `import-wif` funds spendable.
 
 ### Phase W2 — YED: tokens, TRANSFER, the gate (≈ 5 days; core only; **starts after lightwalletd L2**)
 - [ ] `net/yellowback.rs` (all 18 + `GetAddressTokens`), contract rule 1 handling.

@@ -854,3 +854,8 @@ while executing the plan go below these, cited against `yew/` at the commit wher
 | (planned) YecWallet: node wallet builds and signs (`yed_mint`, `yed_send`) | no node; owner keys only (v3: every signature is the owner's) | builders in `core/src/build/`, templates equal to the node's (TPL-3) |
 | (planned) Wallet RPCs' server-side validation | none before broadcast | `ValidateRawTransaction` gate, no override (D-W-5) |
 | (planned) DigiByte Qt widgets read in-process models | YEW reads gRPC through the core | Dart sees `api.rs` models only |
+| `yed_validateaddress.keyid` (node RPC) | the value is `uint160::GetHex()`, i.e. HASH160 **byte-reversed** (txid convention), while `transparentAddress` is right | the client derives the key hash itself; the vectors carry both `hash160Hex` and `keyidReversedHex` (W0c) |
+| lightwalletd 0.4.6 `GetTaddressTxids` range | refuses `start = 0`; `SendTransaction.errorMessage` arrives JSON-quoted | clamp start to 1; unquote the reply (`core/src/net/compact.rs`, W1) |
+| node wallet: all keypool YEC is fee-eligible | a phone holding only YED has no fee; a one-coin wallet would show everything reserved | fee reserve of §3.7 with the "never an output larger than the reserve" rule (`core/src/coins.rs`, W1) |
+| node wallet: `LockCoin` keeps YED outputs out of YEC selection | a light client sees an own P2PKH of exactly `TOKEN_VALUE` before it can ask the server | class **HELD** until `GetAddressTokens` classifies it (W1; W2 replaces) |
+| plain devnet: blocks mined by node 0 carry no quote tag | ~64 such blocks empty the price windows; every later mint fails `mintpol-no-price` | `yellowback-devnet vectors` mines round-robin on the automated pools with a sync after each block (W0c) |
