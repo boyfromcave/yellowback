@@ -1,5 +1,5 @@
 {
-  // Yellowback workspace for VS Code: the parent repo plus its seven nested clones as roots.
+  // Yellowback workspace for VS Code: the parent repo plus its eight nested clones as roots.
   // Open with `code yellowback.code-workspace` after `make bootstrap`. The folder names below are
   // referenced by ${workspaceFolder:<name>} in settings and tasks, so keep them stable.
   "folders": [
@@ -7,6 +7,7 @@
     { "name": "ycash-dd",      "path": "ycash-dd" },
     { "name": "yecwallet-dd",  "path": "yecwallet-dd" },
     { "name": "lightwalletd-dd", "path": "lightwalletd-dd" },
+    { "name": "yew",           "path": "yew" },
     { "name": "ref/ycash",     "path": "ref/ycash" },
     { "name": "ref/yecwallet", "path": "ref/yecwallet" },
     { "name": "ref/digibyte",  "path": "ref/digibyte" },

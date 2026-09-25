@@ -25,6 +25,7 @@ yellowback-workspace/
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
+├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
@@ -73,6 +74,9 @@ prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and 
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
 only; wallet code goes in `yecwallet-dd` only; light-client server code goes in `lightwalletd-dd`
 only; the `yed_*` RPC surface is the sole interface between the node and either client (plan §4.7).
+Mobile-wallet (YEW) client code goes in `yew/` only — its own repository on `main`, not a fork,
+so it has no `-legacy` baseline — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
+gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -162,7 +166,7 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-Start a session with `make status`. It reports all eight repos and **exits non-zero if a
+Start a session with `make status`. It reports all nine repos and **exits non-zero if a
 `ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
 `docs/mapping.md`.
 
@@ -170,7 +174,7 @@ Start a session with `make status`. It reports all eight repos and **exits non-z
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all eight repos, with pin verification
+make status     # git status across all nine repos, with pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline

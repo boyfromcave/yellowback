@@ -23,6 +23,7 @@ DD_BASE="${DD_BASE:-$(manifest ycash-dd base)}"
 WALLET_BASE="${WALLET_BASE:-$(manifest yecwallet-dd base)}"
 LWD_BRANCH="${LWD_BRANCH:-$(manifest lightwalletd-dd branch)}"
 LWD_BASE="${LWD_BASE:-$(manifest lightwalletd-dd base)}"
+YEW_BRANCH="${YEW_BRANCH:-$(manifest yew branch)}"
 
 SHORT=0
 [ "${1:-}" = "--short" ] && SHORT=1
@@ -40,8 +41,9 @@ DIRTY_ANY=0; PIN_DRIFT=0; BRANCH_DRIFT=0
 
 field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 
-# repo_status <label> <path> <expected-tag-or-commit|-> <expected-branch|-> [fork-base]
+# repo_status <label> <path> <expected-tag-or-commit|-> <expected-branch|-> [fork-base|-]
 # The pin is a tag, or — for a reference whose upstream publishes no tags — a commit prefix.
+# An app repo (repos.yaml role `app`) passes `-` as the base: branch check only, no fork delta.
 repo_status() {
   local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:-$DD_BASE}"
 
@@ -128,7 +130,7 @@ repo_status() {
   field "remote" "$(printf '%b' "$rel")"
 
   # --- fork delta, working repo only ---
-  if [ "$want_branch" != "-" ] && "${g[@]}" rev-parse --verify --quiet "$base" >/dev/null; then
+  if [ "$want_branch" != "-" ] && [ "$base" != "-" ] && "${g[@]}" rev-parse --verify --quiet "$base" >/dev/null; then
     local files ins del stat_line
     stat_line="$("${g[@]}" diff --shortstat "${base}...HEAD" 2>/dev/null)"
     if [ -z "$stat_line" ]; then
@@ -157,6 +159,7 @@ repo_status "ref/lightwalletd" "ref/lightwalletd" "$LWD_PIN" "-"
 repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"    "$DD_BASE"
 repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$WALLET_BRANCH" "$WALLET_BASE"
 repo_status "lightwalletd-dd" "lightwalletd-dd" "-"          "$LWD_BRANCH"   "$LWD_BASE"
+repo_status "yew"          "yew"          "-"                "$YEW_BRANCH"   "-"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 if [ "$PIN_DRIFT" -ne 0 ]; then
@@ -164,7 +167,7 @@ if [ "$PIN_DRIFT" -ne 0 ]; then
   printf "  ${D}Pins are recorded in AGENTS.md and docs/mapping.md. Re-pin, or update both.${R}\n"
   exit 1
 elif [ "$BRANCH_DRIFT" -ne 0 ]; then
-  printf "${WARN} ${YEL}branch drift${R} — a fork is not on the branch repos.yaml records.\n"
+  printf "${WARN} ${YEL}branch drift${R} — a fork or app repo is not on the branch repos.yaml records.\n"
   printf "  ${D}Check out the expected branch, or update repos.yaml (and its mirrors in AGENTS.md and README.md).${R}\n"
   [ "$DIRTY_ANY" -ne 0 ] && printf "  ${D}Uncommitted changes are also present.${R}\n"
   exit 1

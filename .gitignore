@@ -4,6 +4,7 @@
 /ycash-dd/
 /yecwallet-dd/
 /lightwalletd-dd/
+/yew/
 
 # macOS
 .DS_Store

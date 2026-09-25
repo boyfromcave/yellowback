@@ -19,6 +19,10 @@
 #   fork       writable. `branch` is checked out; `base` (the pristine baseline the fork diff
 #              is measured against) is created as a local tracking branch; `base-commit` must
 #              equal the matching reference pin; `upstream` is added as a remote, not fetched.
+#   app        writable. `branch` is checked out; no `base`, no `upstream`, not `chmod a-w`.
+#              A repository of its own (nothing is ported into it), so there is no baseline to
+#              diff against: `make status` only checks it is on `branch`; `make diff`/`make log`
+#              skip it.
 #
 # Re-pinning a reference is rare and deliberate: change `tag` and `commit` here, then update
 # the mirrors in AGENTS.md and docs/mapping.md — every file:line citation depends on them.
@@ -77,3 +81,9 @@ lightwalletd-dd:
   base: lightwalletd-legacy
   base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)
+
+yew:
+  role: app
+  url: https://github.com/boyfromcave/yew.git
+  branch: main
+  what: YEW, the transparent-only mobile wallet for YEC and YED (Flutter + Rust core)

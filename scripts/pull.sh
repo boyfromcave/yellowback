@@ -14,6 +14,7 @@
 #               -legacy baseline (updated by ref, never checked out). 'upstream' is
 #               never fetched: re-basing the fork onto a newer Ycash is a deliberate
 #               act, not something a pull does behind your back.
+#   apps        fetch origin, fast-forward the branch (checked out). No baseline.
 #   ref/        detached at a tag; there is nothing to advance. A read-only ls-remote
 #               re-checks that the pinned tag still resolves to the commit repos.yaml records —
 #               if it moved upstream, every file:line citation in docs/mapping.md is
@@ -135,6 +136,19 @@ pull_fork() {
   ff_ref "$path" "$base"
 }
 
+pull_app() {
+  local path="$1" branch="$2"
+  head2 "$path" "app"
+  [ -e "$path/.git" ] || { bad "not a git repository — run 'make bootstrap'"; return; }
+  run git -C "$path" fetch --quiet --prune origin || { bad "fetch origin failed"; return; }
+  local cur; cur="$(git -C "$path" rev-parse --abbrev-ref HEAD)"
+  if [ "$cur" = "$branch" ]; then
+    fast_forward "$path" "$branch"
+  else
+    skip "on '$cur', not $branch ${D}(git -C $path checkout $branch)${R}"
+  fi
+}
+
 # A reference is verified, never advanced. ls-remote is deliberate: it asks the remote
 # what the tag points at without fetching an object or writing a single byte into the
 # clone — which matters, because ref/ working trees are chmod a-w and at least one of
@@ -183,6 +197,7 @@ for path in $("$REPOS" list); do
                  "$("$REPOS" get "$path" url)" ;;
     fork)      pull_fork "$path" \
                  "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" base)" ;;
+    app)       pull_app "$path" "$("$REPOS" get "$path" branch)" ;;
   esac
 done
 

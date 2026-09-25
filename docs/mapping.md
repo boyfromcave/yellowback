@@ -837,3 +837,20 @@ lists the design-level rows. These are the mismatches met while executing it.
 | node 0 `generate` confirmed the harness's transactions (yecdev run) | node 0 carries no quote tag: its blocks empty the price windows (`NO_PRICE` after a few runs); a pool's blocks are tagged only while its quote is fresh (`quoteKind` turns `signal` after the max age) | the Go suite mines on a pool node, the driver runs `yellowback-devnet price` first, and `warmPrice` mines fast windows until `pMint` is defined (up to two slow windows) |
 | mining on the broadcasting node includes the transaction at once | mining on another node races the relay: a block generated before the pool's mempool holds the txid leaves it unconfirmed (`tx-not-found` from `GetTxInfo`); the index is applied a moment after the block | `waitRelayed` (poll the pool's `getrawmempool`) before `generate`; `mine` waits for node 0's height and then `GetYellowbackInfo.height` to reach it |
 
+## 16. YEW — the mobile wallet (`yew/`, its own repository)
+
+The mobile wallet's plan is `docs/plans/yellowback-wallet-plan.md`; these are its Appendix B rows,
+the design-level mismatches between the references (Ywallet `hhanh00/zwallet` v1.15.3, YecWallet,
+DigiByte's Qt widgets) and what YEW is. Every row is **(planned)**: none has been met in code yet.
+YEW is not a fork — nothing is ported into it — so this section has no baseline pin; rows met
+while executing the plan go below these, cited against `yew/` at the commit where they were met.
+
+| Reference behaviour | Ycash / YEW reality | Adaptation |
+|---|---|---|
+| (planned) Ywallet: compact-block scan, trial decryption in Rust (`zcash-sync`) | YEW is transparent-only (D-W-2) | `GetAddressTxids` + `GetTransaction`; no scanner |
+| (planned) Ywallet: one transparent address per account at `m/44'/347'/a'/0/0` (`zcash-sync/src/zip32.rs`), addresses beyond found by scan | YEW needs fresh keys per mint and change | same root path, external and change chains with gap 20; primary address identical (D-W-7) |
+| (planned) Ywallet: six submodules (`librustzcash` fork, `orchard`, `halo2`, …) for the shielded pools | YEW has no shielded pool | zero submodules; the plan's §3.3 allow-list |
+| (planned) librustzcash transaction builder | branch IDs and features are Zcash's; YEW needs ≈ 400 lines | hand-written v4 transparent serializer + ZIP-243, node vectors (D-W-3) |
+| (planned) YecWallet: node wallet builds and signs (`yed_mint`, `yed_send`) | no node; owner keys only (v3: every signature is the owner's) | builders in `core/src/build/`, templates equal to the node's (TPL-3) |
+| (planned) Wallet RPCs' server-side validation | none before broadcast | `ValidateRawTransaction` gate, no override (D-W-5) |
+| (planned) DigiByte Qt widgets read in-process models | YEW reads gRPC through the core | Dart sees `api.rs` models only |
