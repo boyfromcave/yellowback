@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-25, revision 9). W0–W4 complete; W5 in progress** (§7). The W4 app half (`yew` `07dcff3`, `706b1ab`, `29e1ae4`) adds the ten Yellowback bridge calls and the Yellowback, Mint, progress, Vault and Claimable screens with 14 more widget tests (29 total); the M2 integration test is written and, like M1, unrun for lack of a device. W4 core: mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+**Status (2026-09-25, revision 10). W0–W5 delivered; what remains is the owner's** (§7, README "What is left for the owner"): running the app on a device and the M1/M2 integration tests, the Ywallet vector, three security-review decisions, public endpoints, the testnet run, store metadata and signing. W5 (`yew` `d4f2e13`..`e637791`): threat review (`docs/security-review.md`, 17 findings, 12 fixed — key wiping, plain transport regtest-only, host validation, CA-PEM pinning in core and CLI, 0600 cache, no Android backups, FLAG_SECURE on seed and key screens, the trace logger removed), `cargo audit` clean over 227 crates, `docs/licenses.md`, `docs/release.md` (reproducible build, empty default endpoint lists for mainnet and testnet per §8.4, no telemetry, store checklist, signing, the testnet plan). W4 app: The W4 app half (`yew` `07dcff3`, `706b1ab`, `29e1ae4`) adds the ten Yellowback bridge calls and the Yellowback, Mint, progress, Vault and Claimable screens with 14 more widget tests (29 total); the M2 integration test is written and, like M1, unrun for lack of a device. W4 core: mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,15 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 10 (2026-09-25) — W5 delivered; remaining work is the owner's
+
+See the status line and §7 W5. Deferred by decision, not omission: keystore-bound biometrics
+(changes UX and loses the seed on re-enrolment), a SHA-256 certificate pin (needs `rustls` as a
+direct dependency; CA-PEM pinning ships instead), recovery of a carrier stranded by deleting the
+database mid-mint (a W6 item; only "Forget wallet" deletes, with a warning), iOS switcher blur.
+The old built-in mainnet server constant is gone: a server is required at onboarding until the
+owner fills `default_servers`.
 
 ### Revision 9 (2026-09-25) — W4 app delivered; W5 started
 
@@ -756,10 +765,10 @@ lapse → sweep returns `CARRIER_VALUE − FEE_ZAT`, kill-and-resume finishes th
 bundle refused naming the attestor, templates reproduced (vectors test). **App half delivered 2026-09-25** (29 widget tests; device runs `[owner]`).
 
 ### Phase W5 — Hardening and release (≈ 2 weeks; then testnet with v3 A7 and lightwalletd L4)
-- [ ] Threat review of `core/` (seed handling, gate, TLS), dependency audit (`cargo audit`),
+- [x] Threat review of `core/` (seed handling, gate, TLS), dependency audit (`cargo audit`),
       reproducible builds recipe, store metadata, crash reporting **off by default**.
-- [ ] Default endpoint list, certificate pinning setting, `docs/release.md`.
-- [ ] Testnet run against a public `lightwalletd-dd` (`-yellowback`) for ≥ 4 weeks.
+- [x] Default endpoint mechanism (lists empty, `[owner]`), CA-PEM pinning (core, CLI; app field `[owner]`), `docs/release.md`.
+- [ ] `[owner]` Testnet run against a public `lightwalletd-dd` (`-yellowback`) for ≥ 4 weeks.
 
 ### Out of scope, tracked
 Shielded anything (D-W-2); a desktop shell over `yew-core` (natural, later); mempool view
