@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
 
-**Status (2026-09-25, revision 8). W0–W3 and the W4 core complete; W4 app in progress** (§7): mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+**Status (2026-09-25, revision 9). W0–W4 complete; W5 in progress** (§7). The W4 app half (`yew` `07dcff3`, `706b1ab`, `29e1ae4`) adds the ten Yellowback bridge calls and the Yellowback, Mint, progress, Vault and Claimable screens with 14 more widget tests (29 total); the M2 integration test is written and, like M1, unrun for lack of a device. W4 core: mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +35,15 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 9 (2026-09-25) — W4 app delivered; W5 started
+
+`yew` `07dcff3`, `706b1ab`, `29e1ae4`. Verified: 67 core + 5 CLI unit tests, `flutter test` 29,
+analyze clean, import and trust checks green, screens ≤ 294 lines. Unrun: every screen on a
+device, the M2 integration test, the W4 bridge paths against a devnet (exercised only through
+`yew-cli`). Notes: term-class ranges for testnet assumed equal to mainnet (the spec gives mainnet
+and regtest); the underwater flag is judged from the last synced `pMint`; mint progress
+auto-finishes once per synced height when the carrier is confirmed and polls every 15 s.
 
 ### Revision 8 (2026-09-25) — W4 core delivered; §8.6, §8.7 and lightwalletd Q6 answered
 
@@ -739,12 +748,12 @@ platform and the device installs — blocked on Xcode / Android SDK (`[owner]`).
 ### Phase W4 — Yellowback operations, M2 (≈ 2 weeks; core + app)
 - [x] `bundle.rs`, `script.rs` vault and carrier scripts, `build/mint.rs` state machine,
       `build/redeem.rs`, `build/claim.rs`; the sweep — each translated from its §3.6 source.
-- [ ] Screens of §5.3.
+- [x] Screens of §5.3 (widget-tested over the fake bridge; unlaunched).
 **Acceptance — core met 2026-09-25** (`scripts/devnet-w4.sh test`): mint $100/48 blocks
 (collateral 10 YEC, verdict ok, VAULT and TOKEN listed), redeem at lock (burned 10,000 cents,
 9.50009 YEC back), claim of node 0's vault after a −80 % shock (verdict ok, `CLAIMED`), forced
 lapse → sweep returns `CARRIER_VALUE − FEE_ZAT`, kill-and-resume finishes the mint, mutated
-bundle refused naming the attestor, templates reproduced (vectors test). **App half pending.**
+bundle refused naming the attestor, templates reproduced (vectors test). **App half delivered 2026-09-25** (29 widget tests; device runs `[owner]`).
 
 ### Phase W5 — Hardening and release (≈ 2 weeks; then testnet with v3 A7 and lightwalletd L4)
 - [ ] Threat review of `core/` (seed handling, gate, TLS), dependency audit (`cargo audit`),
