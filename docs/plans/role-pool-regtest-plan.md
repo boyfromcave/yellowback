@@ -320,6 +320,26 @@ plan was executed. Y0 is done by the orchestrator before any agent starts.
 - [x] `doc/yellowback-mining.md` operator pointer; `docs/mapping.md` §17 complete
 - [x] this plan §8 final; `role-based-regtest-plan.md` §8 new R-item row; memory note
 
+### Y7 — one pool, no modes (owner decision P-6, 2026-09-28)
+
+The three Perl scripts are one program copy-pasted three times (git history: `stratumpool`
+2020-10-17; `stratumsolo` two days later = pool minus address check and stats; `cenote` a month
+later = pool + `--text` + a reward burn + `--scrooge` which is solo again). `cenote --scrooge`
+≡ `stratumsolo`; `cenote` ≡ `stratumpool` + text. The Rust binary drops the mode concept:
+
+| Flag | Unset | Set |
+|---|---|---|
+| `--payout <s1…>` | the miner's stratum username is the payout address and must validate (`stratumpool`) | every block pays this address (`stratumsolo` / `--scrooge`) |
+| `--text "…"` | the node's scriptSig is used untouched | scriptSig rebuilt as height push ‖ `coinbaseaux.flags` verbatim ‖ text, ≤ 100 bytes |
+
+`--mode`, `--cenote N` and `--scrooge` are removed; `--no-flags` stays hidden for the negative
+test. The tag is carried in all four combinations. Wire format unchanged (the Perl fixtures
+still replay).
+
+- [ ] `yolo/`: collapse `work.rs`/`main.rs`/`stratum.rs` to the two flags; tests become the payout × text grid; `tests/regtest.rs` covers all four cells + `--no-flags` + the 100-byte boundary; README/CHANGELOG (v0.13.0) rewritten; `legacy/perl/README.md` explains why three became one
+- [ ] `ycash-dd`: devnet `--stratum` loses `--stratum-mode`/`--mode` (seat always mines to node 4's payout address via the username; `--text` exposed as `--stratum-text`); `yellowback_stratum.py` iterates the four cells; scenario 3 / devnet README / pool README yolo row updated; CI `YOLO_COMMIT` bumped
+- [ ] full re-verification: `cargo test`, `--features regtest`, `stratum-perl-check`, `yellowback_stratum.py`, one `up --role pool --stratum` smoke
+
 ## 5. Sequencing
 
 ```
@@ -373,4 +393,5 @@ only for convenience; it drives `yolo` directly.
 | Y3 | `yolo-integrate` | **done 2026-09-28** | `yolo/` 6f75633..e449094: `tests/regtest.rs` (5 cases, re-run green by the orchestrator in 9.4 s), Perl at `legacy/perl/`, README + CHANGELOG v0.12.0 |
 | Y4 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 8871bc482, 4c61d5f1d: `up --role pool --stratum [--stratum-mode]`, `pool N stratum start\|stop\|status`, `mine N 4` via `stratum-miner`, `status`/`check`/`down`/`report`; scenario 3 walked in stratum mode (steps 1–5; 132/132 accepted) |
 | Y5 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 5d115175b: `qa/rpc-tests/yellowback_stratum.py` (exec bit, `BASE_SCRIPTS`, `YELLOWBACK_SCRIPTS`, CI checks out yolo at `YOLO_COMMIT`); `Tests successful` re-run by the orchestrator (portseed 4712). CI unverified until yolo is pushed |
+| Y7 | `yolo-onepool`, `devnet-onepool` | in progress | |
 | Y6 | orchestrator | **done 2026-09-28** | `pool/README.md` yolo per-stack section, `doc/yellowback-mining.md` pointer + template-cache note, `role-based-regtest-plan.md` R9, mapping §17 |
