@@ -336,9 +336,9 @@ later = pool + `--text` + a reward burn + `--scrooge` which is solo again). `cen
 test. The tag is carried in all four combinations. Wire format unchanged (the Perl fixtures
 still replay).
 
-- [ ] `yolo/`: collapse `work.rs`/`main.rs`/`stratum.rs` to the two flags; tests become the payout × text grid; `tests/regtest.rs` covers all four cells + `--no-flags` + the 100-byte boundary; README/CHANGELOG (v0.13.0) rewritten; `legacy/perl/README.md` explains why three became one
-- [ ] `ycash-dd`: devnet `--stratum` loses `--stratum-mode`/`--mode` (seat always mines to node 4's payout address via the username; `--text` exposed as `--stratum-text`); `yellowback_stratum.py` iterates the four cells; scenario 3 / devnet README / pool README yolo row updated; CI `YOLO_COMMIT` bumped
-- [ ] full re-verification: `cargo test`, `--features regtest`, `stratum-perl-check`, `yellowback_stratum.py`, one `up --role pool --stratum` smoke
+- [x] `yolo/`: collapse `work.rs`/`main.rs`/`stratum.rs` to the two flags; tests become the payout × text grid; `tests/regtest.rs` covers all four cells + `--no-flags` + the 100-byte boundary; README/CHANGELOG (v0.13.0) rewritten; `legacy/perl/README.md` explains why three became one
+- [x] `ycash-dd`: devnet `--stratum` loses `--stratum-mode`/`--mode` (seat always mines to node 4's payout address via the username; `--text` exposed as `--stratum-text`); `yellowback_stratum.py` iterates the four cells; scenario 3 / devnet README / pool README yolo row updated; CI `YOLO_COMMIT` bumped
+- [x] full re-verification: `cargo test`, `--features regtest`, `stratum-perl-check`, `yellowback_stratum.py`, one `up --role pool --stratum` smoke
 
 ## 5. Sequencing
 
@@ -381,6 +381,7 @@ only for convenience; it drives `yolo` directly.
 | Y-F14 | After an accepted `submitblock`, yolo (like the Perl) kept re-issuing the stale template under new job ids until the next 1 s poll; a fast solver re-solved it and every submit was `inconclusive` (21 rejects in 3 blocks on the devnet). | The miner keys its done-set on prevhash; yolo polls the template immediately after an accepted block (fix in `yolo/` v0.12.x). |
 | Y-F15 | `devnet.json`'s `rpc.url` carries the framework's emoji credentials in the userinfo; a non-Python HTTP client rejects the URI. | The devnet passes yolo a bare URL plus user/password. |
 | Y-F16 | A stratum seat mining one block per second is 100 % of the 64-block participation window, so scenario 3 steps 4–5 (pause below 60 %, PIN-1) do not trigger unless the seat mines at the heartbeat's cadence. | Documented in scenario step 0: mine one block per heartbeat tick for those steps. |
+| Y-F17 | The devnet exported `BITCOIND` only in `up`; `pool N configure` and every other node restart from a fresh shell launched `bitcoind` from PATH. | `load()` exports the recorded binary (`os.environ.setdefault`). |
 | Y-F3 | GPU miners solve 192/7 (mainnet) only; regtest is 48/5, so no real miner can drive a regtest pool. | Python stratum client over `test_framework.equihash` stands in; the stratum layer under test is unchanged. |
 
 ## 8. Implementation status
@@ -393,5 +394,5 @@ only for convenience; it drives `yolo` directly.
 | Y3 | `yolo-integrate` | **done 2026-09-28** | `yolo/` 6f75633..e449094: `tests/regtest.rs` (5 cases, re-run green by the orchestrator in 9.4 s), Perl at `legacy/perl/`, README + CHANGELOG v0.12.0 |
 | Y4 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 8871bc482, 4c61d5f1d: `up --role pool --stratum [--stratum-mode]`, `pool N stratum start\|stop\|status`, `mine N 4` via `stratum-miner`, `status`/`check`/`down`/`report`; scenario 3 walked in stratum mode (steps 1–5; 132/132 accepted) |
 | Y5 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 5d115175b: `qa/rpc-tests/yellowback_stratum.py` (exec bit, `BASE_SCRIPTS`, `YELLOWBACK_SCRIPTS`, CI checks out yolo at `YOLO_COMMIT`); `Tests successful` re-run by the orchestrator (portseed 4712). CI unverified until yolo is pushed |
-| Y7 | `yolo-onepool`, `devnet-onepool` | in progress | |
+| Y7 | `yolo-onepool`, `devnet-onepool` | **done 2026-09-28** | `yolo/` 121e3b4, 1343013 (v0.13.0: `--payout`/`--text`, 34 unit + 8 wire tests, regtest grid re-run by the orchestrator); `ycash-dd` 129112b1f..30f0ac39f + the `load()` BITCOIND fix: devnet seat without modes, `yellowback_stratum.py` four cells + negative (`Tests successful`, portseed 4717), docs, CI pinned at 1343013; devnet smoke with `--stratum-text` |
 | Y6 | orchestrator | **done 2026-09-28** | `pool/README.md` yolo per-stack section, `doc/yellowback-mining.md` pointer + template-cache note, `role-based-regtest-plan.md` R9, mapping §17 |
