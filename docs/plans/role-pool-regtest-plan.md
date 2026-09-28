@@ -300,10 +300,10 @@ plan was executed. Y0 is done by the orchestrator before any agent starts.
 - [x] commit; note in `docs/mapping.md` §17 what the framework solver needed (e.g. header layout for `finalsaplingroot`, nonce byte order)
 
 ### Y3 — parity and integration (agent `yolo-integrate`, after Y1 and Y2)
-- [ ] wire test in `yolo/` replays Y2's fixtures: byte-identical output
-- [ ] `cargo test --features regtest` runs the three modes with the Python miner against a regtest node; tag present in all three; Perl at `legacy/perl/`
-- [ ] `yolo --mode cenote` at the scriptSig 100-byte boundary: text truncated, tag intact, block accepted
-- [ ] `yolo/README.md` rewritten; the Rust binary's `--help` matches it
+- [x] wire test in `yolo/` replays Y2's fixtures: byte-identical output
+- [x] `cargo test --features regtest` runs the three modes with the Python miner against a regtest node; tag present in all three; Perl at `legacy/perl/`
+- [x] `yolo --mode cenote` at the scriptSig 100-byte boundary: text truncated, tag intact, block accepted
+- [x] `yolo/README.md` rewritten; the Rust binary's `--help` matches it
 
 ### Y4 — the devnet seat (agent `devnet-stratum`, worktree of `ycash-dd`, after Y2; needs a yolo binary from Y1)
 - [ ] `up --role pool --stratum`, `pool N stratum start|stop [--mode]`, `mine N 4` via the miner, `status` line, `down`, `report`
@@ -367,7 +367,7 @@ only for convenience; it drives `yolo` directly.
 | Y0 | orchestrator | **done 2026-09-28** | `make status` eleven repos green; commit in the workspace repo |
 | Y1 | `yolo-core` | **done 2026-09-28** | `yolo/` 33752f1..4986631: crate, binary, 32 unit + 6 wire tests, clippy clean, release build verified by the orchestrator; hand-run end-to-end in all three modes with the Python miner (solo/pool/cenote tagged, `--no-flags` untagged, 100-byte scriptSig boundary) |
 | Y2 | `stratum-miner` | **done 2026-09-28** | `wt/stratum-miner` b02d8c6c9..efacdbe41: `contrib/yellowback/devnet/stratum-miner`, `stratum-perl-check` (solo: tag found; cenote: decode failure; cenote-fixed: tag gone) PASS re-run by the orchestrator; fixtures `stratum-perl-{solo,cenote,cenote-fixed}.jsonl` |
-| Y3 | `yolo-integrate` | in progress | |
+| Y3 | `yolo-integrate` | **done 2026-09-28** | `yolo/` 6f75633..e449094: `tests/regtest.rs` (5 cases, re-run green by the orchestrator in 9.4 s), Perl at `legacy/perl/`, README + CHANGELOG v0.12.0 |
 | Y4 | `devnet-stratum` | in progress (with Y5) | |
 | Y5 | | pending Y4 | |
 | Y6 | | pending | |
