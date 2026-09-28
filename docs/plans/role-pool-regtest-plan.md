@@ -282,14 +282,14 @@ plan was executed. Y0 is done by the orchestrator before any agent starts.
 - [x] `git config core.sshCommand` on `yolo/` (the BOY_GH key); `make status` green with eleven repos
 
 ### Y1 — yolo Rust core (agent `yolo-core`, repo `yolo/`, branch `main`)
-- [ ] crate skeleton, `--help`, `--equihash auto|48,5|192,7`, RPC client (`getblockchaininfo`, `getblocktemplate`, `submitblock`, `validateaddress`) with cookie/conf/user-pass auth
-- [ ] template poller (1 s) with change detection on height/target/saplingroot/**flags**
-- [ ] work builder: coinbase per mode (§3.2.4), tx selection under 2 MB, merkle root, header fields reversed as the Perl does
-- [ ] stratum server: subscribe/authorize/extranonce.subscribe/set_target/notify/submit, per-client nonce1 (2-byte client index + 12 random = 28 hex chars, Y-F6), 60 s keepalive re-notify, disconnect on garbage
-- [ ] submit path: assemble block, `submitblock`, map the verdict to `result: true|false`, log the verdict string
-- [ ] tag decode + log on every work build; `GET /status`
-- [ ] unit tests of §3.2.5 (no node needed)
-- [ ] `cargo build --release` clean on stable; `cargo clippy` clean; commit with the Y-F rows it found
+- [x] crate skeleton, `--help`, `--equihash auto|48,5|192,7`, RPC client (`getblockchaininfo`, `getblocktemplate`, `submitblock`, `validateaddress`) with cookie/conf/user-pass auth
+- [x] template poller (1 s) with change detection on height/target/saplingroot/**flags**
+- [x] work builder: coinbase per mode (§3.2.4), tx selection under 2 MB, merkle root, header fields reversed as the Perl does
+- [x] stratum server: subscribe/authorize/extranonce.subscribe/set_target/notify/submit, per-client nonce1 (2-byte client index + 12 random = 28 hex chars, Y-F6), 60 s keepalive re-notify, disconnect on garbage
+- [x] submit path: assemble block, `submitblock`, map the verdict to `result: true|false`, log the verdict string
+- [x] tag decode + log on every work build; `GET /status`
+- [x] unit tests of §3.2.5 (no node needed)
+- [x] `cargo build --release` clean on stable; `cargo clippy` clean; commit with the Y-F rows it found
 
 ### Y2 — Python stratum miner + Perl wire fixtures (agent `stratum-miner`, worktree `wt/stratum-miner` of `ycash-dd`)
 - [x] `contrib/yellowback/devnet/stratum-miner` per §3.3, using `test_framework.equihash.gbp_basic`
@@ -353,6 +353,11 @@ only for convenience; it drives `yolo` directly.
 | Y-F6 | `nonce1` is 14 bytes (`sprintf("%04x")` = 2 bytes + `newkey(12)` = 12), not the 16 the Perl's own comment says (`stratumsolo:22,74`); GPU miners size nonce2 from nonce1's length. | Rust emits exactly 28 hex chars; the miner sizes nonce2 as `32 − len(nonce1)`. |
 | Y-F7 | Framework solver facts: every `mining.notify` field is already in serialised order, so the 108-byte header is the fields concatenated; `hash_nonce` packs the uint256 as LE u32 words = raw nonce bytes; the template `target` is display (BE) hex, compare the LE block hash to `int(target,16)`. The Perl re-sends the same job with `clean_jobs: true` after `extranonce.subscribe` and again after an accepted submit until its next poll: a client must tolerate both or it re-mines and gets `duplicate`. | Encoded in `stratum-miner`; no solver change. |
 | Y-F8 | `stratumsolo` hardcodes port 3334 (`:19`); `cenote` needs `mineraddress=` to be a wallet t-addr for its `ismine` vout scan (`cenote:531-537`). Unpatched `cenote` cannot even produce a decodable block on a tagging node: it assumes the node's scriptSig is exactly 5 bytes (`:522,527`), so with the 37-byte tag the remainder lands in the sequence field and `submitblock` says `Block decode failed`; the "tag dropped, block accepted" outcome needs the length fixed first (`cenote-fixed` in `stratum-perl-check`). | Y-F1 sharpened: the Rust `cenote` parses the real script length; Y5's negative case asserts `found: false` on a *decodable* block. |
+| Y-F9 | The node's `getblocktemplate` caches its block for up to 5 s and rebuilds only on a new tip or a mempool change (`ycash-dd/src/rpc/mining.cpp:652-669`); `yed_setquote` does not invalidate it, so `coinbaseaux.flags` keeps the old price until the next block. Verified live. | Y-F2's re-issue works but its latency is bounded by the node: at most one stale-priced template per block. No node patch (§6); recorded for the mining runbook. |
+| Y-F10 | `getblock <hash> 1` prints `finalsaplingroot` as a value that is *not* the header field (bytes 68..100 = the template's `lightclientroothash`, ZIP-221 under Heartwood); `ycash-dd/src/rpc/mining.cpp:759-761`. | A pool sends the template field, never getblock's; vectors come from `getblock <hash> 0`. |
+| Y-F11 | The 32-byte nonce is serialised raw (nonce1 at header offset 108) but `getblock` displays it byte-reversed, so nonce1 appears at the *end* of the printed nonce. | Pinned by `work::tests::assembled_block_reproduces_block_105_layout`. |
+| Y-F12 | Regtest coinbases have two outputs (miner + founders/YDF, `ycash-dd/src/miner.cpp:304`); `generate` blocks write `height ‖ CScriptNum(extranonce) ‖ flags` while templates write `height ‖ OP_0 ‖ flags` (`miner.cpp:328` vs `:725`). The Perl cenote's 5-byte slice is right only for mainnet heights (65536..8388607 = 4-byte push + OP_0). | "Rewrite the payout output" means `vout[0]`; the tag scan is layout-agnostic; the Rust parses the height push length. |
+| Y-F13 | Perl block-size cap is 2,097,152 (`stratumsolo:27`) vs the node's `sizelimit` 2,000,000; `stratumpool`/`cenote` cap nothing. Perl compact-size has a gap at 65536..65556 (`stratumsolo:358`). | Rust uses the template's `sizelimit`; `codec::compact_size` is correct. |
 | Y-F3 | GPU miners solve 192/7 (mainnet) only; regtest is 48/5, so no real miner can drive a regtest pool. | Python stratum client over `test_framework.equihash` stands in; the stratum layer under test is unchanged. |
 
 ## 8. Implementation status
@@ -360,9 +365,9 @@ only for convenience; it drives `yolo` directly.
 | Item | Owner | State | Evidence |
 |---|---|---|---|
 | Y0 | orchestrator | **done 2026-09-28** | `make status` eleven repos green; commit in the workspace repo |
-| Y1 | `yolo-core` | in progress | |
+| Y1 | `yolo-core` | **done 2026-09-28** | `yolo/` 33752f1..4986631: crate, binary, 32 unit + 6 wire tests, clippy clean, release build verified by the orchestrator; hand-run end-to-end in all three modes with the Python miner (solo/pool/cenote tagged, `--no-flags` untagged, 100-byte scriptSig boundary) |
 | Y2 | `stratum-miner` | **done 2026-09-28** | `wt/stratum-miner` b02d8c6c9..efacdbe41: `contrib/yellowback/devnet/stratum-miner`, `stratum-perl-check` (solo: tag found; cenote: decode failure; cenote-fixed: tag gone) PASS re-run by the orchestrator; fixtures `stratum-perl-{solo,cenote,cenote-fixed}.jsonl` |
-| Y3 | `yolo-integrate` | pending Y1+Y2 | |
-| Y4 | `devnet-stratum` | pending Y2 | |
+| Y3 | `yolo-integrate` | in progress | |
+| Y4 | `devnet-stratum` | in progress (with Y5) | |
 | Y5 | | pending Y4 | |
 | Y6 | | pending | |
