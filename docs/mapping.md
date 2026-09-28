@@ -867,3 +867,16 @@ while executing the plan go below these, cited against `yew/` at the commit wher
 | W2 remote gate `burned == 0` | a redeem or claim legitimately burns the vault's cents | burn-aware gate: `burned == planned_burn`, transfers plan 0 (`core/src/gate.rs` `confirm_burning`, W4) |
 | node wallet `yed_mint wait=true` drives the two steps in-process | a phone can be killed between the carrier and the main transaction | the mint is a persisted `mints` row advanced only by the sync loop; lapse → sweep (W4) |
 | plan §8.6 open question | — | closed: `importprivkey` of a YEW vault owner key on a node wallet lists and redeems the vault (W4) |
+
+## 17. Pool software — `ref/yolo` (Perl) → `yolo/` (Rust)
+
+Rows from `docs/plans/role-pool-regtest-plan.md` (the Y-F findings). `ref/yolo` is pinned at
+`main` @ `c9c155c6`; line citations are at that commit.
+
+| Perl yolo does | Yellowback needs | Adaptation |
+|---|---|---|
+| `cenote` rebuilds the coinbase scriptSig as `substr(coinbasetxn.data, 92, 10)` (the height push) + `--text` (`ref/yolo/cenote:522`), dropping everything the node put after the height push | The Yellowback tag is pushed after the height push (`ycash-dd/contrib/yellowback/pool/README.md`, TAG-1); a rebuilt scriptSig without it is an untagged block: no quote, no signal, no fees for the pool (Y-F1) | The Rust `cenote` mode appends `coinbaseaux.flags` verbatim after the height push (carrier 3 in the pool README); `qa/rpc-tests/yellowback_stratum.py` pins the negative case |
+| `stratumsolo` submits `coinbasetxn.data` untouched; `stratumpool` regex-replaces the output `scriptPubKey` with the miner's (`ref/yolo/stratumpool:499-509`) | Both keep the scriptSig, so the tag survives; the regex is fragile (any byte-equal substring elsewhere in the hex) | Rust parses the v4 transaction and rewrites the output structurally; scriptSig untouched |
+| Work is refreshed only when height, `target` or `finalsaplingroothash` change (`ref/yolo/stratumsolo:222-232`) | The coinbase changes whenever the quote agent publishes (`COINBASE_FLAGS`); a template fetched before that carries a stale but valid price (Y-F2) | Poll at 1 s as before; re-issue work when `coinbaseaux.flags` changes |
+| Serves GPU miners at Equihash 192/7 (mainnet) | Regtest is 48/5 (`ref/ycash/src/chainparams.cpp:560-563`); no GPU miner solves it (Y-F3) | `--equihash auto` derives n,k from `getblockchaininfo.chain`; a Python stratum client over `qa/rpc-tests/test_framework/equihash.py` stands in for the rig |
+| Talks to the node by shelling out to `ycash-cli` with no network flag (`ref/yolo/stratumsolo:283`) | Regtest needs `-regtest -datadir`; a daemon should not fork a CLI per second | JSON-RPC over HTTP with cookie, `ycash.conf` or user/password auth |

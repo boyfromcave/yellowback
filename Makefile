@@ -16,9 +16,12 @@ WALLET_BASE   := $(shell $(REPOS) get yecwallet-dd base)
 LWD_BASE      := $(shell $(REPOS) get lightwalletd-dd base)
 # yew is an app repo (role `app`): its own repository on `main`, no baseline, so diff/log skip it.
 YEW_BRANCH    := $(shell $(REPOS) get yew branch)
+# yolo: ref/yolo is a commit-pinned reference (Perl, yecdev); yolo/ is an app repo (the Rust rewrite).
+YOLO_PIN      := $(shell $(REPOS) get ref/yolo commit)
+YOLO_BRANCH   := $(shell $(REPOS) get yolo branch)
 WORKSPACE     := $(notdir $(CURDIR))
 
-export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH
+export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH YOLO_PIN YOLO_BRANCH
 
 .DEFAULT_GOAL := help
 .PHONY: help bootstrap pull status status-short pins diff log spec spec-check
@@ -28,8 +31,8 @@ help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 		| sort \
 		| awk -F':.*?## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
-	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  lightwalletd=%s  forks: %s off %s / %s / %s  app: yew on %s\033[0m\n' \
-		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(LWD_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)' '$(LWD_BASE)' '$(YEW_BRANCH)'
+	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  lightwalletd=%s  forks: %s off %s / %s / %s  app: yew on %s  yolo: ref %s, app on %s\033[0m\n' \
+		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(LWD_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)' '$(LWD_BASE)' '$(YEW_BRANCH)' '$(YOLO_PIN)' '$(YOLO_BRANCH)'
 
 bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
 	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
@@ -37,7 +40,7 @@ bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 
 pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
 	@scripts/pull.sh $(if $(DRY),--dry-run) $(if $(NOREF),--no-ref) $(if $(SHORT),--short)
 
-status: ## git status across all nine repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
+status: ## git status across all eleven repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
 	@scripts/repo-status.sh && scripts/extract-spec.sh --check
 
 status-short: ## Same as status, without the per-file listing
@@ -77,6 +80,12 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-14s %-20s %s\n' yew \
 		"$$(git -C yew rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C yew rev-parse --short HEAD)"
+	@printf '%-14s %-20s %s\n' ref/yolo \
+		"$$(git -C ref/yolo describe --tags 2>/dev/null || echo 'commit (no tags)')" \
+		"$$(git -C ref/yolo rev-parse --short HEAD)"
+	@printf '%-14s %-20s %s\n' yolo \
+		"$$(git -C yolo rev-parse --abbrev-ref HEAD)" \
+		"$$(git -C yolo rev-parse --short HEAD)"
 
 diff: ## Fork deltas: ycash-dd, yecwallet-dd and lightwalletd-dd vs their -legacy baselines (yew has none)
 	@for r in "ycash-dd $(DD_BASE)" "yecwallet-dd $(WALLET_BASE)" "lightwalletd-dd $(LWD_BASE)"; do set -- $$r; \

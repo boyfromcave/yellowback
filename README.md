@@ -19,6 +19,7 @@ yellowback-workspace/
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= 187a26765e)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo on `main` — plan docs/plans/yellowback-wallet-plan.md
+├── yolo/            THE POOL SOFTWARE (yolo, Rust rewrite of yecdev/yolo), its own repo on `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) and v2 (miner-enforced, delivered)
@@ -291,8 +292,8 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts. The eight nested clones
-under `ref/`, `ycash-dd/`, `yecwallet-dd/`, `lightwalletd-dd/` and `yew/` are plain git repositories (not submodules),
+The workspace repo tracks only the documents, the manifest and the scripts. The ten nested clones
+under `ref/`, `ycash-dd/`, `yecwallet-dd/`, `lightwalletd-dd/`, `yew/` and `yolo/` are plain git repositories (not submodules),
 gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
 
 **Prerequisites:** `git`, `make`, and either `uv` or `python3` (3.10+) for the workspace venv.
@@ -320,7 +321,7 @@ What `make bootstrap` does, in order:
    Foundation, or `yodl` for lightwalletd) is added as remote `upstream` (not fetched).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
-4. `make status-short` — a summary of all nine repos, with the `ref/` pins verified.
+4. `make status-short` — a summary of all eleven repos, with the `ref/` pins verified.
 
 Options, passed as `make` variables:
 
@@ -345,7 +346,7 @@ in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends syst
 ```bash
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
-make status         # git status for all nine repos: fetches origin, ahead/behind, ref/ pins verified
+make status         # git status for all eleven repos: fetches origin, ahead/behind, ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
 make diff           # fork deltas: each fork's branch vs its -legacy baseline

@@ -87,3 +87,16 @@ yew:
   url: https://github.com/boyfromcave/yew.git
   branch: main
   what: YEW, the transparent-only mobile wallet for YEC and YED (Flutter + Rust core)
+
+ref/yolo:
+  role: reference
+  url: https://github.com/yecdev/yolo.git
+  branch: main               # yecdev's Ycash port of ChileBob/StratumPool (Perl); publishes no tags
+  commit: c9c155c6
+  what: yolo, the Perl Ycash solo-pool stratum servers (stratumpool, stratumsolo, cenote): wire-format and behaviour reference for yolo/
+
+yolo:
+  role: app
+  url: https://github.com/boyfromcave/yolo.git
+  branch: main
+  what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)

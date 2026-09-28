@@ -20,12 +20,14 @@ yellowback-workspace/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
 │   ├── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
-│   └── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
+│   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
+│   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
+├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
@@ -51,7 +53,7 @@ copy: DigiByte's widgets read in-process wallet models; YecWallet reads everythi
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All four `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, whose
+All five `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, whose
 upstream publishes no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
@@ -77,6 +79,10 @@ only; the `yed_*` RPC surface is the sole interface between the node and either 
 Mobile-wallet (YEW) client code goes in `yew/` only — its own repository on `main`, not a fork,
 so it has no `-legacy` baseline — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
 gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
+Pool software goes in `yolo/` only — also its own repository on `main` (`ref/yolo` is the Perl
+reference it rewrites) — and the node's stock mining RPCs (`getblocktemplate`, `submitblock`,
+`validateaddress`, `getblockchaininfo`) are its sole interface: a pool never calls `yed_*` and
+never needs a node change (`docs/plans/role-pool-regtest-plan.md` §6).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -177,7 +183,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all nine repos: fetches origin, ahead/behind, pin verification
+make status     # git status across all eleven repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline
