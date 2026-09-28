@@ -71,8 +71,9 @@ not care about n and k; only the solver does, and the test framework already has
 All three poll `getblocktemplate` once a second by shelling out to `ycash-cli`, build the block
 from `coinbasetxn.data` + the template's transactions (2 MB cap), and push
 `mining.notify` to every miner with the header fields **byte-reversed as hex** (`version`,
-`previousblockhash`, `merkleroot`, `finalsaplingroothash`, `time`, `bits`), a 16-byte `nonce1`
-per client (4-byte client index + 12 random bytes, leaving 16 bytes of nonce for the miner), and
+`previousblockhash`, `merkleroot`, `finalsaplingroothash`, `time`, `bits`), a **14-byte** `nonce1`
+per client (2-byte client index + 12 random bytes = 28 hex chars, leaving 18 bytes of nonce for the
+miner; the Perl's `nonce1_size = 16` comment is wrong, Y-F6), and
 `mining.set_target` with the template's `target` as given. On `mining.submit` they assemble
 `version ‖ prev ‖ merkle ‖ saplingroot ‖ nTime(from miner) ‖ bits ‖ nonce1‖nonce2 ‖ solution ‖ txcount ‖ txs`
 and call `submitblock`. Where they differ is the coinbase:
@@ -162,7 +163,7 @@ server produces the same JSON (field order, `null` id on notifications, `"ZcashP
 
 | Message | Shape (from `stratumsolo`) |
 |---|---|
-| `mining.subscribe` → | `{"id":N,"result":[null,"<nonce1 hex, 32 chars>"],"error":null}` |
+| `mining.subscribe` → | `{"id":N,"result":[null,"<nonce1 hex, 28 chars>"],"error":null}` |
 | `mining.authorize` → | `{"id":N,"result": true,"error": null}` (pool mode: validate the username as a transparent address via `validateaddress`; reject with `result:false` if invalid or if `--password` is set and wrong) |
 | `mining.extranonce.subscribe` → | `{"id":N,"result": true,"error": null}` and re-issue target + work |
 | ← `mining.set_target` | `{"id":null,"method":"mining.set_target","params":["<target hex, as the template gives it>"]}` |
@@ -284,19 +285,19 @@ plan was executed. Y0 is done by the orchestrator before any agent starts.
 - [ ] crate skeleton, `--help`, `--equihash auto|48,5|192,7`, RPC client (`getblockchaininfo`, `getblocktemplate`, `submitblock`, `validateaddress`) with cookie/conf/user-pass auth
 - [ ] template poller (1 s) with change detection on height/target/saplingroot/**flags**
 - [ ] work builder: coinbase per mode (§3.2.4), tx selection under 2 MB, merkle root, header fields reversed as the Perl does
-- [ ] stratum server: subscribe/authorize/extranonce.subscribe/set_target/notify/submit, per-client nonce1 (client index + random, 16 bytes), 60 s keepalive re-notify, disconnect on garbage
+- [ ] stratum server: subscribe/authorize/extranonce.subscribe/set_target/notify/submit, per-client nonce1 (2-byte client index + 12 random = 28 hex chars, Y-F6), 60 s keepalive re-notify, disconnect on garbage
 - [ ] submit path: assemble block, `submitblock`, map the verdict to `result: true|false`, log the verdict string
 - [ ] tag decode + log on every work build; `GET /status`
 - [ ] unit tests of §3.2.5 (no node needed)
 - [ ] `cargo build --release` clean on stable; `cargo clippy` clean; commit with the Y-F rows it found
 
 ### Y2 — Python stratum miner + Perl wire fixtures (agent `stratum-miner`, worktree `wt/stratum-miner` of `ycash-dd`)
-- [ ] `contrib/yellowback/devnet/stratum-miner` per §3.3, using `test_framework.equihash.gbp_basic`
-- [ ] `ycash-cli` shim + a script that runs `ref/yolo/stratumsolo` against a regtest node and drives it with the miner: one block accepted, `yed_gettag` finds the tag (proves the fixture and confirms §2.2 row 1 empirically)
-- [ ] same against `ref/yolo/cenote`: block accepted, `yed_gettag` `found: false` (proves Y-F1 empirically)
-- [ ] record the Perl exchanges as `wt/…/contrib/yellowback/devnet/fixtures/stratum-perl-*.jsonl` (both sides, in order) for Y1's wire test — hand them to `yolo/tests/fixtures/` when Y3 integrates
-- [ ] `make check`-style lint: the script runs under the venv from any directory, like the devnet
-- [ ] commit; note in `docs/mapping.md` §17 what the framework solver needed (e.g. header layout for `finalsaplingroot`, nonce byte order)
+- [x] `contrib/yellowback/devnet/stratum-miner` per §3.3, using `test_framework.equihash.gbp_basic`
+- [x] `ycash-cli` shim + a script that runs `ref/yolo/stratumsolo` against a regtest node and drives it with the miner: one block accepted, `yed_gettag` finds the tag (proves the fixture and confirms §2.2 row 1 empirically)
+- [x] same against `ref/yolo/cenote`: block accepted, `yed_gettag` `found: false` (proves Y-F1 empirically)
+- [x] record the Perl exchanges as `wt/…/contrib/yellowback/devnet/fixtures/stratum-perl-*.jsonl` (both sides, in order) for Y1's wire test — hand them to `yolo/tests/fixtures/` when Y3 integrates
+- [x] `make check`-style lint: the script runs under the venv from any directory, like the devnet
+- [x] commit; note in `docs/mapping.md` §17 what the framework solver needed (e.g. header layout for `finalsaplingroot`, nonce byte order)
 
 ### Y3 — parity and integration (agent `yolo-integrate`, after Y1 and Y2)
 - [ ] wire test in `yolo/` replays Y2's fixtures: byte-identical output
@@ -347,6 +348,11 @@ only for convenience; it drives `yolo` directly.
 |---|---|---|
 | Y-F1 | Perl `cenote` rebuilds the coinbase scriptSig as height-push + text (`ref/yolo/cenote:522`), discarding the node's extranonce and with it the Yellowback tag. `stratumsolo` and `stratumpool` keep the scriptSig. | The Rust `cenote` mode appends `coinbaseaux.flags` after the height push (`pool/README.md` carrier 3). Pinned by the negative case in `yellowback_stratum.py`. |
 | Y-F2 | The Perl refreshes work on height/target/saplingroot changes only; a Yellowback coinbase also changes when the quote moves, so a pool serves a stale (still valid) price for up to one poll. | Rust polls at 1 s as before and re-issues work when `coinbaseaux.flags` changes. Cost: one extra `mining.notify` per quote update (agents publish at most every few blocks). |
+| Y-F4 | The Perl reports every non-JSON `submitblock` outcome as accepted: `node_rpc` returns nothing for a non-JSON reply, so `$resp eq ''` (`stratumsolo:126`) matches `Block decode failed`, `time-too-old`, `high-hash`; the reject branches at `:117-125` are dead code. Observed on regtest. | Rust maps the verdict itself: `result: true` only on `null`; the string is logged and counted. |
+| Y-F5 | The Perl stamps the header with wall-clock `time()` (`stratumsolo:379`, `cenote:571`), not the template's `curtime`; a chain generated in a burst has median-time-past ahead of the clock and the block is `time-too-old`. | Rust uses `max(template.curtime, now)`. `stratum-perl-check` generates its chain under `setmocktime`; Y4/Y5 will meet this on the devnet whose heartbeat mines in bursts. |
+| Y-F6 | `nonce1` is 14 bytes (`sprintf("%04x")` = 2 bytes + `newkey(12)` = 12), not the 16 the Perl's own comment says (`stratumsolo:22,74`); GPU miners size nonce2 from nonce1's length. | Rust emits exactly 28 hex chars; the miner sizes nonce2 as `32 − len(nonce1)`. |
+| Y-F7 | Framework solver facts: every `mining.notify` field is already in serialised order, so the 108-byte header is the fields concatenated; `hash_nonce` packs the uint256 as LE u32 words = raw nonce bytes; the template `target` is display (BE) hex, compare the LE block hash to `int(target,16)`. The Perl re-sends the same job with `clean_jobs: true` after `extranonce.subscribe` and again after an accepted submit until its next poll: a client must tolerate both or it re-mines and gets `duplicate`. | Encoded in `stratum-miner`; no solver change. |
+| Y-F8 | `stratumsolo` hardcodes port 3334 (`:19`); `cenote` needs `mineraddress=` to be a wallet t-addr for its `ismine` vout scan (`cenote:531-537`). Unpatched `cenote` cannot even produce a decodable block on a tagging node: it assumes the node's scriptSig is exactly 5 bytes (`:522,527`), so with the 37-byte tag the remainder lands in the sequence field and `submitblock` says `Block decode failed`; the "tag dropped, block accepted" outcome needs the length fixed first (`cenote-fixed` in `stratum-perl-check`). | Y-F1 sharpened: the Rust `cenote` parses the real script length; Y5's negative case asserts `found: false` on a *decodable* block. |
 | Y-F3 | GPU miners solve 192/7 (mainnet) only; regtest is 48/5, so no real miner can drive a regtest pool. | Python stratum client over `test_framework.equihash` stands in; the stratum layer under test is unchanged. |
 
 ## 8. Implementation status
@@ -355,7 +361,7 @@ only for convenience; it drives `yolo` directly.
 |---|---|---|---|
 | Y0 | orchestrator | **done 2026-09-28** | `make status` eleven repos green; commit in the workspace repo |
 | Y1 | `yolo-core` | in progress | |
-| Y2 | `stratum-miner` | in progress | |
+| Y2 | `stratum-miner` | **done 2026-09-28** | `wt/stratum-miner` b02d8c6c9..efacdbe41: `contrib/yellowback/devnet/stratum-miner`, `stratum-perl-check` (solo: tag found; cenote: decode failure; cenote-fixed: tag gone) PASS re-run by the orchestrator; fixtures `stratum-perl-{solo,cenote,cenote-fixed}.jsonl` |
 | Y3 | `yolo-integrate` | pending Y1+Y2 | |
 | Y4 | `devnet-stratum` | pending Y2 | |
 | Y5 | | pending Y4 | |
