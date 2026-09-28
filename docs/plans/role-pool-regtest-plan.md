@@ -306,19 +306,19 @@ plan was executed. Y0 is done by the orchestrator before any agent starts.
 - [x] `yolo/README.md` rewritten; the Rust binary's `--help` matches it
 
 ### Y4 — the devnet seat (agent `devnet-stratum`, worktree of `ycash-dd`, after Y2; needs a yolo binary from Y1)
-- [ ] `up --role pool --stratum`, `pool N stratum start|stop [--mode]`, `mine N 4` via the miner, `status` line, `down`, `report`
-- [ ] `scenarios/3-pool.md` updated per §3.4; `contrib/yellowback/devnet/README.md` role section
-- [ ] one hand-run of scenario 3 with `--stratum`, notes in the session `NOTES.md`, findings into §7
+- [x] `up --role pool --stratum`, `pool N stratum start|stop [--mode]`, `mine N 4` via the miner, `status` line, `down`, `report`
+- [x] `scenarios/3-pool.md` updated per §3.4; `contrib/yellowback/devnet/README.md` role section
+- [x] one hand-run of scenario 3 with `--stratum`, notes in the session `NOTES.md`, findings into §7
 
 ### Y5 — the functional test (agent `devnet-stratum` or `yolo-integrate`)
-- [ ] `qa/rpc-tests/yellowback_stratum.py` per §3.5; registered in the runner, named in `YELLOWBACK_SCRIPTS`, executable bit
-- [ ] the fork's CI job builds `yolo` (checkout of `boyfromcave/yolo` at a recorded commit) and exports `YOLO_BIN`
-- [ ] green locally with `--portseed` distinct from any other running suite
+- [x] `qa/rpc-tests/yellowback_stratum.py` per §3.5; registered in the runner, named in `YELLOWBACK_SCRIPTS`, executable bit
+- [x] the fork's CI job builds `yolo` (checkout of `boyfromcave/yolo` at a recorded commit) and exports `YOLO_BIN`
+- [x] green locally with `--portseed` distinct from any other running suite
 
 ### Y6 — docs (whoever finishes last, then orchestrator review)
-- [ ] `contrib/yellowback/pool/README.md` per-stack: yolo row verified; cenote note rewritten from "expected" to "fixed in yolo (Rust) — Perl cenote drops the tag"
-- [ ] `doc/yellowback-mining.md` operator pointer; `docs/mapping.md` §17 complete
-- [ ] this plan §8 final; `role-based-regtest-plan.md` §8 new R-item row; memory note
+- [x] `contrib/yellowback/pool/README.md` per-stack: yolo row verified; cenote note rewritten from "expected" to "fixed in yolo (Rust) — Perl cenote drops the tag"
+- [x] `doc/yellowback-mining.md` operator pointer; `docs/mapping.md` §17 complete
+- [x] this plan §8 final; `role-based-regtest-plan.md` §8 new R-item row; memory note
 
 ## 5. Sequencing
 
@@ -358,6 +358,9 @@ only for convenience; it drives `yolo` directly.
 | Y-F11 | The 32-byte nonce is serialised raw (nonce1 at header offset 108) but `getblock` displays it byte-reversed, so nonce1 appears at the *end* of the printed nonce. | Pinned by `work::tests::assembled_block_reproduces_block_105_layout`. |
 | Y-F12 | Regtest coinbases have two outputs (miner + founders/YDF, `ycash-dd/src/miner.cpp:304`); `generate` blocks write `height ‖ CScriptNum(extranonce) ‖ flags` while templates write `height ‖ OP_0 ‖ flags` (`miner.cpp:328` vs `:725`). The Perl cenote's 5-byte slice is right only for mainnet heights (65536..8388607 = 4-byte push + OP_0). | "Rewrite the payout output" means `vout[0]`; the tag scan is layout-agnostic; the Rust parses the height push length. |
 | Y-F13 | Perl block-size cap is 2,097,152 (`stratumsolo:27`) vs the node's `sizelimit` 2,000,000; `stratumpool`/`cenote` cap nothing. Perl compact-size has a gap at 65536..65556 (`stratumsolo:358`). | Rust uses the template's `sizelimit`; `codec::compact_size` is correct. |
+| Y-F14 | After an accepted `submitblock`, yolo (like the Perl) kept re-issuing the stale template under new job ids until the next 1 s poll; a fast solver re-solved it and every submit was `inconclusive` (21 rejects in 3 blocks on the devnet). | The miner keys its done-set on prevhash; yolo polls the template immediately after an accepted block (fix in `yolo/` v0.12.x). |
+| Y-F15 | `devnet.json`'s `rpc.url` carries the framework's emoji credentials in the userinfo; a non-Python HTTP client rejects the URI. | The devnet passes yolo a bare URL plus user/password. |
+| Y-F16 | A stratum seat mining one block per second is 100 % of the 64-block participation window, so scenario 3 steps 4–5 (pause below 60 %, PIN-1) do not trigger unless the seat mines at the heartbeat's cadence. | Documented in scenario step 0: mine one block per heartbeat tick for those steps. |
 | Y-F3 | GPU miners solve 192/7 (mainnet) only; regtest is 48/5, so no real miner can drive a regtest pool. | Python stratum client over `test_framework.equihash` stands in; the stratum layer under test is unchanged. |
 
 ## 8. Implementation status
@@ -368,6 +371,6 @@ only for convenience; it drives `yolo` directly.
 | Y1 | `yolo-core` | **done 2026-09-28** | `yolo/` 33752f1..4986631: crate, binary, 32 unit + 6 wire tests, clippy clean, release build verified by the orchestrator; hand-run end-to-end in all three modes with the Python miner (solo/pool/cenote tagged, `--no-flags` untagged, 100-byte scriptSig boundary) |
 | Y2 | `stratum-miner` | **done 2026-09-28** | `wt/stratum-miner` b02d8c6c9..efacdbe41: `contrib/yellowback/devnet/stratum-miner`, `stratum-perl-check` (solo: tag found; cenote: decode failure; cenote-fixed: tag gone) PASS re-run by the orchestrator; fixtures `stratum-perl-{solo,cenote,cenote-fixed}.jsonl` |
 | Y3 | `yolo-integrate` | **done 2026-09-28** | `yolo/` 6f75633..e449094: `tests/regtest.rs` (5 cases, re-run green by the orchestrator in 9.4 s), Perl at `legacy/perl/`, README + CHANGELOG v0.12.0 |
-| Y4 | `devnet-stratum` | in progress (with Y5) | |
-| Y5 | | pending Y4 | |
-| Y6 | | pending | |
+| Y4 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 8871bc482, 4c61d5f1d: `up --role pool --stratum [--stratum-mode]`, `pool N stratum start\|stop\|status`, `mine N 4` via `stratum-miner`, `status`/`check`/`down`/`report`; scenario 3 walked in stratum mode (steps 1–5; 132/132 accepted) |
+| Y5 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 5d115175b: `qa/rpc-tests/yellowback_stratum.py` (exec bit, `BASE_SCRIPTS`, `YELLOWBACK_SCRIPTS`, CI checks out yolo at `YOLO_COMMIT`); `Tests successful` re-run by the orchestrator (portseed 4712). CI unverified until yolo is pushed |
+| Y6 | orchestrator | **done 2026-09-28** | `pool/README.md` yolo per-stack section, `doc/yellowback-mining.md` pointer + template-cache note, `role-based-regtest-plan.md` R9, mapping §17 |
