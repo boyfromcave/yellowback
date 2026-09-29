@@ -42,7 +42,10 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**Two forks, one feature.** The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
+**One overlay, five repos.** Yellowback is an overlay on the node; around it sit the GUI wallet,
+lightwalletd, the mobile wallet (YEW) and the mining pool (yolo), each in its own repo and each
+reaching the node only through a public interface (README.md, the components table).
+The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
 the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
 fork the way `src/digidollar/` is for the node fork — and it is just as much *not* source to
