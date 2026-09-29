@@ -42,7 +42,7 @@ yellowback-workspace/
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) on v2 (miner-enforced, delivered);
 │   │                lightwalletd, mobile wallet (YEW), role-based regtest and pool (yolo) plans; README.md indexes them
 │   ├── reference/   the proposals the plans were written from (miner-enforced = v2, price attestation = v3)
-│   ├── ideation/    inactive experimental ideas — not plans, nothing here is being built
+│   ├── ideation/    README only — experimental ideas live on `ideation/*` branches, never on main
 │   ├── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
 │   ├── why-miner-enforced.md        the plain-language rationale for the v2 design
 │   └── innovation-acknowledgements.md   what DigiDollar contributed, and where Yellowback diverges
@@ -95,7 +95,7 @@ the miner is the only party who can refuse a transaction without a consensus cha
 
 **No federation.** A 5-of-9 federation prototype was built, worked on regtest, and was **retired on
 2026-09-10** because it put a counterparty on redemption. It survives as
-`docs/plans/archived/` and as the `feature/digidollar` branch in both forks — a record, never an
+tag `archive/v1-federation` (see `docs/plans/archived/`) and as the `feature/digidollar` branch in both forks — a record, never an
 input, never built on.
 
 **Yellowback v3 adds a second price population.** In v2 every price comes from one place — the
@@ -210,7 +210,7 @@ the trust statement in
 [docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md) §8.1,
 which must be published verbatim with v2. The full trade-off table, each row with the plan citation
 that bounds it, is [docs/why-miner-enforced.md](docs/why-miner-enforced.md) §5; that document also
-explains why miner enforcement was chosen over a federation (retired, `docs/plans/archived/`) and
+explains why miner enforcement was chosen over a federation (retired; tag `archive/v1-federation`, see `docs/plans/archived/`) and
 over a network upgrade. **Consensus enforcement is still the destination** — the validator is
 written so a later Ycash network upgrade would change who runs the check, not what it checks
 (plan §9).
@@ -277,8 +277,9 @@ specifically, and where the two designs part company on principle:
    It is a **delta on v2**, so keep
    **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)**
    beside it — the delivered plan, whose §3 still governs everything v3 does not restate, and whose
-   `feature/yellowback-sf` branch is the diff baseline. `docs/plans/archived/` is the retired
-   federation design (history only); `docs/ideation/` holds inactive experimental ideas.
+   `feature/yellowback-sf` branch is the diff baseline. `docs/plans/archived/` points at the retired
+   federation design (tag `archive/v1-federation`, history only); `docs/ideation/` lists the
+   `ideation/*` branches that hold inactive experimental ideas.
    **[docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md)**
    is the proposal v3 implements, and its audit companion records what three review passes changed.
 5. **[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)** — what the

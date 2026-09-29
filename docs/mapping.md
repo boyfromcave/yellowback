@@ -359,11 +359,11 @@ not a soundness matter: the v1 wallet builder (plan D9) and the redemption co-si
 
 ---
 
-## 11. Rows added while writing the federation prototype's plan (2026-09, retired)
+## 11. Rows from the retired federation prototype (2026-09; design archived at tag `archive/v1-federation`, traps still real)
 
 All cites at the pinned tags. The impedance mismatches recorded here still hold for the current
 design; the federation-specific adaptations (anchor UTXO, roster, co-signing) were retired with
-that design on 2026-09-10 (its plan is history under `plans/archived/`; the current plan is
+that design on 2026-09-10 (its plan is history at tag `archive/v1-federation`, see `plans/archived/`; the current plan is
 [`plans/yellowback-v2-development-plan.md`](plans/yellowback-v2-development-plan.md)).
 
 | DigiByte does X (Y, mechanism M) | Ycash equivalent Z, which lacks M | Adaptation W |

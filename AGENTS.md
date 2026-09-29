@@ -32,8 +32,8 @@ yellowback-workspace/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
 │   │                implementation; v2 = the delivered miner-enforced plan v3 is a delta on)
-│   │   └── archived/   the retired federation design — history only, never an input
-│   ├── ideation/    experimental ideas, inactive — not plans, nothing there is being built
+│   │   └── archived/   README only: the retired federation design lives at tag `archive/v1-federation`
+│   ├── ideation/    README only: experimental ideas live on `ideation/*` branches, never on main
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), repos.sh, repo-status.sh, extract-spec.sh (`make spec`)

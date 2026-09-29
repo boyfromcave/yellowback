@@ -1,16 +1,20 @@
 # `docs/plans/archived/`
 
-**Inactive. History only.** These documents describe the **federation design** of Ycash Yellowback
-(YED) that was replaced on 2026-09-10 by the miner-enforced design in
-[`../yellowback-v2-development-plan.md`](../yellowback-v2-development-plan.md). Nothing here is an
-input to current work: every rule, constraint and finding the current plan relies on is stated in
-that plan. These files are kept because the prototype code on branch `feature/digidollar` was built
-from them and its history cites their identifiers.
+**Inactive. History only.** The **federation design** of Ycash Yellowback (YED) was replaced on
+2026-09-10 by the miner-enforced design ([`../yellowback-v2-development-plan.md`](../yellowback-v2-development-plan.md);
+the rationale is [`../../why-miner-enforced.md`](../../why-miner-enforced.md)). Nothing in it is
+an input to current work: every rule, constraint and finding the current plans rely on is stated
+in those plans.
 
-| Document | What it was |
-|---|---|
-| `yellowback-v1-development-plan.md` | The federation plan (revision 17): 5-of-9 co-signed redemptions, anchor-UTXO price feed, zero consensus lines. |
-| `yellowback-v1-hardening-plan.md` | Wallet-side hardening items H1–H12 for that design. The items themselves are carried forward, inlined, as Phase 8 of the current plan. |
-| `yellowback-adaptation-spec.md` | The normative protocol of the federation design (its §3, reproduced). The current normative protocol is §3 of the current plan, published as `../../spec/yellowback-spec.md` in Phase 0. |
+Its documents are not on `main`. They live at the tag **`archive/v1-federation`** (the workspace
+as it stood at the end of that design):
 
-Do not edit, cite or extend these. If something here seems needed, state it in the current plan.
+```bash
+git show archive/v1-federation:docs/plans/yellowback-v1-development-plan.md   # the federation plan (revision 17)
+git show archive/v1-federation:docs/plans/yellowback-v1-hardening-plan.md     # wallet hardening H1–H12 (carried forward as v2 Phase 8)
+git show archive/v1-federation:docs/spec/yellowback-adaptation-spec.md        # its normative protocol (superseded by ../../spec/yellowback-spec.md)
+```
+
+The prototype code built from them is the `feature/digidollar` branch in `ycash-dd` and
+`yecwallet-dd`, kept as a record and never built on (AGENTS.md rule 2). Citations of the form
+`archived/yellowback-v1-development-plan.md:NNNN` in the current plans refer to the file at that tag.

@@ -160,7 +160,7 @@ launch inputs, §12 the open questions. Implementers start at §6 and refer back
 
 **Relation to the other documents.** The wallet-side hardening items (coin selection and coin
 locking, H1–H12) are stated inline in Phase 8 of this plan. The interoperability idea lives in
-`../ideation/` and is inactive; it builds on the `yed_*` index, not on anything this plan changes.
+`../ideation/` (branch `ideation/interoperability`) and is inactive; it builds on the `yed_*` index, not on anything this plan changes.
 [`../why-miner-enforced.md`](../why-miner-enforced.md) is the plain-language rationale for this
 plan: the rule Ycash script cannot express, why every no-fork remedy ends in a committee, why
 miners, and the trade-offs of §1 and §8 in one table.
@@ -3909,7 +3909,7 @@ New rows:
    is added** — a value no rule reads would contradict K10's versioning rule and invite drift; a
    later slice is a new parameter plus one output rule in a release (M15).
 5. **Exchange support** (proposal Q6): the read-only `yed_*` RPCs (and, if ever revived, the inactive
-   indexer-service idea in `../ideation/`) cover it; a standalone verification library is not planned.
+   indexer-service idea on branch `ideation/interoperability`) cover it; a standalone verification library is not planned.
 6. **Shielded YED** (V8): research; requires a value-pool commitment in consensus.
 7. **σ calibration and the 3× cap** (V17): the cap is a safety rail, not a model; revisit with data.
 8. **Burying activation** (§9): after mainnet activation, pin `activateHeight` in a release? (The
@@ -4000,5 +4000,5 @@ sunset — two things a consensus rule never needs and a subset-enforced rule mu
 ---
 
 **Provenance.** The federation prototype this plan strips and builds on was designed in the
-archived documents under `archived/` (development plan, hardening plan, protocol spec). They are
+archived documents under `archived/` (development plan, hardening plan, protocol spec; on `main` only as a README pointing at tag `archive/v1-federation`). They are
 history, not inputs: every rule, constraint and finding this plan relies on is stated in this plan.
