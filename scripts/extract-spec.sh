@@ -5,6 +5,7 @@
 #
 # Usage: scripts/extract-spec.sh            write every copy         (`make spec`)
 #        scripts/extract-spec.sh --check    exit 1 when any is stale  (`make spec-check`, run by `make status`)
+#        scripts/extract-spec.sh --check-workspace   only the copies in this repo (the workspace CI, which has no clones)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.

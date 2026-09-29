@@ -426,11 +426,15 @@ def contract_text(lines, lines_v3=None):
 
 def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
-    if mode not in ("--write", "--check"):
-        die("usage: extract_spec.py [--write|--check]")
+    if mode not in ("--write", "--check", "--check-workspace"):
+        die("usage: extract_spec.py [--write|--check|--check-workspace]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
     outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
+    if mode == "--check-workspace":
+        # The workspace CI has no nested clones: compare only the copies that live in this repo.
+        outputs = [(p, t) for p, t in outputs if os.path.relpath(p, ROOT).startswith("docs" + os.sep)]
+        mode = "--check"
     stale = []
     for path, text in outputs:
         rel = os.path.relpath(path, ROOT)
