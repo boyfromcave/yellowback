@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Recreate this workspace on a fresh machine from repos.yaml: the read-only reference clones at
-# their pins, the two working forks on their feature branch, and the Python venv.
+# their pins, the working forks on their feature branch, the app repos on their branch, and the
+# Python venv.
 #
 #   scripts/bootstrap.sh [--ssh] [--no-venv] [--dry-run]
 #
-#   --ssh      clone the working forks over git@github.com: (you intend to push); references
-#              stay on https, they are never pushed to
+#   --ssh      clone the working forks and app repos over git@github.com: (you intend to push);
+#              references stay on https, they are never pushed to
 #   --no-venv  skip the Python virtual environment
 #   --dry-run  print what would be done and exit
 #
@@ -57,23 +58,24 @@ head_is() {  # <path> <short-commit>: HEAD starts with the pinned prefix
 
 bootstrap_reference() {
   local path="$1" url="$2" tag="$3" commit="$4" dir="$WORKSPACE/$path"
+  # No tag (the manifest omits it): the pin is the commit itself, detached.
   if [ -e "$dir/.git" ]; then
     local have; have="$(git -C "$dir" describe --tags --exact-match HEAD 2>/dev/null || true)"
-    if [ "$have" = "$tag" ] && head_is "$dir" "$commit"; then ok "$path exists at $tag ($commit)"
-    else warn "$path exists but is at '${have:-$(git -C "$dir" rev-parse --short HEAD)}', expected $tag ($commit) — see AGENTS.md rule 1 to re-pin"; fi
+    if [ "$have" = "$tag" ] && head_is "$dir" "$commit"; then ok "$path exists at ${tag:-commit} $commit"
+    else warn "$path exists but is at '${have:-$(git -C "$dir" rev-parse --short HEAD)}', expected ${tag:-commit} $commit — see AGENTS.md rule 1 to re-pin"; fi
     if [ -w "$dir" ]; then warn "$path is writable; it should be read-only (chmod -R a-w, .git kept writable)"; fi
     return
   fi
   say "  cloning $path from $url"
   run git -c advice.detachedHead=false clone --quiet "$url" "$dir"
-  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "tags/$tag"
-  if [ "$DRY" -eq 0 ]; then
+  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "${tag:+tags/$tag}${tag:-$commit}"
+  if [ "$DRY" -eq 0 ] && [ -n "$tag" ]; then
     head_is "$dir" "$commit" || die "$path: tag $tag resolves to $(git -C "$dir" rev-parse --short HEAD), manifest says $commit — the tag moved upstream; do not proceed without updating the pin deliberately"
   fi
   # Enforce "never edit the reference" on the filesystem; git itself still needs its metadata.
   run chmod -R a-w "$dir"
   run chmod -R u+w "$dir/.git"
-  ok "$path cloned, detached at $tag, read-only"
+  ok "$path cloned, detached at ${tag:-$commit}, read-only"
 }
 
 bootstrap_fork() {
@@ -105,6 +107,26 @@ bootstrap_fork() {
   ok "$path cloned on $branch; $base tracks origin/$base${upstream:+; remote 'upstream' = $upstream (not fetched)}"
 }
 
+# An app repo (role `app`) is a repository of its own: writable, `branch` checked out, no
+# baseline, no upstream remote. Existing clones are verified for URL and branch and left alone.
+bootstrap_app() {
+  local path="$1" url="$2" branch="$3" dir="$WORKSPACE/$path"
+  [ "$SSH" -eq 1 ] && url="$(ssh_url "$url")"
+  if [ -e "$dir/.git" ]; then
+    local cur have; cur="$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+    if [ "$cur" = "$branch" ]; then ok "$path exists on $branch"; else warn "$path exists but is on '$cur', expected $branch"; fi
+    have="$(git -C "$dir" remote get-url origin 2>/dev/null || true)"
+    case "${have%.git}" in   # https or ssh spelling of the manifest URL, with or without .git
+      "${url%.git}"|"$(ssh_url "${url%.git}")") ;;
+      *) warn "$path: origin is '$have', manifest says $url" ;;
+    esac
+    return
+  fi
+  say "  cloning $path from $url"
+  run git clone --quiet --branch "$branch" "$url" "$dir"
+  ok "$path cloned on $branch"
+}
+
 bootstrap_venv() {
   local venv="$WORKSPACE/.venv" py="$WORKSPACE/.venv/bin/python"
   if [ -x "$py" ]; then ok ".venv exists ($("$py" --version 2>&1))"
@@ -129,6 +151,7 @@ for path in $("$REPOS" list); do
     reference) bootstrap_reference "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" tag)" "$("$REPOS" get "$path" commit)" ;;
     fork)      bootstrap_fork "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" upstream)" \
                               "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" base)" "$("$REPOS" get "$path" base-commit)" ;;
+    app)       bootstrap_app "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" ;;
     *) die "$path: unknown role '$role' in repos.yaml" ;;
   esac
 done

@@ -14,9 +14,15 @@
 # Roles:
 #   reference  read-only. Detached at `tag`; `commit` is the tag's commit (a short prefix is
 #              enough) and is verified after checkout; the working tree is `chmod -R a-w`.
+#              A repository that publishes no tags omits `tag`: it is detached at `commit`
+#              itself, and `branch` records which upstream branch that commit was taken from.
 #   fork       writable. `branch` is checked out; `base` (the pristine baseline the fork diff
 #              is measured against) is created as a local tracking branch; `base-commit` must
 #              equal the matching reference pin; `upstream` is added as a remote, not fetched.
+#   app        writable. `branch` is checked out; no `base`, no `upstream`, not `chmod a-w`.
+#              A repository of its own (nothing is ported into it), so there is no baseline to
+#              diff against: `make status` only checks it is on `branch`; `make diff`/`make log`
+#              skip it.
 #
 # Re-pinning a reference is rare and deliberate: change `tag` and `commit` here, then update
 # the mirrors in AGENTS.md and docs/mapping.md — every file:line citation depends on them.
@@ -42,11 +48,18 @@ ref/yecwallet:
   commit: 1eb277d
   what: YecWallet GUI (Qt 6, bundles ycashd), pristine baseline for yecwallet-dd
 
+ref/lightwalletd:
+  role: reference
+  url: https://github.com/yodl/lightwalletd.git
+  branch: master             # zcash/lightwalletd 0.4.6 + 4 commits (Ycash s-address regex); the commit carries no tag
+  commit: 187a26765e
+  what: Ycash lightwalletd (yodl's fork of zcash/lightwalletd; Go, gRPC light-client server), pristine baseline for lightwalletd-dd
+
 ycash-dd:
   role: fork
   url: https://github.com/boyfromcave/ycash-dd.git
   upstream: https://github.com/ycashfoundation/ycash.git
-  branch: feature/digidollar
+  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
   base: ycash-legacy
   base-commit: 624c12814     # = ref/ycash pin
   what: working fork of the node (Yellowback overlay, yed_* RPCs)
@@ -55,7 +68,35 @@ yecwallet-dd:
   role: fork
   url: https://github.com/boyfromcave/yecwallet-dd.git
   upstream: https://github.com/ycashfoundation/yecwallet.git
-  branch: feature/digidollar
+  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
   base: yecwallet-legacy
   base-commit: 1eb277d       # = ref/yecwallet pin
-  what: working fork of the wallet (Yellowback tab, redemption wizard)
+  what: working fork of the wallet (Yellowback tab)
+
+lightwalletd-dd:
+  role: fork
+  url: https://github.com/boyfromcave/lightwalletd.git
+  upstream: https://github.com/yodl/lightwalletd.git
+  branch: feature/yellowback-price-attest   # cut from master (= 187a26765e), the same name as the other forks
+  base: lightwalletd-legacy
+  base-commit: 187a26765e    # = ref/lightwalletd pin
+  what: working fork of lightwalletd (Yellowback light-client support)
+
+yew:
+  role: app
+  url: https://github.com/boyfromcave/yew.git
+  branch: main
+  what: YEW, the transparent-only mobile wallet for YEC and YED (Flutter + Rust core)
+
+ref/yolo:
+  role: reference
+  url: https://github.com/yecdev/yolo.git
+  branch: main               # yecdev's Ycash port of ChileBob/StratumPool (Perl); publishes no tags
+  commit: c9c155c6
+  what: yolo, the Perl Ycash solo-pool stratum servers (stratumpool, stratumsolo, cenote): wire-format and behaviour reference for yolo/
+
+yolo:
+  role: app
+  url: https://github.com/boyfromcave/yolo.git
+  branch: main
+  what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)

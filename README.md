@@ -4,33 +4,118 @@ Bring a decentralized digital dollar to **Ycash** as **Ycash Yellowback (YED)**,
 reference implementation — with the smallest possible change to the Ycash codebase.
 
 The reference and target repos are pinned, side by side, so an agent or a human can read the
-reference and the target at the same time without confusing one for the other. There are two
-targets, because Ycash users reach the node through a GUI: **YecWallet**, a Qt application that
-bundles `ycashd` and drives it over RPC.
+reference and the target at the same time without confusing one for the other.
+
+Yellowback is an **overlay on the Ycash node**: a colored-output token model, an index and a set
+of `yed_*` RPCs that live in `ycash-dd` behind a `-yellowback` flag, enforced by the mining pools
+that run it. Around that node sit four compatible components, each its own repository in this
+workspace, each reaching Yellowback only through the node's public interfaces:
+
+| Component | Repo | What it is | Talks to the node through | Plan |
+|---|---|---|---|---|
+| **Node** | `ycash-dd/` (fork of Ycash `v4.5.0`) | `ycashd` with the Yellowback overlay, the `yed_*` RPCs, the coinbase price tag and the miner-side enforcement | — (it *is* the node) | [v3](docs/plans/yellowback-v3-development-plan.md) on [v2](docs/plans/yellowback-v2-development-plan.md) |
+| **Full-node GUI wallet** | `yecwallet-dd/` (fork of YecWallet `v4.5.0`) | YecWallet with a Yellowback tab: mint, send, redeem, claim, sweep; bundles `ycashd` | JSON-RPC (`yed_*`) | v2 §4.8 / v3, wallet chunks |
+| **Light-client server** | `lightwalletd-dd/` (fork of yodl/lightwalletd) | lightwalletd with a second gRPC service, `YellowbackStreamer`, each method a read-only proxy of a `yed_*` RPC | JSON-RPC (`yed_*`) | [lightwalletd plan](docs/plans/yellowback-lightwalletd-plan.md) |
+| **Mobile wallet** | `yew/` (own repo) | YEW: iOS/Android, Flutter over a Rust core; transparent-only YEC + YED, mint/redeem/claim | lightwalletd's gRPC (`CompactTxStreamer` + `YellowbackStreamer`), never the node directly | [wallet plan](docs/plans/yellowback-wallet-plan.md) |
+| **Mining pool** | `yolo/` (own repo; Rust rewrite of yecdev/yolo) | stratum solo-pool server for GPU miners; carries the node's Yellowback coinbase tag into every block it builds | the stock mining RPCs (`getblocktemplate`, `submitblock`), never `yed_*` | [pool regtest plan](docs/plans/role-pool-regtest-plan.md) |
+
+The node is the only place a rule lives. The wallet, the light server and the mobile app show
+and spend YED; the pool is how the rule is *enforced*, since a Yellowback block is one a pool
+built from the node's template, tag included. Each component has a read-only reference under
+`ref/` (the pristine upstream it forks or rewrites) so its whole delta is one `git diff`.
 
 ```
 yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY  DigiByte  @ v9.26.5  — the DigiDollar reference (node + Qt GUI)
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
-│   └── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
-├── ycash-dd/        WORKING FORK of the node   — `feature/digidollar` off `ycash-legacy`     (= v4.5.0)
-├── yecwallet-dd/    WORKING FORK of the wallet — `feature/digidollar` off `yecwallet-legacy` (= v4.5.0)
+│   ├── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
+│   ├── lightwalletd/ READ-ONLY yodl/lightwalletd @ master 187a26765e (0.4.6 + 4, no tag) — the pristine light-client server
+│   └── yolo/        READ-ONLY  yecdev/yolo @ main c9c155c6 (no tag) — the Perl stratum pools the Rust yolo rewrites
+├── ycash-dd/        WORKING FORK of the node   — `feature/yellowback-price-attest` off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
+├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= 187a26765e)
+├── yew/             THE MOBILE WALLET (YEW), its own repo on `main` — plan docs/plans/yellowback-wallet-plan.md
+├── yolo/            THE POOL SOFTWARE (yolo, Rust rewrite of yecdev/yolo), its own repo on `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── docs/
-│   ├── spec/        DigiDollar's own design docs + our Ycash adaptation spec
-│   ├── plans/       the development plan (node, federation, wallet GUI, single-machine testing)
-│   └── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
+│   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
+│   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) on v2 (miner-enforced, delivered);
+│   │                lightwalletd, mobile wallet (YEW), role-based regtest and pool (yolo) plans; README.md indexes them
+│   ├── reference/   the proposals the plans were written from (miner-enforced = v2, price attestation = v3)
+│   ├── ideation/    README only — experimental ideas live on `ideation/*` branches, never on main
+│   ├── mapping.md   the file-by-file, mechanism-by-mechanism crosswalk
+│   ├── why-miner-enforced.md        the plain-language rationale for the v2 design
+│   └── innovation-acknowledgements.md   what DigiDollar contributed, and where Yellowback diverges
 ├── repos.yaml       THE MANIFEST — every repo, its URL and its pin (no submodules)
 ├── Makefile         `make bootstrap` — recreate the workspace; `make status` — repo state + pin check
-├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh
+├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
-├── yellowback.code-workspace   VS Code: parent + all five clones as roots, ref/ read-only
+├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
+├── yellowback.code-workspace   VS Code: parent + all ten clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
 
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
-filesystem, not just documented. All work happens in `ycash-dd/` (node) and `yecwallet-dd/`
-(wallet); the `yed_*` RPC surface is the only interface between the two.
+filesystem, not just documented. All work happens in the three forks (`ycash-dd/`,
+`yecwallet-dd/`, `lightwalletd-dd/`) and the two app repos (`yew/`, `yolo/`). The `yed_*` RPC
+surface is the only interface between the node and its wallet and light-server clients;
+lightwalletd's gRPC is the only interface the mobile wallet has; the stock mining RPCs are the
+only interface the pool has.
+
+---
+
+## What Yellowback is, in one page
+
+**Yellowback v2 is a miner-enforced overlay.** A minter locks YEC in a time-locked P2SH vault they
+control alone and receives YED, a dollar-denominated token on ordinary transparent outputs; burning
+the YED unlocks the YEC. The one rule Ycash script cannot express — *release this collateral only
+if the matching YED is burned* — is enforced by **mining pools**, because on a proof-of-work chain
+the miner is the only party who can refuse a transaction without a consensus change.
+
+- **Who enforces.** Any pool that runs the module. Before activation it filters its own block
+  templates (policy only, which cannot fork anything). After activation — ≥ 75 % of a 2,016-block
+  window signalling, then a 2,016-block delay — it also rejects a block containing a vault spend
+  without the matching burn. That is a soft fork in the P2SH/CLTV sense: every block an enforcing
+  pool mines is valid to a stock node, and a stock node never rejects anything it accepts today.
+- **What can invalidate a block.** Exactly one class of transaction: a spend of an ACTIVE vault
+  output whose burn or enforcement fee is wrong. Invalid mints and transfers never invalidate a
+  block, and a coinbase tag never does.
+- **Where the price comes from.** A 36-byte quote tag in the coinbase scriptSig, carried by the
+  never-assigned `COINBASE_FLAGS` global, so the internal miner, regtest `generate` and
+  `getblocktemplate` all emit it with no new plumbing. Prices are rolling medians of 96 / 576 /
+  2,016 quote-tagged blocks, fail-closed below a minimum fill. No oracle roster, no quorum, no
+  signing round.
+- **Who gets paid.** Every mint, redemption and claim pays an enforcement fee of
+  `max(0.5 YEC, 0.25 % of collateral)` to a pool that quoted recently — earned in proportion to
+  blocks quoted, so a small pool that quotes every block earns its share. Permissionless: there is
+  no slot to be granted.
+- **What nobody can do.** No operator, committee or key other than the minter's can move
+  collateral before the claim height; after it, only a burn of the vault's debt can. Nothing any
+  pool does can create YED, move a user's YED, or take collateral early.
+
+**No federation.** A 5-of-9 federation prototype was built, worked on regtest, and was **retired on
+2026-09-10** because it put a counterparty on redemption. It survives as
+tag `archive/v1-federation` (see `docs/plans/archived/`) and as the `feature/digidollar` branch in both forks — a record, never an
+input, never built on.
+
+**Yellowback v3 adds a second price population.** In v2 every price comes from one place — the
+YEC/USD quotes mining pools publish in their coinbases — so the trust statement rests entirely on
+honest-majority hashpower. v3 adds **bonded attestors**: anyone who posts a long time-locked bond
+may sign prices off-chain, and a minter or claimant carries four to six of those signatures into
+the transaction that needs them, in the scriptSig of a small P2SH *carrier* input that every stock
+node relays today. Enforcing nodes combine the bond-weighted quantile with the pool medians by
+`min` for mints and `max` for claims, so moving the price in the direction that pays now requires a
+hashpower majority **and** a bond-weighted majority of the selected attestors at the same time.
+Attestors pay nothing beyond the bond — no periodic transactions, no domain, no open port — and the
+party who needs an attested price pays for it. No new line in any consensus, mining or policy file
+of the node. Design: [docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md).
+Plan and status: [docs/plans/yellowback-v3-development-plan.md](docs/plans/yellowback-v3-development-plan.md)
+(Phases A0–A5 merged in both forks; A4's devnet and A6–A8 remain).
+
+Rationale: [docs/why-miner-enforced.md](docs/why-miner-enforced.md). Normative protocol:
+[docs/spec/yellowback-spec.md](docs/spec/yellowback-spec.md) (generated from the plans' §3 by
+`make spec`). Lineage and divergence from DigiDollar:
+[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md).
 
 ---
 
@@ -64,6 +149,19 @@ Prefer the lowest tier that can work. Every step down the list costs review effo
 | **2** | New opcode semantics on unused `OP_NOP` slots | Soft fork; old nodes still accept | never done in Ycash |
 | **3** | New network upgrade: `UPGRADE_YELLOWBACK`, new branch ID, new tx version / version group | **Hard fork**, coordinated | Overwinter, Sapling, Ycash, Heartwood, Canopy |
 
+**Where Yellowback v2 landed: Tier 1 plus one block-validity hook — and no opcode.** Miner
+enforcement does not sit on a rung of this ladder, because it buys a soft fork's effect without a
+soft fork's code. Tier 2 is skipped entirely: there is no new opcode, no `OP_NOP` repurposing, no
+branch ID, no network upgrade, and no release the Ycash team must ship. The whole enforcement rule
+is a pure function of `(block, state, params)` called from the `ConnectBlock` window of the patched
+node, inert without `-yellowback`, and switched off with one flag. Measured against `ycash-legacy`
+(plan header, 2026-09-11): `src/main.cpp` **11** changed lines, `src/miner.cpp` **12**,
+`src/rpc/mining.cpp` **7**, and `src/consensus/`, `src/script/`, `src/primitives/`, `src/pow/`,
+`src/wallet/wallet.{h,cpp}` at **zero**. Vaults are ordinary P2SH with `CHECKLOCKTIMEVERIFY` that
+Ycash already validates in every block; YED tokens are ordinary transparent P2PKH outputs with one
+80-byte `OP_RETURN` payload that Ycash already relays; YED addresses are plain Base58Check P2PKH
+with new version bytes and no `chainparams.cpp` edit.
+
 ### Tier 0 is not hypothetical — Ycash already did it
 
 Ycash v4.5.0 ships **atomic swaps** (`src/script/atomicswap.h`), an HTLC built from nothing but
@@ -84,21 +182,38 @@ run with `-experimentalfeatures -atomicswaps`.
 
 **That is the shape to aim for.** Study `ccddd22e4` before designing anything.
 
-### What Tier 0 costs, stated honestly
+### What that minimality costs, stated honestly
 
 DigiDollar enforces collateral ratios and supply in *consensus*: the chain itself refuses an
-invalid mint. A Tier-0 Yellowback cannot do that — with no new opcodes, correctness has to rest on an
-oracle/federation quorum co-signing valid mints and redemptions under a P2SH multisig, with CLTV
-timeouts as the escape hatch.
+invalid mint, which DigiByte could add cheaply because Tapscript's `OP_SUCCESSx` gave it a
+soft-fork mechanism. Ycash has no such hook, so Yellowback's guarantees rest on hashpower instead,
+and that is a different and weaker assumption than consensus enforcement. Stated plainly:
 
-That is a **weaker trust model**: a quorum that refuses to sign can censor, and a compromised
-quorum can mint unbacked dollars. Consensus enforcement is strictly stronger.
+- **A vault is safe only while a majority of hashpower enforces the burn rule.** That is the same
+  honest-majority assumption the chain already makes for double-spends, but it is an assumption —
+  which is why minting is impossible before activation, halts when signalling falls below 60 %, and
+  block rejection itself suspends below 50 % and resumes at 60 %.
+- **The claim path is anyone-can-spend at the script level.** Its safety is the enforcement rule,
+  not the script.
+- **A bug in the hook could fork enforcing pools off the chain.** Bounded by: the hook rejects only
+  ACTIVE-vault spends, fails open on a storage failure, never bans a peer, has a kill switch that
+  also un-rejects blocks, trips a work valve that re-joins a heavier rejected chain, never rejects
+  a block the network has already built six blocks on, and sunsets at a per-release height.
+- **The feed's availability rests on pool participation**, and the design degrades to "no new
+  mints" — never to "a minter cannot redeem".
+- **YED stays on transparent outputs.** Miners cannot enforce what they cannot read, so shielded
+  YED is deferred research.
 
-Do not paper over this. The adaptation spec has to state which properties are consensus-enforced
-and which are quorum-enforced, and the answer decides whether Tier 0 is acceptable or whether the
-project has to buy its way up to Tier 2 or 3. **Decide this before writing code** — it is the
-single most consequential open question in
-[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md).
+Do not paper over this. The plan states which properties are consensus-enforced, which are enforced
+by every Yellowback-aware node, and which are enforced by the mining pools that run the module —
+the trust statement in
+[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md) §8.1,
+which must be published verbatim with v2. The full trade-off table, each row with the plan citation
+that bounds it, is [docs/why-miner-enforced.md](docs/why-miner-enforced.md) §5; that document also
+explains why miner enforcement was chosen over a federation (retired; tag `archive/v1-federation`, see `docs/plans/archived/`) and
+over a network upgrade. **Consensus enforcement is still the destination** — the validator is
+written so a later Ycash network upgrade would change who runs the check, not what it checks
+(plan §9).
 
 ---
 
@@ -139,7 +254,9 @@ DigiByte v9.26.5 is Bitcoin Core ~v26/28 (`src/validation.cpp`, `src/kernel/`, `
 upgrades, no Qt GUI). Almost no file path maps directly.
 
 Full detail, with `file:line` citations at both pins:
-**[docs/mapping.md](docs/mapping.md)**.
+**[docs/mapping.md](docs/mapping.md)**. What DigiDollar *did* contribute to Yellowback, credited
+specifically, and where the two designs part company on principle:
+**[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)**.
 
 ---
 
@@ -149,13 +266,49 @@ Full detail, with `file:line` citations at both pins:
 2. **[docs/mapping.md](docs/mapping.md)** — the crosswalk. Read the relevant row *before* porting
    any symbol. It exists to stop one specific failure: grepping `ref/digibyte` for a DigiDollar
    symbol and transplanting it into a Ycash file with incompatible semantics.
-3. **[docs/why-no-consensus-change.md](docs/why-no-consensus-change.md)** — the plain-language
-   rationale for the Tier-0 decision: how every DigiDollar feature maps onto rules Ycash already
-   enforces, and the one rule (burn-before-release) that a federation enforces instead.
-4. **[docs/spec/yellowback-adaptation-spec.md](docs/spec/yellowback-adaptation-spec.md)** — the design
-   we are writing. Currently a skeleton of open decisions.
-5. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
+3. **[docs/why-miner-enforced.md](docs/why-miner-enforced.md)** — the plain-language
+   rationale for v2: why the one rule Ycash script cannot express (burn-before-release) is handed
+   to mining pools rather than to a federation or a network upgrade, what that buys
+   (self-custody, no committee on redemption, a hashpower-priced feed) and the trade-offs it
+   accepts, each with where the plan bounds it.
+4. **[docs/plans/yellowback-v3-development-plan.md](docs/plans/yellowback-v3-development-plan.md)** —
+   the current plan (price attestation): its status table, decision record W1–W15, the normative
+   protocol delta (§3), the concurrent one-machine test workflow (§6.0) and the phased work plan.
+   It is a **delta on v2**, so keep
+   **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)**
+   beside it — the delivered plan, whose §3 still governs everything v3 does not restate, and whose
+   `feature/yellowback-sf` branch is the diff baseline. `docs/plans/archived/` points at the retired
+   federation design (tag `archive/v1-federation`, history only); `docs/ideation/` lists the
+   `ideation/*` branches that hold inactive experimental ideas.
+   **[docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md)**
+   is the proposal v3 implements, and its audit companion records what three review passes changed.
+5. **[docs/innovation-acknowledgements.md](docs/innovation-acknowledgements.md)** — what the
+   DigiByte team contributed and what Yellowback owes them, alongside the specific points where
+   Ycash's principles (decentralization, self-sovereignty, risk aversion) sent the design
+   elsewhere. Read it before describing Yellowback to anyone outside the project.
+6. **`ref/ycash` commit `ccddd22e4`** — the atomic-swap feature, as a worked example of what a
    well-scoped Ycash feature looks like.
+7. **The component plans**, one per repo around the node:
+   [lightwalletd](docs/plans/yellowback-lightwalletd-plan.md) (the light-client server),
+   [YEW](docs/plans/yellowback-wallet-plan.md) (the mobile wallet),
+   [role-based regtest](docs/plans/role-based-regtest-plan.md) (walking the devnet as a user, an
+   attestor and a pool) and [pool regtest](docs/plans/role-pool-regtest-plan.md) (yolo, the
+   Rust stratum pool, and the devnet's real-pool seat). Each has its own status table.
+
+**Where the work stands** is the execution-status table at the top of each plan, kept current by the
+coordinator. In short: **v2 is delivered** (Phases 0–8; `feature/yellowback-sf` in both forks, with
+mint / send / redeem / claim / sweep proven end to end through YecWallet against a live devnet), and
+**v3 is in implementation** on `feature/yellowback-price-attest` — Phases A0–A5 merged in both
+forks, with the node at 224 green unit cases, the full functional suite green in both unarmed and
+armed modes, frozen files at zero delta, and the wallet at 83 green offline QTest cases; A4's
+devnet chunk and A6 (hardening, packaging, the review document) remain, and A7–A8 (testnet and
+mainnet, for both v2's pools and v3's attestors) are blocked on real operators rather than on code.
+Around the node: **lightwalletd** is re-ported onto the yodl baseline and proven on regtest
+(R0, 2026-09-24; testnet remains); **YEW** runs on the iOS simulator and the Android emulator
+with its M1 integration test passing against the armed devnet (W0–W5, 2026-09-25; device runs,
+endpoints and store work are the owner's); **yolo** is delivered as a single Rust binary, proven
+on regtest in every coinbase mode by `yellowback_stratum.py` and wired into the devnet's pool
+seat (Y0–Y7, 2026-09-28). Trust those tables, not this paragraph.
 
 Before porting anything, answer four questions in writing:
 
@@ -171,13 +324,13 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts. The five nested clones
-under `ref/`, `ycash-dd/` and `yecwallet-dd/` are plain git repositories (not submodules),
+The workspace repo tracks only the documents, the manifest and the scripts. The ten nested clones
+under `ref/`, `ycash-dd/`, `yecwallet-dd/`, `lightwalletd-dd/`, `yew/` and `yolo/` are plain git repositories (not submodules),
 gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
 
 **Prerequisites:** `git`, `make`, and either `uv` or `python3` (3.10+) for the workspace venv.
 Nothing else is needed to bootstrap; the C++/Qt toolchains are only needed to *build*, see below.
-The five clones pull about 500 MB of git history (DigiByte is half of it), so allow
+The seven clones pull about 500 MB of git history (DigiByte is half of it), so allow
 a few minutes on the first run.
 
 ```bash
@@ -189,21 +342,26 @@ code yellowback.code-workspace
 
 What `make bootstrap` does, in order:
 
-1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet` — cloned over https, checked out detached at the
-   pinned tag, verified against the pinned commit (it aborts if the tag has moved upstream), then
-   `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays writable).
-2. `ycash-dd`, `yecwallet-dd` — cloned on `feature/digidollar`; the pristine baseline branch
-   (`ycash-legacy` / `yecwallet-legacy`) is created tracking `origin`, verified to equal the matching
-   `ref/` pin, and the Ycash Foundation repo is added as remote `upstream` (not fetched).
+1. `ref/digibyte`, `ref/ycash`, `ref/yecwallet`, `ref/lightwalletd`, `ref/yolo` — cloned over https, checked
+   out detached at the pinned tag (or, for `ref/lightwalletd` and `ref/yolo`, whose upstreams publish no tags,
+   at the pinned commit), verified against the pinned commit (it aborts if a tag has moved
+   upstream), then `chmod -R a-w` so the reference cannot be edited by accident (`.git/` stays
+   writable).
+2. `ycash-dd`, `yecwallet-dd`, `lightwalletd-dd` — cloned on `feature/yellowback-price-attest`; the
+   pristine baseline branch (`ycash-legacy` / `yecwallet-legacy` / `lightwalletd-legacy`) is created
+   tracking `origin`, verified to equal the matching `ref/` pin, and the upstream repo (Ycash
+   Foundation, or `yodl` for lightwalletd) is added as remote `upstream` (not fetched).
+   `yew` and `yolo` — the app repos — are cloned on `main`; they have no baseline branch and no
+   `upstream` remote (`yolo`'s Perl ancestor is `ref/yolo`).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
-4. `make status-short` — a summary of all six repos, with the `ref/` pins verified.
+4. `make status-short` — a summary of all eleven repos, with the `ref/` pins verified.
 
 Options, passed as `make` variables:
 
 | Invocation | Effect |
 |---|---|
-| `make bootstrap SSH=1` | Clone the two forks over `git@github.com:` so you can push. `ref/` stays on https. |
+| `make bootstrap SSH=1` | Clone the three forks and the two app repos over `git@github.com:` so you can push. `ref/` stays on https. |
 | `make bootstrap NOVENV=1` | Skip the Python venv. |
 | `make bootstrap DRY=1` | Print every command that would run, change nothing. |
 
@@ -214,31 +372,42 @@ exits non-zero, listing the warnings, if anything disagrees. Fixing a disagreeme
 deliberate step (see AGENTS.md rule 1 for re-pinning a reference).
 
 Bootstrap does not build anything. The build recipes, with the exact toolchain each fork needs, are
-in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends system) and
-`yecwallet-dd/docs/yellowback.md` (wallet: Qt 6 + CMake, bundling the node binary).
+in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends system),
+`yecwallet-dd/docs/yellowback.md` (wallet: Qt 6 + CMake, bundling the node binary),
+`lightwalletd-dd/docs/yellowback.md` (Go), `yew/README.md` (Flutter + Rust core) and
+`yolo/README.md` (`cargo build --release`).
 
 ## Commands
 
 ```bash
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
-make status         # git status for all six repos, with the ref/ pins verified
+make status         # git status for all eleven repos: fetches origin, ahead/behind, ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
-make diff           # fork deltas: ycash-legacy...feature/digidollar and yecwallet-legacy...feature/digidollar
+make diff           # fork deltas: each fork's branch vs its -legacy baseline
 make log            # commits on each fork branch beyond its baseline
+make spec           # regenerate docs/spec/yellowback-spec.md and the fork copies from the plan (scripts/extract-spec.sh)
+make spec-check     # fail if any generated copy is stale (make status runs it)
 ```
 
 `make status` **exits non-zero if a `ref/` repo drifts off its pin**, because every `file:line`
-citation in `docs/mapping.md` was written against these exact revisions.
+citation in `docs/mapping.md` was written against these exact revisions. It also fails if a fork
+is not on the branch `repos.yaml` records.
 
 | Repo | Pin | Commit |
 |---|---|---|
 | `ref/digibyte` | tag `v9.26.5` (2026-07-19) | `05b50e229d` |
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
-| `ycash-dd` | branch `feature/digidollar` off `ycash-legacy` (= `v4.5.0`) | `624c12814` |
-| `yecwallet-dd` | branch `feature/digidollar` off `yecwallet-legacy` (= `v4.5.0`) | `1eb277d` |
+| `ref/lightwalletd` | `master` @ commit (2021-07-13; zcash/lightwalletd 0.4.6 + 4 commits, the last the Ycash `s…` regex; the commit carries no tag) | `187a26765e` |
+| `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); `feature/yellowback-sf` = the delivered v2, now a diff baseline; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
+| `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise | `1eb277d` |
+| `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); re-forked from `yodl/lightwalletd` on 2026-09-24 — the earlier yecdev-based work is kept locally under `wt/lightwalletd-dd-yecdev-baseline` | `187a26765e` |
+
+| `ref/yolo` | `main` @ commit (2020-12-17; yecdev's Ycash port of ChileBob/StratumPool: Perl `stratumpool`, `stratumsolo`, `cenote`; no tags) | `c9c155c6` |
+| `yew` | branch `main` (app repo, no baseline: nothing is ported into it) | — |
+| `yolo` | branch `main` (app repo; the Rust rewrite of `ref/yolo`, whose Perl is kept under `legacy/perl/`) | — |
 
 Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
 mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.

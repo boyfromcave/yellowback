@@ -19,20 +19,33 @@ yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
-│   └── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
-├── ycash-dd/        WORKING FORK of the node.   branch `feature/digidollar`, off `ycash-legacy`     (= v4.5.0)
-├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/digidollar`, off `yecwallet-legacy` (= v4.5.0)
+│   ├── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
+│   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
+│   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
+├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
+├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
+│                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
+├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
+├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
+├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── docs/
-│   ├── spec/        DigiDollar upstream spec + the Yellowback adaptation spec
-│   ├── plans/       THE DEVELOPMENT PLAN (node §1–§6, wallet §4.7 and Phase 5b)
+│   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
+│   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
+│   │                implementation; v2 = the delivered miner-enforced plan v3 is a delta on)
+│   │   └── archived/   README only: the retired federation design lives at tag `archive/v1-federation`
+│   ├── ideation/    README only: experimental ideas live on `ideation/*` branches, never on main
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
-├── scripts/         bootstrap.sh (`make bootstrap`), repos.sh, repo-status.sh
+├── scripts/         bootstrap.sh (`make bootstrap`), repos.sh, repo-status.sh, extract-spec.sh (`make spec`)
+├── wt/              git worktrees of the forks for parallel agents (untracked, gitignored)
 ├── yellowback.code-workspace   VS Code multi-root workspace (ref/ folders read-only)
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**Two forks, one feature.** The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
+**One overlay, five repos.** Yellowback is an overlay on the node; around it sit the GUI wallet,
+lightwalletd, the mobile wallet (YEW) and the mining pool (yolo), each in its own repo and each
+reaching the node only through a public interface (README.md, the components table).
+The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
 the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
 fork the way `src/digidollar/` is for the node fork — and it is just as much *not* source to
@@ -43,21 +56,36 @@ copy: DigiByte's widgets read in-process wallet models; YecWallet reads everythi
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All three `ref/` checkouts are pinned to a tag in detached HEAD and their working trees are
-`chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
+All five `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, whose
+upstream publishes no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
 
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/` and `yecwallet-dd/`, on their `feature/digidollar` branches.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches.
 
-`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines — **never commit to
-them.** They exist so you can always `git diff <legacy>...feature/digidollar` to see the entire
-fork delta (`make diff` shows both). Keep those diffs reviewable. Node code goes in `ycash-dd`
-only; wallet code goes in `yecwallet-dd` only; the `yed_*` RPC surface is the sole interface
-between them (plan §4.7).
+The current branch in all three forks is `feature/yellowback-price-attest` — the v3 price-attestation
+work, cut from `feature/yellowback-sf`. **`feature/yellowback-sf` is now a baseline, not a
+workspace:** it is the delivered v2 (miner-enforced) fork, and the v3 plan measures its diff
+budgets and frozen-file zero-delta checks against it, so never commit to it either. The branch is
+declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
+
+`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, and `lightwalletd-legacy`
+is upstream `master` at the pin — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
+prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
+`make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
+only; wallet code goes in `yecwallet-dd` only; light-client server code goes in `lightwalletd-dd`
+only; the `yed_*` RPC surface is the sole interface between the node and either client (plan §4.7).
+Mobile-wallet (YEW) client code goes in `yew/` only — its own repository on `main`, not a fork,
+so it has no `-legacy` baseline — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
+gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
+Pool software goes in `yolo/` only — also its own repository on `main` (`ref/yolo` is the Perl
+reference it rewrites) — and the node's stock mining RPCs (`getblocktemplate`, `submitblock`,
+`validateaddress`, `getblockchaininfo`) are its sole interface: a pool never calls `yed_*` and
+never needs a node change (`docs/plans/role-pool-regtest-plan.md` §6).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -147,19 +175,36 @@ porting. Keep the fork diff minimal and reviewable.
 
 ## Useful commands
 
-Start a session with `make status`. It reports all six repos and **exits non-zero if a
-`ref/` repo has drifted off its pin** — which would silently invalidate every line citation in
-`docs/mapping.md`.
+Start a session with `make status`. It fetches `origin` for every writable repo (remote-tracking
+refs only — nothing is merged or checked out), reports each one as in sync, behind, ahead
+(unpushed) or diverged with the command that fixes it, and **exits non-zero if a `ref/` repo has
+drifted off its pin** — which would silently invalidate every line citation in `docs/mapping.md` —
+or if a repo has diverged from its remote. Behind means run `make pull`. `NOFETCH=1 make status`
+compares against the last fetch instead, for working offline.
 
 ```bash
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
-make status     # git status across all six repos, with pin verification
+make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
+make status     # git status across all eleven repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
-make diff       # fork deltas: ycash-dd and yecwallet-dd vs their -legacy baselines
+make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline
 make log        # commits on each fork branch beyond its baseline
 ```
+
+`bootstrap` is create-only: a repository that already exists is verified against the manifest and
+left alone, nothing is fetched. So it is the right command exactly once per machine — to *update* an
+existing workspace, use `make pull`. That one is fast-forward only, everywhere: it fetches `origin`,
+advances each fork's branch of record (now `feature/yellowback-price-attest`) and its `-legacy`
+baseline, and **skips** — with the
+git command to run yourself — any repo that is dirty, has diverged, or is on the wrong branch. It
+never merges, never rebases, never discards; `git reset --hard` stays something you type by hand in
+the one repo you mean. The forks' `upstream` remote is never fetched (rebasing onto a newer Ycash is
+a deliberate act), and `ref/` is never advanced — a read-only `ls-remote` only re-checks that the
+pinned tag still resolves to the commit `repos.yaml` records. If it has moved upstream, `make pull`
+fails loudly: every `file:line` citation in `docs/mapping.md` was taken at the old commit. The `wt/`
+worktrees carry per-agent branches and are reported, never touched.
 
 The pins are declared once, in `repos.yaml` (the `Makefile` reads them from there), and mirrored
 in this file and in `docs/mapping.md`. If you re-pin a reference repo, update all three. Never
