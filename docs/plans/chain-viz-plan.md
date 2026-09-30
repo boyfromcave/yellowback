@@ -464,7 +464,7 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       more block) replays to the same `chain.main`, tip, orphans and event count the live
       `/api/snapshot`/`/api/health` reported (`tests/replay.rs`); the binary was also checked at
       `--speed 0` and `--speed 10` and on a three-run file.
-- [ ] `yellowback-devnet report` bundles `session.jsonl` (`contrib/` change, not done).
+- [x] `yellowback-devnet report` bundles `session.jsonl` (done in the C4 devnet half, `ycash-dd` `3762d9f3d`).
 - [ ] Acceptance: a nightly failure is diagnosed from its session file alone, once, and written up.
 
 ### C7 — mainnet hardening and packaging (agent `viz-core`, after C5)
