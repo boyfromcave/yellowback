@@ -395,7 +395,10 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       heads agreeing, a `mine 1` appeared as a `block` event 0.69 s after the command (poll 1 s),
       and a reorg induced on one node (`invalidateblock` of two blocks + `generate 3` from the
       recording script, never from chain-viz) appeared as `reorg{depth:2}` on every other node
-      with the two abandoned blocks `orphaned`.
+      with the two abandoned blocks `orphaned`. The ZMQ source was verified by restarting the
+      devnet's stock node by hand with `-zmqpubhashblock`/`-zmqpubhashtx` and running
+      `chain-viz --zmq 1=tcp://127.0.0.1:28331 --poll 30`: the `block` event followed a
+      `mine 1` by 0.21 s (the 30 s poll could not have caught it).
 
 ### C2 — chain and mempool UI (agent `viz-ui`, after C1's schema; can start on fixtures)
 
