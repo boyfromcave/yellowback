@@ -1,7 +1,7 @@
 # chain-viz plan — real-time x-ray of the chain and the Yellowback overlay
 
-**Status:** revision 2, 2026-09-29. In implementation. Decisions C-1..C-8 confirmed and C-9..C-11
-taken by the owner (§0). The checklists in §5 and the table in §9 are the status of record; agents
+**Status:** revision 3, 2026-09-30. Implementation delivered (C0–C8; see §9 and the revision log).
+Decisions C-1..C-8 confirmed and C-9..C-11 taken by the owner (§0). The checklists in §5 and the table in §9 are the status of record; agents
 tick a box the moment the item is done, so anyone can read the state at any time.
 
 chain-viz is the sixth component around the node: a **read-only sidecar** of `ycashd` that shows,
@@ -15,6 +15,33 @@ regtest and devnet simulations that harden the system (`role-based-regtest-plan.
 opens to see that the overlay pays.
 
 ## 0. Revision log
+
+### Revision 3 (2026-09-30) — implementation delivered
+
+What shipped, on `chain-viz` `main` (boyfromcave/chain-viz): the collector core (C1), the chain
+and mempool UI (C2), Yellowback classification, health model and panel (C3), the revenue ledger,
+`/api/revenue` and its panel (C4, chain-viz half), session record and replay with the CI workflow
+(C6), mainnet hardening — cookie auth, `--public`, `--export`, `--keep` eviction, the hardening
+tests and the soak script (C7), the C5 fixes (`c5-fixes`, C-F25/C-F26, merged `911e8d6`) — and
+the user guide (C8, `chain-viz/README.md`, with `docs/screenshot.png` from a real-browser pass on
+an 11-node devnet, which also fixed three UI defects: colliding price end-labels, tables widening
+the page at phone width, the Yellowback transaction table not sorted by height). On `ycash-dd`
+`feature/yellowback-price-attest`: the devnet's ZMQ flags and the chain-viz auto-start (C4,
+`3762d9f3d`) — verified end to end in this revision with the real release binary (`CHAINVIZ_BIN`,
+`up --role user --sim-profile fast --portseed 67`: `up` printed `chain-viz: http://127.0.0.1:32747`,
+`status` showed it alive, `devnet.json.chainviz` recorded pid, url, log, binary and record dir, ZMQ
+wired on every node). C5's functional test and the `yellowback_devnet_roles.py` recording are done
+in `wt/viz-qa-node` (branch `feature/chain-viz-qa`), to merge.
+
+Housekeeping in this revision: §9's two findings tables (C-F1..C-F22 with six numbers used twice,
+and C-F-1..C-F-4) were merged into one, renumbered C-F1..C-F32 in order of appearance, and every
+cross-reference in the plan, the README and the code was repointed; the node/devnet findings and
+N-1..N-4 are mirrored in `docs/mapping.md` §18.
+
+What remains, none of it code: the 24 h mainnet acceptance of C7 (no mainnet node in this
+workspace; the command is in §5 C7); the hosted public instance (C-10; where is the owner's, §8);
+C5's nightly green and C6's nightly-diagnosis acceptance, both waiting on the first nightly run
+after the `feature/chain-viz-qa` merge.
 
 ### Revision 2 (2026-09-29) — the owner's decisions; implementation begins
 
@@ -567,10 +594,20 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C8 — docs
 
-- [ ] `chain-viz/README.md`: run against the devnet, run against your node, what each panel means,
-      what the revenue numbers are and are not.
-- [ ] `docs/mapping.md` §18: the chain-viz findings (C-F rows) and the N-1..N-4 asks.
-- [ ] This plan's §9 status table; the workspace README components row confirmed.
+- [x] `chain-viz/README.md`: run against the devnet, run against your node, what each panel means,
+      what the revenue numbers are and are not. (2026-09-30, agent `viz-docs`: the user guide —
+      install, devnet auto-start, own node with cookie auth, the CLI reference, the API shapes,
+      the panels, the revenue numbers, sessions, hosting, the read-only guarantee, the RPC budget,
+      CI, findings pointer; `docs/screenshot.png` from the visual pass.)
+- [x] `docs/mapping.md` §18: the chain-viz findings (C-F rows) and the N-1..N-4 asks.
+- [x] This plan's §9 status table; the workspace README components row confirmed (its interface
+      column now names ZMQ and no longer lists `getblocktemplate`, which chain-viz never calls).
+- [x] Visual pass (real browser, headless Chrome via CDP at 1400 and 390 px, light and dark) on
+      `up --role user --sim-profile fast --portseed 67` after ~6 min of sim: every panel populated
+      (revenue with 3 pools, 4 attestors, the counterfactual); fixed the colliding pFast/pMid/pSlow
+      end-labels (spread + text halo), the `nowrap` tables widening the page to 935 px at phone
+      width (they scroll inside their card; document width now 390), and the Yellowback tx table's
+      first-seen order (now by height, mempool first). `down --wipe` after.
 
 ## 6. Sequencing
 
@@ -613,11 +650,11 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C1 collector core | done 2026-09-29, merged on `chain-viz` `main` and pushed | `chain-viz/src/{rpc,events,bus,collector,server}.rs`, `source/`, `model/{chain,mempool}.rs` |
 | C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
-| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29, merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half done 2026-09-29 (agent `viz-rev`, `wt/viz-rev`, branch `c4-revenue`, unmerged) | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
+| C4 revenue + devnet zmq/viz | done 2026-09-29: devnet half merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half merged on `chain-viz` `main` and pushed; auto-start verified with the real release binary 2026-09-30 | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
 | C5 functional test | done locally 2026-09-30 (`wt/viz-qa-node`, branch `feature/chain-viz-qa`, 4 commits, unmerged; chain-viz `c5-fixes` in `wt/viz-qa-viz`, `9d1498e` on `main` `9662694`, unmerged); nightly acceptance open | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
 | C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
-| C7 mainnet hardening | done except the 24 h mainnet acceptance, 2026-09-30 (`wt/viz-hard`, branch `c7-harden`, unmerged) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
-| C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
+| C7 mainnet hardening | done 2026-09-30, merged on `main` and pushed; the 24 h mainnet acceptance is the owner's to run (no mainnet node here) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
+| C8 docs | done 2026-09-30 (agent `viz-docs`): README user guide, mapping §18, findings consolidated, visual pass with three UI fixes | `chain-viz/README.md`, `chain-viz/docs/screenshot.png`, `docs/mapping.md` §18, this plan |
 
 Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
 
