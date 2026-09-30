@@ -491,16 +491,21 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C7 — mainnet hardening and packaging (agent `viz-core`, after C5)
 
-- [ ] `--poll 5s` defaults by network (from `getblockchaininfo.chain`); `-txindex`-less operation
-      (`getrawtransaction` only for mempool txs and blocks fetched with verbosity 2).
-- [ ] Bind to loopback by default; `--listen` documented with a reverse-proxy note; no secrets in
-      `/api/snapshot`; RPC credentials never logged.
-- [ ] Hosting pieces (C-10): `--public` mode (API rate limit, no node credentials or hostnames in any
-      response), `--export <dir>` writing a static snapshot the UI can open with no server.
+- [x] `--poll 5s` defaults by network (from `getblockchaininfo.chain`); `-txindex`-less operation
+      (`getrawtransaction` only for mempool txs and blocks fetched with verbosity 2). (2026-09-30, agent `viz-harden`, branch `c7-harden`: C1's `main.rs` already asks the first answering node; audit: `rpc::get_raw_transaction` has no caller at all, every block is `getblock … 1/2`; README "The node" says `-yellowback -experimentalfeatures`, no `-prune`, `-txindex` not needed. Cookie auth added beside it: `--cookie <path>` / `--datadir <dir>` (`src/auth.rs`, Ycash writes `.cookie` via `GenerateAuthCookie`, `ref/ycash/src/rpc/protocol.cpp:76`).)
+- [x] Bind to loopback by default; `--listen` documented with a reverse-proxy note; no secrets in
+      `/api/snapshot`; RPC credentials never logged. (2026-09-30: loopback default verified; README "Hosting" carries nginx + Caddy snippets and a warning is logged for a non-loopback `--listen` without `--public`; `RpcClient::scrub` replaces the node's address by `node <id>` in every transport error before it reaches `nodes[].error`, a `note` or the log (C-F13); `tests/hardening.rs` runs the binary with a password and hostnames that must not appear in `/api/health`, `/api/snapshot`, `/api/events`, stderr at `--log debug`, or an export.)
+- [x] Hosting pieces (C-10): `--public` mode (API rate limit, no node credentials or hostnames in any
+      response), `--export <dir>` writing a static snapshot the UI can open with no server. (2026-09-30: `src/public.rs` — per-IP token bucket 10 req/s burst 40 → 429, `X-Forwarded-For` honoured, WS cap 64 → 503, `/api/events` cap 2000, `public::redact` over every response and WS frame (URLs, `user@host`, `host:port`, paths; node ids stay); `src/export.rs` + `ui/static.js` — `index.html` rewritten to relative paths + `ui/data.js` (the three API answers as one global, so `file://` needs no fetch) + `ui/static.js` (answers `/api/*` from it, stubs WebSocket), `app.js` ends in conn state `static`; rewritten every 30 s and at shutdown; verified with `qa/ui-smoke.mjs <dir>` (static mode) and `python3 -m http.server`; C-F14.)
 - [x] Release build in CI: `chain-viz/.github/workflows/ci.yml` (2026-09-29, agent `viz-replay`) — fmt, build, test, `clippy -D warnings` on ubuntu + macos stable on every push/PR; a `v*` tag builds linux x86_64 and macOS arm64 binaries and attaches them to the release (`yolo/` has no workflow to copy; written fresh).
 - [ ] Acceptance: a run against a mainnet `ycashd -yellowback -experimentalfeatures` for 24 h with
       no RPC error storm and steady memory (blocks beyond `--keep 5000` are evicted from the model,
-      the ledger rollups kept).
+      the ledger rollups kept). **Not run: no mainnet node in this workspace.** What is in place
+      (2026-09-30): eviction now also drops events below the floor from the `/api/events` window
+      (`Bus::evict_below`, `ChainModel::floor`, `tests/hardening.rs`), and `qa/soak.sh` is the
+      assertion (flat RSS, linear `rpcCalls`, no failure notes) — see C-F15 for the 22-minute
+      devnet soak at `heartbeat rate 2` with `--keep 50`. The mainnet 24 h is the owner's to run:
+      `chain-viz --nodes http://127.0.0.1:8832 --datadir ~/.ycash --public & qa/soak.sh http://127.0.0.1:8480 $! 1440 300`.
 
 ### C8 — docs
 
@@ -553,7 +558,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
 | C6 record/replay | replay + sessions + CI done 2026-09-29 (`wt/viz-replay`, `c6-replay`, unmerged); devnet `report` bundle and the nightly-diagnosis acceptance open | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
-| C7 mainnet hardening | not started | `chain-viz/` |
+| C7 mainnet hardening | done except the 24 h mainnet acceptance, 2026-09-30 (`wt/viz-hard`, branch `c7-harden`, unmerged) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
 
 Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
@@ -580,6 +585,9 @@ Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as 
 | C-F10 | `session.jsonl` lines could land out of `seq` order: the bus took `seq` from an atomic and wrote the line under a different lock, so two collectors publishing at once (8 nodes reporting the same tip) interleaved (seq 33, 34 before 32 in a first recording). | `Bus::publish_at` takes `seq` and writes the line under the log lock; `session::read_session` also stable-sorts each run by `seq` for files written earlier. |
 | C-F11 | `EventKind::DevnetHeartbeat(Value)` (and every other `Kind(Value)` variant) is flattened into the envelope, so a value carrying `height` wrote the key twice: the line is not valid JSON for a strict decoder (`duplicate field height`) and killed replay of that file. | The collector strips `seq`/`ts`/`height`/`node`/`kind` from devnet values before publishing; the reader parses each line as a JSON value first (last key wins) and skips a line it still cannot decode (a torn last line after a crash) with a warning. Rule for C3/C4: a `Kind(Value)` payload must not carry those five keys. |
 | C-F12 | Parallel worktrees share `$CARGO_TARGET_DIR` (`~/.cargo/shared-target`): another agent's `cargo build` replaced `debug/chain-viz` between two of this chunk's end-to-end runs (the replay run then said `--replay is not implemented yet`). And a binary copied out of the target dir and overwritten while a copy was executing left the processes stuck in macOS `UE` state (kill -9 has no effect). | Build the binary under test with a private `CARGO_TARGET_DIR` (12 s incremental after the first build); never re-copy over a running binary. |
+| C-F13 | reqwest's transport errors quote the request URL (`error sending request for url (http://host:port/)`), so an unreachable node's address reached `nodes[].error`, the `note` event, `session.jsonl` and the log — and, with `--nodes http://user:pass@…`, would have carried the credentials had `node_from_url` not split them off first. | `RpcClient::scrub` replaces the node's URL and `host:port` by `node <id>` in every transport error; `--public` additionally redacts any URL/`host:port`/path-shaped string in every response and WS frame (`public::redact`), since devnet `heartbeat.json`/`sim-stats.json` and `--replay`'s file name are operator paths. `RpcClient`'s `Debug` prints the id only. |
+| C-F14 | An `--export` cannot be a plain copy of `ui/`: `app.js` fetches absolute `/api/…` and opens `/ws`, and Chrome refuses module scripts from `file://` while also refusing `fetch` of a sibling file there. | The export rewrites `index.html` to relative paths and loads `ui/data.js` (the three API answers as one global) then `ui/static.js` (answers `/api/*` from it, stubs `WebSocket`) before the app module; `app.js` checks `window.CHAIN_VIZ_STATIC` and skips `connect()` (conn state `static`). Works from any static host; from `file://` only where module scripts are allowed (Firefox). `qa/ui-smoke.mjs <dir>` is the node-free check. |
+| C-F15 | `yellowback-devnet up --heartbeat-rate 2` records the rate but does not start the heartbeat on the plain (no `--role`) devnet: `heartbeat status` says `never started`. | `heartbeat start` then `heartbeat rate 2` after `up`. Soak (`qa/soak.sh`, 22 min, 30 s samples, `--keep 50 --public --export --record`, 8 nodes, one block per 2 s): result recorded below in this row once the run ends. |
 
 
 | # | Finding | Disposition |
