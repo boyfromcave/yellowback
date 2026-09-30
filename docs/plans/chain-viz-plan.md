@@ -469,10 +469,40 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C4 — revenue ledger and panel (agent `viz-rev`, after C3)
 
-- [ ] `model/revenue.rs` (§3.2.5), rollups, `/api/revenue`, the counterfactual with its label.
-- [ ] Panel: per block, per pool, per attestor, counterfactual, no-enforcement releases.
-- [ ] Reconciliation test: Σ ledger `enforcefee` over [a, b] = Σ `yed_gettxinfo.feeZat` over the
-      same blocks' Yellowback txs; likewise `attestfee`.
+- [x] `model/revenue.rs` (§3.2.5), rollups, `/api/revenue`, the counterfactual with its label.
+      (2026-09-29, agent `viz-rev`, `wt/viz-rev` branch `c4-revenue`, unmerged.) Rows
+      `(height, txid, vout, kind, zat, payee[, refHeight])`, `kind ∈ {subsidy, subsidy_other,
+      netfee, enforcefee, attestfee, collateral_release, residual}` — `subsidy_other` added for the
+      coinbase outputs that are not the miner's (Ycash regtest pays a 5 % YDF output at
+      `getblocksubsidy.foundersaddress`; `netfee` = the miner's coinbase outputs − `miner`, no
+      per-tx input lookups). Payee keys are addresses as the node spells them; a coinbase address
+      is `scriptPubKey.addresses[0]` (else Base58Check-encoded from the P2PKH hex with the prefix
+      learned from any node address); the tag's `payoutAddress` on the same block aliases the
+      coinbase address to it (C-F17). `revenue` event per row (`entry` carries the ledger kind,
+      C-F16), `revenue{totals, byPayee, aliases, window}` in the snapshot (cumulative, never
+      evicted; per-height rows follow `--keep`). Counterfactual: `yed_getfeepayee R collat` once
+      per `refHeight` (collat = the MINT's vault output, 0 for a redeem), Σ fee/(|E(R)|+1),
+      labelled. USD at each row height's `pMint` (nearest row at or below), `priceLabel: "at pMint"`.
+      `GET /api/revenue?from&to&by=payoutKey|attestor|block` → `{from, to, by, window, priceLabel,
+      totals{<kind>{zat,usd,usdComplete}, blocks, ybTxs}, groups[…], counterfactual{zat, usd,
+      feeOutputs, resolved, unresolved, noEligible, label, method}, noEnforcement{rows, total,
+      label}, rows[≤5000], rowsTruncated, seq, tip, enforcing[], pMintNow}`.
+- [x] Panel: per block, per pool, per attestor, counterfactual, no-enforcement releases.
+      (`ui/panels/revenue.js` + `.css`, one import + one list entry in `app.js`; range selector
+      last 50 / 200 / window; grouped thin bars stock coinbase vs enforcement + attestor fee per
+      block with payees in the tooltip; pool table with blocks mined / tags / selected / fees
+      YEC+USD / per tag / per block / stock coinbase / quoting status; attestor table with bond
+      and realised yield labelled realised; counterfactual card with the label and method;
+      release table. `qa/ui-smoke.mjs` asserts the pool rows and bar groups against
+      `/api/revenue`. Not done: a browser screenshot of the panel.)
+- [x] Reconciliation test: Σ ledger `enforcefee` over [a, b] = Σ `yed_gettxinfo.feeZat` over the
+      same blocks' Yellowback txs; likewise `attestfee`. (`tests/revenue_reconcile.rs` on
+      `tests/fixtures/revenue-blocks.json`, 22 devnet blocks recorded with `getblock 2`,
+      `getblocksubsidy`, `yed_gettag`, `yed_gettxinfo`; also residual, the coinbase rows vs the
+      coinbase outputs, per-pool sums, aliases, USD at a fixed pMint, and the release rows under
+      enforcing = false. Live: the same sums over blocks 262–283 of the portseed-59 devnet agreed
+      with `/api/revenue` (9 Yellowback txs, 3.0 YEC enforcement fees, 0.75 YEC attestor fees,
+      137.50015 YEC coinbase).)
 - [x] `contrib/` change in `ycash-dd`: the devnet passes `-zmqpubhashblock`/`-zmqpubhashtx` per node,
       `up` auto-starts chain-viz on `devnet.json` when a binary is found and prints the URL, `down`
       stops it, `--no-viz` opts out (C-11; Python only, zero C++). Done 2026-09-29, worktree
@@ -568,7 +598,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C1 collector core | done 2026-09-29, merged on `chain-viz` `main` and pushed | `chain-viz/src/{rpc,events,bus,collector,server}.rs`, `source/`, `model/{chain,mempool}.rs` |
 | C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
-| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29, merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half in progress (agent `viz-rev`, `wt/viz-rev`, branch `c4-revenue`) | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
+| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29, merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half done 2026-09-29 (agent `viz-rev`, `wt/viz-rev`, branch `c4-revenue`, unmerged) | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
 | C5 functional test | in progress (agent `viz-qa`, `wt/viz-qa-node`, branch `feature/chain-viz-qa`) | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
 | C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | done except the 24 h mainnet acceptance, 2026-09-30 (`wt/viz-hard`, branch `c7-harden`, unmerged) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
