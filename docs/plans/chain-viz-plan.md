@@ -1,0 +1,502 @@
+# chain-viz plan — real-time x-ray of the chain and the Yellowback overlay
+
+**Status:** revision 2, 2026-09-29. In implementation. Decisions C-1..C-8 confirmed and C-9..C-11
+taken by the owner (§0). The checklists in §5 and the table in §9 are the status of record; agents
+tick a box the moment the item is done, so anyone can read the state at any time.
+
+chain-viz is the sixth component around the node: a **read-only sidecar** of `ycashd` that shows,
+live, what the chain and the Yellowback (YED) overlay are doing — the mempool, the block sequence,
+time since the last block, fork/orphan/reorg risk, the state of every enforcement mechanism, the
+net flow of YED and collateral, and **who is being paid what** for participating. It is, in
+effect, an advanced mempool and block explorer, because Yellowback lives in transparent UTXOs and
+coinbase tags and is therefore entirely visible to a node that watches. It exists first for the
+regtest and devnet simulations that harden the system (`role-based-regtest-plan.md`,
+`role-pool-regtest-plan.md`), and second as the thing a pool operator or a prospective attestor
+opens to see that the overlay pays.
+
+## 0. Revision log
+
+### Revision 2 (2026-09-29) — the owner's decisions; implementation begins
+
+| # | Decision | Where |
+|---|---|---|
+| C-1..C-8 | **Confirmed as proposed** in revision 1, including C-4: Rust single binary with an embedded, build-step-free UI. | below |
+| C-9 | **USD equivalents, priced by `pMint`.** Every YEC amount in the revenue view carries a USD figure computed with the protocol's own mint price at that height (`yed_gethistory[].pMint`, or the current `yed_getstats.pMint` for the mempool), labelled "at pMint". No external price feed. | §3.2.5 |
+| C-10 | **A hosted public instance is wanted; where is undecided.** C7 therefore delivers the pieces any host needs (loopback bind + reverse-proxy note, a read-only mode with RPC credentials outside the snapshot, a rate-limited API, a static snapshot export) and leaves the host itself as an owner item, not a chunk. | §5 C7, §8 |
+| C-11 | **The devnet auto-starts chain-viz.** `yellowback-devnet up` launches it on `devnet.json` when a `chain-viz` binary is found (`CHAINVIZ_BIN`, then `$PATH`), prints its URL, and `down` stops it; `--no-viz` opts out. Not a separate `viz` subcommand. | §3.4, §5 C4 |
+
+### Revision 1 (2026-09-29) — first draft, from the owner's direction
+
+| # | Decision (proposed; confirmed in revision 2) | Where |
+|---|---|---|
+| C-1 | **Own repository, app role, `main`.** `boyfromcave/chain-viz` is an `app` in `repos.yaml` like `yew` and `yolo`: no reference, no baseline, `make diff`/`make log` skip it. | §2.1, C0 |
+| C-2 | **Strictly read-only.** chain-viz never holds a key, never builds or broadcasts a transaction, never calls a `yed_*` writer (`yed_setquote`, `yed_addattestation`, the wallet builders). Its node interface is the stock read RPCs, the read-only `yed_*` RPCs and the node's push channels (ZMQ, `-blocknotify`). A user who wants to act is sent to YecWallet or the CLI. | §4 |
+| C-3 | **Zero node change to start; one optional Tier-0 RPC later.** Everything in §3 can be derived from RPCs the node already has. The one thing that is slow at scale — listing a block's Yellowback transactions — is done client-side (§3.2.3); a `yed_listblocktxs` read RPC is recorded as the single node ask (N-1) and is not scheduled. | §4.3, §7 |
+| C-4 | **Rust backend, single binary, embedded frontend.** The collector is a Rust daemon (tokio + axum), the same shape and toolchain as `yolo/`, serving an embedded single-page UI over HTTP + WebSocket. No build step for the UI (vanilla ES modules + SVG; one vendored chart library). Rationale in §3.1; the alternative (Python, next to the devnet) is recorded there. | §3.1 |
+| C-5 | **Many nodes, one view.** chain-viz connects to *N* nodes at once (all devnet seats; on mainnet one's own node plus any peers one runs) because fork, orphan and reorg risk is most visible as **tip disagreement between nodes**, which no single node reports. | §3.3 |
+| C-6 | **Record and replay.** Every event the collector ingests is appended to a session log (`session.jsonl`) so a nightly regression run or a devnet incident can be replayed in the UI after the fact. This is what makes it a hardening tool rather than only a dashboard. | §3.6 |
+| C-7 | **The revenue view is attributed, not estimated.** Fee outputs are attributed to their real payee from the transaction itself (`yed_gettxinfo` → `payee`, `attestPayee`), then rolled up per pool `payoutKey` and per attestor bond key. The counterfactual "what a non-participant forgoes" is computed from the same rows (§3.5) and labelled as such. | §3.5 |
+| C-8 | **Devnet first, mainnet-safe by construction.** Phases C1–C6 are proven against `yellowback-devnet`; C7 hardens for a mainnet node (auth, TLS off-box, rate limits, `-txindex` awareness). No phase is mainnet-only. | §5, §6 |
+
+## 1. The problem
+
+The test suites are now robust: 24 `qa/rpc-tests/yellowback_*.py` functional tests, a nightly
+`yellowback_devnet_roles.py`, a stratum test, a Python model of the state machine. They tell us
+*whether* an invariant held at the end of a run. They do not show *how the chain behaved while it
+ran*: how long the mempool held a vault spend before a pool included it, whether two pools briefly
+disagreed on the tip, when the fast median crossed the mid median and flipped `pMint`, how far a
+`--shock=-70%` price walk pushed vaults toward the 110 % claim line before the liquidator persona
+acted, or why `rejectedBlocks` ticked from 0 to 1 at 03:14. Today that is reconstructed by hand
+from eleven `debug.log` files and `sim.log`. The devnet's own `status` command prints text once
+(`ycash-dd/contrib/yellowback/devnet/yellowback-devnet`, §5 of the survey below); nothing in the
+workspace draws anything, streams anything, or keeps a timeline
+(`lightwalletd-dd`'s Prometheus `/metrics` counts gRPC calls, not chain state).
+
+Two audiences need that picture:
+
+1. **Us, hardening the overlay.** A live, multi-node view of the chain and the index during a
+   simulation, and a replay of it afterwards.
+2. **Pool operators and prospective attestors**, who are asked to run patched software and post a
+   bond. The pitch in `docs/why-miner-enforced.md` is that enforcement is paid for: an enforcement
+   fee of `max(0.5 YEC, 0.25 % of collateral)` on every mint, redeem and claim goes to a key that
+   published a quote tag in the last 100 blocks, and a further 25 % of that goes to an attestor
+   once the attestor layer is armed. Nobody can currently *see* that money move. chain-viz must
+   show, per block and cumulatively, the ordinary coinbase (subsidy + network fees) beside the
+   Yellowback fees, per payout key, so the marginal revenue of participating is a number on a
+   screen rather than a paragraph in a plan.
+
+### 1.1 What "done" means
+
+1. `chain-viz --nodes <devnet.json>` (or a list of RPC URLs) opens a page that, within one block,
+   shows every §3 view populated from a running `yellowback-devnet up`, and keeps up with the
+   15 s heartbeat, the price walk, the sim personas and a stratum pool without lag or a restart.
+2. Fork, orphan and reorg events induced on the devnet (`yellowback_reorg_stress.py`'s recipe, a
+   pool taken off-line and brought back with more work) appear on the block sequence as they
+   happen, and the tip-disagreement panel shows which nodes are on which tip.
+3. The Yellowback health panel reproduces, live, every field a `yellowback-devnet report` embeds
+   from `yed_getinfo`/`yed_getstats`, plus the halt-mask, activation and arming state as a timeline.
+4. The revenue panel attributes every enforcement fee and attestor fee output over a session to its
+   payee, and its per-pool totals reconcile to the sum of `feeZat`/`attestFeeZat` over the same
+   blocks' `yed_gettxinfo` rows (asserted by a test).
+5. A session recorded on the devnet replays in the UI with no node running.
+6. A pool operator can run the same binary against a mainnet `ycashd -yellowback` node with no
+   change other than the RPC URL.
+
+## 2. What exists
+
+### 2.1 Repos
+
+| Path | Role | State |
+|---|---|---|
+| `chain-viz/` | `app`, branch `main`, `https://github.com/boyfromcave/chain-viz.git` | `LICENSE` + one-line README (commit `8cfe353`). In `repos.yaml`, `make status`, the Makefile pins line, `.gitignore`, the VS Code workspace, README and AGENTS.md as of this revision (C0). |
+| `ycash-dd/` | the node it watches | `feature/yellowback-price-attest`; no change needed (C-3) |
+| `yolo/` | the pool; optional secondary source | `GET /status` JSON on `--status-port` (`yolo/src/status.rs`, `state.rs:101-116`) |
+
+### 2.2 Data the node already exposes (survey, 2026-09-29, `ycash-dd` at `feature/yellowback-price-attest`)
+
+**Push channels.** ZMQ is compiled in and unchanged from `ref/ycash` (`ycash-dd/src/zmq/*`;
+`-zmqpubhashblock`, `-zmqpubhashtx`, `-zmqpubrawblock`, `-zmqpubrawtx` registered at
+`src/init.cpp:487-490`). The devnet passes no `-zmq*` flag today. `-blocknotify` (`init.cpp:374`)
+and `-txexpirynotify` (`init.cpp:415`) exist. There is **no Yellowback-specific push event**:
+neither an index-applied/undone notification nor a rejected-block one.
+
+**Chain RPCs** (all stock Ycash): `getblock` verbosity 0/1/2, `getchaintips`, `getmempoolinfo`,
+`getrawmempool true` (per-tx size, fee, time, height, depends), `getnetworkhashps`,
+`getmininginfo`, `getblocktemplate`, `getblocksubsidy` (`src/rpc/blockchain.cpp:1524-1531`,
+`src/rpc/mining.cpp:1044-1049`). With `-insightexplorer -txindex`: `getblockdeltas`,
+`getaddressdeltas` (`blockchain.cpp:1538-1539`).
+
+**Read-only `yed_*` RPCs** (`ycash-dd/src/rpc/yellowback.cpp:1905-1930`; contract in
+`ycash-dd/doc/yellowback-rpc-contract.json`), grouped by what chain-viz uses them for:
+
+| Purpose | RPC | Notes |
+|---|---|---|
+| health + params, one call | `yed_getinfo` | tip, `healthy`, `enforcing`, `valveTripped`, `sunset`, `abandoned`, `rejectedBlocks`, `suppressedBlocks`, `activation{}`, `attest{}`, `miner{}`, every param. Works while the index is unhealthy. |
+| supply, collateral, prices | `yed_getstats` | `supplyCents`, `collateralZat`, vault counts by status, `pFast/pMid/pSlow/pMint/pClaim`, `globalRatioBps`, `haltMask`, `mintingAllowed` |
+| price at a height + the decoded tag | `yed_getprice [h]` | window fill, `xMint/xClaim`, `armed`, `seated`, pinned keys |
+| timeline backfill | `yed_gethistory from to` | snapshot rows ≤ 2016 per call: prices, `signalCount`, activation, supply, collateral, ratio, `haltMask`, `blockHash` |
+| activation detail | `yed_getactivation` | thresholds, `signalCount` history (8 rows) |
+| who quotes | `yed_listminers [h window]` | one row per `payoutKey` with a tag in the window: last quote, count, eligible |
+| tag of one block | `yed_gettag height\|hash` | 36-byte tag: `YED!`, version, flags (bit0 signal), `priceMicroUsd`, `sourceMask`, `payoutKey` (`src/yellowback/tag.h:16-31`) |
+| vaults | `yed_listvaults [status count skip]`, `yed_getvault`, `yed_listclaimable`, `yed_getnotice` | paged, default 100 |
+| tx attribution | `yed_gettxinfo txid` | type, path, verdict, `yedIn/yedOut/burned`, `feeZat`, `payee`, `attestFeeZat`, `attestPayee`, `residualZat`, `carrierVin` (`rpc/yellowback.cpp:319-368`) |
+| payload decode, no index | `yed_decodepayload hex` | `feeVout`, `attestFeeVout` |
+| mempool verdict | `yed_validaterawtransaction hex` | dry run at the tip; `wouldBeRejected` |
+| why a block was rejected | `yed_getblockverdict hash` | |
+| attestors | `yed_listattestors [h]`, `yed_getselection`, `yed_getfeepayee` | status, bond, seated/pinned, weight; E(R) and the default payee |
+| tamper-evidence | `yed_getstatehash` | SHA-256 over all index tables; equal across healthy nodes on the same tip |
+
+**Not available, and how chain-viz copes** (each is a row in §4.3):
+
+- No RPC lists a block's Yellowback transactions or TxLog rows by height (`yed_listtokens` needs
+  addresses). → chain-viz identifies Yellowback transactions itself from `getblock … 2` /
+  `getrawmempool`+`getrawtransaction` by the payload's `OP_RETURN` marker, then calls
+  `yed_gettxinfo` only for those (§3.2.3).
+- No event on index disconnect/undo (`UndoDisconnect`, `src/yellowback/index.cpp:458`, logs only
+  under `-debug=yellowback`). → derived from `getchaintips` + tip hash changes that are not
+  child-of-previous (§3.3).
+- Rejected blocks are a count plus a per-hash verdict. → chain-viz keeps the set of hashes it saw
+  on any node's `getchaintips` that never became the main tip and asks `yed_getblockverdict` for
+  each once (§3.3).
+
+### 2.3 The devnet, as a data source
+
+`ycash-dd/contrib/yellowback/devnet/yellowback-devnet` (Python, ~1.7 k lines) writes everything
+chain-viz needs to find the nodes: `~/yb-devnet/devnet.json` carries `portseed`, the roles and a
+per-node `rpc{url,port,user,password}` map (`yellowback-devnet:723-731`); `heartbeat.json`
+(`{height,pool,time,rate,blockhash}`), `sim-stats.json` (per-persona ok/refused counts),
+`mock-price` and `attest-price-N` (the walk's current prices) sit beside it. Plain `up` is 8
+nodes (0 user, 1 stock, 2–4 pools, 5–7 attestors), `up --role …` is 11. Ports are computed by
+`qa/rpc-tests/test_framework/util.py:48-94`; chain-viz reads `devnet.json` and never recomputes.
+yolo's stratum status is at `21000 + (rpc − 16000) + 5000` (`yellowback-devnet:1041-1045`).
+
+### 2.4 Revenue, as the protocol defines it (what the revenue view attributes)
+
+From `docs/spec/yellowback-spec.md` and the v2/v3 plans:
+
+| Flow | Amount | Paid to | Where in the tx | Source |
+|---|---|---|---|---|
+| Enforcement fee (FEE-1/2) on MINT, owner REDEEM, CLAIM | `max(0.5 YEC, 0.25 % × collateral)`; none if E(R) is empty (FEE-0) | `P2PKH(payoutKey)` for one key in E(R) = keys with a quote tag in (R−100, R], chosen by the builder's accuracy-weighted hash selection (FEE-W). **Not necessarily the block's miner.** | MINT `vout[3]`; REDEEM/CLAIM at the payload's `feeVout` | spec :184-198, :213-225, :369-383; `src/yellowback/math.h:185`; `state.cpp:338-345`, `:513-522` |
+| Attestor fee (AFEE-1), only when ARMED | 25 % of the enforcement fee, in addition to it | `P2PKH(bondPubKey)` of one attestor in the bundle | `attestFeeVout` (MINT `vout[4]`) | spec :754-756, :808-820; `math.h:270`; `state.cpp:356-360`, `:524-533` |
+| Network fee | 1 000 zat flat | the block's miner, as an ordinary fee | coinbase | spec :57 |
+| Coinbase subsidy | stock Ycash | the block's miner | coinbase `vout` | `getblocksubsidy` |
+| Claim / liquidation | claimant burns the debt in YED and takes the collateral; residual ≥ 100 000 zat back to the owner when ARMED (RED-5) | claimant / owner | vault spend outputs | spec :152-166, :909-917 |
+| No-enforcement release | with enforcement off (sunset, valve, abandonment) the vault's `OP_TRUE` path lets whoever mines the spend take the collateral | the miner | vault spend | spec :160; `why-miner-enforced.md:140` |
+| Attestor bond | earns nothing directly; ejection only (EQV-1), never slashed | — | `vout[0]` of ATTESTOR_REGISTER | spec :705, :995-997 |
+
+The decisive point for the pitch: the fee goes to a **quoting** key, not to the block winner, so a
+pool with 5 % of hashpower that publishes an honest tag every block is in E(R) for every fee in the
+network, while a pool with 40 % that does not quote earns none of them. That is the number to show.
+
+## 3. Design
+
+### 3.1 Shape
+
+```
+chain-viz/
+├── Cargo.toml                 one binary: `chain-viz`
+├── src/
+│   ├── main.rs                CLI: --nodes <devnet.json|url,…> --listen 127.0.0.1:8480 --record <dir> --replay <file>
+│   ├── rpc.rs                 JSON-RPC client (auth from devnet.json / cookie / user:pass), retry, per-node rate limit
+│   ├── zmq.rs                 optional: subscribe hashblock/hashtx per node when the node advertises -zmqpub*
+│   ├── poll.rs                fallback: getbestblockhash + getrawmempool at --poll (default 1 s regtest, 5 s mainnet)
+│   ├── model/                 the in-memory picture: chain.rs (blocks, tips, per-node heads), mempool.rs,
+│   │                          yellowback.rs (health, prices, vaults, activation, arming), revenue.rs (ledger)
+│   ├── classify.rs            Yellowback tx identification from raw tx (OP_RETURN marker) → yed_gettxinfo enrichment
+│   ├── events.rs              the typed event stream every source produces and the UI consumes; session.jsonl codec
+│   ├── server.rs              axum: GET / (embedded UI), GET /api/snapshot, GET /api/events?since, WS /ws
+│   └── replay.rs              feed a session.jsonl into the model at wall-clock or accelerated speed
+├── ui/                        embedded with include_dir!: index.html, app.js (ES modules), panels/*.js, vendored d3 (single file)
+├── tests/                     fixture-driven: recorded RPC responses → model → asserted snapshots (no node needed)
+└── qa/                        `regtest.sh`: bring up yellowback-devnet, run chain-viz, drive a scenario, assert over /api
+```
+
+**Why Rust rather than Python.** The devnet, the sim and the functional tests are Python, and a
+Python collector would be quicker to start. But the deliverable is also something a pool operator
+runs beside a mainnet node for weeks: one static binary with no interpreter, no venv and no
+dependency on the workspace `requirements.txt` is the right shape for that audience, and `yolo/`
+has already put the toolchain, the RPC-client patterns and the `tracing` conventions in place to
+copy. The UI is deliberately build-step-free so that a contributor can edit `ui/app.js` and
+reload. If the owner prefers Python (decision C-4), the layout above maps one-to-one onto
+`asyncio` + `aiohttp` + `pyzmq` and the phases do not change.
+
+**Why one process, many nodes.** Each configured node gets its own RPC client, poller and (when
+advertised) ZMQ subscriber; all feed one event bus, tagged by node id. The model keeps a per-node
+head and one merged block DAG. A single-node deployment is the degenerate case.
+
+### 3.2 The views
+
+Each view is a panel in one page; the layout is a fixed grid, phone-width down to a single column.
+All charts follow the `dataviz` skill conventions (one system, light and dark).
+
+#### 3.2.1 Chain — the block sequence
+
+- **The DAG**, newest right: main-chain blocks as a row; side-chain and stale blocks hang below their
+  fork point (`getchaintips`: `valid-fork`, `valid-headers`, `headers-only`, `invalid`). Each block:
+  height, short hash, miner (from the tag's `payoutKey`, or the coinbase address when untagged),
+  tx count, size, the tag's price and signal bit as a small badge, and a red edge if any node
+  rejected it (`yed_getinfo.rejectedBlocks` delta + `yed_getblockverdict`).
+- **Time since last block**, large, beside the target spacing (Ycash 75 s mainnet; the devnet
+  heartbeat's `rate`), coloured past 2× and 4×.
+- **Per-node heads**: one chip per configured node with its tip height and hash; chips that
+  disagree with the majority are highlighted. This is the fork-risk indicator (C-5).
+- **Reorg log**: every time a node's tip moves to a block that is not a child of its previous tip,
+  an event `reorg{node, depth, from, to}` is recorded and shown; depth is the common-ancestor distance.
+- **Risk gauges**, derived, labelled as derived: *fork risk* = number of nodes disagreeing × time
+  disagreeing; *orphan risk* = blocks at the same height within the last window; *reorg risk* =
+  max side-branch work within `branchlen` ≤ 6 (the work-valve depth, `index.cpp:575-600`), with
+  the valve state overlaid, because a valve trip is exactly a reorg the enforcing nodes refused.
+
+#### 3.2.2 Mempool
+
+- Bubble/strip of `getrawmempool true` entries by fee rate and age; Yellowback transactions coloured
+  by type (MINT, SEND, REDEEM, CLAIM, SWEEP, VOID, ATTESTOR_REGISTER, …) after §3.2.3
+  classification; every other tx grey.
+- Per Yellowback tx: `yed_validaterawtransaction` verdict at the current tip, so a vault spend that
+  *would be rejected* by an enforcing node is shown red **before** a pool includes it — the miner-
+  enforcement rule made visible.
+- Counts and totals: tx count, bytes, fee total, and the YED value in flight (`yedIn/yedOut`).
+- Time-in-mempool per tx, with the median shown; a Yellowback tx sitting longer than 2 blocks is
+  flagged (a pool filtering it, or a fee below policy).
+- Cross-node: a tx present on some nodes and not others is marked (propagation, or a stock node
+  refusing a Yellowback tx it does not understand — the `stock_node` test's case).
+
+#### 3.2.3 Yellowback transaction classification
+
+A Yellowback transaction is recognised without the index by its payload output (the `OP_RETURN`
+carrying the Yellowback payload; exact marker per `yed_decodepayload`'s contract in
+`doc/yellowback-rpc-contract.json`). chain-viz scans each block's and each mempool tx's outputs
+locally, and only for matches calls `yed_gettxinfo` (confirmed) or `yed_decodepayload` +
+`yed_validaterawtransaction` (unconfirmed). Cost: one RPC per Yellowback tx, none per ordinary tx.
+On a mainnet block of thousands of ordinary transactions this is a handful of calls. If it ever
+is not, N-1 (§4.3) is the remedy, not a change here.
+
+#### 3.2.4 Yellowback health
+
+- **State ribbon**: `healthy`, `enforcing`, `valveTripped`, `sunset`, `abandoned`; activation
+  `SIGNALING → LOCKED_IN → ACTIVE` with `signalCount/window` and the 75 %/60 %/50 % lines; arming
+  `UNARMED → TRIGGERED → ARMED` with `seatedCount/poolSize`. Each is a stripe on a **timeline**
+  (x = height) backfilled from `yed_gethistory` and extended live; state changes are events.
+- **Halt mask** bits (`NOT_ACTIVE, NO_PRICE, PARTICIPATION, GLOBAL_RATIO, DIVERGENCE, ENFORCEMENT`)
+  as a lane each; `mintingAllowed` as the summary.
+- **Prices**: `pFast`, `pMid`, `pSlow` lines, `pMint` and `pClaim` as bands, the attestor `aMint`/
+  `aClaim` when armed, the devnet's `mock-price` (the truth the walk is feeding) as a dotted line so
+  lag and window fill are visible. Window fill per window (regtest 8/24/64; mainnet 96/576/2016,
+  `src/yellowback/params.cpp:23-25, 190-192`).
+- **Supply and collateral**: `supplyCents`, `collateralZat`, `globalRatioBps` vs the 110 % claim
+  and 105 % emergency lines, `unbackedCents`; net change per block from the previous snapshot.
+- **Vaults**: count by status (ACTIVE/VOID/CLOSED/CLAIMED); a scatter of ACTIVE vaults by ratio and
+  blocks-to-`claimHeight`, with `yed_listclaimable` highlighted. This is where a `--shock` is watched.
+- **Attestors**: `yed_listattestors` table with status, bond, seated/pinned, weight; equivocation
+  reports and ejections as events.
+- **Consistency**: `yed_getstatehash` per node; a mismatch between healthy nodes on the same tip is
+  the loudest alarm on the page.
+- **Rejected/suppressed** counters with the per-hash verdicts inline.
+
+#### 3.2.5 Revenue — "what participation pays"
+
+The ledger (`model/revenue.rs`) is a list of attributed outputs, one row per
+`(height, txid, vout, kind, zat, payee)` with `kind ∈ {subsidy, netfee, enforcefee, attestfee,
+collateral_release, residual}`, built from the coinbase (`subsidy`, `netfee`) and from the
+`yed_gettxinfo` of every Yellowback tx (`feeZat`→`payee`, `attestFeeZat`→`attestPayee`,
+`residualZat`→owner). The view:
+
+- **USD (C-9)**: every YEC figure below is shown with its USD equivalent at that height's `pMint`,
+  labelled "at pMint"; the mempool uses the current `pMint`.
+- **Per block**: coinbase subsidy + network fees (what every miner already earns) beside the
+  Yellowback fees paid in that block, and to whom.
+- **Per pool `payoutKey`** over the session or a height range: blocks mined, tags published, times
+  selected as fee payee, YEC earned from enforcement fees, YEC per tag, YEC per block mined,
+  compared with the stock coinbase earned. `yed_listminers` supplies the tag counts and the
+  eligible flag.
+- **Per attestor bond key**: fees received, times selected, bond posted, fees ÷ bond as a running
+  yield (labelled as realised, not promised).
+- **The counterfactual for a non-participant** (C-7): for each fee output at height R, chain-viz
+  knows E(R) (`yed_getfeepayee R collat`). A key that had quoted would have been one more member;
+  its expected share under uniform selection is `fee / (|E(R)|+1)`, and the panel shows the sum of
+  those over the range as "a quoting pool of any size would have expected ≈ X YEC in this range".
+  Accuracy weighting (FEE-W) makes the realised figure for an honest quoter higher; the label says so.
+- **Not enforced?** When `enforcing` is false, the ledger's `collateral_release` rows show who took
+  vault collateral through the `OP_TRUE` path — the cost of not enforcing, made visible.
+
+### 3.3 Fork, orphan and reorg detection without a push event
+
+Per node, on each `hashblock` (ZMQ) or `getbestblockhash` change (poll):
+
+1. Fetch `getblock <hash> 1`; if `previousblockhash` ≠ the node's last head → walk back until a
+   known block; emit `reorg{depth}` if depth > 0 and the abandoned blocks are now `getchaintips`
+   side branches.
+2. Refresh `getchaintips`; any tip not seen before is a `sidechain_block` event; tips that later
+   vanish are `orphaned`.
+3. Poll `yed_getinfo.rejectedBlocks`/`suppressedBlocks`; a delta triggers `yed_getblockverdict` on
+   each new side tip for the reason.
+4. Merge: the DAG is the union across nodes; the "main chain" drawn is the majority head (ties →
+   the most-work tip, as reported by `getchaintips`' `branchlen` ordering + `getblock.chainwork`).
+
+### 3.4 Sources beyond the node (optional, each behind a flag)
+
+- `--devnet <dir>`: read `devnet.json` for the nodes; read `heartbeat.json`, `sim-stats.json`,
+  `mock-price`, `attest-price-N` for the devnet lanes (heartbeat rate, persona refusals, the
+  price the walk is feeding).
+- `--yolo <url>`: poll yolo's `/status` for `miners`, `templateAgeSeconds`, `accepted/rejected`,
+  `lastSubmitVerdict`, drawn on the pool's chip.
+- `--lightwalletd <url>`: scrape its Prometheus `/metrics` (default 127.0.0.1:9068) for request
+  rates, drawn as a small lane, so a YEW/lightwalletd load test is visible beside the chain.
+
+### 3.5 API
+
+`GET /api/snapshot` — the whole model as JSON (what the UI loads on open).
+`GET /api/events?since=<seq>` — the event log from a sequence number.
+`WS /ws` — the same events, pushed.
+`GET /api/revenue?from=<h>&to=<h>&by=payoutKey|attestor|block` — the ledger rolled up.
+`GET /api/health` — for a nightly run to assert on (`yellowback_devnet_roles.py` can `curl` it).
+
+The event schema (`events.rs`) is the contract between collector, UI, recorder and tests. It is
+versioned; `session.jsonl` carries the version on line 1.
+
+### 3.6 Record and replay
+
+`--record <dir>` appends every event to `<dir>/session.jsonl` with wall-clock and height.
+`--replay <file> [--speed 10]` runs the server from the file with no node, honouring inter-event
+gaps ÷ speed; the UI is unchanged. `yellowback-devnet report` will bundle the session file (a
+devnet change in `contrib/`, zero C++). The nightly regression keeps the last N sessions.
+
+## 4. The interface contract with the node (read-only; AGENTS.md rule 2)
+
+### 4.1 What chain-viz calls
+
+| Channel | Methods |
+|---|---|
+| ZMQ (optional; the devnet will pass `-zmqpubhashblock`/`-zmqpubhashtx` per node — a `contrib/` change) | `hashblock`, `hashtx` |
+| stock RPC | `getbestblockhash`, `getblock` (1, 2), `getblockhash`, `getchaintips`, `getrawmempool true`, `getrawtransaction`, `getmempoolinfo`, `getmininginfo`, `getnetworkhashps`, `getblocksubsidy`, `getblockchaininfo`, `getpeerinfo` (count only) |
+| `yed_*` read | `yed_getinfo`, `yed_getstats`, `yed_getprice`, `yed_gethistory`, `yed_getactivation`, `yed_listminers`, `yed_gettag`, `yed_gettxinfo`, `yed_decodepayload`, `yed_validaterawtransaction`, `yed_getblockverdict`, `yed_listvaults`, `yed_getvault`, `yed_listclaimable`, `yed_getnotice`, `yed_listattestors`, `yed_getfeepayee`, `yed_getstatehash` |
+
+### 4.2 What chain-viz never calls
+
+`yed_setquote`, `yed_addattestation`, every wallet-table `yed_*` (`yed_mint`, `yed_send`, …,
+`yed_registerattestor`, `yed_signattestation`), `generate`, `submitblock`, `sendrawtransaction`,
+`getblocktemplate` (reserved to pools; not needed), any wallet RPC. A CI grep over `src/` for
+these names fails the build (the same kind of gate the pool plan uses for the tag).
+
+### 4.3 Gaps in the node surface, and their disposition
+
+| # | Gap | chain-viz workaround | Node ask (Tier 0, RPC only; not scheduled) |
+|---|---|---|---|
+| N-1 | No RPC lists a block's Yellowback txs / TxLog rows by height | client-side classification (§3.2.3), one `yed_gettxinfo` per match | `yed_listblocktxs height\|hash` → TxLog rows |
+| N-2 | No push event for index apply/undo/reject | derived from tips + counters (§3.3) | a ZMQ topic `yedevent` or a `-yellowbacknotify <cmd>` |
+| N-3 | `yed_listtokens` needs addresses; no global token/UTXO set | supply from `yed_getstats`, flows from the ledger | a paged `yed_listalltokens` (also asked by the lightwalletd plan) |
+| N-4 | Devnet passes no `-zmq*` flags | polling at 1 s is enough on regtest | `contrib/` only: add the flags per node (C4 does this) |
+
+## 5. Work items and checklists
+
+Chunks are sized for one agent each in the `yolo/`-style workflow (one repo, `main`, small
+commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
+
+### C0 — workspace plumbing (done 2026-09-29, workspace repo)
+
+- [x] `repos.yaml` entry (`app`, `main`), Makefile pins line and `pins` target, `repo-status.sh`
+      row, `.gitignore`, `yellowback.code-workspace` root, README components table/tree/pins,
+      AGENTS.md layout and rule 2, this plan, `docs/plans/README.md` row.
+- [x] `make status-short` shows `chain-viz … main ✔`; bootstrap dry run resolves it.
+
+### C1 — collector core (agent `viz-core`, repo `chain-viz/`)
+
+- [ ] Cargo skeleton mirroring `yolo/` (edition, `tracing`, `rust-toolchain.toml`, `clippy` clean).
+- [ ] `rpc.rs`: JSON-RPC over HTTP with basic auth from `devnet.json` or `--rpcuser/--rpcpassword`
+      or cookie; per-node concurrency limit; typed responses for §4.1.
+- [ ] `poll.rs` + `zmq.rs` behind one `Source` trait; `events.rs` schema v1.
+- [ ] `model/chain.rs`: block DAG, per-node heads, tips, reorg detection (§3.3) with unit tests on
+      recorded fixtures (a 3-node fork, a depth-2 reorg, an orphan).
+- [ ] `model/mempool.rs`: entries with first-seen per node.
+- [ ] `server.rs`: `/api/snapshot`, `/api/events`, `/ws`, `/api/health`; `--record`.
+- [ ] Acceptance: against `yellowback-devnet up`, `curl /api/snapshot` shows 8 heads agreeing, and
+      a `mine 1` appears as a `block` event within one poll interval.
+
+### C2 — chain and mempool UI (agent `viz-ui`, after C1's schema; can start on fixtures)
+
+- [ ] `ui/`: page shell, theme tokens, WebSocket client with reconnect and snapshot resync.
+- [ ] Block sequence panel (§3.2.1), per-node heads, time-since-block, reorg log, risk gauges.
+- [ ] Mempool panel (§3.2.2) without Yellowback colouring yet.
+- [ ] Acceptance: the `yellowback_reorg_stress.py` recipe run by hand on the devnet is visible as
+      side branches and a reorg entry; a stopped pool's chip falls behind and recovers.
+
+### C3 — Yellowback health (agent `viz-yb`, after C1)
+
+- [ ] `classify.rs` (§3.2.3) with fixtures for every tx type in `doc/yellowback-rpc-contract.json`.
+- [ ] `model/yellowback.rs`: `yed_getinfo`/`getstats`/`getprice`/`listvaults`/`listattestors`
+      per node; `yed_gethistory` backfill in 2016-row pages; state-change events; statehash compare.
+- [ ] Health panel (§3.2.4); mempool colouring and `wouldBeRejected` marks (§3.2.2).
+- [ ] Acceptance: `price --shock=-70%` then `sim start` shows vaults crossing 110 %, the liquidator's
+      CLAIMs in the mempool, and `haltMask` lanes changing, matching `yellowback-devnet report`.
+
+### C4 — revenue ledger and panel (agent `viz-rev`, after C3)
+
+- [ ] `model/revenue.rs` (§3.2.5), rollups, `/api/revenue`, the counterfactual with its label.
+- [ ] Panel: per block, per pool, per attestor, counterfactual, no-enforcement releases.
+- [ ] Reconciliation test: Σ ledger `enforcefee` over [a, b] = Σ `yed_gettxinfo.feeZat` over the
+      same blocks' Yellowback txs; likewise `attestfee`.
+- [ ] `contrib/` change in `ycash-dd`: the devnet passes `-zmqpubhashblock`/`-zmqpubhashtx` per node,
+      `up` auto-starts chain-viz on `devnet.json` when a binary is found and prints the URL, `down`
+      stops it, `--no-viz` opts out (C-11; Python only, zero C++).
+
+### C5 — devnet integration and the functional test (agent `viz-qa`, worktree of `ycash-dd`, after C4)
+
+- [ ] `qa/rpc-tests/yellowback_chainviz.py`: starts a 3-node regtest, runs the `chain-viz` binary
+      (`CHAINVIZ_BIN`, skipped if unset, the way `yellowback_stratum.py` treats yolo), mines, mints,
+      forces a reorg, asserts over `/api/health` and `/api/revenue` against the node's own RPCs.
+- [ ] `yellowback_devnet_roles.py` gains an optional chain-viz session recording (`--record`).
+- [ ] Acceptance: the test is green in the nightly; a recorded session replays.
+
+### C6 — record, replay, sessions (agent `viz-core`)
+
+- [ ] `replay.rs`, `--speed`, session versioning; `yellowback-devnet report` bundles `session.jsonl`.
+- [ ] Acceptance: a nightly failure is diagnosed from its session file alone, once, and written up.
+
+### C7 — mainnet hardening and packaging (agent `viz-core`, after C5)
+
+- [ ] `--poll 5s` defaults by network (from `getblockchaininfo.chain`); `-txindex`-less operation
+      (`getrawtransaction` only for mempool txs and blocks fetched with verbosity 2).
+- [ ] Bind to loopback by default; `--listen` documented with a reverse-proxy note; no secrets in
+      `/api/snapshot`; RPC credentials never logged.
+- [ ] Hosting pieces (C-10): `--public` mode (API rate limit, no node credentials or hostnames in any
+      response), `--export <dir>` writing a static snapshot the UI can open with no server.
+- [ ] Release build in CI for macOS and Linux, the `yolo/` workflow copied.
+- [ ] Acceptance: a run against a mainnet `ycashd -yellowback -experimentalfeatures` for 24 h with
+      no RPC error storm and steady memory (blocks beyond `--keep 5000` are evicted from the model,
+      the ledger rollups kept).
+
+### C8 — docs
+
+- [ ] `chain-viz/README.md`: run against the devnet, run against your node, what each panel means,
+      what the revenue numbers are and are not.
+- [ ] `docs/mapping.md` §18: the chain-viz findings (C-F rows) and the N-1..N-4 asks.
+- [ ] This plan's §9 status table; the workspace README components row confirmed.
+
+## 6. Sequencing
+
+```
+C0 ── C1 ──┬── C2 (UI shell, chain, mempool)
+           └── C3 (health) ── C4 (revenue + devnet zmq/viz) ── C5 (qa) ── C7 (mainnet)
+                                                           └── C6 (replay)      └── C8
+```
+
+C2 and C3 run in parallel from C1's event schema; C2 works on recorded fixtures until C3 lands.
+Estimate: C1 3 d, C2 4 d, C3 4 d, C4 3 d, C5 2 d, C6 2 d, C7 3 d, C8 1 d ≈ 22 agent-days, of
+which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/` only.
+
+## 7. Budgets and constraints
+
+- **Node:** zero lines outside `contrib/yellowback/devnet/` and `qa/rpc-tests/`. N-1..N-3 are
+  recorded, not scheduled; any one of them is a separate Tier-0 RPC commit with the four-part check.
+- **Read-only:** §4.2 enforced by a CI grep in `chain-viz/`.
+- **Load on the node:** per node, at most one `getrawmempool true` and one `yed_getinfo` per poll
+  interval, `getblock` once per new hash, `yed_gettxinfo` once per Yellowback tx (cached by txid),
+  `yed_listvaults` paged and refreshed only when `yed_getstats` vault counts change. Mainnet default
+  poll 5 s. A budget test asserts RPC counts per block on the regtest fixture.
+- **No consensus opinion:** chain-viz draws what the nodes say. Where nodes disagree it shows the
+  disagreement; it never picks a "correct" chain beyond the majority-head rule for layout.
+- **Naming:** Yellowback the system, YED the unit (AGENTS.md rule 6); no `digidollar` anywhere.
+- **Not in scope:** shielded pools (Sprout/Sapling values are shown as opaque totals from
+  `getblock`), address-level explorer search across history (needs `-insightexplorer`; a later
+  option), alerts/paging (the health endpoint is what a monitor scrapes).
+
+## 8. Open questions for the owner
+
+1. Where the public instance (C-10) is hosted. Everything else in revision 1's list was decided in
+   revision 2.
+
+## 9. Implementation status
+
+| Chunk | Status | Where |
+|---|---|---|
+| C0 workspace plumbing | done 2026-09-29 | workspace repo (`repos.yaml`, Makefile, scripts, README, AGENTS.md, this plan) |
+| C1 collector core | not started | `chain-viz/` |
+| C2 chain + mempool UI | not started | `chain-viz/ui/` |
+| C3 Yellowback health | not started | `chain-viz/` |
+| C4 revenue + devnet zmq/viz | not started | `chain-viz/`, `ycash-dd/contrib/` |
+| C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
+| C6 record/replay | not started | `chain-viz/` |
+| C7 mainnet hardening | not started | `chain-viz/` |
+| C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
+
+Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
