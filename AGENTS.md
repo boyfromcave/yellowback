@@ -28,6 +28,7 @@ yellowback-workspace/
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
+├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
@@ -42,9 +43,10 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, five repos.** Yellowback is an overlay on the node; around it sit the GUI wallet,
-lightwalletd, the mobile wallet (YEW) and the mining pool (yolo), each in its own repo and each
-reaching the node only through a public interface (README.md, the components table).
+**One overlay, six repos.** Yellowback is an overlay on the node; around it sit the GUI wallet,
+lightwalletd, the mobile wallet (YEW), the mining pool (yolo) and the visualizer (chain-viz), each
+in its own repo and each reaching the node only through a public interface (README.md, the
+components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
 the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
@@ -86,6 +88,10 @@ Pool software goes in `yolo/` only — also its own repository on `main` (`ref/y
 reference it rewrites) — and the node's stock mining RPCs (`getblocktemplate`, `submitblock`,
 `validateaddress`, `getblockchaininfo`) are its sole interface: a pool never calls `yed_*` and
 never needs a node change (`docs/plans/role-pool-regtest-plan.md` §6).
+The visualizer goes in `chain-viz/` only — its own repository on `main` — and it is a strictly
+read-only sidecar: it reaches the node through the stock read RPCs (`getblock`, `getrawmempool`,
+`getchaintips`, `getblocktemplate`, …), the read-only `yed_*` RPCs and the node's notify hooks,
+never writes a transaction, and never needs a consensus change (`docs/plans/chain-viz-plan.md` §4).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -186,7 +192,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all eleven repos: fetches origin, ahead/behind, pin verification
+make status     # git status across all twelve repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline
