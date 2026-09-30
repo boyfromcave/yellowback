@@ -565,12 +565,12 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | Chunk | Status | Where |
 |---|---|---|
 | C0 workspace plumbing | done 2026-09-29 | workspace repo (`repos.yaml`, Makefile, scripts, README, AGENTS.md, this plan) |
-| C1 collector core | in progress (agent `viz-core`, 2026-09-29) | `chain-viz/` |
-| C2 chain + mempool UI | done 2026-09-30 (branch `c2-ui` in `wt/viz-ui`, 5 commits, unmerged) | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
-| C3 Yellowback health | done 2026-09-29 (`wt/viz-yb`, branch `c3-yb`, unmerged, not pushed) | `chain-viz/` |
-| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
-| C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
-| C6 record/replay | replay + sessions + CI done 2026-09-29 (`wt/viz-replay`, `c6-replay`, unmerged); devnet `report` bundle and the nightly-diagnosis acceptance open | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
+| C1 collector core | done 2026-09-29, merged on `chain-viz` `main` and pushed | `chain-viz/src/{rpc,events,bus,collector,server}.rs`, `source/`, `model/{chain,mempool}.rs` |
+| C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
+| C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
+| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29, merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half in progress (agent `viz-rev`, `wt/viz-rev`, branch `c4-revenue`) | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
+| C5 functional test | in progress (agent `viz-qa`, `wt/viz-qa-node`, branch `feature/chain-viz-qa`) | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
+| C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | done except the 24 h mainnet acceptance, 2026-09-30 (`wt/viz-hard`, branch `c7-harden`, unmerged) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
 
