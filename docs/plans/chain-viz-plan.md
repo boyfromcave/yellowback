@@ -379,18 +379,23 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       AGENTS.md layout and rule 2, this plan, `docs/plans/README.md` row.
 - [x] `make status-short` shows `chain-viz … main ✔`; bootstrap dry run resolves it.
 
-### C1 — collector core (agent `viz-core`, repo `chain-viz/`)
+### C1 — collector core (agent `viz-core`, repo `chain-viz/`) — done 2026-09-29
 
-- [ ] Cargo skeleton mirroring `yolo/` (edition, `tracing`, `rust-toolchain.toml`, `clippy` clean).
-- [ ] `rpc.rs`: JSON-RPC over HTTP with basic auth from `devnet.json` or `--rpcuser/--rpcpassword`
-      or cookie; per-node concurrency limit; typed responses for §4.1.
-- [ ] `poll.rs` + `zmq.rs` behind one `Source` trait; `events.rs` schema v1.
-- [ ] `model/chain.rs`: block DAG, per-node heads, tips, reorg detection (§3.3) with unit tests on
-      recorded fixtures (a 3-node fork, a depth-2 reorg, an orphan).
-- [ ] `model/mempool.rs`: entries with first-seen per node.
-- [ ] `server.rs`: `/api/snapshot`, `/api/events`, `/ws`, `/api/health`; `--record`.
-- [ ] Acceptance: against `yellowback-devnet up`, `curl /api/snapshot` shows 8 heads agreeing, and
-      a `mine 1` appears as a `block` event within one poll interval.
+- [x] Cargo skeleton mirroring `yolo/` (edition, `tracing`, `rust-toolchain.toml`, `clippy` clean).
+- [x] `rpc.rs`: JSON-RPC over HTTP with basic auth from `devnet.json` or `--rpcuser/--rpcpassword`
+      or cookie; per-node concurrency limit; typed responses for §4.1. (Cookie auth deferred to C7:
+      the devnet and `--nodes` carry user/password; per-method call counters are in.)
+- [x] `poll.rs` + `zmq.rs` behind one `Source` trait; `events.rs` schema v1.
+- [x] `model/chain.rs`: block DAG, per-node heads, tips, reorg detection (§3.3) with unit tests on
+      recorded fixtures (a 3-node fork, a depth-2 reorg, an orphan) — `tests/chain_model.rs`,
+      `tests/fixtures/chain-{agree,reorg2,orphan}.json` recorded from a live devnet.
+- [x] `model/mempool.rs`: entries with first-seen per node.
+- [x] `server.rs`: `/api/snapshot`, `/api/events`, `/ws`, `/api/health`; `--record`.
+- [x] Acceptance: against `yellowback-devnet up` (`--portseed 31`), `curl /api/snapshot` showed 8
+      heads agreeing, a `mine 1` appeared as a `block` event 0.69 s after the command (poll 1 s),
+      and a reorg induced on one node (`invalidateblock` of two blocks + `generate 3` from the
+      recording script, never from chain-viz) appeared as `reorg{depth:2}` on every other node
+      with the two abandoned blocks `orphaned`.
 
 ### C2 — chain and mempool UI (agent `viz-ui`, after C1's schema; can start on fixtures)
 
@@ -502,6 +507,17 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
 
 Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
+
+### Findings
+
+| # | Finding | Disposition |
+|---|---|---|
+| C-F1 | `devnet.json`'s `rpc.<n>.url` embeds the credentials as userinfo and they are non-ASCII (`rpcuser💻N` / `rpcpass🔑N`, `qa/rpc-tests/test_framework/util.py:185`). Python's `http.client` refuses the header (`latin-1`), reqwest percent-encodes it; either way the separate `user`/`password` fields are the ones to use. | `rpc::nodes_from_devnet` strips the userinfo and keeps `host:port`; the Authorization header carries the UTF-8 pair. Any other consumer of `devnet.json` (C5's test, yolo) should do the same. |
+| C-F2 | Ycash 4.5 has no `getzmqnotifications` (`git -C ref/ycash grep` finds none), so a node's ZMQ endpoint cannot be discovered. | `--zmq <id>=<tcp url>` and an optional `zmq: {"<n>": "tcp://…"}` map in `devnet.json` (C4 writes it when it adds the `-zmqpub*` flags, N-4). Polling is always on; ZMQ only wakes the poller early. |
+| C-F3 | `getchaintips` status is per node for the same hash: after `invalidateblock` on node 3, node 3 reports the majority's branch as `invalid` while the others call it `active`; a block that reached a node as a header only is `valid-headers` there and `valid-fork`/`active` elsewhere. And it lists tips only, never their ancestors. | The model keeps tips per node (`ChainSnapshot.tips`), never merges statuses, and knows a side branch's tip only (its parent stays unknown until some node's best chain walks through it). |
+| C-F4 | A competing block that arrives as a header only moves no node's head, so refreshing `getchaintips` only on head changes misses it; refreshing every poll is wasteful on mainnet (`getchaintips` walks the whole block index, `src/rpc/blockchain.cpp:1214`). | The collector refreshes tips on every head move and every 10 polls otherwise (`collector::TIPS_EVERY`). |
+| C-F5 | Eight collectors starting against an empty model each walked the 20-block backfill (8 × 21 `getblock`). | The first fetch per node is serialized behind one mutex; only the first node walks, the rest find their head known (21 + 7 × 1 `getblock` on the devnet). |
+
 
 | # | Finding | Disposition |
 |---|---|---|
