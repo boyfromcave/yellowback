@@ -22,7 +22,7 @@ What shipped, on `chain-viz` `main` (boyfromcave/chain-viz): the collector core 
 and mempool UI (C2), Yellowback classification, health model and panel (C3), the revenue ledger,
 `/api/revenue` and its panel (C4, chain-viz half), session record and replay with the CI workflow
 (C6), mainnet hardening — cookie auth, `--public`, `--export`, `--keep` eviction, the hardening
-tests and the soak script (C7), the C5 fixes (`c5-fixes`, C-F25/C-F26, merged `911e8d6`) — and
+tests and the soak script (C7), the C5 fixes (`c5-fixes`, C-F25/C-F26, merged `36f016a`) — and
 the user guide (C8, `chain-viz/README.md`, with `docs/screenshot.png` from a real-browser pass on
 an 11-node devnet, which also fixed three UI defects: colliding price end-labels, tables widening
 the page at phone width, the Yellowback transaction table not sorted by height). On `ycash-dd`
@@ -650,7 +650,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
 | C4 revenue + devnet zmq/viz | done 2026-09-29: devnet half merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half merged on `chain-viz` `main` and pushed; auto-start verified with the real release binary 2026-09-30 | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
-| C5 functional test | done locally 2026-09-30, merged on `ycash-dd` `feature/yellowback-price-attest` (`038252fc9`, `fb78a9b65`, `2fe3c47a9`, `a6d26c8b2`) and chain-viz `c5-fixes` merged on `main` (`911e8d6`); nightly CI acceptance pending a run | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
+| C5 functional test | done locally 2026-09-30, merged on `ycash-dd` `feature/yellowback-price-attest` (`038252fc9`, `fb78a9b65`, `2fe3c47a9`, `a6d26c8b2`) and chain-viz `c5-fixes` merged on `main` (`36f016a`); nightly CI acceptance pending a run | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
 | C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | done 2026-09-30, merged on `main` and pushed; the 24 h mainnet acceptance is the owner's to run (no mainnet node here) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | done 2026-09-30 (agent `viz-docs`): README user guide, mapping §18, findings consolidated, visual pass with three UI fixes | `chain-viz/README.md`, `chain-viz/docs/screenshot.png`, `docs/mapping.md` §18, this plan |
