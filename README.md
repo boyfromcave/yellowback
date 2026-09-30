@@ -32,10 +32,14 @@ yellowback-workspace/
 │   ├── ycash/       READ-ONLY  Ycash     @ v4.5.0   — the pristine node, for diffing against
 │   ├── yecwallet/   READ-ONLY  YecWallet @ v4.5.0   — the pristine GUI wallet, for diffing against
 │   ├── lightwalletd/ READ-ONLY yodl/lightwalletd @ master 187a26765e (0.4.6 + 4, no tag) — the pristine light-client server
+│   ├── ycash6/      READ-ONLY  miodragpop/ycash @ dev-rebase-6.20.0 040894344b (no tag) — ycashd 6.20.0, the second node line
+│   ├── librustzcash6/ READ-ONLY miodragpop/librustzcash @ ycashd-v6.20.0 ec525fae82 (no tag) — the patched librustzcash ycashd 6.20.0 pins
 │   └── yolo/        READ-ONLY  yecdev/yolo @ main c9c155c6 (no tag) — the Perl stratum pools the Rust yolo rewrites
 ├── ycash-dd/        WORKING FORK of the node   — `feature/yellowback-price-attest` off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet — `feature/yellowback-price-attest` off `yecwallet-legacy` (= v4.5.0)
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd — `feature/yellowback-price-attest` off `lightwalletd-legacy` (= 187a26765e)
+├── ycash6/          WORKING FORK of the v6.20.0 node — `feature/yellowback` off `ycash6-legacy` (= 040894344b); the port of the overlay to 6.20.0
+├── librustzcash6/   WORKING FORK of the patched librustzcash — `feature/yellowback` off `librustzcash6-legacy` (= ec525fae82)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo on `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo, Rust rewrite of yecdev/yolo), its own repo on `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo on `main` — plan docs/plans/chain-viz-plan.md
@@ -53,7 +57,7 @@ yellowback-workspace/
 ├── scripts/         bootstrap.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
 ├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
-├── yellowback.code-workspace   VS Code: parent + all eleven clones as roots, ref/ read-only
+├── yellowback.code-workspace   VS Code: parent + all fifteen clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
 
@@ -326,7 +330,7 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts. The eleven nested clones
+The workspace repo tracks only the documents, the manifest and the scripts. The fifteen nested clones
 under `ref/`, `ycash-dd/`, `yecwallet-dd/`, `lightwalletd-dd/`, `yew/`, `yolo/` and `chain-viz/` are plain git repositories (not submodules),
 gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
 
@@ -357,7 +361,7 @@ What `make bootstrap` does, in order:
    `upstream` remote (`yolo`'s Perl ancestor is `ref/yolo`).
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
-4. `make status-short` — a summary of all twelve repos, with the `ref/` pins verified.
+4. `make status-short` — a summary of all sixteen repos, with the `ref/` pins verified.
 
 Options, passed as `make` variables:
 
@@ -384,7 +388,7 @@ in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends syst
 ```bash
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
-make status         # git status for all twelve repos: fetches origin, ahead/behind, ref/ pins verified
+make status         # git status for all sixteen repos: fetches origin, ahead/behind, ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
 make diff           # fork deltas: each fork's branch vs its -legacy baseline
@@ -406,6 +410,10 @@ is not on the branch `repos.yaml` records.
 | `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); `feature/yellowback-sf` = the delivered v2, now a diff baseline; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
 | `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise | `1eb277d` |
 | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); re-forked from `yodl/lightwalletd` on 2026-09-24 — the earlier yecdev-based work is kept locally under `wt/lightwalletd-dd-yecdev-baseline` | `187a26765e` |
+| `ref/ycash6` | `dev-rebase-6.20.0` @ commit (miodragpop's ycashd 6.20.0 rebase, the exact commit its author built; no tag) | `040894344b` |
+| `ref/librustzcash6` | `ycashd-v6.20.0` @ commit (miodragpop's Ycash-aware librustzcash; `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins this rev; no tag) | `ec525fae82` |
+| `ycash6` | branch `feature/yellowback` off `ycash6-legacy` (= `ref/ycash6`); added 2026-09-30 to prove the overlay on ycashd 6.20.0, kept separate from `ycash-dd` | `040894344b` |
+| `librustzcash6` | branch `feature/yellowback` off `librustzcash6-legacy` (= `ref/librustzcash6`); a separate repo, not a GitHub fork (`boyfromcave/librustzcash` is an older fork) | `ec525fae82` |
 
 | `ref/yolo` | `main` @ commit (2020-12-17; yecdev's Ycash port of ChileBob/StratumPool: Perl `stratumpool`, `stratumsolo`, `cenote`; no tags) | `c9c155c6` |
 | `yew` | branch `main` (app repo, no baseline: nothing is ported into it) | — |

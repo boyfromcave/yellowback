@@ -48,6 +48,20 @@ ref/yecwallet:
   commit: 1eb277d
   what: YecWallet GUI (Qt 6, bundles ycashd), pristine baseline for yecwallet-dd
 
+ref/ycash6:
+  role: reference
+  url: https://github.com/miodragpop/ycash.git
+  branch: dev-rebase-6.20.0  # miodragpop's ycashd 6.20.0 rebase (Zcash 6.x lineage); the commit carries no tag
+  commit: 040894344b
+  what: Ycash node v6.20.0 (dev-rebase-6.20.0 as built by its author), pristine baseline for ycash6
+
+ref/librustzcash6:
+  role: reference
+  url: https://github.com/miodragpop/librustzcash.git
+  branch: ycashd-v6.20.0     # the patched librustzcash ref/ycash6's Cargo.toml [patch.crates-io] pins by rev
+  commit: ec525fae82
+  what: Ycash-aware librustzcash (Ycash NetworkUpgrade/BranchId, activation heights, address prefixes), pristine baseline for librustzcash6
+
 ref/lightwalletd:
   role: reference
   url: https://github.com/yodl/lightwalletd.git
@@ -81,6 +95,24 @@ lightwalletd-dd:
   base: lightwalletd-legacy
   base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)
+
+ycash6:
+  role: fork
+  url: https://github.com/boyfromcave/ycash6.git
+  upstream: https://github.com/miodragpop/ycash.git
+  branch: feature/yellowback   # the v6.20.0 port of the overlay; ycash-dd (v4.5.0) stays the proven line
+  base: ycash6-legacy
+  base-commit: 040894344b    # = ref/ycash6 pin
+  what: working fork of the v6.20.0 node — proving the Yellowback overlay on ycashd 6.20.0, kept separate from ycash-dd
+
+librustzcash6:
+  role: fork
+  url: https://github.com/boyfromcave/librustzcash6.git
+  upstream: https://github.com/miodragpop/librustzcash.git
+  branch: feature/yellowback   # same name as ycash6; ycash6's Cargo.toml [patch.crates-io] must point here if it ever diverges
+  base: librustzcash6-legacy
+  base-commit: ec525fae82    # = ref/librustzcash6 pin
+  what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork)
 
 yew:
   role: app

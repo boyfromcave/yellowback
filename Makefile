@@ -10,6 +10,13 @@ YCASH_PIN     := $(shell $(REPOS) get ref/ycash tag)
 YECWALLET_PIN := $(shell $(REPOS) get ref/yecwallet tag)
 # lightwalletd upstream publishes no tags, so its reference is pinned by commit, not tag.
 LWD_PIN       := $(shell $(REPOS) get ref/lightwalletd commit)
+# ycashd 6.20.0 line: both references are commit-pinned (branch heads, no tags); ycash6/librustzcash6 are their forks.
+YCASH6_PIN    := $(shell $(REPOS) get ref/ycash6 commit)
+LRZ6_PIN      := $(shell $(REPOS) get ref/librustzcash6 commit)
+YCASH6_BRANCH := $(shell $(REPOS) get ycash6 branch)
+YCASH6_BASE   := $(shell $(REPOS) get ycash6 base)
+LRZ6_BRANCH   := $(shell $(REPOS) get librustzcash6 branch)
+LRZ6_BASE     := $(shell $(REPOS) get librustzcash6 base)
 DD_BRANCH     := $(shell $(REPOS) get ycash-dd branch)
 DD_BASE       := $(shell $(REPOS) get ycash-dd base)
 WALLET_BASE   := $(shell $(REPOS) get yecwallet-dd base)
@@ -23,7 +30,7 @@ YOLO_BRANCH   := $(shell $(REPOS) get yolo branch)
 CHAINVIZ_BRANCH := $(shell $(REPOS) get chain-viz branch)
 WORKSPACE     := $(notdir $(CURDIR))
 
-export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH YOLO_PIN YOLO_BRANCH CHAINVIZ_BRANCH
+export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN YCASH6_PIN LRZ6_PIN YCASH6_BRANCH YCASH6_BASE LRZ6_BRANCH LRZ6_BASE DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH YOLO_PIN YOLO_BRANCH CHAINVIZ_BRANCH
 
 .DEFAULT_GOAL := help
 .PHONY: help bootstrap pull status status-short pins diff log spec spec-check
@@ -35,6 +42,8 @@ help: ## Show this help
 		| awk -F':.*?## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  lightwalletd=%s  forks: %s off %s / %s / %s  app: yew on %s  yolo: ref %s, app on %s  chain-viz: app on %s\033[0m\n' \
 		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(LWD_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)' '$(LWD_BASE)' '$(YEW_BRANCH)' '$(YOLO_PIN)' '$(YOLO_BRANCH)' '$(CHAINVIZ_BRANCH)'
+	@printf '  \033[2mv6.20.0 line: ycash6=%s  librustzcash6=%s  forks: %s off %s / %s\033[0m\n' \
+		'$(YCASH6_PIN)' '$(LRZ6_PIN)' '$(YCASH6_BRANCH)' '$(YCASH6_BASE)' '$(LRZ6_BASE)'
 
 bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
 	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
@@ -42,7 +51,7 @@ bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 
 pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
 	@scripts/pull.sh $(if $(DRY),--dry-run) $(if $(NOREF),--no-ref) $(if $(SHORT),--short)
 
-status: ## git status across all twelve repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
+status: ## git status across all sixteen repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
 	@scripts/repo-status.sh && scripts/extract-spec.sh --check
 
 status-short: ## Same as status, without the per-file listing
@@ -70,6 +79,12 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-16s %-20s %s\n' ref/lightwalletd \
 		"$$(git -C ref/lightwalletd describe --tags 2>/dev/null || echo 'commit (no tags)')" \
 		"$$(git -C ref/lightwalletd rev-parse --short HEAD)"
+	@printf '%-16s %-20s %s\n' ref/ycash6 \
+		"$$(git -C ref/ycash6 describe --tags 2>/dev/null || echo 'commit (no tags)')" \
+		"$$(git -C ref/ycash6 rev-parse --short HEAD)"
+	@printf '%-16s %-20s %s\n' ref/librustzcash6 \
+		"$$(git -C ref/librustzcash6 describe --tags 2>/dev/null || echo 'commit (no tags)')" \
+		"$$(git -C ref/librustzcash6 rev-parse --short HEAD)"
 	@printf '%-14s %-20s %s\n' ycash-dd \
 		"$$(git -C ycash-dd rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C ycash-dd rev-parse --short HEAD)"
@@ -79,6 +94,12 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-16s %-20s %s\n' lightwalletd-dd \
 		"$$(git -C lightwalletd-dd rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C lightwalletd-dd rev-parse --short HEAD)"
+	@printf '%-16s %-20s %s\n' ycash6 \
+		"$$(git -C ycash6 rev-parse --abbrev-ref HEAD)" \
+		"$$(git -C ycash6 rev-parse --short HEAD)"
+	@printf '%-16s %-20s %s\n' librustzcash6 \
+		"$$(git -C librustzcash6 rev-parse --abbrev-ref HEAD)" \
+		"$$(git -C librustzcash6 rev-parse --short HEAD)"
 	@printf '%-14s %-20s %s\n' yew \
 		"$$(git -C yew rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C yew rev-parse --short HEAD)"
@@ -92,16 +113,20 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 		"$$(git -C chain-viz rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C chain-viz rev-parse --short HEAD)"
 
-diff: ## Fork deltas: ycash-dd, yecwallet-dd and lightwalletd-dd vs their -legacy baselines (the app repos have none)
-	@for r in "ycash-dd $(DD_BASE)" "yecwallet-dd $(WALLET_BASE)" "lightwalletd-dd $(LWD_BASE)"; do set -- $$r; \
-	printf '\033[1m%s\033[0m\n' "$$1"; \
-	out="$$(git -C $$1 diff --stat "$$2...$(DD_BRANCH)")"; \
+# Every fork (role `fork` in repos.yaml), each with its own branch and baseline: the v4.5.0 forks are on
+# feature/yellowback-price-attest, the v6.20.0 forks (ycash6, librustzcash6) on feature/yellowback.
+FORKS := $(shell for r in $$($(REPOS) list); do [ "$$($(REPOS) get $$r role)" = fork ] && printf '%s ' "$$r"; done)
+
+diff: ## Fork deltas: every fork vs its -legacy baseline (the app repos have none)
+	@for f in $(FORKS); do b="$$($(REPOS) get $$f base)"; br="$$($(REPOS) get $$f branch)"; \
+	printf '\033[1m%s\033[0m\n' "$$f"; \
+	out="$$(git -C $$f diff --stat "$$b...$$br")"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
-	else printf '  \033[2mno changes vs %s\033[0m\n' "$$2"; fi; done
+	else printf '  \033[2mno changes vs %s\033[0m\n' "$$b"; fi; done
 
 log: ## Commits on each fork branch not in its baseline (the app repos have none)
-	@for r in "ycash-dd $(DD_BASE)" "yecwallet-dd $(WALLET_BASE)" "lightwalletd-dd $(LWD_BASE)"; do set -- $$r; \
-	printf '\033[1m%s\033[0m\n' "$$1"; \
-	out="$$(git -C $$1 log --oneline --no-merges "$$2..$(DD_BRANCH)")"; \
+	@for f in $(FORKS); do b="$$($(REPOS) get $$f base)"; br="$$($(REPOS) get $$f branch)"; \
+	printf '\033[1m%s\033[0m\n' "$$f"; \
+	out="$$(git -C $$f log --oneline --no-merges "$$b..$$br")"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
-	else printf '  \033[2mno commits on %s beyond %s\033[0m\n' '$(DD_BRANCH)' "$$2"; fi; done
+	else printf '  \033[2mno commits on %s beyond %s\033[0m\n' "$$br" "$$b"; fi; done

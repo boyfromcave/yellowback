@@ -21,11 +21,15 @@ yellowback-workspace/
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
 │   ├── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
 │   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
+│   ├── ycash6/      READ-ONLY. miodragpop/ycash, ycashd 6.20.0 (Zcash 6.x lineage), dev-rebase-6.20.0 @ 040894344b (no tag)
+│   ├── librustzcash6/ READ-ONLY. miodragpop/librustzcash, the patched librustzcash ref/ycash6's Cargo.toml pins, ycashd-v6.20.0 @ ec525fae82 (no tag)
 │   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
+├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
+├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
@@ -54,19 +58,32 @@ fork the way `src/digidollar/` is for the node fork — and it is just as much *
 copy: DigiByte's widgets read in-process wallet models; YecWallet reads everything over JSON-RPC
 (`ref/yecwallet/src/controller.cpp`, `connection.cpp`).
 
+**Two node lines, kept separate.** `ycash-dd` (v4.5.0) is the proven Yellowback node and stays
+the primary line. `ycash6` (ycashd 6.20.0, another Ycash developer's rebase onto the Zcash 6.x
+lineage) exists to prove the overlay ports to 6.20.0; the exercise there is to determine what
+6.20.0 needs to run Yellowback, with `ycash-dd`'s delta (`make diff`) as the source of the port
+and `docs/mapping.md` §13 as the crosswalk. Nothing from `ycash6` flows back into `ycash-dd`, and
+`ycash6` is never built by the wallet, lightwalletd or the devnet until that port is proven.
+`ycash6` builds against `librustzcash6`: `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins every
+`zcash_*` crate to `miodragpop/librustzcash` rev `ec525fae`, which is exactly `ref/librustzcash6`.
+If a Yellowback change ever needs a librustzcash change, it goes in `librustzcash6/` and
+`ycash6/Cargo.toml` is repointed at `boyfromcave/librustzcash6`; until then `librustzcash6` is a
+zero-delta fork (it is a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is
+already an older fork).
+
 ## Rules
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All five `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, whose
-upstream publishes no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
+All seven `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, `ref/ycash6`,
+`ref/librustzcash6` and `ref/yolo`, whose upstreams publish no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
 
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches — and, for the v6.20.0 port only, in `ycash6/` and `librustzcash6/` on `feature/yellowback`.
 
 The current branch in all three forks is `feature/yellowback-price-attest` — the v3 price-attestation
 work, cut from `feature/yellowback-sf`. **`feature/yellowback-sf` is now a baseline, not a
@@ -74,8 +91,8 @@ workspace:** it is the delivered v2 (miner-enforced) fork, and the v3 plan measu
 budgets and frozen-file zero-delta checks against it, so never commit to it either. The branch is
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
-`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, and `lightwalletd-legacy`
-is upstream `master` at the pin — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+`ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, `lightwalletd-legacy`
+is upstream `master` at the pin, and `ycash6-legacy` / `librustzcash6-legacy` are the v6.20.0 pins — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
 the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
@@ -192,7 +209,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all twelve repos: fetches origin, ahead/behind, pin verification
+make status     # git status across all sixteen repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline
