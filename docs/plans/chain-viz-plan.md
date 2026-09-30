@@ -454,7 +454,17 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C6 — record, replay, sessions (agent `viz-core`)
 
-- [ ] `replay.rs`, `--speed`, session versioning; `yellowback-devnet report` bundles `session.jsonl`.
+- [x] `replay.rs`, `--speed`, session versioning (done 2026-09-29, agent `viz-replay`, worktree
+      `wt/viz-replay` branch `c6-replay`): `session.rs` owns the header (`version`, `chainViz`,
+      `nodes`, `chain`, `started`) and the recorder; `--replay <file> [--speed N]` runs the server
+      with no node from the same model and bus (`replay::apply` drives the chain and mempool models
+      from events; `/api/health.replay = {file,pos,total,speed}`); a restart appends a new header to
+      the same file. Round trip: `tests/fixtures/session-reorg2.jsonl` recorded from a live 8-node
+      devnet (`--portseed 47`; mine 2, two blocks invalidated on node 3 and three mined there, one
+      more block) replays to the same `chain.main`, tip, orphans and event count the live
+      `/api/snapshot`/`/api/health` reported (`tests/replay.rs`); the binary was also checked at
+      `--speed 0` and `--speed 10` and on a three-run file.
+- [ ] `yellowback-devnet report` bundles `session.jsonl` (`contrib/` change, not done).
 - [ ] Acceptance: a nightly failure is diagnosed from its session file alone, once, and written up.
 
 ### C7 — mainnet hardening and packaging (agent `viz-core`, after C5)
@@ -465,7 +475,7 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       `/api/snapshot`; RPC credentials never logged.
 - [ ] Hosting pieces (C-10): `--public` mode (API rate limit, no node credentials or hostnames in any
       response), `--export <dir>` writing a static snapshot the UI can open with no server.
-- [ ] Release build in CI for macOS and Linux, the `yolo/` workflow copied.
+- [x] Release build in CI: `chain-viz/.github/workflows/ci.yml` (2026-09-29, agent `viz-replay`) — fmt, build, test, `clippy -D warnings` on ubuntu + macos stable on every push/PR; a `v*` tag builds linux x86_64 and macOS arm64 binaries and attaches them to the release (`yolo/` has no workflow to copy; written fresh).
 - [ ] Acceptance: a run against a mainnet `ycashd -yellowback -experimentalfeatures` for 24 h with
       no RPC error storm and steady memory (blocks beyond `--keep 5000` are evicted from the model,
       the ledger rollups kept).
@@ -520,7 +530,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C3 Yellowback health | not started | `chain-viz/` |
 | C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
-| C6 record/replay | not started | `chain-viz/` |
+| C6 record/replay | replay + sessions + CI done 2026-09-29 (`wt/viz-replay`, `c6-replay`, unmerged); devnet `report` bundle and the nightly-diagnosis acceptance open | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | not started | `chain-viz/` |
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
 
@@ -538,6 +548,9 @@ Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as 
 | C-F6 | `mempool_add` is emitted once per txid (the first node to report it) and `mempool_remove` once (when no node holds it any more); a tx appearing on or leaving a further node emits nothing, so the §3.2.2 cross-node mark cannot be kept from events alone. | The UI applies add/remove incrementally and refetches `/api/snapshot` (debounced 400 ms) on every mempool event to refresh `present`. A per-node `mempool_seen{node,txid}` event would remove the refetch (C6/C7 candidate). |
 | C-F7 | A page opened after a reorg sees nothing of it: the first resync starts at the snapshot's `seq`, and the snapshot carries no reorg history. | `app.js` pulls `/api/events?since=0` once per page load (the bus keeps 100 000 events, `main.rs:166`) and applies it as logs only (reorg log, rejected set, `yb` map), never mutating the snapshot. |
 | C-F8 | `reorg` is per node, so one devnet reorg is 8 events; the reorg log shows 8 rows for it. | Kept as the plan defines (`reorg{node,depth,from,to}`); grouping rows by `(from,to)` is a UI nicety for later. `fork risk` clocks disagreement from the moment the page first sees it (a fresh page shows `1 × 0 s` for a fork that is minutes old). |
+| C-F10 | `session.jsonl` lines could land out of `seq` order: the bus took `seq` from an atomic and wrote the line under a different lock, so two collectors publishing at once (8 nodes reporting the same tip) interleaved (seq 33, 34 before 32 in a first recording). | `Bus::publish_at` takes `seq` and writes the line under the log lock; `session::read_session` also stable-sorts each run by `seq` for files written earlier. |
+| C-F11 | `EventKind::DevnetHeartbeat(Value)` (and every other `Kind(Value)` variant) is flattened into the envelope, so a value carrying `height` wrote the key twice: the line is not valid JSON for a strict decoder (`duplicate field height`) and killed replay of that file. | The collector strips `seq`/`ts`/`height`/`node`/`kind` from devnet values before publishing; the reader parses each line as a JSON value first (last key wins) and skips a line it still cannot decode (a torn last line after a crash) with a warning. Rule for C3/C4: a `Kind(Value)` payload must not carry those five keys. |
+| C-F12 | Parallel worktrees share `$CARGO_TARGET_DIR` (`~/.cargo/shared-target`): another agent's `cargo build` replaced `debug/chain-viz` between two of this chunk's end-to-end runs (the replay run then said `--replay is not implemented yet`). And a binary copied out of the target dir and overwritten while a copy was executing left the processes stuck in macOS `UE` state (kill -9 has no effect). | Build the binary under test with a private `CARGO_TARGET_DIR` (12 s incremental after the first build); never re-copy over a running binary. |
 | C-F9 | The devnet's `cli` syntax is `yellowback-devnet cli --node N -- <rpc> [args]` (`args` is `REMAINDER`; without `--node` it targets the user node), and a pool restart is `pool N signal off|on` (`restart_node`), which takes well under a second — too fast for a 3 s health poll to catch `nodesUp` dipping. | Recorded for C5; the transition is still observable as the pair of `note` events. |
 
 
