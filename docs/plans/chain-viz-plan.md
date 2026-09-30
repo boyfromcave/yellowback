@@ -490,10 +490,10 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | Chunk | Status | Where |
 |---|---|---|
 | C0 workspace plumbing | done 2026-09-29 | workspace repo (`repos.yaml`, Makefile, scripts, README, AGENTS.md, this plan) |
-| C1 collector core | not started | `chain-viz/` |
+| C1 collector core | in progress (agent `viz-core`, 2026-09-29) | `chain-viz/` |
 | C2 chain + mempool UI | not started | `chain-viz/ui/` |
 | C3 Yellowback health | not started | `chain-viz/` |
-| C4 revenue + devnet zmq/viz | not started | `chain-viz/`, `ycash-dd/contrib/` |
+| C4 revenue + devnet zmq/viz | devnet half in progress (agent `devnet-viz`, worktree `wt/devnet-viz`, 2026-09-29); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
 | C6 record/replay | not started | `chain-viz/` |
 | C7 mainnet hardening | not started | `chain-viz/` |
