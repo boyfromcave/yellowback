@@ -6,6 +6,7 @@
 /lightwalletd-dd/
 /yew/
 /yolo/
+/chain-viz/
 
 # macOS
 .DS_Store

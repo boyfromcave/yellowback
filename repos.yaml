@@ -100,3 +100,9 @@ yolo:
   url: https://github.com/boyfromcave/yolo.git
   branch: main
   what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)
+
+chain-viz:
+  role: app
+  url: https://github.com/boyfromcave/chain-viz.git
+  branch: main
+  what: chain-viz, the real-time chain, mempool and Yellowback-health visualizer (a read-only sidecar of ycashd on regtest, the devnet and mainnet; docs/plans/chain-viz-plan.md)

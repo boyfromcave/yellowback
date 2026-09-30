@@ -33,6 +33,7 @@ LWD_BASE="${LWD_BASE:-$(manifest lightwalletd-dd base)}"
 YEW_BRANCH="${YEW_BRANCH:-$(manifest yew branch)}"
 YOLO_PIN="${YOLO_PIN:-$(manifest ref/yolo commit)}"          # no upstream tag: pinned by commit
 YOLO_BRANCH="${YOLO_BRANCH:-$(manifest yolo branch)}"
+CHAINVIZ_BRANCH="${CHAINVIZ_BRANCH:-$(manifest chain-viz branch)}"
 
 SHORT=0; FETCH=1
 [ -n "${NOFETCH:-}" ] && FETCH=0
@@ -199,6 +200,7 @@ repo_status "lightwalletd-dd" "lightwalletd-dd" "-"          "$LWD_BRANCH"   "$L
 repo_status "yew"          "yew"          "-"                "$YEW_BRANCH"   "-"
 repo_status "ref/yolo"     "ref/yolo"     "$YOLO_PIN"        "-"
 repo_status "yolo"         "yolo"         "-"                "$YOLO_BRANCH"  "-"
+repo_status "chain-viz"    "chain-viz"    "-"                "$CHAINVIZ_BRANCH" "-"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 print_actions() {
