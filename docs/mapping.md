@@ -887,3 +887,55 @@ Rows from `docs/plans/role-pool-regtest-plan.md` (the Y-F findings). `ref/yolo` 
 | Header field 3 is the template's `finalsaplingroothash` / `lightclientroothash` | `getblock … 1` prints a different `finalsaplingroot` (`ycash-dd/src/rpc/mining.cpp:759-761`, Y-F10); the coinbase differs between `generate` and templates (`miner.cpp:328` vs `:725`, Y-F12) | Send the template field; take vectors from `getblock <hash> 0`; treat vout[0] as the payout output |
 | After an accepted block the pool keeps serving the old template until its next poll (Perl and the first Rust cut) | A fast solver re-solves it: every submit `inconclusive` (Y-F14) | Poll immediately after an accepted `submitblock`; the Python miner also keys its done-set on prevhash |
 | Talks to the node by shelling out to `ycash-cli` with no network flag (`ref/yolo/stratumsolo:283`) | Regtest needs `-regtest -datadir`; a daemon should not fork a CLI per second | JSON-RPC over HTTP with cookie, `ycash.conf` or user/password auth |
+
+## 18. chain-viz — the real-time visualizer (`chain-viz/`, its own repository)
+
+Rows from `docs/plans/chain-viz-plan.md` (the C-F findings, §9, and the node-surface gaps N-1..N-4,
+§4.3). chain-viz is a strictly read-only sidecar of `ycashd`: it has no reference implementation
+to port from and needs no node change, so unlike §2–§14 the rows here are not DigiByte → Ycash
+mismatches but **what the node's read surface does versus what a watcher needs**, and how the
+watcher copes without asking for a node change. Only findings that are facts about the node or
+the devnet are mirrored; chain-viz-internal ones (C-F5, C-F7, C-F8, C-F12–C-F14, C-F16–C-F20,
+C-F22, C-F26, C-F27) live in the plan alone. `ycash-dd` citations are at
+`feature/yellowback-price-attest`; `ref/ycash` ones at `v4.5.0`.
+
+**The interface (plan §4.1).** ZMQ `hashblock`/`hashtx` (optional; the devnet passes the flags,
+N-4); stock RPC `getbestblockhash`, `getblock` (1, 2), `getblockhash`, `getchaintips`,
+`getrawmempool true`, `getrawtransaction` (mempool txs only), `getmempoolinfo`, `getmininginfo`,
+`getnetworkhashps`, `getblocksubsidy`, `getblockchaininfo`; read-only `yed_getinfo`, `yed_getstats`,
+`yed_getprice`, `yed_gethistory`, `yed_getactivation`, `yed_listminers`, `yed_gettag`,
+`yed_gettxinfo`, `yed_decodepayload`, `yed_validaterawtransaction`, `yed_getblockverdict`,
+`yed_listvaults`, `yed_listclaimable`, `yed_listattestors`, `yed_getfeepayee`, `yed_getstatehash`.
+Never a writer, `generate`, `submitblock`, `sendrawtransaction`, `getblocktemplate` or a wallet RPC
+(`chain-viz/tests/readonly_gate.rs` greps `src/` for each name).
+
+### 18.1 Node-surface gaps (plan §4.3; Tier 0, RPC only, none scheduled)
+
+| # | The node does | chain-viz needs | Adaptation / the ask |
+|---|---|---|---|
+| N-1 | No RPC lists a block's Yellowback txs or TxLog rows by height; `yed_listtokens` needs addresses (`ycash-dd/src/rpc/yellowback.cpp:1905-1930`) | the Yellowback txs of every block and mempool entry | Client-side classification from the `OP_RETURN` payload (`YB`, v3, type byte; `ycash-dd/src/yellowback/payload.cpp:364-408`), then one `yed_gettxinfo` per match. Ask: `yed_listblocktxs height\|hash` |
+| N-2 | No push event for index apply/undo/reject (`UndoDisconnect`, `ycash-dd/src/yellowback/index.cpp:458`, logs only under `-debug=yellowback`) | reorgs and rejected blocks as events | Derived from `getchaintips` + per-node tip moves that are not child-of-previous, and from `yed_getinfo.rejectedBlocks` deltas + `yed_getblockverdict`. Ask: a ZMQ topic or `-yellowbacknotify <cmd>` |
+| N-3 | No global token/UTXO listing | supply and flows | `yed_getstats` for supply; the revenue ledger for flows. Ask: a paged `yed_listalltokens` (also asked by the lightwalletd plan) |
+| N-4 | The devnet passed no `-zmq*` flag | early wake on new blocks/txs | Done in `contrib/` only (`ycash-dd` `3762d9f3d`): one ZMQ endpoint per node, `devnet.json` `nodes["<n>"].zmq` |
+
+### 18.2 Node and devnet facts met while building (the C-F rows that are not chain-viz internals)
+
+| C-F | The node / devnet does | chain-viz needs | Adaptation |
+|---|---|---|---|
+| C-F1 | `devnet.json` embeds non-ASCII credentials (`rpcuser💻N` / `rpcpass🔑N`, `ycash-dd/qa/rpc-tests/test_framework/util.py:186`) in the `rpc.<n>.url` userinfo | an `Authorization` header that Python's `http.client` and reqwest both accept | Strip the userinfo, keep `host:port`, send the separate `user`/`password` fields as UTF-8 basic auth. Any `devnet.json` consumer should do the same |
+| C-F2, C-F30 | Ycash 4.5 has no `getzmqnotifications` (`git -C ref/ycash grep` finds none), and the zmq log lines are `LogPrint("zmq", …)` (`ref/ycash/src/zmq/zmqpublishnotifier.cpp:88`), silent without `-debug=zmq` | to discover a node's ZMQ endpoint | `--zmq <id>=<url>` or `devnet.json`'s `zmq` map; the proof the flags took is `lsof -iTCP:<port>` or a subscriber, not the log. Polling is always on; ZMQ only wakes it early |
+| C-F3 | `getchaintips` status is **per node** for the same hash (after `invalidateblock` a node calls the majority branch `invalid` while the others call it `active`; a header-only block is `valid-headers` there, `valid-fork` elsewhere) and lists tips only, never ancestors (`ref/ycash/src/rpc/blockchain.cpp:1209-1249`) | one merged DAG | Tips kept per node, statuses never merged; a side branch is known by its tip only until some node's best chain walks through it |
+| C-F4 | `getchaintips` walks the whole block index (`ref/ycash/src/rpc/blockchain.cpp:1247-1249`); a header-only competitor moves no node's head | to see a competing block without a per-poll full walk | Refresh tips on every head move and every tenth poll otherwise |
+| C-F6 | The devnet publishes `hashtx`, not `rawtx`; a mempool tx's outputs cost one `getrawtransaction` each, Yellowback or not | the payload scan of every mempool tx | One `getrawtransaction` per txid across all nodes, on whichever reports it first; a stock node keeps the hex so a `yed_*` node can decode/validate it without a second fetch |
+| C-F9 | Two ratios are priced differently by the node: `globalRatioBps` at **pMint** (`ycash-dd/src/yellowback/math.h:159-162`), while a vault is claimable below **pClaim** (`UnderwaterAt`, `ycash-dd/src/rpc/yellowback.cpp:218`). After a shock the fast-tilted pMint falls first, so the ratio tile can read 115 % while every vault sits at 300–500 % at pClaim and `yed_listclaimable` is empty — the slow window, not a bug | one honest picture of a shock | The vault scatter is priced at pClaim and says so beside the tile's "at pMint"; the two disagree for ~one slow window after a move |
+| C-F10 | The node's tx `type` strings are lowercase `mint, transfer, redeem, register, notice, equivocation, revive` (`TypeLower`, `ycash-dd/src/rpc/yellowback.cpp:126`; `PayloadTypeName`, `src/yellowback/payload.cpp:432`), and a CLAIM is a `redeem` with `path: "claim"` | colour by type | Slot maps keyed on the node's names; claim = redeem + path (`chain-viz/ui/lib.js:54`) |
+| C-F11 | Payloads over 75 bytes (ATTESTOR_REVIVE, 78) are pushed with `OP_PUSHDATA1`; `ExtractOpReturnData` (`ycash-dd/src/yellowback/payload.cpp:388`) accepts PUSHDATA1/2/4 as long as the script ends with the push | local classification that matches the node's | `classify::op_return_data` mirrors all four push forms and the 4..80 bound |
+| C-F15 | The devnet's `cli` is `yellowback-devnet cli --node N -- <rpc> [args]` (`args` is `REMAINDER`, `ycash-dd/contrib/yellowback/devnet/yellowback-devnet:1803`), and `pool N signal off\|on` restarts the node (`restart_node`, `:403`) in well under a second | a scripted fork/restart for the acceptance runs | Recorded for the tests; the restart is observable as the pair of `note` events, not as a `nodesUp` dip |
+| C-F21 | `up --heartbeat-rate 2` records the rate but does not start the heartbeat on the plain (no `--role`) devnet | a fast block source for the soak | `heartbeat start` then `heartbeat rate 2` after `up` |
+| C-F23 | A pool's coinbase does not pay its `payoutKey`: the devnet's pools mine with `generate`, whose coinbase goes to a fresh wallet key every block, while the tag's `payoutAddress` (`-yellowbackpayoutaddress`) is fixed; `getblock 2` carries `scriptPubKey.addresses` | blocks mined and subsidy rolled up under the quoting key | The ledger aliases the coinbase address to the tag's `payoutAddress` on the same block; a mainnet pool reuses one address, so the alias map stays small |
+| C-F24 | `yed_getfeepayee` refuses a `refHeight` above the index height or below `startHeight`, and answers `fee-no-eligible-payee` (FEE-0) as an RPC error, not an empty list (`ycash-dd/src/rpc/yellowback.cpp:1081`); a fee tx's `refHeight` is only in its payload, not in `yed_gettxinfo` | E(R) for the counterfactual | One call per distinct `refHeight` from the decoded payload, refusals remembered as "no eligible payee"; `resolved`/`unresolved`/`noEligible` reported beside the sum |
+| C-F25 | The node renders an undefined price or ratio as JSON `null` (`PriceOrNull`, `ycash-dd/src/rpc/yellowback.cpp:212`): `yed_getstats.globalRatioBps` is `null` until the first vault | typed decoding that survives a chain with no vault | `null` → default on every field the node can null (`rpc::null_default`); serde's `#[serde(default)]` covers a missing key only. Rule for every typed `yed_*` struct |
+| C-F28 | ZMQ `hashtx` fires once per tx entering the mempool **and** once per tx of every connected block, coinbases included (`ref/ycash/src/zmq/zmqnotificationinterface.cpp:175`) | a checkable RPC budget | The functional test bounds `getrawmempool ≤ seconds + blocks + txs in those blocks + mempool arrivals + 2` per node |
+| C-F29 | `-zmqpubhashblock` and `-zmqpubhashtx` on the same `tcp://` URL share one PUB socket (`ref/ycash/src/zmq/zmqpublishnotifier.cpp:88`, "Reusing socket for address") | one port per node | The devnet passes one endpoint per node, both URLs equal; the `--devnet` reader dedupes them |
+| C-F31 | No 5000-wide port band is left below 32768 (p2p/rpc/stratum/status take 11000–31000; Linux's ephemeral range starts at 32768) | zmq and HTTP ports per devnet seed | Folded bands: zmq `31000 + 12 · (seed % 140) + n`, chain-viz `32680 + seed % 88` (`yellowback-devnet:130-132`); seeds equal modulo 140 or 88 collide there — pick seeds a few apart |
+| C-F32 | `devnet.json` had no per-node map beyond `rpc` | ZMQ endpoints and the visualizer's own record | A top-level `nodes["<n>"].zmq = {hashblock, hashtx}` and `chainviz = {pid, url, port, log, binary, pid_file, record}`; `rpc` untouched |
