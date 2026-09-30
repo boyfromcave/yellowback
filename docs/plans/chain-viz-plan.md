@@ -400,13 +400,28 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       `chain-viz --zmq 1=tcp://127.0.0.1:28331 --poll 30`: the `block` event followed a
       `mine 1` by 0.21 s (the 30 s poll could not have caught it).
 
-### C2 — chain and mempool UI (agent `viz-ui`, after C1's schema; can start on fixtures)
+### C2 — chain and mempool UI (agent `viz-ui`, after C1's schema; can start on fixtures) — done 2026-09-30
 
-- [ ] `ui/`: page shell, theme tokens, WebSocket client with reconnect and snapshot resync.
-- [ ] Block sequence panel (§3.2.1), per-node heads, time-since-block, reorg log, risk gauges.
-- [ ] Mempool panel (§3.2.2) without Yellowback colouring yet.
-- [ ] Acceptance: the `yellowback_reorg_stress.py` recipe run by hand on the devnet is visible as
-      side branches and a reorg entry; a stopped pool's chip falls behind and recovers.
+- [x] `ui/`: page shell, theme tokens, WebSocket client with reconnect and snapshot resync.
+      (`ui/index.html`, `style.css`, `lib.js`, `app.js`, `panels/{header,chain,mempool,events}.js`;
+      vanilla ES modules + SVG, no vendored lib, no CDN; exponential backoff 0.5–15 s; `lagged`
+      and reconnect resync via `/api/events?since=`; chain events refetch the snapshot, debounced.)
+- [x] Block sequence panel (§3.2.1), per-node heads, time-since-block, reorg log, risk gauges.
+      (Badges render `miner`/`tag{priceMicroUsd,signal}`/`rejected` when C3 supplies them, placeholders
+      otherwise; gauges labelled "derived".)
+- [x] Mempool panel (§3.2.2) without Yellowback colouring yet (colours by `yb.type` if present).
+- [x] Events panel (tail, filterable by kind); `tests/ui_served.rs` (every embedded file 200 with its
+      content type, shell references and ES imports resolve); `qa/ui-smoke.mjs` (fake-DOM run of the
+      panels against a live server). `cargo test` + `clippy --all-targets -D warnings` clean.
+- [x] Acceptance (devnet `--portseed 41`, heartbeat 15 s, `chain-viz --devnet`): `invalidateblock`
+      tip−1 + `generate 3` on node 4 (via `yellowback-devnet cli --node 4 --`, never chain-viz)
+      showed `reorg{depth:2}` on the other 7 nodes and the two abandoned blocks as `orphaned` in
+      `chain.side`; the smoke check rendered them as 2 side blocks below the main row with 8 reorg-log
+      rows. `pool 3 signal off` (a restart) produced `note "node 3: rpc transport …"` then `"node 3
+      is back"` (the chip goes dim then recovers; the gap is sub-second). `invalidateblock` on
+      node 1 without mining showed 1 chip disagreeing and the fork gauge lit; `reconsiderblock`
+      recovered it within ~10 s. Two `sendtoaddress` txs drew 2 bubbles on all 8 nodes. No headless
+      browser was available: verified with the smoke check + `curl /api/snapshot`, no screenshots.
 
 ### C3 — Yellowback health (agent `viz-yb`, after C1)
 
@@ -501,7 +516,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 |---|---|---|
 | C0 workspace plumbing | done 2026-09-29 | workspace repo (`repos.yaml`, Makefile, scripts, README, AGENTS.md, this plan) |
 | C1 collector core | in progress (agent `viz-core`, 2026-09-29) | `chain-viz/` |
-| C2 chain + mempool UI | not started | `chain-viz/ui/` |
+| C2 chain + mempool UI | done 2026-09-30 (branch `c2-ui` in `wt/viz-ui`, 5 commits, unmerged) | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | not started | `chain-viz/` |
 | C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
@@ -520,6 +535,10 @@ Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as 
 | C-F3 | `getchaintips` status is per node for the same hash: after `invalidateblock` on node 3, node 3 reports the majority's branch as `invalid` while the others call it `active`; a block that reached a node as a header only is `valid-headers` there and `valid-fork`/`active` elsewhere. And it lists tips only, never their ancestors. | The model keeps tips per node (`ChainSnapshot.tips`), never merges statuses, and knows a side branch's tip only (its parent stays unknown until some node's best chain walks through it). |
 | C-F4 | A competing block that arrives as a header only moves no node's head, so refreshing `getchaintips` only on head changes misses it; refreshing every poll is wasteful on mainnet (`getchaintips` walks the whole block index, `src/rpc/blockchain.cpp:1214`). | The collector refreshes tips on every head move and every 10 polls otherwise (`collector::TIPS_EVERY`). |
 | C-F5 | Eight collectors starting against an empty model each walked the 20-block backfill (8 × 21 `getblock`). | The first fetch per node is serialized behind one mutex; only the first node walks, the rest find their head known (21 + 7 × 1 `getblock` on the devnet). |
+| C-F6 | `mempool_add` is emitted once per txid (the first node to report it) and `mempool_remove` once (when no node holds it any more); a tx appearing on or leaving a further node emits nothing, so the §3.2.2 cross-node mark cannot be kept from events alone. | The UI applies add/remove incrementally and refetches `/api/snapshot` (debounced 400 ms) on every mempool event to refresh `present`. A per-node `mempool_seen{node,txid}` event would remove the refetch (C6/C7 candidate). |
+| C-F7 | A page opened after a reorg sees nothing of it: the first resync starts at the snapshot's `seq`, and the snapshot carries no reorg history. | `app.js` pulls `/api/events?since=0` once per page load (the bus keeps 100 000 events, `main.rs:166`) and applies it as logs only (reorg log, rejected set, `yb` map), never mutating the snapshot. |
+| C-F8 | `reorg` is per node, so one devnet reorg is 8 events; the reorg log shows 8 rows for it. | Kept as the plan defines (`reorg{node,depth,from,to}`); grouping rows by `(from,to)` is a UI nicety for later. `fork risk` clocks disagreement from the moment the page first sees it (a fresh page shows `1 × 0 s` for a fork that is minutes old). |
+| C-F9 | The devnet's `cli` syntax is `yellowback-devnet cli --node N -- <rpc> [args]` (`args` is `REMAINDER`; without `--node` it targets the user node), and a pool restart is `pool N signal off|on` (`restart_node`), which takes well under a second — too fast for a 3 s health poll to catch `nodesUp` dipping. | Recorded for C5; the transition is still observable as the pair of `note` events. |
 
 
 | # | Finding | Disposition |
