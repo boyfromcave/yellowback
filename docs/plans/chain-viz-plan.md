@@ -30,8 +30,8 @@ the page at phone width, the Yellowback transaction table not sorted by height).
 `3762d9f3d`) — verified end to end in this revision with the real release binary (`CHAINVIZ_BIN`,
 `up --role user --sim-profile fast --portseed 67`: `up` printed `chain-viz: http://127.0.0.1:32747`,
 `status` showed it alive, `devnet.json.chainviz` recorded pid, url, log, binary and record dir, ZMQ
-wired on every node). C5's functional test and the `yellowback_devnet_roles.py` recording are done
-in `wt/viz-qa-node` (branch `feature/chain-viz-qa`), to merge.
+wired on every node). C5's functional test and the `yellowback_devnet_roles.py` recording are merged on
+`feature/yellowback-price-attest` (`038252fc9`, `fb78a9b65`, `2fe3c47a9`, `a6d26c8b2`).
 
 Housekeeping in this revision: §9's two findings tables (C-F1..C-F22 with six numbers used twice,
 and C-F-1..C-F-4) were merged into one, renumbered C-F1..C-F32 in order of appearance, and every
@@ -40,8 +40,7 @@ N-1..N-4 are mirrored in `docs/mapping.md` §18.
 
 What remains, none of it code: the 24 h mainnet acceptance of C7 (no mainnet node in this
 workspace; the command is in §5 C7); the hosted public instance (C-10; where is the owner's, §8);
-C5's nightly green and C6's nightly-diagnosis acceptance, both waiting on the first nightly run
-after the `feature/chain-viz-qa` merge.
+C5's nightly green and C6's nightly-diagnosis acceptance, both waiting on the first nightly run.
 
 ### Revision 2 (2026-09-29) — the owner's decisions; implementation begins
 
@@ -651,7 +650,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
 | C4 revenue + devnet zmq/viz | done 2026-09-29: devnet half merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half merged on `chain-viz` `main` and pushed; auto-start verified with the real release binary 2026-09-30 | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
-| C5 functional test | done locally 2026-09-30 (`wt/viz-qa-node`, branch `feature/chain-viz-qa`, 4 commits, unmerged; chain-viz `c5-fixes` in `wt/viz-qa-viz`, `9d1498e` on `main` `9662694`, unmerged); nightly acceptance open | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
+| C5 functional test | done locally 2026-09-30, merged on `ycash-dd` `feature/yellowback-price-attest` (`038252fc9`, `fb78a9b65`, `2fe3c47a9`, `a6d26c8b2`) and chain-viz `c5-fixes` merged on `main` (`911e8d6`); nightly CI acceptance pending a run | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
 | C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | done 2026-09-30, merged on `main` and pushed; the 24 h mainnet acceptance is the owner's to run (no mainnet node here) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | done 2026-09-30 (agent `viz-docs`): README user guide, mapping §18, findings consolidated, visual pass with three UI fixes | `chain-viz/README.md`, `chain-viz/docs/screenshot.png`, `docs/mapping.md` §18, this plan |
