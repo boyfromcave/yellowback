@@ -425,9 +425,23 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C3 — Yellowback health (agent `viz-yb`, after C1)
 
-- [ ] `classify.rs` (§3.2.3) with fixtures for every tx type in `doc/yellowback-rpc-contract.json`.
-- [ ] `model/yellowback.rs`: `yed_getinfo`/`getstats`/`getprice`/`listvaults`/`listattestors`
-      per node; `yed_gethistory` backfill in 2016-row pages; state-change events; statehash compare.
+- [x] `classify.rs` (§3.2.3): the payload output (`OP_RETURN <push>`, magic `YB`, version 3, type
+      byte; `src/yellowback/payload.cpp:364-408`) decoded locally, one `yed_gettxinfo` per match
+      (claimed by one node task), `yed_decodepayload` + `yed_validaterawtransaction` in the mempool.
+      Fixtures recorded from the devnet: mint, transfer, register, coinbases and plain spends
+      (`tests/fixtures/yb-txs.json`, `plain-txs.json`); notice/equivocation/revive as synthetic
+      bodies (the devnet does not produce them on its own; redeem/claim to be appended when the
+      shock run yields them). `yb_tx` events, `yb` on mempool entries and `BlockInfo.yb{tag, miner,
+      rejected, txs}`.
+- [x] `model/yellowback.rs`: per node `yed_getstats` + `yed_getstatehash` per block; the leader
+      (lowest-id non-stock node) adds `yed_getprice`, `yed_getactivation`, `yed_listminers`,
+      `yed_listattestors`, `yed_listclaimable`, `yed_listvaults` paged when the vault counts change,
+      and the one-time `yed_gethistory` backfill (2016-row pages, kept window); `yb_state` for
+      `haltMask`, `mintingAllowed`, `activation.status`, `attest.status`, `attest.armed`; `price` /
+      `stats` per block; `vault` / `attestor` status diffs; `statehash_mismatch` once per block
+      hash between healthy nodes. Snapshot `yellowback{…}`; `GET /api/yellowback` for the panel.
+      `--devnet`: `mock-price` and `attest-price-N` on the `price` event. Budget test
+      `tests/yb_budget.rs` on recorded `rpcCalls`.
 - [ ] Health panel (§3.2.4); mempool colouring and `wouldBeRejected` marks (§3.2.2).
 - [ ] Acceptance: `price --shock=-70%` then `sim start` shows vaults crossing 110 %, the liquidator's
       CLAIMs in the mempool, and `haltMask` lanes changing, matching `yellowback-devnet report`.
