@@ -415,9 +415,11 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 - [ ] Panel: per block, per pool, per attestor, counterfactual, no-enforcement releases.
 - [ ] Reconciliation test: Σ ledger `enforcefee` over [a, b] = Σ `yed_gettxinfo.feeZat` over the
       same blocks' Yellowback txs; likewise `attestfee`.
-- [ ] `contrib/` change in `ycash-dd`: the devnet passes `-zmqpubhashblock`/`-zmqpubhashtx` per node,
+- [x] `contrib/` change in `ycash-dd`: the devnet passes `-zmqpubhashblock`/`-zmqpubhashtx` per node,
       `up` auto-starts chain-viz on `devnet.json` when a binary is found and prints the URL, `down`
-      stops it, `--no-viz` opts out (C-11; Python only, zero C++).
+      stops it, `--no-viz` opts out (C-11; Python only, zero C++). Done 2026-09-29, worktree
+      `wt/devnet-viz` (branch `feature/chain-viz-devnet`, commit `3762d9f`), verified with a stub
+      binary and a pyzmq subscriber; see C-F-1..C-F-4.
 
 ### C5 — devnet integration and the functional test (agent `viz-qa`, worktree of `ycash-dd`, after C4)
 
@@ -493,10 +495,17 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C1 collector core | in progress (agent `viz-core`, 2026-09-29) | `chain-viz/` |
 | C2 chain + mempool UI | not started | `chain-viz/ui/` |
 | C3 Yellowback health | not started | `chain-viz/` |
-| C4 revenue + devnet zmq/viz | devnet half in progress (agent `devnet-viz`, worktree `wt/devnet-viz`, 2026-09-29); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
+| C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
 | C6 record/replay | not started | `chain-viz/` |
 | C7 mainnet hardening | not started | `chain-viz/` |
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
 
 Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
+
+| # | Finding | Disposition |
+|---|---|---|
+| C-F-1 | **ycashd shares one ZMQ PUB socket per address**: `-zmqpubhashblock` and `-zmqpubhashtx` given the same `tcp://` URL publish both topics on one socket (`src/zmq/zmqpublishnotifier.cpp`, "Reusing socket for address"). One port per node suffices; a subscriber on it received the `mine 1` tip hash and the coinbase txid. | The devnet uses one endpoint per node, both URLs in `nodes[n].zmq` equal. chain-viz's `--devnet` reader must tolerate (and should dedupe) equal `hashblock`/`hashtx` URLs. |
+| C-F-2 | **No `getzmqnotifications` RPC in Ycash 4.5**, and the zmq log lines are `LogPrint("zmq", …)` — silent in `debug.log` unless `-debug=zmq`. | The proof of the flags being accepted is `lsof -iTCP:<port>` (every ycashd binds its zmq port) or a subscriber; not the log. Documented in the devnet README §5. |
+| C-F-3 | **No 5000-wide port band is left below 32768.** The framework spreads a portseed over 4991 ports, and p2p/rpc/stratum/status already take 11000–31000; a band above 32768 would repeat the CI collision that moved stratum off 30000. | The zmq band folds the seed: `31000 + 12 * (seed % 140) + n` (31000–32679); chain-viz `32680 + seed % 88`. Two devnets whose seeds agree modulo 140 (or 88) collide there while their rpc ports do not — the README's port table says so. `yellowback_devnet_roles.py`'s presets use `portseed + 100, +103, +106`, which never agree modulo either. |
+| C-F-4 | `devnet.json` had no per-node map beyond `rpc` (keyed by node string). | Added a top-level `nodes` map, `nodes["<n>"].zmq = {hashblock, hashtx}`, keyed the way `rpc` is; `rpc` untouched. `chainviz = {pid, url, port, log, binary, pid_file, record}`. |
