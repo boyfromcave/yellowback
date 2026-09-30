@@ -451,8 +451,21 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       `wouldBeRejected`. Self-contained (builds its own section; one import + one list entry in
       `app.js`), reads `GET /api/yellowback` once per block; passes `qa/ui-smoke.mjs`. Mempool
       colouring is C2's, keyed on `yb.type` (see C-F10 for the type-name mismatch).
-- [ ] Acceptance: `price --shock=-70%` then `sim start` shows vaults crossing 110 %, the liquidator's
-      CLAIMs in the mempool, and `haltMask` lanes changing, matching `yellowback-devnet report`.
+- [x] Acceptance (2026-09-29, `up --role user --portseed 43 --sim-profile fast`, 11 nodes,
+      `chain-viz --devnet --record`): `price --shock=-70%` (then `--shock=-25%`, walk stopped)
+      raised `yb_state haltMask [] → [GLOBAL_RATIO, DIVERGENCE]` on every enforcing node at 281
+      and the lanes filled; the global ratio fell 336 % → 115 %; after `mine 90 2` past the first
+      underwater class-C vault's `claimHeight` it turned claimable (ringed in the scatter), the
+      liquidator's CLAIM `d6739f14a5…` appeared in the mempool classified `redeem/claim`, verdict
+      `ok`, `wouldBeRejected: false`, was mined at 437 (`claimedVaults` 0 → 1), its CLAIM_NOTICE
+      `3530d9a9…` classified `notice`; both recorded into `tests/fixtures/yb-txs.json`.
+      `yellowback-devnet report` at 444 agreed with `/api/snapshot.yellowback` on every field
+      compared (supplyCents, collateralZat, globalRatioBps, haltMask, vault counts, pMint, pClaim,
+      attestor statuses, quoting pools). State hash agreed on all 10 enforcing nodes. Budget
+      fixture from the same run: 28 `yed_gettag` for 28 blocks, 10 `yed_gettxinfo` for 10 txs, one
+      `yed_gethistory`. Note: mining 90 blocks on one node while the heartbeat mined on the others
+      produced depth-43..86 reorgs on the other nodes (visible in the reorg log) — an artefact of
+      the shortcut, not of the shock. `down --wipe` after.
 
 ### C4 — revenue ledger and panel (agent `viz-rev`, after C3)
 
@@ -554,7 +567,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C0 workspace plumbing | done 2026-09-29 | workspace repo (`repos.yaml`, Makefile, scripts, README, AGENTS.md, this plan) |
 | C1 collector core | in progress (agent `viz-core`, 2026-09-29) | `chain-viz/` |
 | C2 chain + mempool UI | done 2026-09-30 (branch `c2-ui` in `wt/viz-ui`, 5 commits, unmerged) | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
-| C3 Yellowback health | classify, model, panel done 2026-09-29 (`wt/viz-yb`, `c3-yb`, unmerged); acceptance in progress | `chain-viz/` |
+| C3 Yellowback health | done 2026-09-29 (`wt/viz-yb`, branch `c3-yb`, unmerged, not pushed) | `chain-viz/` |
 | C4 revenue + devnet zmq/viz | devnet half done 2026-09-29 (`wt/devnet-viz`, `feature/chain-viz-devnet` @ `3762d9f`, unmerged); revenue half after C3 | `chain-viz/`, `ycash-dd/contrib/` |
 | C5 functional test | not started | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py` |
 | C6 record/replay | replay + sessions + CI done 2026-09-29 (`wt/viz-replay`, `c6-replay`, unmerged); devnet `report` bundle and the nightly-diagnosis acceptance open | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
