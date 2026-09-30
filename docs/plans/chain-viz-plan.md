@@ -515,11 +515,19 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
 
 ### C5 — devnet integration and the functional test (agent `viz-qa`, worktree of `ycash-dd`, after C4)
 
-- [ ] `qa/rpc-tests/yellowback_chainviz.py`: starts a 3-node regtest, runs the `chain-viz` binary
+- [x] `qa/rpc-tests/yellowback_chainviz.py`: starts a 3-node regtest, runs the `chain-viz` binary
       (`CHAINVIZ_BIN`, skipped if unset, the way `yellowback_stratum.py` treats yolo), mines, mints,
       forces a reorg, asserts over `/api/health` and `/api/revenue` against the node's own RPCs.
-- [ ] `yellowback_devnet_roles.py` gains an optional chain-viz session recording (`--record`).
-- [ ] Acceptance: the test is green in the nightly; a recorded session replays.
+      (2026-09-30, `wt/viz-qa-node` `038252fc9`; registered in `rpc-tests.py`, `YELLOWBACK_SCRIPTS`
+      and a chain-viz checkout+build step exporting `CHAINVIZ_BIN`, `fb78a9b65`. Green locally
+      against chain-viz `main` + branch `c5-fixes` (C-F19, C-F20); the `/api/revenue` assertion
+      skips on a 404 until the C4 merge, then the guard comes out.)
+- [x] `yellowback_devnet_roles.py` gains an optional chain-viz session recording (`--record`).
+      (`2fe3c47a9`: with `CHAINVIZ_BIN` set, `up` starts chain-viz with `--record` and the session
+      file is copied to the test's output dir; without it, `--no-viz`.)
+- [ ] Acceptance: the test is green in the nightly (needs `c5-fixes` on chain-viz `main`); a
+      recorded session replays — done locally 2026-09-30 (`--replay` of the test's `session.jsonl`,
+      97/97 events, health `ok`, 3 nodes agreeing).
 
 ### C6 — record, replay, sessions (agent `viz-core`)
 
@@ -603,7 +611,7 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C2 chain + mempool UI | done 2026-09-30, merged on `main` and pushed | `chain-viz/ui/`, `tests/ui_served.rs`, `qa/ui-smoke.mjs` |
 | C3 Yellowback health | done 2026-09-29, merged on `main` and pushed (with the C-F10 slot-map fix) | `chain-viz/src/{classify.rs,model/yellowback.rs}`, `ui/panels/health.js`, `tests/yb_*.rs` |
 | C4 revenue + devnet zmq/viz | devnet half done 2026-09-29, merged on `ycash-dd` `feature/yellowback-price-attest` (`3762d9f3d`) and pushed; revenue half done 2026-09-29 (agent `viz-rev`, `wt/viz-rev`, branch `c4-revenue`, unmerged) | `chain-viz/src/model/revenue.rs`, `ui/panels/revenue.js`, `ycash-dd/contrib/` |
-| C5 functional test | in progress (agent `viz-qa`, `wt/viz-qa-node`, branch `feature/chain-viz-qa`) | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
+| C5 functional test | done locally 2026-09-30 (`wt/viz-qa-node`, branch `feature/chain-viz-qa`, 3 commits, unmerged; chain-viz `c5-fixes` in `wt/viz-qa-viz`, 1 commit, unmerged); nightly acceptance open | `ycash-dd/qa/rpc-tests/yellowback_chainviz.py`, `.github/workflows/yellowback-tests.yml` |
 | C6 record/replay | done 2026-09-29, merged on `main` and pushed; the nightly-diagnosis acceptance waits for C5's nightly | `chain-viz/src/{replay,session}.rs`, `tests/replay.rs`, `.github/workflows/ci.yml` |
 | C7 mainnet hardening | done except the 24 h mainnet acceptance, 2026-09-30 (`wt/viz-hard`, branch `c7-harden`, unmerged) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | not started | `chain-viz/README.md`, `docs/mapping.md` §18 |
@@ -638,6 +646,10 @@ Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as 
 | C-F16 | The plan's `revenue{height,txid,vout,kind,zat,payee,usd}` cannot carry a `kind` field: `EventKind` is `#[serde(tag = "kind")]`, so `kind` is the event's own name (`revenue`) and a second `kind` would collide in the flattened envelope. | The ledger kind travels as `entry` (`subsidy`, `netfee`, `enforcefee`, …); `height` is the envelope's. `/api/revenue` rows and the fixture keep `kind`. |
 | C-F17 | A pool's coinbase does not pay its `payoutKey`: the devnet's pool nodes mine with `generate`, whose coinbase goes to a fresh wallet key every block (`smaRSw…`, `smYNwQ…`, …), while the tag's `payoutAddress` (`-yellowbackpayoutaddress`) is fixed; `getblock 2` carries `scriptPubKey.addresses`, so the address is readable but rolls up nowhere on its own. | `RevenueModel` aliases the coinbase address to the tag's `payoutAddress` seen on the same block (`on_tag`), so blocks mined, subsidy and net fees roll up under the quoting key; `/api/revenue` groups list their `aliases`. On the devnet that is one alias per block (the map is never evicted; ~60 B per block); a mainnet pool reuses one address. A block without a tag stays under its coinbase address. |
 | C-F18 | `yed_getfeepayee` refuses `refHeight` above the index height or below `startHeight`, and answers `fee-no-eligible-payee` (FEE-0) when nobody quoted in the window — an RPC error, not an empty list. And the enforcement-fee tx's `refHeight` is only in its payload (`classify::Payload.ref_height`), not in `yed_gettxinfo`. | The collector asks once per `refHeight` the ledger's fee rows name, on the node that enriched the tx, remembers a refusal as "no eligible payee" (never re-asked), and the counterfactual reports `resolved` / `unresolved` / `noEligible` counts beside the sum. |
+| C-F19 | `#[serde(default)]` covers a missing key only, not an explicit `null`, and the node renders an undefined price or ratio as `null` (`PriceOrNull`, `src/rpc/yellowback.cpp:424`): on a fresh regtest `yed_getstats.globalRatioBps` is `null` until the first vault, so every node's step failed (`rpc protocol: yed_getstats: invalid type: null, expected i64`), all three nodes showed `up: false`, `/api/health.ok` was `false` and nothing was enriched — chain-viz was blind on any chain without a vault. The devnet never showed it because its personas mint before chain-viz starts. | `rpc::null_default` (`Option<T>` → default) on `YedStats`'s `globalRatioBps` and `p*` fields, chain-viz branch `c5-fixes` (`wt/viz-qa-viz`, `2ba76b7`, on top of `main` `be0aada`); to merge. Rule for every typed `yed_*` struct: a field the node can render as `null` takes `null_default` or `Option`. |
+| C-F20 | `--nodes a,b,c` numbered the nodes 0, 2, 4: `id = nodes.len() + i` while pushing into `nodes`. `--zmq 1=…` then matched nothing and `rpcCalls`/`snapshot.nodes` were keyed 0/2/4. `--devnet` was unaffected (ids come from `devnet.json`). | Same commit: the count is taken once before the loop. |
+| C-F21 | `/api/health` can say `agreeing: 3` with `nodesUp: 2`: a node's head moves inside its step and `up` is set after the step returns, under a second model lock. | The test waits for `tip == getbestblockhash`, `agreeing == N` **and** `nodesUp == N` before asserting; a reader that keys on one of them alone sees a window of a few ms. |
+| C-F22 | The RPC budget of §7 needs the wake rule to be checkable: the collector fetches the mempool on every wake, and a wake is a poll tick, a ZMQ `hashblock`, or a ZMQ `hashtx` — which ycashd publishes once per transaction entering the mempool **and** once per transaction of every connected block, coinbases included. A `reorg` event's `to` is whichever new block the node's poll caught (the first of three, as often as the last). | `yellowback_chainviz.py` bounds `getrawmempool ≤ seconds + blocks since start + txs in those blocks + mempool arrivals + 2`, `getblock ≤ blocks since start + 20 backfill + 2`, `yed_gettxinfo ≤ Yellowback txs` per node and in total; the observed run: 30/30/33 `getrawmempool` for 38 wakes, 30/10/11 `getblock`, 1/1/0 `yed_gettxinfo` for 2 txs. `to` is asserted to be one of the new blocks. |
 
 
 | # | Finding | Disposition |
