@@ -497,12 +497,16 @@ commits, `cargo test` green at every commit). Owner decisions C-1..C-8 gate C1.
       `/api/revenue`. Not done: a browser screenshot of the panel.)
 - [x] Reconciliation test: Σ ledger `enforcefee` over [a, b] = Σ `yed_gettxinfo.feeZat` over the
       same blocks' Yellowback txs; likewise `attestfee`. (`tests/revenue_reconcile.rs` on
-      `tests/fixtures/revenue-blocks.json`, 22 devnet blocks recorded with `getblock 2`,
-      `getblocksubsidy`, `yed_gettag`, `yed_gettxinfo`; also residual, the coinbase rows vs the
-      coinbase outputs, per-pool sums, aliases, USD at a fixed pMint, and the release rows under
-      enforcing = false. Live: the same sums over blocks 262–283 of the portseed-59 devnet agreed
-      with `/api/revenue` (9 Yellowback txs, 3.0 YEC enforcement fees, 0.75 YEC attestor fees,
-      137.50015 YEC coinbase).)
+      `tests/fixtures/revenue-blocks.json`, 37 devnet blocks (282–318, `up --role user
+      --sim-profile fast --portseed 59`) recorded with `getblock 2`, `getblocksubsidy`,
+      `yed_gettag`, `yed_gettxinfo`: 10 Yellowback txs including the exiter's owner REDEEM; also
+      residual, the coinbase rows vs the coinbase outputs, per-pool sums, aliases, USD at a fixed
+      pMint, and the release rows under enforcing = false. Live, twice: the same sums over
+      262–283 (9 txs, mints only) and over 282–318 (10 txs incl. the redeem: 1.0 YEC enforcement
+      fees, 0.125 YEC attestor fees, 131.25011 YEC coinbase, 37 blocks) agreed with
+      `/api/revenue` field for field; `/api/revenue` also answered under `--public`. Budget on
+      that run: 39 `getblocksubsidy` for 39 blocks, 2 `yed_getfeepayee` for 2 refHeights.
+      `down --wipe` after.)
 - [x] `contrib/` change in `ycash-dd`: the devnet passes `-zmqpubhashblock`/`-zmqpubhashtx` per node,
       `up` auto-starts chain-viz on `devnet.json` when a binary is found and prints the URL, `down`
       stops it, `--no-viz` opts out (C-11; Python only, zero C++). Done 2026-09-29, worktree
