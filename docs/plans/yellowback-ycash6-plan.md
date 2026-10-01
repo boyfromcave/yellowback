@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) on ycashd 6.20.0 — Port and Integration Plan (`ycash6`)
 
-**Revision 1, 2026-09-30. Status: owner decisions P-1..P-8 taken 2026-09-30 (every recommendation accepted); Phase 0 may start.** Scope: the node only — `ycash6/`
+**Revision 1, 2026-09-30. Status: Phase 0 complete (2026-09-30); Phase 1 in progress.** Owner decisions P-1..P-8 taken 2026-09-30, every recommendation accepted. Scope: the node only — `ycash6/`
 (`boyfromcave/ycash6`, branch `feature/yellowback`, cut from miodragpop's `dev-rebase-6.20.0` @
 `040894344b`) and the patched `librustzcash6/`. The GUI wallet, lightwalletd, YEW, yolo and chain-viz
 are **out of scope until Phase 7**, which starts only after Phase 6's demonstration passes.
@@ -94,6 +94,7 @@ hashFinalSaplingRoot` → `hashBlockCommitments`; `-walletrequirebackup`, `-allo
 | `src/miner.cpp` | ≤ 35 | ≈ 16 | tag + `TemplateView` member in `CreateNewBlock :350`, filter in `TestForBlock :536`, scriptSig `+ COINBASE_FLAGS` at `:288`, `LOCK(cs_main)` around `IncrementExtraNonce :909`; the member in `miner.h` |
 | `src/rpc/mining.cpp` | ≤ 35 | ≈ 7 | as v2 (`:517, :790, :819, :833`) |
 | `src/chainparams.cpp` | **4** (P-1 only) | 4 | the regtest Equihash guard; otherwise zero |
+| `src/miner.h` | ≤ 10 | ≈ 3 | the `TemplateView` member of `BlockAssembler` |
 | `src/rpc/common.h` | ≈ 55 | ≈ 50 | S1 arity rows (new in this port; counted, not budgeted) |
 | `src/init.cpp` | no budget | ≈ 165 | as v2/v3 (+ one-string debug categories edit) |
 | `src/transaction_builder.{h,cpp}` | 40 | ≈ 38 | the I2 extension re-patched onto the 6.x builder (S4) |
@@ -160,12 +161,12 @@ been seen to run. Chunk names are the worktree names. Estimates are agent-days.
 ### Phase 0 — decisions, baseline, scaffolding (owner + coordinator, ½ day)
 
 - [x] P-1 … P-8 answered in §0 (2026-09-30: all as recommended)
-- [ ] `ycash6-baseline` tag pushed; `wt/ycash6-baseline` built once (P-5 stock binary)
-- [ ] P-1(a): the regtest Equihash guard as baseline-fix commit 3 in `chainparams.cpp` (4 lines) + mapping §19 row; regtest with six upgrades at 1 mines in ~0 s (re-run the §4 smoke of `yellowback-baseline.md` at the Canopy epoch: shield, Sapling send, deshield)
-- [ ] `qa/yellowback-frozen-files.txt` copied and extended with `src/rust/`, `Cargo.toml`, `Cargo.lock`; `qa/yellowback-coverage-floor.sh`, `qa/yellowback-lockorder-check.py` copied (the lockorder whitelist re-verified against 6.20.0 `miner.cpp` in Phase 3)
-- [ ] `.github/workflows/yellowback-tests.yml` copied with branch names → `ycash6-legacy`/`ycash6-baseline`, `BITCOIND` → `ZCASHD`, the depends apt list for 6.x, budgets from §2, **all jobs allowed to fail until Phase 3** (the gate is switched on per chunk)
-- [ ] `docs/mapping.md` §19 gains the seam table (S1–S4) and the API-change rows from §1 with both pins' citations (the survey text is the source)
-- [ ] `ycash6/doc/yellowback.md` copied; its "Build and test baseline" section rewritten from `yellowback-baseline.md`
+- [x] `ycash6-baseline` tag pushed (`8808258cd`). **Deviation:** the P-5 stock binary is built from branch `ycash6-stock` (`e98128239`, all three baseline fixes) in `wt/ycash6-stock`, because a stock node without fix 3 would reject the devnet's (48,5) blocks at the Canopy epoch
+- [x] P-1(a): the regtest Equihash guard as baseline-fix commit 3 (`e98128239`; full `test_bitcoin` green; 110 blocks in < 1 s at Canopy, shield/Sapling/deshield/transparent all mined) in `chainparams.cpp` (4 lines) + mapping §19 row; regtest with six upgrades at 1 mines in ~0 s (re-run the §4 smoke of `yellowback-baseline.md` at the Canopy epoch: shield, Sapling send, deshield)
+- [x] `qa/yellowback-frozen-files.txt` written for this baseline (the four budgeted files left out, `src/rust/`, `Cargo.*` added; `miner.h` budgeted at 10) and `qa/yellowback-audit.sh` added as the local mirror of the CI audit gates; with `src/rust/`, `Cargo.toml`, `Cargo.lock`; `qa/yellowback-coverage-floor.sh`, `qa/yellowback-lockorder-check.py` copied (the lockorder whitelist re-verified against 6.20.0 `miner.cpp` in Phase 3)
+- [x] `.github/workflows/yellowback-tests.yml` copied (`1f6df70a2`) with branch names → `ycash6-legacy`/`ycash6-baseline`, `BITCOIND` → `ZCASHD`, the depends apt list for 6.x, budgets from §2 via `qa/yellowback-audit.sh`; every job except `audit` is **skipped** (`if: false && …`) until its phase removes the prefix
+- [x] `docs/mapping.md` §19 gains the seam table (S1–S4) and the API-change rows from §1 with both pins' citations (the survey text is the source)
+- [x] `ycash6/doc/yellowback.md` copied; its "Build and test baseline" section rewritten from `yellowback-baseline.md`
 
 ### Phase 1 — transplant the pure overlay (1 day, chunk `transplant`)
 
