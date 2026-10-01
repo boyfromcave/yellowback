@@ -947,8 +947,23 @@ Never a writer, `generate`, `submitblock`, `sendrawtransaction`, `getblocktempla
 
 ## 13. Porting the overlay from Ycash v4.5.0 to ycashd 6.20.0 (`ycash-dd` → `ycash6`)
 
-Added 2026-09-30 with `ref/ycash6` / `ycash6`. Not yet surveyed: the source of the port is
+Added 2026-09-30 with `ref/ycash6` / `ycash6`. The overlay itself is not yet surveyed: the source of the port is
 `ycash-dd`'s delta vs `ycash-legacy` (`make diff`), the target is `ref/ycash6`, and every
 mismatch between the v4.5.0 files the overlay touches and their 6.20.0 counterparts (renamed or
 split files, changed `CCoinsViewCache`/`CTransaction`/RPC-registration APIs, the librustzcash
 boundary now pinned to `ref/librustzcash6`) gets a row here, cited at both pins.
+
+**Baseline exercise, 2026-09-30** (`ycash6/doc/yellowback-baseline.md` has the full record): the pin
+builds natively on arm64 macOS (`ycashd v6.20.0-040894344`, every `zcash_*` crate from
+`ref/librustzcash6`'s rev), starts on regtest, mines, and moves funds transparently and through
+Sapling — once two baseline defects were fixed on `feature/yellowback` (commits `940987c51`,
+`141df8d48`, never mixed with Yellowback code). Rows cited at the pin:
+
+| v4.5.0 (`ref/ycash`) | 6.20.0 (`ref/ycash6`) | Consequence for the port |
+|---|---|---|
+| `EquihashN()`/`EquihashK()` return the regtest (48,5) for `strNetworkID == "regtest"` regardless of upgrades (`ref/ycash/src/chainparams.cpp:860-869`) | `GetEquihashOverride()` walks `NetworkUpgradeInfo` for every network, and the Ycash entry carries `nEquihashN = 192, nEquihashK = 7` (`ref/ycash6/src/chainparams.cpp:966-980`, `src/consensus/upgrades.cpp:33-44`) | Activating the Ycash upgrade (`374d694f`) on regtest makes `generate` solve (192,7): ~5 min per block. Regtest for the port stays at Overwinter+Sapling at 1, like both qa harnesses; Blossom/Heartwood/Canopy cannot be exercised on regtest without a regtest exemption in `GetEquihashOverride` |
+| `generate`/`getblocktemplate` build the coinbase in C++ (`ref/ycash/src/miner.cpp`) | The coinbase goes through the Rust Sapling builder: `miner.cpp:196,235,252` passed an **uninitialised** `std::array<uint8_t,32> saplingAnchor` to `sapling::new_builder`, which rejects non-canonical bytes (`src/rust/src/sapling.rs:404-405`, "Invalid Sapling anchor"); inherited from upstream zcashd `fd675c320` | Deterministic on this platform: 2 `test_bitcoin` failures and no block template once a Sapling spend is in the mempool. Fixed (`= {}`) in `940987c51`; the full `test_bitcoin` suite is green after it. The Yellowback coinbase tag (TAG-1) will sit next to this code |
+| Harness writes `ycash.conf`, binary from `BITCOIND` (`ref/ycash/qa/rpc-tests/test_framework/util.py:175`) | Harness wrote `zcash.conf`, default binary `src/zcashd`, env var `ZCASHD` (`ref/ycash6/qa/rpc-tests/test_framework/util.py:32,203`); `ycashd` refuses to start without `ycash.conf` (`src/util/system.cpp:82,385`) | Every inherited functional test died at the pin. Fixed in `141df8d48`; the `yellowback_*.py` scripts ported from v4.5.0 must switch `BITCOIND` → `ZCASHD` and keep `--srcdir`/`--tmpdir`/`--portseed` |
+| Harness branch ids match the node (Overwinter, Sapling only) | `util.py:41-44` carries upstream Zcash ids (Blossom `2bb40e60`, Heartwood `f5b9230b`, Canopy `e9ff75a6`, NU5 `c2d6d0b4`); the node's are `8e471bd6`, `66314da3`, `19bd2d2f`, `f919a198` (`src/consensus/upgrades.cpp`) | `feature_zip221.py` → "Invalid network upgrade (2bb40e60)". Any port test that names an upgrade past Sapling must use the Ycash ids; left unfixed in the baseline |
+| One fee, `-mintxfee`/`-paytxfee` | `-feepolicy` per-Sapling-output (default) or `zip317`; an explicit fee > 4× conventional is rejected, and the message prints the amount in place of the fee ("which is 9.99985") | `wallet_sapling.py` fails at the pin (it passes ZIP-317 fees). Yellowback RPCs that set fees must pass `null` or compute the policy fee; a cosmetic message defect to report |
+| Sprout/Sapling only; no unified addresses | NU5 is `NO_ACTIVATION_HEIGHT` on every network; `z_getnewaccount` refuses ("not active on Ycash", `src/wallet/rpcwallet.cpp:3700-3714`) | Nothing for Yellowback (rule TX-0, transparent only); the GUI/light clients must not assume UA support on the v6 line |
