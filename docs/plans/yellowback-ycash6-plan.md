@@ -226,7 +226,7 @@ Copy, rename includes, build. No node hook, no API adaptation beyond includes.
 - [ ] ZIP-317 and mempool-limit interaction tests: a mint at the P-2 floor is relayed and mined under `-blockunpaidactionlimit=0`; `RemoveInvalidVaultSpends` with `-mempooltxcostlimit` eviction; `IsExpiringSoonTx` never bites a builder transaction
 - [ ] `ycash6/doc/yellowback-review.md` written fresh (P-6): §2 budget actuals measured on this tree, the hook table with every site's four-part check at 6.20.0 line numbers, the unguarded residue, the baseline-fix commits listed as "not Yellowback", the §8.4 checklist re-scored; `make spec` regenerates the spec copy for the fork
 - [ ] **The §4 demonstration run end to end and its transcript attached to the review document** — this is the exit criterion of the node scope
-- [ ] Report to miodragpop: the three baseline fixes (miner anchor, harness conf, Equihash regtest guard) as upstreamable patches, separate from Yellowback
+- [ ] Report to miodragpop: the three baseline fixes (miner anchor, harness conf, Equihash regtest guard) as upstreamable patches, separate from Yellowback — **prepared, not sent** (2026-09-30): `ycash6/upstream-report/report.md` + `patches/0001-0003` (each `git apply --check` clean on 040894344b); the owner decides when and how to send
 
 ### Phase 7 — component compatibility (**after** Phase 6; separate chunks, own plans' acceptance tests)
 
