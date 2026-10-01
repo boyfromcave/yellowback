@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) on ycashd 6.20.0 — Port and Integration Plan (`ycash6`)
 
-**Revision 1, 2026-09-30. Status: draft, nothing started.** Scope: the node only — `ycash6/`
+**Revision 1, 2026-09-30. Status: owner decisions P-1..P-8 taken 2026-09-30 (every recommendation accepted); Phase 0 may start.** Scope: the node only — `ycash6/`
 (`boyfromcave/ycash6`, branch `feature/yellowback`, cut from miodragpop's `dev-rebase-6.20.0` @
 `040894344b`) and the patched `librustzcash6/`. The GUI wallet, lightwalletd, YEW, yolo and chain-viz
 are **out of scope until Phase 7**, which starts only after Phase 6's demonstration passes.
@@ -29,9 +29,9 @@ does not restate (**this plan is a delta on v2 and v3: where it is silent, they 
 
 ---
 
-## 0. Owner decisions (must be answered before the phase that cites them)
+## 0. Owner decisions — all eight decided 2026-09-30, each as recommended
 
-| # | Decision | Recommendation | Needed by |
+| # | Decision | Recommendation (= the decision) | Needed by |
 |---|---|---|---|
 | P-1 | **Regtest upgrade epoch.** v4.5.0's Yellowback scripts and devnet activate all six upgrades at height 1 and sign under the Canopy branch id, mirroring mainnet. On 6.20.0 that flips regtest Equihash to (192,7) because `GetEquihashOverride()` no longer exempts regtest (mapping §19 row 1): minutes per block. Options: (a) restore v4.5.0's four-line regtest guard in `CChainParams::EquihashN/K` (`chainparams.cpp`, a file in the v2 zero set, test-only behaviour, no mainnet effect); (b) run every Yellowback test and the devnet at Overwinter+Sapling only (signing branch id Sapling, not the mainnet epoch; founders'/funding-stream rules at Canopy untested). | **(a)**, as baseline fix 3, with `chainparams.cpp` budgeted at exactly those 4 lines and a mapping row. The port must be proven under the epoch mainnet is actually at (Canopy, 1100006). | Phase 0 |
 | P-2 | **Fee rule under ZIP-317.** 6.20.0's mempool admits a flat 1000-zat Yellowback fee but ranks it below conventional-fee transactions and `-blockunpaidactionlimit`/`-mempooltxcostlimit` evict it first. | `g_yellowbackFee = max(DEFAULT_YELLOWBACK_FEE, tx.GetConventionalFee())` computed from the built transaction; the Python fee assertions follow. No change to the protocol's enforcement fee (FEE_MIN 0.5 YEC). | Phase 2 |
@@ -159,7 +159,7 @@ been seen to run. Chunk names are the worktree names. Estimates are agent-days.
 
 ### Phase 0 — decisions, baseline, scaffolding (owner + coordinator, ½ day)
 
-- [ ] P-1 … P-8 answered in §0 (P-1 and P-4 block Phase 1)
+- [x] P-1 … P-8 answered in §0 (2026-09-30: all as recommended)
 - [ ] `ycash6-baseline` tag pushed; `wt/ycash6-baseline` built once (P-5 stock binary)
 - [ ] P-1(a): the regtest Equihash guard as baseline-fix commit 3 in `chainparams.cpp` (4 lines) + mapping §19 row; regtest with six upgrades at 1 mines in ~0 s (re-run the §4 smoke of `yellowback-baseline.md` at the Canopy epoch: shield, Sapling send, deshield)
 - [ ] `qa/yellowback-frozen-files.txt` copied and extended with `src/rust/`, `Cargo.toml`, `Cargo.lock`; `qa/yellowback-coverage-floor.sh`, `qa/yellowback-lockorder-check.py` copied (the lockorder whitelist re-verified against 6.20.0 `miner.cpp` in Phase 3)
