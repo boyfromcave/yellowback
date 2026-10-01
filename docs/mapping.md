@@ -20,7 +20,7 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | Working fork (lightwalletd) | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin; re-forked from yodl 2026-09-24) | `187a26765e` |
 | Ycash 6.20.0 (miodragpop) | `ref/ycash6` | `dev-rebase-6.20.0` @ commit (2026; Zcash 6.x lineage; no tag) | `040894344b` |
 | Patched librustzcash (miodragpop) | `ref/librustzcash6` | `ycashd-v6.20.0` @ commit (pinned by rev in `ref/ycash6/Cargo.toml:129-134`; no tag) | `ec525fae82` |
-| Working fork (v6.20.0 node) | `ycash6` | branch `feature/yellowback` off `ycash6-legacy` (= `ref/ycash6`) — the v6 port, §13 | `040894344b` |
+| Working fork (v6.20.0 node) | `ycash6` | branch `feature/yellowback` off `ycash6-legacy` (= `ref/ycash6`) — the v6 port, §19 | `040894344b` |
 | Working fork (patched librustzcash) | `librustzcash6` | branch `feature/yellowback` off `librustzcash6-legacy` (= `ref/librustzcash6`); zero-delta until the port needs it | `ec525fae82` |
 
 Line numbers below were read at these pins. If a pin moves, re-verify before trusting them.
@@ -945,7 +945,7 @@ Never a writer, `generate`, `submitblock`, `sendrawtransaction`, `getblocktempla
 | C-F32 | `devnet.json` had no per-node map beyond `rpc` | ZMQ endpoints and the visualizer's own record | A top-level `nodes["<n>"].zmq = {hashblock, hashtx}` and `chainviz = {pid, url, port, log, binary, pid_file, record}`; `rpc` untouched |
 | C-F33 | A reorg deeper than 99 blocks aborts a wallet-enabled node: `WITNESS_CACHE_SIZE = MAX_REORG_LENGTH + 1` = 100 (`ref/ycash/src/wallet/wallet.h:282`, `src/main.h:62`); `DecrementNoteWitnesses` asserts at `ref/ycash/src/wallet/wallet.cpp:1737`; on macOS the process hangs in `abort()` (`UE`), RPC dead, `kill -9` ineffective | induced forks on the devnet (regtest recipes, `invalidateblock`) | Recipes invalidate `tip − 2`; a devnet reorg stays under 99 blocks; recovery is `down` + `up` |
 
-## 13. Porting the overlay from Ycash v4.5.0 to ycashd 6.20.0 (`ycash-dd` → `ycash6`)
+## 19. Porting the overlay from Ycash v4.5.0 to ycashd 6.20.0 (`ycash-dd` → `ycash6`)
 
 Added 2026-09-30 with `ref/ycash6` / `ycash6`. The overlay itself is not yet surveyed: the source of the port is
 `ycash-dd`'s delta vs `ycash-legacy` (`make diff`), the target is `ref/ycash6`, and every
