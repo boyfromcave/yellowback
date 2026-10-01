@@ -947,7 +947,7 @@ Never a writer, `generate`, `submitblock`, `sendrawtransaction`, `getblocktempla
 
 ## 19. Porting the overlay from Ycash v4.5.0 to ycashd 6.20.0 (`ycash-dd` → `ycash6`)
 
-Added 2026-09-30 with `ref/ycash6` / `ycash6`. The overlay itself is not yet surveyed: the source of the port is
+Added 2026-09-30 with `ref/ycash6` / `ycash6`. The plan is `docs/plans/yellowback-ycash6-plan.md`; its §1 summarises the three surveys (node hooks, overlay APIs, tooling) and §5 Phase 0 copies their rows here. The source of the port is
 `ycash-dd`'s delta vs `ycash-legacy` (`make diff`), the target is `ref/ycash6`, and every
 mismatch between the v4.5.0 files the overlay touches and their 6.20.0 counterparts (renamed or
 split files, changed `CCoinsViewCache`/`CTransaction`/RPC-registration APIs, the librustzcash
