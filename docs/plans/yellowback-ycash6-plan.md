@@ -230,6 +230,24 @@ Copy, rename includes, build. No node hook, no API adaptation beyond includes.
 
 ### Phase 7 — component compatibility (**after** Phase 6; separate chunks, own plans' acceptance tests)
 
+**Survey (2026-09-30, read-only, [`ycash6/phase7-compat-survey.md`](ycash6/phase7-compat-survey.md)):** the
+"zero component changes" expectation below does **not** hold for every component. Ranked:
+(1) yecwallet-dd `z_importivk` sends `ivk, "yes", height, zaddr` but 6.20.0 takes `ivk, zaddr, rescan, height`
+(`ref/ycash6/src/wallet/rpcdump.cpp:1180`; `yecwallet-dd/src/zcashdrpc.cpp:95-107`) — certain break;
+(2) yecwallet-dd `importprivkey` with a 4th (Ycash start-height) argument, refused by 6.20.0's server-side
+arity (1-3, `rpc/common.h:126`) — certain break; (3) `rescanblockchain`/`getrescaninfo` removed — the Rescan menu
+fails, every call pays a failed `getrescaninfo` first, no rescan progress; (4) yolo `tests/regtest.rs:311-313` uses
+`setmocktime` without `-mocktime` (F-8) — test-only break; (5) yolo reads `lightclientroothash`/`finalsaplingroothash`,
+default-allowed only via `gbt_oldhashes` — latent, fall back to `defaultroots.chainhistoryroot`; (6) chain-viz revenue:
+`getblocksubsidy` drops `foundersaddress`/`fundingstreams` (falls back already; re-check its test); (7) yecwallet
+`fastsync=1` ignored (now `-ibdskiptxverification`), Sprout addresses refused after Canopy; (8) v4-only parsers in
+lightwalletd-dd and yew — latent until NU5. lightwalletd-dd, chain-viz, yew and devnet.json need no code change.
+**Decision needed before Phase 7:** yecwallet-dd serves v4.5.0 nodes too, so items 1-3 need version-aware calls
+(branch on `getinfo.version` ≥ 6200000) rather than a switch — or a separate wallet branch for the v6 line.
+Recommendation: version-aware calls in yecwallet-dd (small, keeps one wallet). `getcompactblock*` stays unused by
+lightwalletd in Phase 7 (experimental flag; would break the byte-equality gate).
+
+
 Each component reaches the node only through its public interface, so each test is "point the
 existing component at a 6.20.0 devnet and run its own acceptance". Expected to need **zero**
 component changes if the `yed_*` contract and `devnet.json` stayed byte-identical; any difference
