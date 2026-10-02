@@ -34,7 +34,7 @@ gate in this plan — owner decision P-4. Tag it before Phase 1: `git -C ycash6 
 - **Next:**
   1. A green GitHub CI run on ycash6 to tick §4.10.
   2. Merge `rpcfix`.
-  3. The owner decides on a YecWallet warning before an embedded 6.20.0 node upgrades a v4.5.0 datadir (one-way).
+  3. YecWallet warns before an embedded 6.20.0 node upgrades an older datadir (one-way): owner decided **yes** (2026-10-01). Agent `upgradewarn` (yecwallet-dd branch `upgradewarn`) is implementing it: detection before launch, then a dialog to back up and continue, continue, or quit; tested headless.
   4. The §5 Phase 7 "row per finding" item.
 - **Owner actions:** set `boyfromcave/ycash6` default branch to `feature/yellowback` (scheduled CI jobs never fire otherwise); check the first GitHub runs of main/audit/agent/python on ycash6 and of the audit on ycash-dd (its negated checks now really fail); send (or not) `docs/plans/ycash6/upstream-report/` to miodragpop.
 
