@@ -304,6 +304,9 @@ Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`
 All eight repositories were pushed after the final local runs (ycash-dd `02aa77cb7` + tag `yellowback-v3-baseline` → `ff7f45947`, ycash6 `0748c68a6`, lightwalletd-dd `77a9c0d`, yecwallet-dd `414ac09`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, workspace). Owner actions found while watching CI:
 
 - **lightwalletd-dd CI had never run.** Every push since 2026-09-24 showed a failed run with zero jobs because `.github/workflows/yellowback-tests.yml` was invalid: the step name `Test (frontend: the Yellowback suite by name)` is an unquoted scalar with a colon-space, which GitHub's parser rejects at line 37 (the owner read the error off GitHub; a local PyYAML load had accepted it). Quoted in `455ab0c`; the workflow runs for the first time on that push. No other workflow in the eight repositories has the pattern. Still an owner choice: set that fork's default branch to `feature/yellowback-price-attest`.
+- **cargo-deny 0.18.3 cannot parse the CVSS 4.0 advisories now in the RustSec database** (reproduced locally; first seen in chain-viz's audit job). Bumped to 0.20.2 in chain-viz `a8ae46c`, yolo `4617bed`, ycash-dd `6d7ee5217`, ycash6 `043a84fab`.
+- **yolo's audit job used `rustsec/audit-check`, which posts a check run and needs `checks: write`** under the workflow's read-only token. Replaced by the token-free cargo-deny + cargo-audit steps chain-viz uses (yolo `f01c2d1`).
+- **lightwalletd's generated-code gate compared comment lines.** protoc-gen-go formats doc comments with the go/format of the Go that compiled it; Go 1.24 on the runner reflows one indented comment in the baseline `compact_formats.pb.go` that Go 1.27 here does not. Reproduced in an Ubuntu 24.04 container; the mask now ignores comment-only and blank lines and a negative check confirms an API change still fails (`da3f73a`). The job is also split into named steps.
 
 ---
 
