@@ -11,7 +11,7 @@ when the coordinator has merged the chunk and seen its tests run.
 `yellowback_rpc_contract`, `yellowback_attest`, `yellowback_attest_wallet`,
 `yellowback_attest_enforcement`, `yellowback_index`, `yellowback_stock_node`,
 `yellowback_wallet_restore` and the four v2 flow scripts in **both** unarmed and `--armed` modes
-all pass. Frozen files are at **zero** delta against `feature/yellowback-sf`, and `main.cpp` (11),
+all pass. Frozen files are at **zero** delta against the tag `yellowback-v3-baseline`, and `main.cpp` (11),
 `miner.cpp` (12) and `rpc/mining.cpp` (7) are unchanged from v2 against `ycash-legacy`; `init.cpp`
 gained 14 lines. On the wallet's: 83 QTest cases green offline, contract check green.
 **A4 is complete as of 2026-09-20, and the role-based regtest tooling
@@ -23,6 +23,12 @@ that economy found and fixed one wallet-tier defect the A0–A5 suites had never
 §6.2). What remains: the owner walking the four scenarios (Phase A7's rehearsal), A6 (hardening,
 packaging, the review document and the rc run-through), and A7–A8, which need real attestors and
 cannot run on one machine.
+
+**Comparison base (2026-10-01, owner).** The comparison base is the tag `yellowback-v3-baseline`
+in `ycash-dd` (= `feature/yellowback-price-attest` at `9da72131e`); `feature/yellowback-sf` is
+superseded and is **no comparison base**. The frozen-file zero-delta check (§4.1, §8.4 item 1, the
+CI `audit` job, retargeted in `ycash-dd` `46d11402c`) measures against that tag; line budgets
+still measure against `ycash-legacy`.
 
 | Phase / chunk | State |
 |---|---|
@@ -656,7 +662,7 @@ wrapper (`VerifyCompactSig`) so the fuzz harness can stub it.
 | the frozen set (`qa/yellowback-frozen-files.txt`): `src/main.cpp`, `src/miner.cpp`, `src/rpc/mining.cpp`, `src/policy/`, `src/script/`, `src/consensus/`, `src/primitives/`, `src/pow/`, `configure.ac`, `src/wallet/wallet.{h,cpp}`, `src/txdb.*`, `src/chainparams.cpp` | 0 | **0** | — |
 
 The `audit` job's line-budget assertion keeps v2's numbers (`main.cpp` ≤ 40 etc.); a v3 PR that
-moves them is refused. New: `git diff --numstat feature/yellowback-sf...HEAD -- src/main.cpp
+moves them is refused. New: `git diff --numstat yellowback-v3-baseline...HEAD -- src/main.cpp
 src/miner.cpp src/rpc/mining.cpp src/policy` must be empty.
 
 ### 4.2 Modules (new and adapted, all under `src/yellowback/` unless stated)
@@ -885,7 +891,7 @@ in CI. The v2 review rule (P13) applies unchanged: the four-part check per porte
 statement, the rule identifiers each test tags, the budget numbers; two reviewers for any PR
 touching `state.cpp`, `bundle.cpp` or `attest.cpp`; a PR touching the consensus set, `policy.cpp`,
 `main.cpp`, `miner.cpp` or `rpc/mining.cpp` is refused outright (the `audit` job enforces zero
-delta against `feature/yellowback-sf` for those files).
+delta against the tag `yellowback-v3-baseline` for those files).
 
 **Keeping the tree building.** Payload version 3 is a flag day inside the fork: at A0's first
 commit every v2 functional flow script that builds transactions through the wallet RPCs keeps
@@ -982,7 +988,7 @@ v2's); the devnet ARMED for the GUI.
 | Job | Trigger | Steps |
 |---|---|---|
 | `main` | PR + push to `feature/yellowback-price-attest` | v2's steps **plus** the v3 scripts of §7 in `BASE_SCRIPTS`; the whole `test_bitcoin` |
-| `audit` | PR + push | v2's budgets; **zero delta vs `feature/yellowback-sf`** for the frozen set of §8.4 item 1 (one list, `qa/yellowback-frozen-files.txt`, read by the job and quoted by §4.1); the determinism grep over the §3.10 set; the rule-tag loop over the v3 identifiers; the contract check |
+| `audit` | PR + push | v2's budgets; **zero delta vs the tag `yellowback-v3-baseline`** for the frozen set of §8.4 item 1 (one list, `qa/yellowback-frozen-files.txt`, read by the job and quoted by §4.1); the determinism grep over the §3.10 set; the rule-tag loop over the v3 identifiers; the contract check |
 | `agent` | PR + push (paths `contrib/yellowback/attest/**`) | `cargo build --locked`, `cargo test`, `cargo clippy -D warnings`, the fixture cross-check against `yellowback_price.py` |
 | `python` | PR + push | v2's plus `pyflakes` over the new scripts and `test_framework/yellowback_attest.py`; a `sign_attestation` known-answer test |
 | `nightly` | schedule | v2's plus `yellowback_attest_agent.py` (starts the Rust agent with `dir://`), `yellowback_attest_stress.py` (random arming/outage/reorg), the `SCHEMA_VERSION` rebuild case |
@@ -996,7 +1002,8 @@ exchange feeds — is A7.
 
 - [x] Branch hygiene: `feature/yellowback-price-attest` exists in all three repos (done
       2026-09-13); `.github/PULL_REQUEST_TEMPLATE.md` gains the "no delta in the frozen files"
-      line; CI `audit` job's frozen-file zero-delta check against `feature/yellowback-sf`.
+      line; CI `audit` job's frozen-file zero-delta check against the tag `yellowback-v3-baseline`
+      (retargeted 2026-10-01, `ycash-dd` `46d11402c`; originally written against v2's branch).
 - [x] `doc/yellowback-rpc.md` v3 **first** (§4.5: every command, field, error identifier);
       `make spec` → `doc/yellowback-rpc-contract.json` in both forks; `doc/yellowback-spec.md`
       gains §3 of this plan; `doc/yellowback-attestor.md` (§4.7) drafted.
@@ -1156,7 +1163,8 @@ exchange feeds — is A7.
 - [x] **Exit:** the wallet scripts green in both modes; `src/wallet/wallet.{h,cpp}` and
       `rpcwallet.cpp` at zero v3 delta. *Met 2026-09-14 on the integrated tree: every flow script
       green in both modes, and `git diff feature/yellowback-sf...HEAD -- $(cat
-      qa/yellowback-frozen-files.txt)` is empty.*
+      qa/yellowback-frozen-files.txt)` is empty. The check measures against the tag
+      `yellowback-v3-baseline` since 2026-10-01.*
 
 ### Phase A4 — Agents, devnet, docs (Rust and Python; 0 C++)
 
@@ -1210,7 +1218,7 @@ exchange feeds — is A7.
 - [ ] Sanitizers and `lockorder` over the v3 scripts; coverage floors for `attest.cpp`,
       `bundle.cpp`, the new `state.cpp` paths.
 - [ ] `doc/yellowback-review.md` v3: the §8.4 checklist scored; the frozen-file proof
-      (`git diff feature/yellowback-sf...HEAD -- <frozen>` empty); the trust statement delta
+      (`git diff yellowback-v3-baseline...HEAD -- <frozen>` empty); the trust statement delta
       (§8.1) as it will be published.
 - [ ] rc run-through `yellowback_rc2.py`: v2's rc1 steps with arming inserted after activation,
       an emergency claim, an attestor ejection and a withdrawal; hash ledger.
@@ -1361,7 +1369,7 @@ v2's paragraph "price honesty rests on the honest-majority-hashpower assumption"
 
 ### 8.4 Review checklist (v3, Phase A6)
 
-1. `git diff feature/yellowback-sf...HEAD -- $(cat qa/yellowback-frozen-files.txt)` is empty
+1. `git diff yellowback-v3-baseline...HEAD -- $(cat qa/yellowback-frozen-files.txt)` is empty
    (mechanical, `audit` job; the list is §4.1's frozen set).
 2. Determinism grep empty over the §3.10 set; `secp256k1` reached only through `VerifyCompactSig`.
 3. Every v3 rule identifier tagged (§7 loop); every functional flow has a script.

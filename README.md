@@ -282,8 +282,10 @@ specifically, and where the two designs part company on principle:
    protocol delta (§3), the concurrent one-machine test workflow (§6.0) and the phased work plan.
    It is a **delta on v2**, so keep
    **[docs/plans/yellowback-v2-development-plan.md](docs/plans/yellowback-v2-development-plan.md)**
-   beside it — the delivered plan, whose §3 still governs everything v3 does not restate, and whose
-   `feature/yellowback-sf` branch is the diff baseline. `docs/plans/archived/` points at the retired
+   beside it — the delivered plan, whose §3 still governs everything v3 does not restate. Its
+   branch, `feature/yellowback-sf`, is superseded by v3 and kept only as a record — it is **not** a
+   comparison base: line budgets measure against `ycash-legacy`, and the frozen-file zero-delta
+   check against the tag `yellowback-v3-baseline` in `ycash-dd` (owner, 2026-10-01). `docs/plans/archived/` points at the retired
    federation design (tag `archive/v1-federation`, history only); `docs/ideation/` lists the
    `ideation/*` branches that hold inactive experimental ideas.
    **[docs/reference/yellowback-price-attestation.md](docs/reference/yellowback-price-attestation.md)**
@@ -302,11 +304,11 @@ specifically, and where the two designs part company on principle:
    Rust stratum pool, and the devnet's real-pool seat). Each has its own status table.
 
 **Where the work stands** is the execution-status table at the top of each plan, kept current by the
-coordinator. In short: **v2 is delivered** (Phases 0–8; `feature/yellowback-sf` in both forks, with
-mint / send / redeem / claim / sweep proven end to end through YecWallet against a live devnet), and
-**v3 is in implementation** on `feature/yellowback-price-attest` — Phases A0–A5 merged in both
+coordinator. In short: **v2 was delivered** (Phases 0–8 on `feature/yellowback-sf` in both forks, with
+mint / send / redeem / claim / sweep proven end to end through YecWallet against a live devnet) and is
+now superseded, and **v3 is current, in implementation** on `feature/yellowback-price-attest` — Phases A0–A5 merged in both
 forks, with the node at 224 green unit cases, the full functional suite green in both unarmed and
-armed modes, frozen files at zero delta, and the wallet at 83 green offline QTest cases; A4's
+armed modes, frozen files at zero delta (against `yellowback-v3-baseline` since 2026-10-01), and the wallet at 83 green offline QTest cases; A4's
 devnet chunk and A6 (hardening, packaging, the review document) remain, and A7–A8 (testnet and
 mainnet, for both v2's pools and v3's attestors) are blocked on real operators rather than on code.
 Around the node: **lightwalletd** is re-ported onto the yodl baseline and proven on regtest
@@ -407,8 +409,8 @@ is not on the branch `repos.yaml` records.
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
 | `ref/lightwalletd` | `master` @ commit (2021-07-13; zcash/lightwalletd 0.4.6 + 4 commits, the last the Ycash `s…` regex; the commit carries no tag) | `187a26765e` |
-| `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); `feature/yellowback-sf` = the delivered v2, now a diff baseline; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
-| `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise | `1eb277d` |
+| `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); tag `yellowback-v3-baseline` (= `9da72131e`) = the frozen-file zero-delta base; `feature/yellowback-sf` = the superseded v2, kept as a record, never a comparison base; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
+| `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` (superseded v2) and `feature/digidollar` are records only, never comparison bases | `1eb277d` |
 | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); re-forked from `yodl/lightwalletd` on 2026-09-24 — the earlier yecdev-based work is kept locally under `wt/lightwalletd-dd-yecdev-baseline` | `187a26765e` |
 | `ref/ycash6` | `dev-rebase-6.20.0` @ commit (miodragpop's ycashd 6.20.0 rebase, the exact commit its author built; no tag) | `040894344b` |
 | `ref/librustzcash6` | `ycashd-v6.20.0` @ commit (miodragpop's Ycash-aware librustzcash; `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins this rev; no tag) | `ec525fae82` |

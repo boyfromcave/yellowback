@@ -15,8 +15,8 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | Ycash | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | YecWallet (GUI) | `ref/yecwallet` | tag `v4.5.0` (2026-04-07; upstream `master` is 7 build-only commits later) | `1eb277d` |
 | Ycash lightwalletd (yodl) | `ref/lightwalletd` | `master` @ commit (2021-07-13; zcash/lightwalletd 0.4.6 + 4, no tag) | `187a26765e` |
-| Working fork (node) | `ycash-dd` | branch `feature/yellowback-sf` off `ycash-legacy` (= `v4.5.0`); `feature/digidollar` is the retired federation prototype, kept as a record | `624c12814` |
-| Working fork (wallet) | `yecwallet-dd` | branch `feature/yellowback-sf` off `yecwallet-legacy` (= `v4.5.0`); `feature/digidollar` likewise | `1eb277d` |
+| Working fork (node) | `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); frozen-file zero-delta base is the tag `yellowback-v3-baseline`; `feature/yellowback-sf` (superseded v2) and `feature/digidollar` (the retired federation prototype) are kept as records, never comparison bases | `624c12814` |
+| Working fork (wallet) | `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` and `feature/digidollar` likewise records only | `1eb277d` |
 | Working fork (lightwalletd) | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin; re-forked from yodl 2026-09-24) | `187a26765e` |
 | Ycash 6.20.0 (miodragpop) | `ref/ycash6` | `dev-rebase-6.20.0` @ commit (2026; Zcash 6.x lineage; no tag) | `040894344b` |
 | Patched librustzcash (miodragpop) | `ref/librustzcash6` | `ycashd-v6.20.0` @ commit (pinned by rev in `ref/ycash6/Cargo.toml:129-134`; no tag) | `ec525fae82` |
@@ -486,10 +486,10 @@ JSON.** Every row below has the same shape as §1–§11.
 | DD redeem widget signs and broadcasts in-process | `Controller::watchTxStatus` polls on `txTimer` at `Settings::quickUpdateSpeed` = **5 s** (`ref/yecwallet/src/settings.h:125`), not 1 s as plan H4 says | pending redemptions ride the same timer (`YellowbackController::watchPending()`); the wizard's own countdown is a 1-s `QTimer`. Plan H4's "1-second mode" is really the 5-second quick mode |
 | DD widgets prompt with `QMessageBox` | `MainWindow::backupWalletDat` is private, reachable only through `ui->actionBackup_wallet_dat` (`ref/yecwallet/src/mainwindow.cpp:102`) | the tab triggers that `QAction` instead of adding a public method; the backup-nag state persists in `QSettings` |
 
-Rules for `yecwallet-dd`, mirroring rules 2, 6 and 7 for the node: work only on `feature/yellowback-sf`
+Rules for `yecwallet-dd`, mirroring rules 2, 6 and 7 for the node: work only on `feature/yellowback-price-attest`
 off `yecwallet-legacy`; naming follows AGENTS.md rule 6 (Yellowback for the system, YED for amounts, `yed_*` RPCs); do not restructure `Controller`, `Connection` or
 `MainWindow` while adding the tab — add files, append to lists, hook into the two existing refresh
-branches, and keep `git diff yecwallet-legacy...feature/yellowback-sf` reviewable.
+branches, and keep `git diff yecwallet-legacy...feature/yellowback-price-attest` reviewable.
 
 ### Rows added while building Phase 7b-b (2026-09-10, `feature/yellowback-sf`)
 

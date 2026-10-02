@@ -422,7 +422,7 @@ everything in this plan. Like `yellowback_attest_agent.py` it needs the Rust bin
 without one and the nightly job builds the crate first.
 
 **Constraints inherited from the devnet.** Zero C++ (`contrib/` and `qa/` only); the frozen-file
-set stays at zero delta against `feature/yellowback-sf`; the naming rules apply (Yellowback the
+set stays at zero delta against the tag `yellowback-v3-baseline`; the naming rules apply (Yellowback the
 system, YED the unit); and the simulator is never a load test — it exists to make the world feel
 inhabited, not to measure throughput. DoS and cost measurement is A6's job with purpose-built
 scripts.
