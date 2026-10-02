@@ -185,7 +185,7 @@ ycash6 review document's §7/§8.4 are stale against the plan (B-7, I-11).
 | I-7 | Low | agent, yolo, chain-viz | CONFIRMED | No advisory scan for the Rust components |
 | I-8 | Low | yolo, chain-viz | CONFIRMED | Floating `stable` toolchain |
 | I-9 | Low | both nodes CI | CONFIRMED | No-ban gate greps `DoS(` but not `Misbehaving(` |
-| V-5 | Medium | both nodes | CONFIRMED | Found during validation: `yed_listclaimable` reported `attestFeeZat` 0 while the pool was stale under ARMED, so a wallet's `minOutZat` floor (F-1) under-stated the fee and the claim was refused — fixed: ycash-dd `ba793f1c1`, ycash6 `4268e396f` |
+| V-5 | Medium | both nodes | CONFIRMED | Found during validation: `yed_listclaimable` reported `attestFeeZat` 0 while the pool was stale under ARMED, so a wallet's `minOutZat` floor (F-1) under-stated the fee and the claim was refused — fixed: ycash-dd `ba793f1c1`, ycash6 `9e529e378` |
 | A-7, A-8, B-5, B-6, B-7, C-8..C-11, D-9..D-12, E-7..E-11, F-9..F-11, G-12, H-7, H-10, H-16, H-17, I-10..I-14 | Info | various | — | Completeness and documentation items; see §4 |
 
 ---
@@ -291,12 +291,12 @@ One box per finding. A ticked box names the commit(s) and, for the node lines, b
 - [x] **I-7** (Low, agent, yolo, chain-viz) No advisory scan for the Rust components — fixed: ycash-dd e6af4111a (cargo audit) + attest deny.toml 410e0fe3d; yolo aba726b; chain-viz cd04ee2
 - [x] **I-8** (Low, yolo, chain-viz) Floating `stable` toolchain — fixed: yolo 72a97d8; chain-viz 8773e31 (both 1.91.0)
 - [x] **I-9** (Low, both nodes CI) No-ban gate greps `DoS(` but not `Misbehaving(` — fixed: ycash-dd e6af4111a
-- [x] **V-5** (Medium, both nodes) `yed_listclaimable` under-states the attestor fee while the pool is stale — fixed: ycash-dd ba793f1c1, ycash6 4268e396f
+- [x] **V-5** (Medium, both nodes) `yed_listclaimable` under-states the attestor fee while the pool is stale — fixed: ycash-dd ba793f1c1, ycash6 9e529e378
 - [ ] **Info items** A-7 (fix exists: ycash-dd 0b946b6e6 on `audit/frozen-hooks`, frozen-file change awaiting owner sign-off), A-8, B-5, B-6, B-7, C-8, C-9, C-10, C-11, D-9, D-10, D-11, D-12, E-7, E-8, E-9, E-10, E-11, F-9, F-10, F-11, G-12, H-7, H-10, H-16, H-17, I-10, I-11, I-12, I-13, I-14 (each ticked in its per-component section as resolved or accepted)
 
 ### Validation after remediation (2026-10-02)
 
-Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, yecwallet-dd `3df3d49`): default devnet + the three role presets, `yellowback_attest_agent.py`, lightwalletd's devnet suite 4/4 (after a pre-existing harness race in `lwd-rawmint` was fixed, ycash-dd `8c9be146d`; a manual probe confirmed the 1 MB garbage address is refused in milliseconds and a forged `x-real-ip` does not bypass the limiter), YEW's devnet suites w1/w2/w4 (no false positive from the new local checks; redeem preview/confirm and mint terms exercised), `yellowback_stratum.py` and `yellowback_chainviz.py` all passed. YecWallet's two attested devnet cases exposed the D-5 tip-lag regression above (fixed, ycash-dd `3afff8581`, ycash6 `567075a08`; re-run: zero dropped frames under burst mining) and then V-5 (fixed, ycash-dd `ba793f1c1`, ycash6 `4268e396f`). The ycash6 line was ported in full afterwards (HEAD `4268e396f`; 21 functional scripts green on 6.20.0).
+Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, yecwallet-dd `3df3d49`): default devnet + the three role presets, `yellowback_attest_agent.py`, lightwalletd's devnet suite 4/4 (after a pre-existing harness race in `lwd-rawmint` was fixed, ycash-dd `8c9be146d`; a manual probe confirmed the 1 MB garbage address is refused in milliseconds and a forged `x-real-ip` does not bypass the limiter), YEW's devnet suites w1/w2/w4 (no false positive from the new local checks; redeem preview/confirm and mint terms exercised), `yellowback_stratum.py` and `yellowback_chainviz.py` all passed. YecWallet's two attested devnet cases exposed the D-5 tip-lag regression above (fixed, ycash-dd `3afff8581`, ycash6 `567075a08`; re-run: zero dropped frames under burst mining) and then V-5 (fixed, ycash-dd `ba793f1c1`, ycash6 `9e529e378`). The ycash6 line was ported in full afterwards (HEAD `9e529e378`; 21 functional scripts green on 6.20.0).
 
 ---
 
