@@ -30,11 +30,10 @@ gate in this plan — owner decision P-4. Tag it before Phase 1: `git -C ycash6 
   - **Fixes:** F-37 import hazard fixed; the chain-viz CI race fixed on both node lines.
   - **Branding and attribution:** README is Ycash; the z.cash notice is removed; Ycash attribution in all seven repos.
   - **Comparison base:** `feature/yellowback-sf` retired as a comparison base (tag `yellowback-v3-baseline`).
-- **In flight:** agent `rpcfix` (yb6/rpcfix) is fixing `yed_getinfo.attest.poolFresh`, which overstates readiness, and `yed_getvault.claimable`, which ignores clause b. Both lines; backport to ycash-dd needs the owner's OK.
+- **RPC fixes (poolFresh, claimable):** ycash6 `3b0dfb6e3` merged and pushed. The ycash-dd backport was approved by the owner directly; it builds and its unit tests pass; functional tests are running.
 - **Next:**
   1. A green GitHub CI run on ycash6 to tick §4.10.
-  2. Merge `rpcfix`.
-  3. YecWallet warns before an embedded 6.20.0 node upgrades an older datadir (one-way): owner decided **yes** (2026-10-01). Agent `upgradewarn` (yecwallet-dd branch `upgradewarn`) is implementing it: detection before launch, then a dialog to back up and continue, continue, or quit; tested headless.
+  3. ~~YecWallet upgrade warning~~ **done 2026-10-01**: yecwallet-dd `f2e2d2a`. Before the bundled 6.20.0 node first starts on a datadir that `debug.log` shows an older node loaded last, or that has no evidence either way, a dialog offers back up wallet.dat and continue, continue, or quit (quit changes nothing). A per-datadir marker means it asks once. `nodedatacheck_test` has 16 cases; ctest 3/3; end-to-end headless.
   4. The §5 Phase 7 "row per finding" item.
 - **Owner actions:** set `boyfromcave/ycash6` default branch to `feature/yellowback` (scheduled CI jobs never fire otherwise); check the first GitHub runs of main/audit/agent/python on ycash6 and of the audit on ycash-dd (its negated checks now really fail); send (or not) `docs/plans/ycash6/upstream-report/` to miodragpop.
 
