@@ -299,6 +299,12 @@ One box per finding. A ticked box names the commit(s) and, for the node lines, b
 
 Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, yecwallet-dd `3df3d49`): default devnet + the three role presets, `yellowback_attest_agent.py`, lightwalletd's devnet suite 4/4 (after a pre-existing harness race in `lwd-rawmint` was fixed, ycash-dd `8c9be146d`; a manual probe confirmed the 1 MB garbage address is refused in milliseconds and a forged `x-real-ip` does not bypass the limiter), YEW's devnet suites w1/w2/w4 (no false positive from the new local checks; redeem preview/confirm and mint terms exercised), `yellowback_stratum.py` and `yellowback_chainviz.py` all passed. YecWallet's two attested devnet cases exposed the D-5 tip-lag regression above (fixed, ycash-dd `3afff8581`, ycash6 `567075a08`; re-run: zero dropped frames under burst mining) and then V-5 (fixed, ycash-dd `ba793f1c1`, ycash6 `9e529e378`). After both fixes YecWallet's three devnet cases pass in one run (5 passed, 0 failed) with zero dropped subscriber frames. The ycash6 line was ported in full afterwards (HEAD `0748c68a6`; 21 functional scripts green on 6.20.0, and stock parity run for the first time on that line against `wt/ycash6-stock`). Final ycash-dd HEAD `02aa77cb7`, tag `yellowback-v3-baseline` re-tagged at `ff7f45947` by owner decision.
 
+### Pushed 2026-10-02 and owner actions
+
+All eight repositories were pushed after the final local runs (ycash-dd `02aa77cb7` + tag `yellowback-v3-baseline` → `ff7f45947`, ycash6 `0748c68a6`, lightwalletd-dd `77a9c0d`, yecwallet-dd `414ac09`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, workspace). Owner actions found while watching CI:
+
+- **Enable GitHub Actions on `boyfromcave/lightwalletd`** (Settings → Actions) and set its default branch to `feature/yellowback-price-attest`. The repository is a GitHub fork of `yodl/lightwalletd`, where Actions stay disabled until enabled; every push since 2026-09-24 shows a "failed" run with zero jobs for that reason, not because of the workflow. The node repos' nightlies exercise this fork regardless.
+
 ---
 
 ## 6. Per-component reports
