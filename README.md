@@ -409,7 +409,7 @@ is not on the branch `repos.yaml` records.
 | `ref/ycash` | tag `v4.5.0` (2026-04-03) | `624c12814` |
 | `ref/yecwallet` | tag `v4.5.0` | `1eb277d` |
 | `ref/lightwalletd` | `master` @ commit (2021-07-13; zcash/lightwalletd 0.4.6 + 4 commits, the last the Ycash `s…` regex; the commit carries no tag) | `187a26765e` |
-| `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); tag `yellowback-v3-baseline` (= `9da72131e`) = the frozen-file zero-delta base; `feature/yellowback-sf` = the superseded v2, kept as a record, never a comparison base; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
+| `ycash-dd` | branch `feature/yellowback-price-attest` (v3) off `ycash-legacy` (= `v4.5.0`); tag `yellowback-v3-baseline` (= `ff7f45947`, re-tagged 2026-10-02 at the security-audit merge; was `9da72131e`) = the frozen-file zero-delta base; `feature/yellowback-sf` = the superseded v2, kept as a record, never a comparison base; `feature/digidollar` = the retired federation prototype, record only | `624c12814` |
 | `yecwallet-dd` | branch `feature/yellowback-price-attest` (v3) off `yecwallet-legacy` (= `v4.5.0`); `feature/yellowback-sf` (superseded v2) and `feature/digidollar` are records only, never comparison bases | `1eb277d` |
 | `lightwalletd-dd` | branch `feature/yellowback-price-attest` off `lightwalletd-legacy` (= upstream `master` at the pin); re-forked from `yodl/lightwalletd` on 2026-09-24 — the earlier yecdev-based work is kept locally under `wt/lightwalletd-dd-yecdev-baseline` | `187a26765e` |
 | `ref/ycash6` | `dev-rebase-6.20.0` @ commit (miodragpop's ycashd 6.20.0 rebase, the exact commit its author built; no tag) | `040894344b` |

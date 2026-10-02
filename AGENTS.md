@@ -89,7 +89,7 @@ The current branch in all three forks is `feature/yellowback-price-attest` — t
 work, cut from `feature/yellowback-sf`. **Yellowback is v3 (price attestation).** `feature/yellowback-sf`
 is the superseded v2 fork, kept only as a record: never commit to it and **never use it as a
 comparison base**. Frozen-file zero-delta checks measure against the tag `yellowback-v3-baseline`
-(ycash-dd, = `feature/yellowback-price-attest` at `9da72131e`) or, for a change in review, against
+(ycash-dd, = `feature/yellowback-price-attest` at `ff7f45947`; re-tagged 2026-10-02 at the security-audit merge, which carried two reviewed hook changes in `main.cpp`/`rpc/mining.cpp` — audit A-1, A-7; the previous tag commit was `9da72131e`) or, for a change in review, against
 `origin/feature/yellowback-price-attest`; line budgets against the `-legacy` baseline. The branch is
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
