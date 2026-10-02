@@ -462,7 +462,7 @@ Attestors    seq → { attestorPubKey, bondPubKey, bondOutpoint, bondZat, bondLo
 BondIndex    bondOutpoint → seq
 AttestorSeq  { next u16 }
 Attest       { status ∈ {UNARMED, TRIGGERED, ARMED}, triggerHeight, armHeight }      (carried; copied into Snapshots)
-BundleLog    height → { aMint, aClaim, selectedSeqs[], seqs[], prices[] }             (one row per height with ≥ 1 verified bundle; R12:
+BundleLog    height → { aMint, aClaim, selectedSeqs[], seqs[], prices[], citedHeights[] } (one row per height with ≥ 1 verified bundle; R12:
                                                                                         aMint/aClaim = lowerMedian over that height's MINT, REDEEM
                                                                                         and CLAIM_NOTICE bundles for which BUNDLE-1 held — whatever the
                                                                                         transaction's final verdict; EQUIVOCATION bundles excluded;
@@ -475,7 +475,7 @@ TxLog        + { aMint, aClaim, bundleSeqs[], attestFeeZat, attestPayee, residua
 `Params` (the `P` record) gains `attestArmMin u32 ‖ bundleCarrier u8` after v2's four fields
 (scriptsig 0, opreturn 1, either 2) — landed in A0 with the golden vector regenerated. Key
 prefixes: `A<u16 seq>` Attestors, `B<outpoint>` BondIndex, `N` AttestorSeq, `M` Attest,
-`W<u32 height>` BundleLog, `E<outpoint>` Notices (`T` and `L` were taken by Tip and TxLog). `SCHEMA_VERSION = 3`: a v2 index directory is
+`W<u32 height>` BundleLog, `E<outpoint>` Notices (`T` and `L` were taken by Tip and TxLog). `SCHEMA_VERSION = 4` (3 before `citedHeights[]`): a v2 or v3 index directory is
 rebuilt from the chain at first start (`SyncToChain`'s wipe-and-rebuild path), as v2 did for v1.
 
 **State hash order** (after v2's `Params`): every `Attestors` record by `seq`; `AttestorSeq`;
@@ -538,7 +538,11 @@ PIN-1 armed iff `|{h ∈ W : BundleLog[h]}| ≥ PIN_MIN_BUNDLES` and `(aHi − a
 · aLo` over `BundleLog[h].aMint`; when armed `k ∈ pinnedKeys(H)` iff `k` has `≥ PIN_MIN_TAGS`
 quote tags in `W`, all one price. PIN-2 armed iff `Snapshots[H − 1].xMint` and `Snapshots[H − 1 −
 PIN_WINDOW].xMint` both defined and differ by more than `PIN_DELTA_BPS` of the smaller; `seq ∈
-pinnedSeqs(H)` iff it appears in `≥ PIN_MIN_TAGS` rows of `BundleLog` in `W`, all at one price.
+pinnedSeqs(H)` iff it appears in `≥ PIN_MIN_TAGS` rows of `BundleLog` in `W`, all at one price,
+with `≥ PIN_MIN_TAGS` distinct `citedHeight`s among those rows' attestations (audit A-2: one
+attestation reused by several bundles is one cited height and cannot pin; the rows carry
+`citedHeights[]` parallel to `seqs[]`/`prices[]` since `SCHEMA_VERSION = 4`). PIN-1 skips a row
+whose `aMint` is stored as 0 (undefined): 0 is never a value (audit A-4).
 
 **Dormancy predicate** (SNAP, **only at heights with `H mod DORMANCY_CHECK = 0`**, S15): `seq`
 DORMANT iff ELIGIBLE, `seatedSince(seq) ≤ H − DORMANCY_BLOCKS` (i.e. `seq ∈ Snapshots[h].seated`

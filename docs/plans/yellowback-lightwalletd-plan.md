@@ -616,11 +616,11 @@ the baseline binary (9068) answered `GetLightdInfo`/`GetLatestBlock` identically
       `YedMethods` + `NotOffered`, error mapping (§3.3), safe JSON params.
 - [x] `frontend/yellowback.go`: the eighteen handlers with edge validation;
       `frontend/yellowback_addr.go` (D-L-4, behind the flag).
-- [x] `cmd/server/main.go`: `-yellowback`, probe, register (+17 lines).
+- [x] `cmd/root.go` (was `cmd/server/main.go` in the yecdev lineage): `-yellowback`, probe, register (+17 lines).
 - [x] F-1: `SendTransaction`'s `errParts[1]` guard — the only baseline fix.
 - [x] `frontend/yellowback_test.go`: 24 cases (§6.2) incl. allow-list completeness, probe,
       address vectors; `testdata/yellowback/contract.json` is `make spec`'s third copy.
-- [x] `docs/yellowback.md` L1 section; `cmd/lwdinfo -yellowback` probes all methods; the devnet's
+- [x] `docs/yellowback.md` L1 section; `testtools/lwdinfo -yellowback` probes all methods; the devnet's
       `check` runs it.
 **Acceptance — met 2026-09-23:** offline suite green (24); `git diff --stat lightwalletd-legacy`
 shows `service.proto`, `compact_formats.proto`, `parser/`, `common/common.go`, `common/cache.go`
