@@ -36,6 +36,16 @@ a desktop client later.
 
 ## 0. Revision log
 
+### Revision 12 (2026-10-01) — ycashd 6.20.0 compatibility (ycash6 plan Phase 7)
+
+M1 on the iOS simulator and the W1/W2/W4 core tests are green against a 6.20.0 devnet through
+`lightwalletd-dd`, with one fix, merged on `main` (`aebaf9a`): 6.20.0 relays transactions later
+(ycash6 plan F-14), so W1 waits with the existing `wait_mempool` before both mines
+(`core/tests/devnet.rs`); a no-op on v4.5.0 (ycash6 plan §6 F-34). **Open**, harness only and
+not a 6.20.0 difference: `scripts/devnet-w1.sh` takes the workspace as `here/..` and fails from a
+worktree (w4 walks up instead), and its `down` without `--wipe` passes an empty argument that the
+devnet launcher rejects.
+
 ### Revision 11 (2026-09-25) — the app launched on both platforms (W6)
 
 iOS wiring: `app/ios/Flutter/YewCore.xcconfig` force-loads the static slice (without it the

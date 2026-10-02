@@ -712,6 +712,7 @@ proposal); a Go indexer (D-L-2).
 | F-8 | `parser/internal/bytestring/bytestring.go:66` | `ReadByte(out *byte) bool` fails `go vet`'s standard-method check | CI vets with `-stdmethods=false`; not on the YED path, not changed |
 | F-9 | `vendor/modules.txt` vs `go.mod` | the vendored tree is stale (`ini.v1 v1.41.0` / `golang/protobuf v1.2.0` vendored, `v1.48.0` / `v1.3.2` required), so `-mod=vendor` cannot build; module-aware Go resolves through `go.sum` | left alone (D-L-6: no dependency change); `docs/yellowback.md` says builds are `go.sum`-reproducible, never vendor |
 | F-10 | `frontend/service.go` `GetLatestBlock` | answers the height with an empty `hash` (never set from the cache) | recorded; clients use the height; not on the YED path |
+| F-11 | ycashd 6.20.0 (2026-10-01, ycash6 plan §6 F-49) | Phase R0 regtest against a 6.20.0 devnet with no code change: byte-equality (232 compact blocks + GetLightdInfo), the no-Yellowback baseline, wallet mint and raw mint all PASS. 6.20.0's `getcompactblock`/`getcompactblockrange` (experimental `compactblocks`) stay unused: they would break the byte-equality gate. GetTreeState matched the node only on an empty Sapling tree | **open**: repeat the tree-state check at a height after a shielded note |
 | F-7 | `README.md` | describes the pre-fork server; no Ycash or Yellowback operator guidance | `docs/yellowback.md` is the operator guide; README gains one link line (L3) |
 
 ---

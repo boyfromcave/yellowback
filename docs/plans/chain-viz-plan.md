@@ -655,6 +655,8 @@ which the C++ budget is **zero** and the `ycash-dd` delta is `contrib/` and `qa/
 | C7 mainnet hardening | done 2026-09-30, merged on `main` and pushed; the 24 h mainnet acceptance is the owner's to run (no mainnet node here) | `chain-viz/src/{auth,public,export}.rs`, `ui/static.js`, `tests/hardening.rs`, `qa/soak.sh`, README "The node"/"Hosting" |
 | C8 docs | done 2026-09-30 (agent `viz-docs`): README user guide, mapping §18, findings consolidated, visual pass with three UI fixes | `chain-viz/README.md`, `chain-viz/docs/screenshot.png`, `docs/mapping.md` §18, this plan |
 
+| ycashd 6.20.0 (ycash6 plan Phase 7) | done 2026-10-01, merged on `main` (`773e8c1`) and pushed | ycash6 plan §6 F-35: 6.20.0's `getblocksubsidy` drops `foundersaddress`/`fundingstreams`; revenue attributes the fund's share by value with an address tie-break, and C-F33 is re-cited at both pins. F-58: `yellowback_chainviz.py` `check_reorg` raced a poll between `invalidateblock` and `generate` (failed GitHub CI at ycash6 `da0a370`); test-only fix ycash6 `298685f1d` (merged `feb029022`), ycash-dd `a5edaa497`; no chain-viz change |
+
 Findings (C-F rows) are appended here and mirrored to `docs/mapping.md` §18 as they arise.
 
 ### Findings

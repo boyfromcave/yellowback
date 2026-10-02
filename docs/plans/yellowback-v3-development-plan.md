@@ -1204,6 +1204,14 @@ exchange feeds — is A7.
 - [ ] **Exit:** `wallet` job green; the devnet case passes by hand and is recorded. *The offline
       half is met (83 QTest cases, contract check, copy rule); the devnet case QSKIPs until the
       A4 devnet chunk exists.*
+- *Note 2026-10-01 (ycash6 plan Phase 7, §6 F-43, F-44, F-50..F-54):* `yecwallet-dd`
+  `feature/yellowback-price-attest` now drives both node lines, v4.5.0 and 6.20.0: version-aware
+  node calls (`7fd1635`); the devnet cases follow the two-step mint, notice and claim, green on
+  both lines (`a05ab74`, `692187b`); `APP_VERSION` 6.20.0 (`2451fda`, which also keys the GitHub
+  update check); the package bundles the 6.20.0 ycashd and `--no-embedded` drives either line
+  (`f992b0c`); a warning before the bundled 6.20.0 node upgrades an older datadir one way
+  (`f2e2d2a`); `YECWALLET_TEST_ISOLATE` (`bab7f69`); `build.sh` finds the AGL SDK in the Command
+  Line Tools (`b6c8c20`). The A5 exit box above is unchanged by this note.
 
 ### Phase A6 — Hardening and review (≈ 2 weeks)
 
@@ -1288,6 +1296,19 @@ Its findings that are product defects, not tooling, graduate here for A6:
 | D-R-7 | Owner decision 2026-09-22: **YecWallet's YEC/USD rate is the Yellowback protocol price** (the pools' fast median at the tip) whenever the node is enabled, activated and has one; CoinGecko is the fallback (pre-activation, undefined price, or a protocol price older than 15 minutes). One market, one number, across the Balance tab and the Yellowback tab (regtest plan F-23) | Wallet only (`Settings::setYellowbackPrice` / `setCoinGeckoPrice`, the controller's push on every stats and activation reply); no node change |
 | D-R-8 | **A rally paused minting for a whole slow window.** After a +100 % shock MINT-10 compared the attestors (at the new price) with `xMint`, the minimum of the windows, still at the old price for 64 blocks (2,016 on mainnet ≈ 42 h) | **Decided and applied 2026-09-22 as W17**: MINT-10 reads `pFast(R)`; collateral is still sized at the minimum |
 | D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
+
+### 6.3 Found by the yecwallet-dd devnet runs on both node lines (2026-10-01)
+
+Two v3 RPC defects, found while porting to ycashd 6.20.0 (ycash6 plan §6 F-55..F-57), fixed on both
+lines: ycash6 `fb0b3be2c`, `e3bd2a3f8` (merged `3b0dfb6e3`); ycash-dd `c23f937dd`, `379f9d30b`
+(owner-approved backport). RPC read path only, Tier 0: field set and `rpcversion` 3 unchanged,
+frozen set zero against `yellowback-v3-baseline`.
+
+| # | Found | Fix |
+|---|---|---|
+| D-P7-1 | `poolFresh` (`yed_getinfo.attest`, `yed_listattestors`) overstated readiness: it counted any pooled citation above `R − ATTEST_MAX_AGE` with no upper bound at `R = tip − REF_LAG`, while `BuildBundleInfo` needs `(R − ATTEST_MAX_AGE, R]`; "3 of 3" fresh while a mint was refused `bundle-insufficient` | `PoolFreshAt(seq, R)` asks the builder's own `Freshest`; `yellowback_attest.py` and a unit test reproduce it |
+| D-P7-2 | `yed_getvault`, `yed_listvaults` and `yed_listpositions[].claimable` ignored RED-4 clause (b): they kept v2's clause-(a) test while `yed_listclaimable` listed the vault with `claimPath "b"` | All read `EstimateClaim`, as `yed_listclaimable` does; unarmed it is the old test |
+| D-P7-3 | Left as is on purpose: `yed_getattestations[].fresh` has no upper bound (it describes one attestation's age, not its usability at `R`); `PoolFreshAt` does not re-check a cited block hash after a reorg, which `BuildBundleInfo` does (R9) | none |
 
 ## 7. Test plan (v3 additions)
 
