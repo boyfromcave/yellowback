@@ -86,9 +86,11 @@ and update the pins recorded in this file and in `docs/mapping.md`.
 ### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches — and, for the v6.20.0 port only, in `ycash6/` and `librustzcash6/` on `feature/yellowback`.
 
 The current branch in all three forks is `feature/yellowback-price-attest` — the v3 price-attestation
-work, cut from `feature/yellowback-sf`. **`feature/yellowback-sf` is now a baseline, not a
-workspace:** it is the delivered v2 (miner-enforced) fork, and the v3 plan measures its diff
-budgets and frozen-file zero-delta checks against it, so never commit to it either. The branch is
+work, cut from `feature/yellowback-sf`. **Yellowback is v3 (price attestation).** `feature/yellowback-sf`
+is the superseded v2 fork, kept only as a record: never commit to it and **never use it as a
+comparison base**. Frozen-file zero-delta checks measure against the tag `yellowback-v3-baseline`
+(ycash-dd, = `feature/yellowback-price-attest` at `9da72131e`) or, for a change in review, against
+`origin/feature/yellowback-price-attest`; line budgets against the `-legacy` baseline. The branch is
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
 `ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, `lightwalletd-legacy`
