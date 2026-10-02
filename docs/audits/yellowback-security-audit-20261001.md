@@ -303,7 +303,7 @@ Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`
 
 All eight repositories were pushed after the final local runs (ycash-dd `02aa77cb7` + tag `yellowback-v3-baseline` → `ff7f45947`, ycash6 `0748c68a6`, lightwalletd-dd `77a9c0d`, yecwallet-dd `414ac09`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, workspace). Owner actions found while watching CI:
 
-- **Enable GitHub Actions on `boyfromcave/lightwalletd`** (Settings → Actions) and set its default branch to `feature/yellowback-price-attest`. The repository is a GitHub fork of `yodl/lightwalletd`, where Actions stay disabled until enabled; every push since 2026-09-24 shows a "failed" run with zero jobs for that reason, not because of the workflow. The node repos' nightlies exercise this fork regardless.
+- **lightwalletd-dd CI had never run.** Every push since 2026-09-24 showed a failed run with zero jobs because `.github/workflows/yellowback-tests.yml` was invalid: the step name `Test (frontend: the Yellowback suite by name)` is an unquoted scalar with a colon-space, which GitHub's parser rejects at line 37 (the owner read the error off GitHub; a local PyYAML load had accepted it). Quoted in `455ab0c`; the workflow runs for the first time on that push. No other workflow in the eight repositories has the pattern. Still an owner choice: set that fork's default branch to `feature/yellowback-price-attest`.
 
 ---
 
