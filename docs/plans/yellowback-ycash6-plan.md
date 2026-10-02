@@ -30,7 +30,7 @@ gate in this plan — owner decision P-4. Tag it before Phase 1: `git -C ycash6 
   - **Fixes:** F-37 import hazard fixed; the chain-viz CI race fixed on both node lines.
   - **Branding and attribution:** README is Ycash; the z.cash notice is removed; Ycash attribution in all seven repos.
   - **Comparison base:** `feature/yellowback-sf` retired as a comparison base (tag `yellowback-v3-baseline`).
-- **RPC fixes (poolFresh, claimable):** ycash6 `3b0dfb6e3` merged and pushed. The ycash-dd backport was approved by the owner directly; it builds and its unit tests pass; functional tests are running.
+- **RPC fixes (poolFresh, claimable): done on both lines.** ycash6 `3b0dfb6e3`; ycash-dd `c23f937dd` (owner-approved backport). On v4.5.0: unit tests, `yellowback_rpc_contract.py`, `yellowback_attest.py`, `yellowback_claim.py` and `yellowback_claim.py --armed` all pass. Frozen set zero vs `yellowback-v3-baseline`; RPC contract unchanged.
 - **Next:**
   1. A green GitHub CI run on ycash6 to tick §4.10.
   3. ~~YecWallet upgrade warning~~ **done 2026-10-01**: yecwallet-dd `f2e2d2a`. Before the bundled 6.20.0 node first starts on a datadir that `debug.log` shows an older node loaded last, or that has no evidence either way, a dialog offers back up wallet.dat and continue, continue, or quit (quit changes nothing). A per-datadir marker means it asks once. `nodedatacheck_test` has 16 cases; ctest 3/3; end-to-end headless.
