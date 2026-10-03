@@ -948,7 +948,7 @@ YEC; `1,000,000 = $1.00`), `COIN = 10⁸` zat, basis points (`10,000 bps = 100 %
 | `VALVE_BLOCKS` | 6 | 6 | L7; ACT-7 (work valve): a chain rooted at a block this node rejected that carries this many blocks of work above the node's tip switches enforcement off for the session; the same bound is BLK-2's catch-up suppression (L11: a block the network has already built this much on is accepted, not rejected); **node-local**, never a state input |
 | `VALVE_NOTE_CAP` | 64 | 64 | P2; the most headers the odometer notes per rejected root; a header outside the consensus difficulty loosening of its parent (`nPowMaxAdjustDown`, `chainparams.cpp:104`) is never noted; **node-local** |
 | `ENFORCE_UNTIL_HEIGHT` | per network, per parameter set: ≈ `startHeight + BLOCKS_PER_YEAR` (420,480) and never beyond the next known Ycash network-upgrade activation height | `-yellowbackenforceuntil` (regtest only; 0 = none) | L8; ACT-5 (enforcement sunset): past it the node tags and evaluates but never rejects; a parameter change ships as a set starting at or after the previous set's sunset |
-| `ABANDON_BLOCKS` | 4,032 (= 2 · `SIGNAL_WINDOW`) | 128 | L10, L12; the abandonment predicate `yed_sweep` builds under (§4.6): `ENFORCEMENT` set continuously for this many blocks — the only clause, so every release answers alike; a sunset with no successor reaches it through the vanished signal bits |
+| `ABANDON_BLOCKS` | 34,560 (= `GRACE`, v3 W21; was 4,032 = 2 · `SIGNAL_WINDOW`) | 128 | L10, L12; the abandonment predicate `yed_sweep` builds under (§4.6): `ENFORCEMENT` set continuously for this many blocks — the only clause, so every release answers alike; a sunset with no successor reaches it through the vanished signal bits |
 | `N_REG` | 576 | 24 | proposal §6.2; **informational** (REG-1, `yed_listminers`) |
 | `N_PENALTY` | 288 | 12 | proposal §6.2; **wallet default** (REG-2, FEE-W; node override `-yellowbackpayeepenaltyblocks`, L6) |
 | `PEER_LAG` / `PEER_MIN` | 10 / 5 | 4 / 3 | V18; **judgement (state)**: the window is `[t − PEER_LAG, t + PEER_LAG − 1]`, 2·`PEER_LAG` blocks |
@@ -3568,7 +3568,8 @@ Yellowback v2 is a miner-enforced, over-collateralised stablecoin overlay on Yca
   circulation; vaults untouched during the pause are protected again when it ends. Minting resumes
   at 75 % and rejection at 60 %. Existing YED always remains redeemable by a minter who holds it.
 - If the module is abandoned — rejection paused continuously for `ABANDON_BLOCKS` (about 30
-  days on mainnet, v3 W21), which is also where a sunset with no successor release ends up — every vault's claim path becomes spendable by
+  days on mainnet, v3 W21), which is also where a sunset with no successor release ends up —
+  every vault's claim path becomes spendable by
   anyone at its claim height: owners must sweep their collateral before that height
   (`yed_sweep`, which every node of every release offers under that one same condition, and
   whose transaction every node then relays and mines like any other) or lose it to whoever
