@@ -2081,8 +2081,8 @@ With these changes:
   **Release**. Before `lockHeight` the command refuses with `vault-locked`.
 - **Abandonment and the owner sweep (L10, L12).** The chain shows **abandonment** when
   `Snapshots[tip].haltMask.ENFORCEMENT` has been set continuously for at least `ABANDON_BLOCKS`
-  (= 2 · `SIGNAL_WINDOW`, 4,032 on mainnet, 128 on regtest — two full windows in which fewer than
-  half of blocks signalled). That is the whole predicate: the signal bit is carried by tags
+  (34,560 on mainnet = `GRACE`, about 30 days — v3 W21, was 2 · `SIGNAL_WINDOW` = 4,032; 128 on
+  regtest — a stretch in which fewer than half of blocks signalled throughout). That is the whole predicate: the signal bit is carried by tags
   every release reads alike, so `YellowbackIndex::IsAbandoned()`, computed from `Snapshots`
   alone, answers the same on every node of every release — which a clause about "the sunsets
   this release knows" could not (a stale release would declare abandonment while upgraded pools
@@ -3567,8 +3567,8 @@ Yellowback v2 is a miner-enforced, over-collateralised stablecoin overlay on Yca
   policed — collateral can leave a vault without its burn and YED so unbacked stays in
   circulation; vaults untouched during the pause are protected again when it ends. Minting resumes
   at 75 % and rejection at 60 %. Existing YED always remains redeemable by a minter who holds it.
-- If the module is abandoned — rejection paused for two full windows, which is also where a
-  sunset with no successor release ends up — every vault's claim path becomes spendable by
+- If the module is abandoned — rejection paused continuously for `ABANDON_BLOCKS` (about 30
+  days on mainnet, v3 W21), which is also where a sunset with no successor release ends up — every vault's claim path becomes spendable by
   anyone at its claim height: owners must sweep their collateral before that height
   (`yed_sweep`, which every node of every release offers under that one same condition, and
   whose transaction every node then relays and mines like any other) or lose it to whoever
