@@ -96,6 +96,22 @@ node; every new rule is overlay state shared by enforcing miners, exactly as v2'
 
 ## 0. Revision log
 
+### Revision 4 (2026-10-02) — W18–W21: release continuity, the soft supply cap, a 30-day floor on the module's patience
+
+Setting the first mainnet parameter set for release 6.21.0-rc1 (`START_HEIGHT` 3,075,000,
+`ENFORCE_UNTIL_HEIGHT` 3,495,480) made the owner read the versioning rules as a release
+calendar, and three consequences were unacceptable for a small volunteer team: a successor set
+could only *start* at the previous sunset (so a late release meant an immediate gap), a wrong
+value could not be corrected before the sunset at all, and a halt turned into **abandonment**
+after 4,032 blocks (3.5 days) — the module declared itself dead faster than anyone could travel
+home and fix it. A fourth finding fell out of the same review: the supply cap refused mints
+outright, so after a price fall left supply above the cap, minting stayed locked until
+redemptions caught up. Decisions W18 (renewal releases are not parameter changes), W19 ("freeze,
+then fix" is a sanctioned replacement path), W20 (above the cap only mints at or over
+`RECAP_RATIO_BPS` are accepted — the W16 gate, reused) and W21 (`ABANDON_BLOCKS` = `GRACE`,
+34,560 ≈ 30 days: the minimum time the module waits for its developers). Owner decisions
+D-R-9..D-R-12, §6.2. `GRACE` and the lock classes stay as they are (D-R-6 reaffirmed).
+
 ### Revision 3 (2026-09-22) — W17: MINT-10 reads the fast median
 
 The owner's walk hit a second stall: after a +100 % shock the pools' fast and mid medians were at
@@ -321,6 +337,64 @@ would bound nothing) and 1.5× (class B, 90–365-day locks, entering during str
 `mint4_divergence_and_global_ratio`, `recap_floor_is_the_class_minimum_with_sigma`,
 `yellowback_void_mint.py` (a class A mint through the halt raises the ratio; class C stays VOID).
 
+### W18. Renewal releases are not parameter changes (owner decision D-R-9, 2026-10-02)
+v2 L8 says a set that *changes* a value may start only at or after the previous set's sunset,
+so that two enforcing releases never disagree at one height. A release that carries **the same
+values and only a later `ENFORCE_UNTIL_HEIGHT`** cannot produce that disagreement: a node left
+on the old release stops rejecting at the old sunset and becomes permissive, and a permissive
+node follows whatever the stricter majority builds. So a *renewal* is exempt from L8's start
+constraint and may ship any time before the sunset; it is judged by `ParamsHash` as a different
+set only in `enforceUntilHeight`. **Obligation (release doc):** the renewal for each year ships
+no later than six months before the sunset, so a missed date costs a warning, not a gap. A
+release that changes any other value remains a *parameter change* under L8 and W19.
+
+### W19. "Freeze, then fix" is a sanctioned replacement path (owner decision D-R-10, 2026-10-02)
+L8's reason for "start at or after the sunset" is that no released node may still be enforcing
+the old set when the new one starts. There is a second state in which that holds: **enforcement
+is halted on the chain itself.** Amended: a parameter-change set may start at height `X` if
+either `X ≥` the previous set's `ENFORCE_UNTIL_HEIGHT` (L8) **or** `Snapshots[h].haltMask` has
+had `ENFORCEMENT` set for every `h` in `[X − SIGNAL_WINDOW, X − 1]` — enforcement has been off
+for a full window, so no node validated a vault spend under the old set in that stretch and
+M12 holds. The runbook for a wrong value is therefore: pools set `-yellowbackenforce=0` (the
+existing switch; the halt bit sets within one window, ≈ 1.75 days), minting stops, vaults stay
+script-locked until their own `claimHeight`, the team ships the corrected set with `X` after the
+halt, pools upgrade and signal, activation runs again. Until W21's `ABANDON_BLOCKS` elapses the
+pools on the release still filter rule-breaking vault spends (TPL-1, MP-1), so leakage during the
+freeze is bounded by stock hashpower. Nothing in `SelectParams` changes (sets are already chosen
+by height); the clause is a release-time check and a unit case over a synthetic halt. Rejected:
+set-version signalling in the tag (a live switch with no freeze; a real design addition, kept for
+a later revision) and miner-voted parameters (a different design).
+
+### W20. The supply cap is soft above `RECAP_RATIO_BPS` (owner decision D-R-11, 2026-10-02)
+MINT-6 refused any mint that would take `supplyCents` over `SUPPLY_CAP_BPS` of issued market cap
+(V21). Two problems: at today's cap (≈ $9M issued) 15 % is ≈ $1.3M of YED, so healthy demand is
+simply turned away; and after a price fall leaves supply above the cap, minting stays locked
+until redemptions bring it under — the same stagnation W16 removed from HALT-2. The owner's
+reading: reaching the cap *is* the signal that demand for YED is strong relative to YEC, so the
+right response is not "no" but "only well over-collateralised". **Amended:** when a MINT would
+exceed the cap it is accepted iff `minRatioBps(class, S) ≥ RECAP_RATIO_BPS` (50,000) — the
+ratio the mint actually locks after the volatility multiplier, exactly W16's gate, so class A
+always qualifies and class B does at a multiplier ≥ 1.25×. Every YED minted above the cap locks
+five times its value in YEC: the marginal position is the safest, which is the buffer wanted if
+the market cap corrects. Supply above the cap is bounded by the YEC its minters are willing to
+lock and by HALT-2 behind it; the cap needs no hard ceiling. Verdict `mint-supply-cap` keeps its
+name for the refused case. **Wallets see it:** `yed_getinfo.supplyCapReached` (bool, at the
+tip), `yed_getstats.mintableClasses` now also excludes the classes the cap gate refuses, and the
+MINTPOL-1 message names the classes that can mint. Rejected: a hard cap at a multiple (arbitrary)
+and a soft cap with no ratio condition (demand above the cap would mint at 300 %).
+
+### W21. `ABANDON_BLOCKS` = `GRACE` (owner decision D-R-12, 2026-10-02)
+Abandonment (L10, L12) is the point at which pools on the release stop filtering rule-breaking
+vault spends and wallets offer `yed_sweep`: the module declaring itself dead. At 2 ×
+`SIGNAL_WINDOW` = 4,032 blocks that was 3.5 days after any halt — including a deliberate W19
+freeze — far too short for a volunteer team. **Amended:** `ABANDON_BLOCKS` = `GRACE` = 34,560
+(≈ 30 days) on mainnet and testnet; regtest keeps 128 (≥ its `GRACE` of 24; the scripts' timing
+is unchanged). Thirty days is the minimum time the module waits for its developers: during a
+freeze no YED can be created (evaluation never stops), vaults stay owner-only until
+`lockHeight + GRACE`, and only stock-mined blocks can carry a rule-breaking spend. Abandonment
+stays a rolling predicate (L12): enforcement resuming on day 40 ends it; what leaked meanwhile
+is the cost. The invariant `ABANDON_BLOCKS ≥ GRACE` is a unit case on every network.
+
 ### W14. Payload version 3, `rpcversion` 3
 One release; a v2 node ignores v3 payloads (V23). The wallet refuses an `rpcversion` mismatch as
 today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
@@ -345,7 +419,10 @@ today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
 | `DIVERGE_BPS_ATTEST` | 1,500 | same | MINT-10 |
 | `EMERGENCY_RATIO_BPS` / `EMERGENCY_PERSIST` / `EMERGENCY_NOTICE_TTL` | 10,500 / 48 / 1,152 | 10,500 / 4 / 64 | NOT-1, RED-4(b) |
 | `RESIDUAL_MIN_ZAT` | 100,000 | same | RED-5 |
-| `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt |
+| `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt; **and MINT-6 (amended, W20): the minimum a mint needs once it would exceed `SUPPLY_CAP_BPS`** |
+| `SUPPLY_CAP_BPS` | 1,500 (unchanged) | `-yellowbacksupplycapbps` | W20: no longer a ceiling — the point above which only mints at or over `RECAP_RATIO_BPS` are accepted |
+| `ABANDON_BLOCKS` | **34,560 (= `GRACE`)**, was 4,032 | 128 (unchanged; ≥ regtest `GRACE` 24) | W21; invariant `ABANDON_BLOCKS ≥ GRACE` |
+| `START_HEIGHT` / `ENFORCE_UNTIL_HEIGHT` (mainnet) | 3,075,000 / 3,495,480 | `-yellowbackstartheight` / `-yellowbackenforceuntil` | set by release 6.21.0-rc1 (M14 lead, L8 sunset); testnet unset (0) until it is reachable |
 | `ATTEST_FEE_BPS` | 2,500 | same | AFEE-1; D-3 |
 | `BOND_MIN` | 20,000 YEC | 10 YEC | |
 | `BOND_MIN_LOCK` / `BOND_MATURITY` | 420,480 / 16,128 | 200 / 8 | |
@@ -566,6 +643,19 @@ HALT-2 / MINT-4** (revision 2, W16).
   were clear. The other bits keep their v2 effect: any of them set is still a halted mint.
   MINTPOL-1 mirrors it (`mintpol-global-ratio` names the classes that would go through).
 
+- **MINT-6 (amended, W20).** Let `cap = supplyCapCents(S)` (undefined ⇒ the clause passes, as
+  before). A MINT with `totals.supplyCents + cents > cap` has verdict `mint-supply-cap` iff
+  `minRatioBps(class, S) < RECAP_RATIO_BPS`; at or above the floor it passes this clause. The
+  cap still reads the cross-section `xMint` (R15) and precedes MINT-9. MINTPOL-1 mirrors it,
+  counting the MINT payloads in this node's mempool toward the cap as before (audit C-3) and
+  naming the classes that would go through.
+
+- **Parameter-set start (W19; v2 L8 amended).** A set differing from the previous one in any
+  value other than `enforceUntilHeight` may start at `X` iff `X ≥` the previous set's
+  `ENFORCE_UNTIL_HEIGHT`, or `ENFORCEMENT ∈ Snapshots[h].haltMask` for every `h ∈ [X −
+  SIGNAL_WINDOW, X − 1]`. A set differing only in `enforceUntilHeight` (a renewal, W18) may start
+  anywhere at or above `START_HEIGHT`.
+
 - **IN-2 (amended).** A spend of an outpoint in `BondIndex` sets that attestor `WITHDRAWN`
   (`bondSpentHeight = H`) unless EJECTED (then only `bondSpentHeight`); the record stays. When an
   ACTIVE vault closes (either path, or an unpoliced spend), `Notices[vault]` is deleted; UNDO
@@ -764,7 +854,8 @@ operator's only v3 change is upgrading `ycashd`.
 
 | Command | Purpose | Return shape (new fields) |
 |---|---|---|
-| `yed_getinfo` | + `attest {status, triggerHeight, armHeight, seatedCount, poolSize, poolFresh, carrierMode}`, `halts` unchanged | |
+| `yed_getinfo` | + `attest {status, triggerHeight, armHeight, seatedCount, poolSize, poolFresh, carrierMode}`, `halts` unchanged ; + `supplyCapReached` (W20: at the tip, the next mint of any class would exceed the cap) | |
+| `yed_getstats` | `mintableClasses` (W16) now also excludes the classes the W20 cap gate refuses | |
 | `yed_getprice [height]` | + `xMint, xClaim, pinnedKeys, pinnedSeqs, seated` (per-tx values are in `yed_gettxinfo`) | |
 | `yed_listattestors [height]` | every `Attestors` record: `seq, attestorPubKey, bondAddress (the bond output's P2SH), bondKeyAddress (P2PKH of bondPubKey: the fee payee), bondZat, bondLocktime, flags{tier, pool}, registerHeight, status, statusHeight, weight, seated, pinned, lastBundleHeight, poolFresh` | |
 | `yed_getattestations` | the node's pool: `[{seq, price, citedHeight, receivedHeight, seated}]` | |
@@ -1299,6 +1390,10 @@ Its findings that are product defects, not tooling, graduate here for A6:
 | D-R-6 | Owner decision 2026-09-21: the mainnet grace period stays at 30 days (`GRACE` = 34,560); the wallet makes the deadline visible (regtest plan F-17) rather than the protocol lengthening the window an underwater vault sits unclaimable | none; a second walk with the Act-by column in place revisits the number |
 | D-R-7 | Owner decision 2026-09-22: **YecWallet's YEC/USD rate is the Yellowback protocol price** (the pools' fast median at the tip) whenever the node is enabled, activated and has one; CoinGecko is the fallback (pre-activation, undefined price, or a protocol price older than 15 minutes). One market, one number, across the Balance tab and the Yellowback tab (regtest plan F-23) | Wallet only (`Settings::setYellowbackPrice` / `setCoinGeckoPrice`, the controller's push on every stats and activation reply); no node change |
 | D-R-8 | **A rally paused minting for a whole slow window.** After a +100 % shock MINT-10 compared the attestors (at the new price) with `xMint`, the minimum of the windows, still at the old price for 64 blocks (2,016 on mainnet ≈ 42 h) | **Decided and applied 2026-09-22 as W17**: MINT-10 reads `pFast(R)`; collateral is still sized at the minimum |
+| D-R-9 | **A late renewal release meant an immediate enforcement gap**: L8 let a successor set start only at the previous sunset, and the first mainnet set (6.21.0-rc1) made that a yearly hard date for a volunteer team | **Decided and applied 2026-10-02 as W18**: a release with unchanged values and a later sunset is a renewal, exempt from L8's start rule, due six months before the sunset |
+| D-R-10 | **A wrong value could not be corrected before the sunset** — ≈ 70 consensus-shaped values go to mainnet for the first time with no sanctioned path to fix one | **Decided and applied 2026-10-02 as W19**: a replacement set may also start after the chain shows the ENFORCEMENT halt for a full signal window ("freeze, then fix"); runbook in `doc/yellowback-release.md` |
+| D-R-11 | **The supply cap was a hard ceiling** (≈ $1.3M of YED at today's issued cap) and a price fall left minting locked until redemptions brought supply back under it | **Decided and applied 2026-10-02 as W20**: above the cap a mint is accepted iff its post-multiplier ratio is ≥ `RECAP_RATIO_BPS` (the W16 gate: class A always, class B at ≥ 1.25×); `yed_getinfo.supplyCapReached`, `mintableClasses` and the MINTPOL-1 message show it. `SUPPLY_CAP_BPS` stays 1,500 |
+| D-R-12 | **Abandonment after 3.5 days.** `ABANDON_BLOCKS` = 2 × `SIGNAL_WINDOW` turned any halt, including a deliberate freeze, into "the module is dead" before a developer could get home | **Decided and applied 2026-10-02 as W21**: `ABANDON_BLOCKS` = `GRACE` = 34,560 (30 days) on mainnet/testnet; regtest 128 unchanged. `GRACE` (30 d) and the lock classes reaffirmed as they are |
 | D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
 
 ### 6.3 Found by the yecwallet-dd devnet runs on both node lines (2026-10-01)
