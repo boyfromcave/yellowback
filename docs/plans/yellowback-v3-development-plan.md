@@ -783,7 +783,8 @@ index.{h,cpp}      ADAPT  AttestationPool {add, list, freshest(seq)}; BundleCach
                           (needs cs_yellowback only); MempoolCheck fills the cache; -reindex notice on SCHEMA_VERSION change
 policy.{h,cpp}     ADAPT  FilterTemplate: TPL-2 additions; fills the cache
 wallet.{h,cpp}     ADAPT  carrier and bond tracking (W7): OutstandingCarriers() from carriers.dat, RecordCarrier/SpendCarrier,
-                          SweepLapsedCarriers(); Bonds() through Attestors by bondPubKey; nothing IsMine, nothing in wallet.dat
+                          SweepLapsedCarriers(); bonds found per seq through Attestors by bondPubKey (BuildWithdrawBond; the hot
+                          key likewise for sign/revive/equivocation) — no enumeration helper, nothing IsMine, nothing in wallet.dat
 txbuilder.{h,cpp}  ADAPT  BuildMint/BuildClaim gain the carrier input, attestor fee, bundle (from index or bundleHex), residual output
                           (claim); NEW BuildClaimNotice, BuildRegisterAttestor, BuildWithdrawBond, BuildRevive, BuildEquivocation,
                           BuildPrepareCarriers; carrier top-up in every builder (W7); SignCarrierInput
