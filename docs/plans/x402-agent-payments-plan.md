@@ -394,7 +394,7 @@ WASM or a small N-API addon; that cost is one reason X4b waits for an owner go (
 | `ycash:testnet` | either line, testnet | `YEC` (`YED` once testnet has a `startHeight`) | zatoshi / cent |
 | `ycash:regtest` | the devnet | `YEC`, `YED` | zatoshi / cent |
 
-`payTo` is a `t1…` address (transparent YEC), a `ye…` address (YED, P2PKH), or a `ys1…`
+`payTo` is an `s1…` address (transparent YEC; mainnet P2PKH, version `1C 28`; testnet and regtest share `1C 95`, `sm…`, so the network always comes from `network`, never from the address, X-F1), a `ye…` address (YED, P2PKH), or a `ys1…`
 diversified address (X4a). The facilitator rejects a `network` whose node reports a different
 chain (`getblockchaininfo.chain`), and the client checks the same against its own node.
 
@@ -438,7 +438,7 @@ replace-by-fee; verified in X1, not assumed).
 
 ```json
 { "scheme": "exact", "network": "ycash:mainnet", "asset": "YEC",
-  "amount": "250000", "payTo": "t1…", "maxTimeoutSeconds": 300,
+  "amount": "250000", "payTo": "s1…", "maxTimeoutSeconds": 300,
   "extra": { "assetTransferMethod": "transparent", "areFeesSponsored": false,
              "confirmationPolicy": { "confirmations": -1 } } }
 ```
@@ -691,7 +691,7 @@ handing over a viewing key:
 
 | Tier | Payer source | Revealed on chain | Agent needs |
 |---|---|---|---|
-| P0 | transparent `t1…` → merchant `ys1…` (t→z) | payer and the amount entering the pool; **not the payee** | no shielded wallet (stateless keys work) |
+| P0 | transparent `s1…` → merchant `ys1…` (t→z) | payer and the amount entering the pool; **not the payee** | no shielded wallet (stateless keys work) |
 | P1 | shielded `ys1…` → merchant `ys1…` (z→z) | nothing | a synced shielded wallet (node or light) |
 | P2 | X4b, z→z, verified before broadcast | nothing | P1 plus the Rust builder |
 
@@ -871,7 +871,7 @@ X3; X4a can start after the node adapter.
 - [ ] Devnet suite `test/devnet/shielded.test.ts`:
   - [ ] a payment from a `ys1…` source at 0 and 1 confirmations;
   - [ ] underpayment, overpayment, a wrong memo, the same txid on two requests (one resource);
-  - [ ] a payment from a `t1…` source (works; the sender is public);
+  - [ ] a payment from an `s1…` source (works; the sender is public);
   - [ ] chain-level check: the payment tx shows no transparent output to the merchant.
 - [ ] X4a emits `offer-and-receipt` JWS receipts (off-chain selective disclosure, §5.10).
 - [ ] **X4a acceptance:** green on both lines, plus OP-1 and OP-4; tiers P0 and P1 both
@@ -937,8 +937,8 @@ X3; X4a can start after the node adapter.
 
 | Phase | State | Both lines green | Notes |
 |---|---|---|---|
-| X0 | in progress | — | repo created by the owner; `docs/` items done; workspace wiring in progress |
-| X1 | not started | — | |
+| X0 | done except the spec drafts (in flight) | — | repo wired into the workspace (`ad8cab8`); scaffold `eaa5fb6`; briefing `wt/BRIEFING-x402.md` |
+| X1 | in progress | — | `src/tx` merged (`cd3c962`): 102 unit tests, vectors accepted and mined on both lines; specs, `src/yed`, `src/node` in flight |
 | X2 | not started | — | |
 | X3 | not started | — | |
 | X4 | not started | — | X4b needs an owner go |
@@ -947,5 +947,12 @@ X3; X4a can start after the node adapter.
 
 ### Findings
 
-None yet. Numbered `X-F1…` in order of appearance; node and devnet facts are mirrored in
-`docs/mapping.md` §20.
+Numbered in order of appearance; node and devnet facts are mirrored in `docs/mapping.md` §20.
+
+| # | Finding | Disposition |
+|---|---|---|
+| X-F1 | **Ycash transparent addresses are `s1…`/`s3…`, not `t1…`.** Mainnet P2PKH `1C 28` (`s1…`), P2SH `1C 2C` (`s2…`/`s3…`); testnet **and** regtest share P2PKH `1C 95` (`sm…`), P2SH `1C 2A`, and WIF `0xEF` (`ycash-dd/src/chainparams.cpp:149-151,409-411,613-614`; `ycash6` `:161-163,456-458,689-690`). YED versions are distinct per network | Plan text corrected (revision 2); `decodeAddress` takes the expected network from `PaymentRequirements.network` and never infers testnet vs regtest |
+| X-F2 | Both lines' `signrawtransaction` leave a `SIGHASH_SINGLE` input with no matching output unsigned (`rawtransaction.cpp:1059`; `ycash6` `:1225`), while consensus accepts the SDK-signed form | The RPC signer cannot produce that shape; X1 signs `ALL` only |
+| X-F3 | **Neither line enforces the ZIP-317 fee floor at relay** (both wallets paid 1000 zat for 17–37-input shielding txs); a channel close input is ~308 bytes, so its floor is 1500 zat (3 actions), not ~2500 | `fee ≥ feeFloor` is SDK and facilitator policy (S-6 stands as policy); §3.2 S-6's channel figure is superseded by 1500 |
+| X-F4 | No difference between the lines in codec, sighash, signing, channel-script standardness, CLTV behaviour or error strings; ycash6 regtest is testable only at the Sapling branch (its Ycash upgrade switches Equihash), so mainnet-branch (`19bd2d2f`) vectors come from `ycash-dd` | Recorded; vectors per line in `x402-ycash/vectors/tx/` |
+| X-F5 | `@noble/secp256k1` 3.x signs compact only (DER throws) | Strict BIP66 DER codec in `src/tx/der.ts`, no new dependency |
