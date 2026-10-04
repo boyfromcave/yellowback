@@ -544,8 +544,8 @@ SDK (R-8).
 2. tip < t − `closeMarginBlocks`.
 3. The funding output is still unspent (R-6).
 4. The outputs are exactly as above.
-5. cumulative ≥ previous charged + this charge (dynamic pricing allowed down to the actual
-   charge), and cumulative ≤ D.
+5. charged + `amount` ≤ cumulative ≤ D (EVM/SVM form; X-F16), with compare-and-set on the
+   stored cumulative.
 6. The client's signature is valid.
 7. Completed locally with the server's signature, the tx passes `signrawtransaction hex [] []`.
 8. Compare-and-set on the stored cumulative.
@@ -776,28 +776,28 @@ X3; X4a can start after the node adapter.
 
 - [x] Owner creates the GitHub repo `boyfromcave/x402-ycash` (done 2026-10-03, README only). We
       push over SSH with the per-repo `core.sshCommand`.
-- [ ] `repos.yaml` entry (role `app`, branch `main`, beside `yolo` and `chain-viz` at
+- [x] `repos.yaml` entry (role `app`, branch `main`, beside `yolo` and `chain-viz` at
       `repos.yaml:130-140`).
-- [ ] `Makefile` per-app variable, its `export` line and the help text (`Makefile:24-44`).
-- [ ] `AGENTS.md` layout block and app prose (§2 rule list).
-- [ ] `README.md` components, layout, bootstrap and pins tables.
-- [ ] `yellowback.code-workspace` folder.
+- [x] `Makefile` per-app variable, its `export` line and the help text (`Makefile:24-44`).
+- [x] `AGENTS.md` layout block and app prose (§2 rule list).
+- [x] `README.md` components, layout, bootstrap and pins tables.
+- [x] `yellowback.code-workspace` folder.
 - [x] `docs/plans/README.md` row (revision 1).
 - [x] `docs/mapping.md` §20 (revision 1).
-- [ ] `wt/BRIEFING-x402.md`, the agents' briefing (§7.0).
-- [ ] Scaffold: TypeScript workspace, `@x402/core` v2 pinned, lint and test (vitest, as the
+- [x] `wt/BRIEFING-x402.md`, the agents' briefing (§7.0).
+- [x] Scaffold: TypeScript workspace, `@x402/core` v2 pinned, lint and test (vitest, as the
       Cardano package uses), CI on GitHub Actions.
-- [ ] `specs/scheme_exact_ycash.md` and `specs/scheme_batch_settlement_ycash.md`, drafted from
-      §5 in the Foundation's templates (`specs/scheme_impl_template.md`).
+- [x] `specs/scheme_exact_ycash.md` and `specs/scheme_batch_settlement_ycash.md`, drafted from
+      §5 in the Foundation's templates (`x402-ycash` `81feec5`, merged `1c27b7c`).
 - [ ] **Acceptance:** `make status` lists the seventh app repo clean. Both spec drafts answer
       every item of §2.2 with no "TBD".
 
 ### X1 — YEC pay-per-request (`exact`, transparent)
 
-- [ ] `src/tx`: v4 serialiser and parser, ZIP-243 sighash, signing. Test vectors are generated
+- [x] `src/tx`: v4 serialiser and parser, ZIP-243 sighash, signing. Test vectors are generated
       from `signrawtransaction` on **both** lines and from YEW's `tx.rs`, and committed as
       language-neutral `vectors/*.json` (X-2).
-- [ ] `src/node`: the JSON-RPC adapter (cookie or user/password auth). It reads `devnet.json`,
+- [x] `src/node`: the JSON-RPC adapter (cookie or user/password auth). It reads `devnet.json`,
       stripping userinfo and sending UTF-8 basic auth (chain-viz finding C-F1).
 - [ ] The exact client (RPC signer and local signer), server (`parsePrice` in YEC or in USD
       through a price source) and facilitator (§5.6 verify and settle, the txid store).
@@ -937,11 +937,11 @@ X3; X4a can start after the node adapter.
 
 | Phase | State | Both lines green | Notes |
 |---|---|---|---|
-| X0 | done except the spec drafts (in flight) | — | repo wired into the workspace (`ad8cab8`); scaffold `eaa5fb6`; briefing `wt/BRIEFING-x402.md` |
-| X1 | in progress | — | `src/tx` merged (`cd3c962`): 102 unit tests, vectors accepted and mined on both lines; specs, `src/yed`, `src/node` in flight |
-| X2 | not started | — | |
+| X0 | **done** | — | workspace wiring `ad8cab8`; scaffold `eaa5fb6`; spec drafts `1c27b7c`; the acceptance's `make status` lists the repo clean |
+| X1 | in progress | — | wave 1 merged (`643456d`, 248 unit tests): `src/tx` (vectors mined on both lines), `src/yed`, `src/node` + stores + devnet harness (live checks green on both lines). Wave 2: exact mechanisms, facilitator service |
+| X2 | in progress (wave 2) | — | channel builders and batch-settlement mechanism |
 | X3 | not started | — | |
-| X4 | not started | — | X4b needs an owner go |
+| X4 | X4a in progress (wave 2) | — | X4b needs the X4-M verdict |
 | X5 | not started | — | after X1 (PR 1) and X3 |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
@@ -956,3 +956,16 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F3 | **Neither line enforces the ZIP-317 fee floor at relay** (both wallets paid 1000 zat for 17–37-input shielding txs); a channel close input is ~308 bytes, so its floor is 1500 zat (3 actions), not ~2500 | `fee ≥ feeFloor` is SDK and facilitator policy (S-6 stands as policy); §3.2 S-6's channel figure is superseded by 1500 |
 | X-F4 | No difference between the lines in codec, sighash, signing, channel-script standardness, CLTV behaviour or error strings; ycash6 regtest is testable only at the Sapling branch (its Ycash upgrade switches Equihash), so mainnet-branch (`19bd2d2f`) vectors come from `ycash-dd` | Recorded; vectors per line in `x402-ycash/vectors/tx/` |
 | X-F5 | `@noble/secp256k1` 3.x signs compact only (DER throws) | Strict BIP66 DER codec in `src/tx/der.ts`, no new dependency |
+| X-F6 | **R-3 qualifier:** "already mined → `-27`" holds only while the mined tx has an unspent output (per-tx `CCoins`, `AccessCoins(txid)`); once all outputs are spent a resubmission gives `-26 18: bad-txns-inputs-spent` (`ycash-dd/src/rpc/rawtransaction.cpp:1156-1174`; `ycash6` `:1325-1343`), both lines, live | The txid claim, not `-27`, is the "already settled" signal; settle tracks the `payTo` outpoint with `gettxout` |
+| X-F7 | **No replace-by-fee on either line, but different errors:** a 10×-fee double-spend of a mempool input is refused; v4.5.0 answers `-25 ""` (ATMP false without a reason, `ycash-dd/src/main.cpp:1579-1583`), 6.21.0 `-26 258: txn-mempool-conflict` (`ycash6/src/main.cpp:1839-1842`) | Both mapped to `mempool-conflict`; §5.5's first-seen assumption is now verified |
+| X-F8 | R-2 verified live: expiry must be ≥ next + 3; a tx is valid **through** `nExpiryHeight` inclusive, then dropped and refused `tx-expiring-soon`; expiry 0 allowed | §5.6 window rule stands |
+| X-F9 | Branch id on both devnets is Canopy `19bd2d2f` (chaintip and nextblock), Overwinter..Canopy at height 1 on both lines | Clients read it from `getblockchaininfo` |
+| X-F10 | R-5 verified live on both lines, stock node included; **but a tx double-spending a mempool tx still verifies `complete:true`** | Step 4 of the composite verify (`gettxout …, true`) is mandatory |
+| X-F11 | **`z_getnewdiversifiedaddress` requires a base Sapling address** (`ycash-dd/src/wallet/rpcdump.cpp:835`; `ycash6` `:1391`): `z_getnewaddress sapling` first (regtest prefix `yregtestsapling1`; testnet `ytestsapling`). `z_listreceivedbyaddress <div> 0` shows the unconfirmed note and memo on both lines (v4.5.0 after ≤ ~1 s; v6 adds `memoStr`, `pool`); listing the base address does not show its diversified addresses' notes | X4a: one base key per merchant, a diversified address per request, poll ≤ a few seconds for 0-conf |
+| X-F12 | On 6.21.0, `z_sendmany` from a transparent source with transparent change needs `privacyPolicy: "AllowFullyTransparent"` | The X4a P0 client passes the policy on v6 |
+| X-F13 | **Wallet race (both lines):** right after a block or a `sendrawtransaction`, the wallet may still select a just-spent coin ("Transaction not valid") | The RPC signer `lockunspent`s its inputs and retries on `input_spent`; facilitators unaffected |
+| X-F14 | **YED channels cannot use zero-confirmation funding:** `yed_validaterawtransaction` reads only confirmed token records, so a voucher spending an unconfirmed channel shows `yedIn` 0 | YED channel funding needs depth ≥ 0 (in a block); the 0-conf opt-in (X-6) is YEC-only |
+| X-F15 | **Dust (54 zat) applies to YEC payments and channel outputs** | `exact` YEC `amount` ≥ 54; a YEC channel's first voucher ≥ 54 zat; a client remainder below dust folds into the server output |
+| X-F16 | **A voucher cannot claim less than itself:** a signed voucher has fixed outputs, so under dynamic pricing a close can overpay the charged total by up to one `amount` less the last actual charge (EVM/SVM can claim less) | Voucher rule: charged + `amount` ≤ cumulative ≤ D, with compare-and-set; an optional client `close` voucher at exactly the charged total (also a cooperative early close); listed under "cannot match" |
+| X-F17 | Upstream naming: Cardano's field is `confirmationPolicy.l1Confirmations` (plan: `confirmations`, kept); `offer-and-receipt` receipts carry no amount and require `payer` (spec uses `payer: "anonymous"` and the signed offer for the amount); upstream's error code is `duplicate_settlement` | Applied in the specs |
+| X-F18 | A non-minimal push of an 80-byte payload makes an 84-byte script, over `MAX_OP_RETURN_RELAY` (83); the overlay itself accepts PUSHDATA1/2/4 | The SDK always writes minimal pushes |
