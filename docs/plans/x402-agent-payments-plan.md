@@ -883,7 +883,7 @@ X3; X4a can start after the node adapter.
 
 ### X5 — upstream and ecosystem
 
-- [ ] Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
+- [x] **Staged locally, not published** (`x402-ycash` `d20419a`, `docs/upstream.md`, `tools/upstream/stage.sh`): PR 1 (specs) and PR 2 (`typescript/packages/mechanisms/ycash` as `@x402/ycash`, e2e config, examples, changeset) on a remote-less fork at `wt/scratch/x402-upstream-prep/x402-fork`; drafted issue and PR bodies and the owner's decisions in `PUBLISHING.md` there (licence MIT vs Apache-2.0, signed commits, account, PR 1 scope, CODEOWNERS). Upstream checks pass except `lint:check` (fix in flight, `doclint`). Discussions are disabled upstream, so the proposal is a Feature Proposal issue. Original item: Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
       (after X1). Then `scheme_batch_settlement_ycash.md` (after X3).
 - [ ] **PR 2:** `typescript/packages/mechanisms/ycash` with unit, integration and e2e tests
       (`config/mechanisms_ycash.json`, client, server and facilitator registration), the
@@ -902,6 +902,7 @@ X3; X4a can start after the node adapter.
 
 ### X6 — mainnet (owner-run)
 
+- [x] **Runbook and capped smoke script ready** (`docs/mainnet-runbook.md`, `tools/mainnet/smoke.sh`: hard caps 0.01 YEC per payment, 0.1 YEC deposit, 50 requests; `--i-understand-this-spends-real-yec` required); rehearsed on a ycash-dd regtest devnet (ycash6 rehearsal in flight).
 - [ ] YEC `exact` and a YEC channel, small amounts, with the facilitator on each line's mainnet
       build.
 - [ ] YED once `startHeight` 3,075,000 is passed.
@@ -1040,3 +1041,7 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F71 | `GetLightdInfo` reports `consensus.chaintip`, not `nextblock` (`lightwalletd-dd/common/common.go:212`), so on the block before an upgrade a light client signs under the old branch id | Recorded; an N-ask for lightwalletd-dd (a `nextblock` field) |
 | X-F72 | `YellowbackStreamer` is rate-limited to a burst of 20 per peer IP, refilled 1/s (`frontend/yellowback_ratelimit.go`) | Fast light agents may see `RESOURCE_EXHAUSTED`; not hit in tests |
 | X-F73 | `GetAddressUtxos` carries no coinbase flag | Agent keys must never receive coinbase (documented) |
+| X-F74 | `importaddress` answers `-4` "already contains the private key" when the WIF is already in the node wallet (`ycash-dd/src/wallet/rpcdump.cpp:230`; `ycash6` `:189`), which broke `RpcUtxoSource({importAddress})` | Treated as success (`2caaa54`) |
+| X-F75 | Upstream `lint:check` requires JSDoc on every function and member ordering (1,028 errors on the staged package) | Fixed at the source and enforced in x402-ycash's own lint (wave 7, `doclint`) |
+| X-F76 | pnpm 11's strict `minimumReleaseAge` fails against abbreviated registry metadata (`ERR_PNPM_MISSING_TIME`) | Staging passes `--config.minimum-release-age-strict=false`; the owner regenerates the lockfile before pushing |
+| X-F77 | Upstream's e2e `batch-settlement` harness is EVM/SVM-specific orchestration | Ycash e2e covers `exact`; channels are proven by our devnet suites |
