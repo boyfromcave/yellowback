@@ -30,9 +30,11 @@ YOLO_BRANCH   := $(shell $(REPOS) get yolo branch)
 CHAINVIZ_BRANCH := $(shell $(REPOS) get chain-viz branch)
 # x402-ycash: an app repo (x402 agent payments in YEC and YED); no reference, no baseline.
 X402_BRANCH   := $(shell $(REPOS) get x402-ycash branch)
+# yb-calibration: an app repo (calibrates the constants baked into Yellowback releases); no reference, no baseline.
+YBCAL_BRANCH  := $(shell $(REPOS) get yb-calibration branch)
 WORKSPACE     := $(notdir $(CURDIR))
 
-export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN YCASH6_PIN LRZ6_PIN YCASH6_BRANCH YCASH6_BASE LRZ6_BRANCH LRZ6_BASE DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH YOLO_PIN YOLO_BRANCH CHAINVIZ_BRANCH X402_BRANCH
+export DIGIBYTE_PIN YCASH_PIN YECWALLET_PIN LWD_PIN YCASH6_PIN LRZ6_PIN YCASH6_BRANCH YCASH6_BASE LRZ6_BRANCH LRZ6_BASE DD_BRANCH DD_BASE WALLET_BASE LWD_BASE YEW_BRANCH YOLO_PIN YOLO_BRANCH CHAINVIZ_BRANCH X402_BRANCH YBCAL_BRANCH
 
 .DEFAULT_GOAL := help
 .PHONY: help bootstrap pull status status-short pins diff log spec spec-check
@@ -42,8 +44,8 @@ help: ## Show this help
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 		| sort \
 		| awk -F':.*?## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
-	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  lightwalletd=%s  forks: %s off %s / %s / %s  app: yew on %s  yolo: ref %s, app on %s  chain-viz: app on %s  x402-ycash: app on %s\033[0m\n' \
-		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(LWD_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)' '$(LWD_BASE)' '$(YEW_BRANCH)' '$(YOLO_PIN)' '$(YOLO_BRANCH)' '$(CHAINVIZ_BRANCH)' '$(X402_BRANCH)'
+	@printf '\n  \033[2mpins: digibyte=%s  ycash=%s  yecwallet=%s  lightwalletd=%s  forks: %s off %s / %s / %s  app: yew on %s  yolo: ref %s, app on %s  chain-viz: app on %s  x402-ycash: app on %s  yb-calibration: app on %s\033[0m\n' \
+		'$(DIGIBYTE_PIN)' '$(YCASH_PIN)' '$(YECWALLET_PIN)' '$(LWD_PIN)' '$(DD_BRANCH)' '$(DD_BASE)' '$(WALLET_BASE)' '$(LWD_BASE)' '$(YEW_BRANCH)' '$(YOLO_PIN)' '$(YOLO_BRANCH)' '$(CHAINVIZ_BRANCH)' '$(X402_BRANCH)' '$(YBCAL_BRANCH)'
 	@printf '  \033[2mv6.20.0 line: ycash6=%s  librustzcash6=%s  forks: %s off %s / %s\033[0m\n' \
 		'$(YCASH6_PIN)' '$(LRZ6_PIN)' '$(YCASH6_BRANCH)' '$(YCASH6_BASE)' '$(LRZ6_BASE)'
 
@@ -53,7 +55,7 @@ bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 
 pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
 	@scripts/pull.sh $(if $(DRY),--dry-run) $(if $(NOREF),--no-ref) $(if $(SHORT),--short)
 
-status: ## git status across all seventeen repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
+status: ## git status across all eighteen repos: fetches origin, reports ahead/behind, verifies pins and the generated spec (NOFETCH=1 to skip the fetch)
 	@scripts/repo-status.sh && scripts/extract-spec.sh --check
 
 status-short: ## Same as status, without the per-file listing
@@ -117,6 +119,9 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-14s %-20s %s\n' x402-ycash \
 		"$$(git -C x402-ycash rev-parse --abbrev-ref HEAD)" \
 		"$$(git -C x402-ycash rev-parse --short HEAD)"
+	@printf '%-14s %-20s %s\n' yb-calibration \
+		"$$(git -C yb-calibration rev-parse --abbrev-ref HEAD)" \
+		"$$(git -C yb-calibration rev-parse --short HEAD)"
 
 # Every fork (role `fork` in repos.yaml), each with its own branch and baseline: the v4.5.0 forks are on
 # feature/yellowback-price-attest, the v6.20.0 forks (ycash6, librustzcash6) on feature/yellowback.

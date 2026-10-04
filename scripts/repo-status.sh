@@ -41,6 +41,7 @@ YOLO_PIN="${YOLO_PIN:-$(manifest ref/yolo commit)}"          # no upstream tag: 
 YOLO_BRANCH="${YOLO_BRANCH:-$(manifest yolo branch)}"
 CHAINVIZ_BRANCH="${CHAINVIZ_BRANCH:-$(manifest chain-viz branch)}"
 X402_BRANCH="${X402_BRANCH:-$(manifest x402-ycash branch)}"
+YBCAL_BRANCH="${YBCAL_BRANCH:-$(manifest yb-calibration branch)}"
 
 SHORT=0; FETCH=1
 [ -n "${NOFETCH:-}" ] && FETCH=0
@@ -213,6 +214,7 @@ repo_status "ref/yolo"     "ref/yolo"     "$YOLO_PIN"        "-"
 repo_status "yolo"         "yolo"         "-"                "$YOLO_BRANCH"  "-"
 repo_status "chain-viz"    "chain-viz"    "-"                "$CHAINVIZ_BRANCH" "-"
 repo_status "x402-ycash"   "x402-ycash"   "-"                "$X402_BRANCH"  "-"
+repo_status "yb-calibration" "yb-calibration" "-"            "$YBCAL_BRANCH" "-"
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 print_actions() {
