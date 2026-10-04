@@ -1,6 +1,6 @@
 # YEW shielded plan — Sapling in the mobile wallet on the x402 light-client core
 
-**Status:** revision 1, 2026-10-04, draft, from the owner's direction ("YWallet is deprecated; add Sapling to
+**Status:** revision 2, 2026-10-04, **approved; S1 may start.** S0-1..S0-5 decided by the owner (below). Revision 1 was the draft from the owner's direction ("YWallet is deprecated; add Sapling to
 YEW, keep YEW simple"). Owner decisions S0 pending. Built on the `yewsapling` investigation (below, verbatim)
 and on `x402-ycash/docs/zwallet-comparison.md`. Depends on `x402-ycash/light` (chunk `lightcore`) landing.
 
@@ -8,11 +8,12 @@ and on `x402-ycash/docs/zwallet-comparison.md`. Depends on `x402-ycash/light` (c
 
 | # | Decision | Recommendation |
 |---|---|---|
-| S0-1 | Reverse wallet-plan D-W-2/D-W-7: Sapling in scope; ZIP-32 account 0 at `m/32'/347'/0'`, Ywallet-compatible | yes |
-| S0-2 | Proving parameters (52 MB): bundle vs download on first shielded send | download from our HTTPS host, SHA-256 pinned |
-| S0-3 | YEW `rusqlite` downgrade to 0.37 (libsqlite3-sys collision with librustzcash6) | yes, one-line allow-list change |
-| S0-4 | Upgrade `lite.ycash.xyz` to lightwalletd-dd ≥ `0b3448e` (GetChainInfo) | owner-operated |
-| S0-5 | Scope: S1–S3 first (shielded receive/send/memo), then S4 shield/unshield; nothing from YWallet beyond that | yes |
+| S0-1 | Reverse wallet-plan D-W-2/D-W-7: Sapling in scope; ZIP-32 account 0 at `m/32'/347'/0'`, YWallet-compatible (one seed restores both pools) | **Decided: yes** (2026-10-04) |
+| S0-2 | Proving parameters (52 MB) | **Decided: download on first shielded send**, SHA-256 pinned, from our HTTPS host |
+| S0-3 | YEW `rusqlite` downgrade to 0.37 (libsqlite3-sys collision with librustzcash6) | **Decided: approved** |
+| S0-4 | `lite.ycash.xyz` upgrade to lightwalletd-dd ≥ `0b3448e` (GetChainInfo) | **Decided: planned, may take time. Develop against regtest and the boyfromcave lightwalletd-dd fork for now**; the builder's fallback to `LightdInfo.consensusBranchId` covers the public endpoint until then |
+| S0-5 | Scope: S1–S3 first (shielded receive/send/memo), then S4 shield/unshield; nothing more from YWallet | **Decided: yes** |
+| S0-6 | **This is a Ycash project.** Code is derived from Zcash solutions, but every solution, name, parameter, screen string and document is for Ycash: `ys1…`/`s1…`/`ye…` addresses, coin type 347, Ycash branch ids, Ycash networks, "YEC". Zcash is named only when citing the origin of a file or a vector. (Owner, 2026-10-04; same rule as [`ycash6-naming-is-ycash`].) | **Standing rule** |
 
 ---
 
