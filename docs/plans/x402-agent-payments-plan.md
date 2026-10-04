@@ -855,15 +855,15 @@ X3; X4a can start after the node adapter.
 
 ### X4 — private payments
 
-- [ ] **X4-M, the measurement gate (§5.10):**
-  - [ ] Merchant scan cost: the node wallet's block-connect time with and without a Sapling key,
+- [x] **X4-M, the measurement gate (§5.10):**
+  - [x] Merchant scan cost: the node wallet's block-connect time with and without a Sapling key,
         on the devnet and replayed over mainnet's shielded volume.
-  - [ ] Agent sync cost: a full-node wallet versus lightwalletd compact-block scanning (YecLite's
+  - [x] Agent sync cost: a full-node wallet versus lightwalletd compact-block scanning (YecLite's
         path).
-  - [ ] Whether either line can disclose a single Sapling output (selective disclosure).
-  - [ ] Whether a viewing-key-only wallet can issue diversified addresses and see mempool
+  - [x] Whether either line can disclose a single Sapling output (selective disclosure).
+  - [x] Whether a viewing-key-only wallet can issue diversified addresses and see mempool
         receipts.
-  - [ ] Written verdict: P1 practical for agents now or later, and whether X4b is worth building.
+  - [x] Written verdict: P1 practical for agents now or later, and whether X4b is worth building.
 - [x] **X4a:** the client-submitted shielded method (§5.9): per-request diversified addresses,
       the memo binding, the consumption store, the price quote from `yed_getprice`.
 - [x] Verify on both lines that `z_getnewdiversifiedaddress` works on the merchant's wallet type
@@ -876,7 +876,8 @@ X3; X4a can start after the node adapter.
 - [x] X4a emits `offer-and-receipt` JWS receipts (off-chain selective disclosure, §5.10).
 - [ ] **X4a acceptance:** green on both lines, plus OP-1 and OP-4; tiers P0 and P1 both
       exercised.
-- [ ] **X4b go/no-go (owner):** the Rust builder from `librustzcash6` (WASM or N-API),
+- [x] **X4-M verdict (`x402-ycash` `docs/x4m-measurements.md`, Verdict):** P1 is practical **now for agents with a full-node wallet** (restart to a payment the merchant sees: 2.8 s on v4.5.0, 6.9 s on 6.21.0; mainnet sync a few hours); stateless agents use **P0** for now; P1 through a light wallet is cheap in bandwidth and CPU (122 B per output, ~121 KB a day on mainnet; 66.6 µs per output trial decryption on one core) but **no Ycash Sapling light client for agents exists yet**. Merchant defaults: one dedicated Sapling key; addresses issued **offline from the viewing key** (index range from 2^40, disjoint from both lines' wallet walks); a settlement node holding only the viewing key; self-hosted facilitator; JWS receipts for disclosure.
+- [ ] **X4b go/no-go (owner):** recommendation **no-go for now**. X4b does not remove the agent sync blocker; build it together with the agent light client (N-A), which needs the same Sapling builder and prover. N-asks from X4-M: N-A agent light client from `librustzcash6` (the main one); N-B `chainMetadata`/`GetSubtreeRoots` in lightwalletd-dd; N-C a node RPC to issue addresses from a viewing key or an incoming-viewing-key import; N-D Sapling payment disclosure (ZIP-311); plus N-3 and a published bootstrap snapshot (operational). the Rust builder from `librustzcash6` (WASM or N-API),
       facilitator trial decryption, the nullifier-gap declaration. On a go, X4b gets its own
       chunk list in revision 2.
 
@@ -941,7 +942,7 @@ X3; X4a can start after the node adapter.
 | X1 | **green on both lines, end to end** | ✓ | mechanisms `72633c2`; HTTP end-to-end over real processes (agent → merchant → facilitator service) `6a48e1c`: 6/6 per line incl. OP-1, OP-3 (yolo), OP-4, OP-6; `x402-ycash` CLI. Open: the regression run (wave 4, `harden`) |
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). Open: YED routes in the merchant/agent/CLI |
-| X4 | X4a **green on both lines**; X4-M partly measured | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). Open: agent sync cost and the verdict (wave 3, `x4m`) |
+| X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
 | X5 | not started | — | after X1 (PR 1) and X3 |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
@@ -994,3 +995,9 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F41 | The YED client `close` must be at max($1.00, charged); the close trigger reads "remainder strictly between $0 and $1.00" | Spec corrected |
 | X-F42 | After a run of stock-node (untagged) blocks `yed_mint` refuses `mintpol-no-price` | Tests mine pool blocks before minting (devnet behaviour, not an x402 issue) |
 | X-F43 | YED is a default asset in core with a $1 spend cap per payment | Agents paying more set `maxAmountPerPayment`; documented |
+| X-F44 | Sync from genesis: 6.21.0 verifies Sapling blocks ~4.5× faster than v4.5.0 (41 vs 185 ms per shielded block), the opposite of the reconnect measurement (X-F31, a different path) | Recorded in `docs/x4m-measurements.md` |
+| X-F45 | 6.21.0 answers RPC 3–5 s after a restart (v4.5.0 ~1 s), which dominates its time to first payment | Recorded |
+| X-F46 | v4.5.0 refuses to start without all three parameter files incl. the 725 MB `sprout-groth16.params` (`ycash-dd/src/init.cpp:782-799`); 6.21.0 bundles Sapling parameters | An agent full-node bootstrap on v4.5.0 downloads the params |
+| X-F47 | lightwalletd-dd 0.4.6 serves a 6.21.0 node for GetLightdInfo/GetBlockRange/GetTreeState; public `lite.ycash.xyz` runs the workspace pin `187a267` | A light agent path is available against either line (SendTransaction/GetMempoolTx not yet tested) |
+| X-F48 | The explorer's `commitments` field is the Sprout tree size (`ycash-dd/src/rpc/blockchain.cpp:1148-1150`); its `/blocks` cannot page past the latest 10 | Mainnet Sapling counts taken from tree states instead |
+| X-F49 | Diversified-address walks differ: v4.5.0 walks up from index 1 skipping wallet addresses (`rpcdump.cpp:877-905`), 6.21.0 from the base address's index | An offline issuer uses a disjoint index range (from 2^40) |
