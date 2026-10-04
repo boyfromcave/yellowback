@@ -280,6 +280,10 @@ SwiftUI + Compose over UniFFI (only with dedicated platform engineers); pure-Dar
 the sighash and script bytes must be in one audited place with node-generated vectors).
 
 ### D-W-2. Transparent only, forever in this plan (recommended, applied)
+> **Superseded 2026-10-04 by S0-1** of [`yew-shielded-plan.md`](yew-shielded-plan.md): Sapling is
+> in scope for YEW (shielded receive/send/memo, then shield/unshield), on the Ycash light-client
+> core. Kept below as the record of the original decision.
+
 No shielded pool in any phase. A shielded YEC feature is a different product (Ywallet exists).
 This decision is what keeps the app at ≈ 9,000 lines and the sync model at "ask for my
 addresses' txids".
@@ -317,6 +321,11 @@ an SQLite file owned by the core (`rusqlite`, bundled). The database is a cache:
 restoring from seed plus birthday height rebuilds it.
 
 ### D-W-7. Seed and derivation compatible with Ywallet, one transparent address per account (owner decision 2026-09-24; applied)
+> **Amended 2026-10-04 by S0-1** of [`yew-shielded-plan.md`](yew-shielded-plan.md): the sentence
+> "No ZIP-32 / Sapling keys are derived, ever" no longer holds. The same seed also derives the
+> Ycash Sapling account 0 at `m/32'/347'/0'` (ZIP-32), as Ywallet does, so one seed restores both
+> pools (`yew/core/src/shielded_keys.rs`). Everything else below stands.
+
 YEW derives exactly as Ywallet does for a Ycash account, from `zcash-sync` at `8a3956c8c`:
 
 - **Mnemonic**: BIP39, English wordlist, 12 or 24 words, seed = `Seed::new(mnemonic, passphrase)`

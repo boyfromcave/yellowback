@@ -79,7 +79,10 @@ YED is transparent-only (V8) and mint/redeem need transparent YEC collateral and
 
 - [x] S0 decisions taken (2026-10-04, S0-1..S0-6).
 - [x] S1 library split — delivered with the light client (2026-10-04, `x402-ycash` `22d7709`): YEW depends on the `x402_ycash_light` library (path `../../x402-ycash/light` from `yew/core`); spending key injected, no file key, no server code.
-- [ ] S2 YEW core integration — groundwork in flight (chunk `yewkeys`, 2026-10-04): rusqlite 0.37, Ycash ZIP-32 key derivation at `m/32'/347'/0'` (YWallet-compatible), trust doc; the light-core dependency, sync and send follow S1.
+- [ ] S2 YEW core integration (in flight from 2026-10-04: chunk `yewcore`)
+  - [x] Groundwork merged (`yew` `ef622ce`, 2026-10-04): rusqlite 0.37; `core/src/shielded_keys.rs` — Ycash ZIP-32 account 0 at `m/32'/347'/0'` via `zcash_keys` 0.14 (librustzcash6), YWallet-compatible (code-read: `zcash-sync/src/key2.rs:115-150`), node-verified vectors (`core/tests/vectors/sapling_keys_ycash.json`: `z_importkey` reports our default address 3/3, exports byte-identical, a diversified address receives); RustCrypto pre-release pins aligned with librustzcash6's `bip32 0.6.0-pre.1`; 91 tests, deps/audit/licence checks green.
+  - [ ] Light-library dependency, combined sync, shielded balance, send with memo, params download (chunk `yewcore`).
+  - Notes: off mainnet the node's HD wallet uses coin type 1, YEW/YWallet 347 (by design); `docs/trust.md` statement ("holds no shielded funds") changes with S3, together with `app/lib/trust_text.dart`; release builds now depend on RustCrypto pre-releases until librustzcash6 leaves `bip32 0.6.0-pre.1`.
 - [ ] S3 YEW app: send/receive/memo.
 - [ ] S4 shield/unshield.
 - [ ] S5 hardening (both node lines, devices).
