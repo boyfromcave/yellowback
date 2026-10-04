@@ -78,7 +78,7 @@ YED is transparent-only (V8) and mint/redeem need transparent YEC collateral and
 ### Status (checklists are the status of record; tick with a date)
 
 - [x] S0 decisions taken (2026-10-04, S0-1..S0-6).
-- [ ] S1 library split of `x402-ycash/light` into `light/core` (starts when chunk `lightcore` lands).
+- [x] S1 library split — delivered with the light client (2026-10-04, `x402-ycash` `22d7709`): YEW depends on the `x402_ycash_light` library (path `../../x402-ycash/light` from `yew/core`); spending key injected, no file key, no server code.
 - [ ] S2 YEW core integration — groundwork in flight (chunk `yewkeys`, 2026-10-04): rusqlite 0.37, Ycash ZIP-32 key derivation at `m/32'/347'/0'` (YWallet-compatible), trust doc; the light-core dependency, sync and send follow S1.
 - [ ] S3 YEW app: send/receive/memo.
 - [ ] S4 shield/unshield.
