@@ -902,7 +902,7 @@ X3; X4a can start after the node adapter.
 
 ### X6 — mainnet (owner-run)
 
-- [x] **Runbook and capped smoke script ready** (`docs/mainnet-runbook.md`, `tools/mainnet/smoke.sh`: hard caps 0.01 YEC per payment, 0.1 YEC deposit, 50 requests; `--i-understand-this-spends-real-yec` required); rehearsed on a ycash-dd regtest devnet (ycash6 rehearsal in flight).
+- [x] **Runbook and capped smoke script ready** (`docs/mainnet-runbook.md`, `tools/mainnet/smoke.sh`: hard caps 0.01 YEC per payment, 0.1 YEC deposit, 50 requests; `--i-understand-this-spends-real-yec` required); rehearsed on regtest devnets of **both** lines (`add0578`).
 - [ ] YEC `exact` and a YEC channel, small amounts, with the facilitator on each line's mainnet
       build.
 - [ ] YED once `startHeight` 3,075,000 is passed.
@@ -1045,3 +1045,8 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F75 | Upstream `lint:check` requires JSDoc on every function and member ordering (1,028 errors on the staged package) | Fixed at the source and enforced in x402-ycash's own lint (wave 7, `doclint`) |
 | X-F76 | pnpm 11's strict `minimumReleaseAge` fails against abbreviated registry metadata (`ERR_PNPM_MISSING_TIME`) | Staging passes `--config.minimum-release-age-strict=false`; the owner regenerates the lockfile before pushing |
 | X-F77 | Upstream's e2e `batch-settlement` harness is EVM/SVM-specific orchestration | Ycash e2e covers `exact`; channels are proven by our devnet suites |
+| X-F78 | **A viewing-key-only node answers `z_listreceivedbyaddress` with `-5` for an offline-issued address until it has decrypted a note to it** (`ycash-dd/src/wallet/rpcwallet.cpp:3514-3515`; `ycash6` `:4278-4279`; the wallet then adds the address, `ycash-dd/src/wallet/wallet.cpp:2850-2856`) | The facilitator reads `-5` at payTo as "not received yet" and keeps waiting (TS and Python, `add0578`) |
+| X-F79 | `zSendMany` sent the fee as a string; v4.5.0 reads it with `get_real()` and refuses ("JSON value is not a number", `ycash-dd/src/wallet/rpcwallet.cpp:4301-4302`) | Sent as a JSON number (`add0578`) |
+| X-F80 | 6.21.0 refuses a `z_sendmany` fee above 4× its ZIP-317 conventional fee; v4.5.0 has no cap | Clients setting a shielded fee on v6 stay under it |
+| X-F81 | A 6.21.0 node behind `-connect` to a single peer once stalled mid catch-up for > 2 min (not reproduced) | Rehearsal nodes connect to two peers |
+| X-F82 | Offline issuance rehearsed on both lines: the TS port (FF1-AES-256 + Jubjub via `@noble/curves`) reproduces the node wallets' and the Rust tool's addresses, including skipped invalid diversifiers (`vectors/shielded/divaddr.json`); merchant needs no node, settlement node holds only the viewing key, spending key offline yet able to spend | X4-M merchant defaults now implemented and rehearsed (`add0578`, `docs/mainnet-runbook.md` §4) |
