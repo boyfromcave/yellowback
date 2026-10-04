@@ -888,7 +888,7 @@ X3; X4a can start after the node adapter.
 - [ ] **PR 2:** `typescript/packages/mechanisms/ycash` with unit, integration and e2e tests
       (`config/mechanisms_ycash.json`, client, server and facilitator registration), the
       `all_networks` example entries, signed commits and changesets (CONTRIBUTING.md:151-270).
-- [x] **Python backend SDK (X-2), first cut (`x402-ycash` `d6d6643`):** `python/x402_ycash` (tx, yed, node, store incl. SQLite, `exact` facilitator/server/client, channel builders), 233 tests, every vector reproduced, TS ↔ Python interop green on both lines; not yet ported: YED exact, `sapling-proof`, batch server/facilitator. Original item: `python/x402/mechanisms/ycash` in the upstream layout
+- [x] **Python backend SDK (X-2), first cut (`x402-ycash` `d6d6643`):** `python/x402_ycash` (tx, yed, node, store incl. SQLite, `exact` facilitator/server/client, channel builders), 233 tests, every vector reproduced, TS ↔ Python interop green on both lines; **parity reached** in `46cb366`: YED exact, `sapling-proof` (receipts byte-identical to TS, `vectors/shielded`), batch-settlement YEC and YED; 310 Python tests; TS ↔ Python interop 8/8 on both lines. Python clients (agents) are still TS-only. Original item: `python/x402/mechanisms/ycash` in the upstream layout
       (`python/x402/interfaces.py` protocols, `register` in `client_base.py`, `server_base.py`,
       `facilitator_base.py`). Facilitator and server first, which is what backends run. It must
       reproduce every `vectors/*.json` result, and the workspace `.venv` is used for development.
@@ -943,7 +943,7 @@ X3; X4a can start after the node adapter.
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). YED routes in merchant/agent/CLI merged `3db1468` (YED HTTP suite 12/12 per line) |
 | X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
-| X5 | Python SDK first cut merged | ✓ (interop) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
+| X5 | **Python SDK at parity** (facilitator and server, every binding) | ✓ (interop 8/8 per line) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
 ### Regression of record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
@@ -1028,3 +1028,7 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F59 | `utxoSourceFunder` refused YED, so the agent and CLI each carried a copy of a WIF YED funder | YED path in the mechanism's funder (wave 5, `polish`) |
 | X-F60 | `yed_validaterawtransaction` reads yedIn 0 once a tx is mined (its inputs are spent) | Overlay checks run while the tx is in the mempool (node behaviour) |
 | X-F61 | `yed_mint` refuses amounts below $100 (`bad-mint-amount`) | Devnet setup mints ≥ $100 (node rule) |
+| X-F62 | The bounded sapling-proof note wait lived only in the facilitator service, not the TS mechanism (Python has it in the mechanism) | Moved into `shielded/facilitator.ts` (wave 5, `polish`) |
+| X-F63 | `SaplingProofHandler.enhanceRequirements` issued an address before checking the operator's confirmation range | Range checked first (wave 5, `polish`) |
+| X-F64 | The Python batch server's hooks are coroutines (async `x402ResourceServer` only); verified-voucher state is keyed by payload identity in both languages | Recorded; a sync variant if a sync framework needs it |
+| X-F65 | libsecp256k1 refuses high-S signatures while noble (`lowS: false`) accepts them | Verifiers normalise s and accept; signers MUST emit low-S; pinned in `vectors/shielded`; spec sentence (wave 5) |
