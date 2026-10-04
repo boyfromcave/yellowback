@@ -822,7 +822,7 @@ X3; X4a can start after the node adapter.
       assembly (R-8), and the channel store with compare-and-set cumulative.
 - [x] batch-settlement client, server and facilitator (§5.7): `open` and `voucher` payloads, the
       close triggers, the watcher.
-- [ ] Client CLI: `channel open|status|refund`.
+- [x] Client CLI: `channel open|status|refund`.
 - [x] Devnet suite `test/devnet/channel_yec.test.ts`:
   - [ ] open, then 1,000 paid requests, then a close: one on-chain close carries the total, and
         the server's balance equals Σ charges;
@@ -837,11 +837,11 @@ X3; X4a can start after the node adapter.
 
 ### X3 — YED channels, and YED per request at ≥ $1
 
-- [ ] `src/yed`: the TRANSFER codec (cross-checked against `encode_transfer_v3` and YEW
+- [x] `src/yed`: the TRANSFER codec (cross-checked against `encode_transfer_v3` and YEW
       `payload.rs`) and the dollar-floor rules (X-7).
-- [ ] The YED `exact` method (§5.8), which requires a Yellowback node.
-- [ ] The YED channel: TRANSFER funding to P2SH, payload vouchers, and a refund with payload.
-- [ ] Devnet suite `test/devnet/yed.test.ts`:
+- [x] The YED `exact` method (§5.8), which requires a Yellowback node.
+- [x] The YED channel: TRANSFER funding to P2SH, payload vouchers, and a refund with payload.
+- [x] Devnet suite `test/devnet/yed.test.ts`:
   - [ ] YED `exact` at $1 and $25;
   - [ ] YED `exact` at $0.50 (refused: the burn guard);
   - [ ] a channel at D = $20 with $0.01 requests (first voucher at $1.00, remainder rule at the
@@ -938,9 +938,9 @@ X3; X4a can start after the node adapter.
 | Phase | State | Both lines green | Notes |
 |---|---|---|---|
 | X0 | **done** | — | workspace wiring `ad8cab8`; scaffold `eaa5fb6`; spec drafts `1c27b7c`; the acceptance's `make status` lists the repo clean |
-| X1 | mechanisms **green on both lines** | ✓ (mechanism level) | `x402-ycash` `72633c2`: exact YEC through the real `x402Client`/`x402ResourceServer`/`x402Facilitator`, facilitator on node 0 and on stock node 1 (OP-6), OP-1 and OP-3 (yolo) proven; facilitator HTTP service `4705f42`. Open: the HTTP end-to-end over real processes (wave 3, `wire`) |
+| X1 | **green on both lines, end to end** | ✓ | mechanisms `72633c2`; HTTP end-to-end over real processes (agent → merchant → facilitator service) `6a48e1c`: 6/6 per line incl. OP-1, OP-3 (yolo), OP-4, OP-6; `x402-ycash` CLI. Open: the regression run (wave 4, `harden`) |
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
-| X3 | in progress (wave 3) | — | YED exact ≥ $1 and YED channels |
+| X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). Open: YED routes in the merchant/agent/CLI |
 | X4 | X4a **green on both lines**; X4-M partly measured | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). Open: agent sync cost and the verdict (wave 3, `x4m`) |
 | X5 | not started | — | after X1 (PR 1) and X3 |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
@@ -982,3 +982,15 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F29 | A viewing-key-only node **cannot issue** diversified addresses (`-4`, spending key required; `ycash-dd/src/wallet/rpcdump.cpp:869-870`; `ycash6` `:1425-1427`) but sees receipts at every diversified address of the key, mempool included; only full viewing keys import | Settlement can run on a viewing-key host; address issuance needs the spending key or offline derivation (wave 3 checks the latter) |
 | X-F30 | **No on-chain selective disclosure for Sapling on either line:** `z_getpaymentdisclosure` is Sprout-only (`rpcdisclosure.cpp:103,109`), needs `-experimentalfeatures -paymentdisclosure`, and v6 never writes its DB | Selective disclosure = the JWS receipts (offer-and-receipt); an N-ask recorded |
 | X-F31 | Merchant scan cost measured: 250 Sapling outputs reconnect in 22–28 ms with 0–1 keys on v4.5.0 (~51 ms with 10 keys); 59–67 ms on v6 regardless of key count (batch scanner); diversified addresses add nothing | Not a blocker for merchants; keep one dedicated x402 key |
+| X-F32 | Core 2.28 fixes `payTo`, `amount` and `asset` once requirements exist (the enrich hook may only add `extra`) | The merchant issues the per-request diversified address in the route's dynamic `payTo(context)` and reuses it on the paid retry; the facilitator wraps `SaplingProofHandler` to core's handler signature |
+| X-F33 | Over HTTP a shielded proof can arrive before the note reaches the merchant's node, and core treats `not_received` as final | The facilitator waits a bounded time for the note (`X402_SAPLING_NOTE_WAIT_MS`, default 10 s); spec step 4 says SHOULD |
+| X-F34 | An agent can reselect a coin its previous payment spent if its node has not seen that payment yet (another node's facilitator broadcast it) | Durable reservations + `gettxout(…, true)` before signing (wave 4, `harden`) |
+| X-F35 | The server's channel watcher kept tracked channels in memory only | `ChannelStore.list()` and re-tracking at start (wave 4, `harden`) |
+| X-F36 | Spend controls cap `amount` only, not a channel's deposit | A client-side `maxDeposit` in the batch client (wave 4, `harden`) |
+| X-F37 | The node's Yellowback verdicts are lowercase (`"ok"`, `"burned"`; `src/yellowback/state.cpp:23-24`, both lines) | Specs corrected |
+| X-F38 | **`locked` in `yed_listunspent` does not mean taken:** the Yellowback wallet locks every YED output it holds against plain YEC spends (`ycash-dd/src/yellowback/wallet.cpp:404-410,450-465`, both lines), so `lockunspent` cannot reserve YED coins; and `rpcWalletFunder` could have spent a YED coin as plain YEC (masked because `listunspent` omits locked coins) | In-process (then durable) reservations; funders skip every `yed_listunspent` outpoint |
+| X-F39 | `yed_validaterawtransaction.valid` is the script result, so a voucher with the server's slot empty is `valid: false` | A stateless facilitator checks everything but `valid` on a client voucher; the server and a `claim` check everything. Spec corrected |
+| X-F40 | A voucher in the fixed YED layout cannot burn and still pass the shape check | The overlay check on vouchers catches only yedIn ≠ D; the burning voucher is refused as `voucher_shape` |
+| X-F41 | The YED client `close` must be at max($1.00, charged); the close trigger reads "remainder strictly between $0 and $1.00" | Spec corrected |
+| X-F42 | After a run of stock-node (untagged) blocks `yed_mint` refuses `mintpol-no-price` | Tests mine pool blocks before minting (devnet behaviour, not an x402 issue) |
+| X-F43 | YED is a default asset in core with a $1 spend cap per payment | Agents paying more set `maxAmountPerPayment`; documented |
