@@ -799,12 +799,12 @@ X3; X4a can start after the node adapter.
       language-neutral `vectors/*.json` (X-2).
 - [x] `src/node`: the JSON-RPC adapter (cookie or user/password auth). It reads `devnet.json`,
       stripping userinfo and sending UTF-8 basic auth (chain-viz finding C-F1).
-- [ ] The exact client (RPC signer and local signer), server (`parsePrice` in YEC or in USD
+- [x] The exact client (RPC signer and local signer), server (`parsePrice` in YEC or in USD
       through a price source) and facilitator (§5.6 verify and settle, the txid store).
-- [ ] The standalone facilitator service: `/verify`, `/settle` and `/supported` (with `signers`
+- [x] The standalone facilitator service: `/verify`, `/settle` and `/supported` (with `signers`
       empty, since there is no sponsorship).
-- [ ] An Express example server, and an agent client that pays N requests.
-- [ ] Devnet suite `test/devnet/exact_yec.test.ts`:
+- [x] An Express example server, and an agent client that pays N requests.
+- [x] Devnet suite `test/devnet/exact_yec.test.ts`:
   - [ ] happy path at −1, 0 and 1 confirmations;
   - [ ] wrong amount, wrong recipient, spent input, a conflicting mempool spend, low fee, expiry
         out of window, bad signature;
@@ -818,12 +818,12 @@ X3; X4a can start after the node adapter.
 
 ### X2 — YEC payment channels (`batch-settlement`)
 
-- [ ] `src/channel`: the redeem script, the open, voucher, close and refund builders, scriptSig
+- [x] `src/channel`: the redeem script, the open, voucher, close and refund builders, scriptSig
       assembly (R-8), and the channel store with compare-and-set cumulative.
-- [ ] batch-settlement client, server and facilitator (§5.7): `open` and `voucher` payloads, the
+- [x] batch-settlement client, server and facilitator (§5.7): `open` and `voucher` payloads, the
       close triggers, the watcher.
 - [ ] Client CLI: `channel open|status|refund`.
-- [ ] Devnet suite `test/devnet/channel_yec.test.ts`:
+- [x] Devnet suite `test/devnet/channel_yec.test.ts`:
   - [ ] open, then 1,000 paid requests, then a close: one on-chain close carries the total, and
         the server's balance equals Σ charges;
   - [ ] dynamic pricing below the ceiling;
@@ -864,16 +864,16 @@ X3; X4a can start after the node adapter.
   - [ ] Whether a viewing-key-only wallet can issue diversified addresses and see mempool
         receipts.
   - [ ] Written verdict: P1 practical for agents now or later, and whether X4b is worth building.
-- [ ] **X4a:** the client-submitted shielded method (§5.9): per-request diversified addresses,
+- [x] **X4a:** the client-submitted shielded method (§5.9): per-request diversified addresses,
       the memo binding, the consumption store, the price quote from `yed_getprice`.
-- [ ] Verify on both lines that `z_getnewdiversifiedaddress` works on the merchant's wallet type
+- [x] Verify on both lines that `z_getnewdiversifiedaddress` works on the merchant's wallet type
       (spending key; record whether a viewing-key-only wallet can issue one).
-- [ ] Devnet suite `test/devnet/shielded.test.ts`:
+- [x] Devnet suite `test/devnet/shielded.test.ts`:
   - [ ] a payment from a `ys1…` source at 0 and 1 confirmations;
   - [ ] underpayment, overpayment, a wrong memo, the same txid on two requests (one resource);
   - [ ] a payment from an `s1…` source (works; the sender is public);
   - [ ] chain-level check: the payment tx shows no transparent output to the merchant.
-- [ ] X4a emits `offer-and-receipt` JWS receipts (off-chain selective disclosure, §5.10).
+- [x] X4a emits `offer-and-receipt` JWS receipts (off-chain selective disclosure, §5.10).
 - [ ] **X4a acceptance:** green on both lines, plus OP-1 and OP-4; tiers P0 and P1 both
       exercised.
 - [ ] **X4b go/no-go (owner):** the Rust builder from `librustzcash6` (WASM or N-API),
@@ -938,10 +938,10 @@ X3; X4a can start after the node adapter.
 | Phase | State | Both lines green | Notes |
 |---|---|---|---|
 | X0 | **done** | — | workspace wiring `ad8cab8`; scaffold `eaa5fb6`; spec drafts `1c27b7c`; the acceptance's `make status` lists the repo clean |
-| X1 | in progress | — | wave 1 merged (`643456d`, 248 unit tests): `src/tx` (vectors mined on both lines), `src/yed`, `src/node` + stores + devnet harness (live checks green on both lines). Wave 2: exact mechanisms, facilitator service |
-| X2 | in progress (wave 2) | — | channel builders and batch-settlement mechanism |
-| X3 | not started | — | |
-| X4 | X4a in progress (wave 2) | — | X4b needs the X4-M verdict |
+| X1 | mechanisms **green on both lines** | ✓ (mechanism level) | `x402-ycash` `72633c2`: exact YEC through the real `x402Client`/`x402ResourceServer`/`x402Facilitator`, facilitator on node 0 and on stock node 1 (OP-6), OP-1 and OP-3 (yolo) proven; facilitator HTTP service `4705f42`. Open: the HTTP end-to-end over real processes (wave 3, `wire`) |
+| X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
+| X3 | in progress (wave 3) | — | YED exact ≥ $1 and YED channels |
+| X4 | X4a **green on both lines**; X4-M partly measured | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). Open: agent sync cost and the verdict (wave 3, `x4m`) |
 | X5 | not started | — | after X1 (PR 1) and X3 |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
@@ -969,3 +969,16 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F16 | **A voucher cannot claim less than itself:** a signed voucher has fixed outputs, so under dynamic pricing a close can overpay the charged total by up to one `amount` less the last actual charge (EVM/SVM can claim less) | Voucher rule: charged + `amount` ≤ cumulative ≤ D, with compare-and-set; an optional client `close` voucher at exactly the charged total (also a cooperative early close); listed under "cannot match" |
 | X-F17 | Upstream naming: Cardano's field is `confirmationPolicy.l1Confirmations` (plan: `confirmations`, kept); `offer-and-receipt` receipts carry no amount and require `payer` (spec uses `payer: "anonymous"` and the signed offer for the amount); upstream's error code is `duplicate_settlement` | Applied in the specs |
 | X-F18 | A non-minimal push of an 80-byte payload makes an 84-byte script, over `MAX_OP_RETURN_RELAY` (83); the overlay itself accepts PUSHDATA1/2/4 | The SDK always writes minimal pushes |
+| X-F19 | Upstream `x402Client`'s default spend controls reject assets `findDefaultAsset` does not know | YED (USD-pegged, 2 dp) is recognised; YEC is not USD-pegged, so agents add an `allowedAssets` entry (`exact.yecSpendControl`) |
+| X-F20 | `x402Facilitator.verify/settle` throw on an unregistered kind; core `getSupported()` lists empty signer families | The service checks `getSupported()` first (`unsupported_scheme`/`invalid_network`) and drops empty families (`"signers": {}`) |
+| X-F21 | Spec rule order: a txid the facilitator already broadcast fails rule 6 (`input_spent`) before rule 10 | For a claimed txid, verify skips rules 6–9Y and answers `duplicate_settlement`; settle checks the claim first. Spec fix in wave 3 |
+| X-F22 | yolo issues new work only on height change (`yolo/src/poller.rs:5-9`), so a payment reaching the mempool mid-height lands one block later | Adds ~1 block to policies 0/1 on yolo-mined chains; a yolo option (new work on template change) is a possible pool-side improvement, not required |
+| X-F23 | On the devnet `yed_getprice` pFast/pMid go null after untagged blocks; pSlow survives | Price sources fall back pMid → pSlow; no price ⇒ policy 1, never an error |
+| X-F24 | A stock-node facilitator accepts a YEC payment that spends a YED coin (it cannot see tokens) | As specified: coin selection is the guard there; a Yellowback-node facilitator refuses (`invalid_exact_ycash_yed_input`) |
+| X-F25 | **Vouchers are bound to the consensus branch id** (ZIP-243): a voucher signed before a network upgrade does not verify after it | Servers close every channel before an activation height, or clients choose t below it. Spec fix in wave 3 |
+| X-F26 | A stateless facilitator re-checks t ≥ tip + `minLockBlocks` on a retried `open` | Clients choose t with slack (SDK: 10 blocks). Spec fix in wave 3; one-in-flight voucher gets the code `invalid_batch_settlement_ycash_channel_busy` |
+| X-F27 | **sapling-proof consumption key:** keyed on the txid alone, one tx paying two requests bought only one | Coordinator decision: key = `ycash:<net>:<txid>@<payTo>` (payTo is unique per request, so binding holds and a payer never loses a payment); spec step 7 corrected so only −1 accepts mempool notes |
+| X-F28 | On v4.5.0 a t→z `z_sendmany` returns transparent change to a fresh address, not the source | P0 payers must not assume change returns to the source |
+| X-F29 | A viewing-key-only node **cannot issue** diversified addresses (`-4`, spending key required; `ycash-dd/src/wallet/rpcdump.cpp:869-870`; `ycash6` `:1425-1427`) but sees receipts at every diversified address of the key, mempool included; only full viewing keys import | Settlement can run on a viewing-key host; address issuance needs the spending key or offline derivation (wave 3 checks the latter) |
+| X-F30 | **No on-chain selective disclosure for Sapling on either line:** `z_getpaymentdisclosure` is Sprout-only (`rpcdisclosure.cpp:103,109`), needs `-experimentalfeatures -paymentdisclosure`, and v6 never writes its DB | Selective disclosure = the JWS receipts (offer-and-receipt); an N-ask recorded |
+| X-F31 | Merchant scan cost measured: 250 Sapling outputs reconnect in 22–28 ms with 0–1 keys on v4.5.0 (~51 ms with 10 keys); 59–67 ms on v6 regardless of key count (batch scanner); diversified addresses add nothing | Not a blocker for merchants; keep one dedicated x402 key |
