@@ -103,7 +103,7 @@ ycash6:
   branch: feature/yellowback   # the v6.20.0 port of the overlay; ycash-dd (v4.5.0) stays the proven line
   base: ycash6-legacy
   base-commit: 040894344b    # = ref/ycash6 pin
-  what: working fork of the v6.20.0 node — proving the Yellowback overlay on ycashd 6.20.0, kept separate from ycash-dd
+  what: working fork of the 6.20.0 node — the Yellowback overlay on ycashd 6.20.0, the 6.21.x release line
 
 librustzcash6:
   role: fork
@@ -118,7 +118,7 @@ yew:
   role: app
   url: https://github.com/boyfromcave/yew.git
   branch: main
-  what: YEW, the transparent-only mobile wallet for YEC and YED (Flutter + Rust core)
+  what: YEW, the mobile wallet for YEC (transparent and Sapling) and YED (transparent) (Flutter + Rust core)
 
 ref/yolo:
   role: reference

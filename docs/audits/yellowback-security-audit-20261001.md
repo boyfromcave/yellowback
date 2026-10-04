@@ -1,5 +1,14 @@
 # Yellowback ecosystem security audit — 2026-10-01
 
+**Status (2026-10-04).** Every Critical-to-Low finding is remediated on both node lines (ycash-dd
+through `02aa77cb7`, ycash6 through `0748c68a6`, both pushed 2026-10-02) and in each client repo
+(§5). The owner-approved hook changes A-1 and A-7 touched `src/main.cpp` and `src/rpc/mining.cpp`,
+and the tag `yellowback-v3-baseline` (ycash-dd) was re-tagged at `ff7f45947` on 2026-10-02
+(previously `9da72131e`). Open: the A-5 residual (a wallet "redeem before sunset" warning in
+yecwallet-dd and yew); the Info items, not yet triaged one by one (§5, last box); on-device checks
+for G-4 and G-10 and a Gradle check for G-11; and the owner's choice of lightwalletd-dd's default
+branch (still `master`).
+
 **Scope.** Every writable repository of the workspace, at the commits below, after the
 `docs/plans/yellowback-ycash6-plan.md` execution was declared essentially complete. The `ref/`
 checkouts were consulted only to decide whether our delta introduced a defect (baseline comparison),
@@ -222,16 +231,22 @@ ycash6 review document's §7/§8.4 are stale against the plan (B-7, I-11).
 
 One box per finding. A ticked box names the commit(s) and, for the node lines, both repos. "Accepted" means the owner takes the residual with the reason recorded.
 
+*Note (2026-10-04):* nine ycash-dd hashes below were taken on the fix branches before they were
+rebased, and are not ancestors of `feature/yellowback-price-attest`. The same changes on the
+branch: `c07f22e89` → `e72ecc09a`, `6c827c9d8` → `20aa4c40a`, `5013ca86f` → `7d65ec32e`,
+`7ff7a598b` → `090bfd692`, `352657b62` → `f13eb370b`, `cec61d924` → `3d3809048`, `f587c281a` →
+`86fd8f196`, `ced3189fe` → `4f2a0044c`, `0b946b6e6` → `ff7f45947`.
+
 - [x] **G-1** (High, yew) Mint vault parameters from the server used unchecked: lying server locks collateral in a VOID vault until an arbitrary height — fixed: yew 42ee6e6, 9de3e44, a90c2a1 (local validation of every server-supplied term; devnet confirmation in wave 2)
 - [x] **G-2** (High, yew) Enforcement-fee amount and payee dictated by the server with no bound; redeem built and broadcast with no preview — fixed: yew 9de3e44, 6b18d9e (fee recomputed locally; redeem preview/confirm; residual: payee eligibility, recorded in trust.md)
 - [x] **E-1** (High, lightwalletd-dd) Quadratic base58 decode on unbounded input before the length check on three baseline taddr RPCs (regression) — fixed: lightwalletd-dd 6c6422c
 - [x] **A-1** (Medium, both nodes) MP-1 evaluates a full block (SNAP included) per vault-spend candidate, before script verification, DoS 0 — fixed: ycash-dd c07f22e89 (MP-1 dry-runs by ProcessTx, no SNAP; 1,000 garbage vault spends in 5.3 ms); the ATMP hook move 6c827c9d8 merged 2026-10-02 with the owner's decision to re-tag `yellowback-v3-baseline` at the merge (`ff7f45947`); ycash6 twin ported
-- [x] **A-2** (Medium, both nodes) PIN-2 can be triggered by cheap VOID mints to pin every seated attestor and halt ARMED minting — fixed: ycash-dd 5013ca86f (distinct cited heights; SCHEMA_VERSION 4; model + golden vector; regtest scenario); ycash6 port pending
-- [x] **B-1** (Medium, ycash6) Stock peers on a minority fork > 64 blocks are banned by enforcing 6.20.0 nodes (headers-loop skip × note cap) — fixed: ycash6 92f141ab0 (refusedNotes bounded set; enforcement case 16; ycash-dd port in wave 2)
+- [x] **A-2** (Medium, both nodes) PIN-2 can be triggered by cheap VOID mints to pin every seated attestor and halt ARMED minting — fixed: ycash-dd 5013ca86f (distinct cited heights; SCHEMA_VERSION 4; model + golden vector; regtest scenario); ycash6 bfe7493d2
+- [x] **B-1** (Medium, ycash6) Stock peers on a minority fork > 64 blocks are banned by enforcing 6.20.0 nodes (headers-loop skip × note cap) — fixed: ycash6 92f141ab0 (refusedNotes bounded set; enforcement case 16); ycash-dd 95ed0a358 (port), 3129e06fa (case 16 on this line)
 - [x] **C-1 / B-3** (Medium, ycash-dd) `importwallet` imports transparent keys without the H8 reconcile; YED unlocked until the next block — fixed: ycash-dd a54e53503 (ycash6 already had it)
-- [x] **C-2** (Medium, both nodes) `WaitForCarrier` blocks an HTTP worker up to 600 s; four waits wedge the RPC server — fixed: ycash-dd ed8f32735 (ycash6 port pending)
+- [x] **C-2** (Medium, both nodes) `WaitForCarrier` blocks an HTTP worker up to 600 s; four waits wedge the RPC server — fixed: ycash-dd ed8f32735; ycash6 ec193e559
 - [x] **C-3** (Medium, both nodes) Two-step mint: supply cap judged at inclusion, so a mint can confirm VOID and lock collateral until `lockHeight` — fixed: ycash-dd 7ff7a598b ((a) already covered by TPL-2 void-mint; (b) mempool MINTs counted; (c) documented)
-- [x] **D-1** (Medium, attestor agent) `"inf"`/`"nan"` numeric strings from a venue: panic crash-loop or a 0 µUSD sample — fixed: ycash-dd df784611f (fix/audit-contrib; ycash6 port pending)
+- [x] **D-1** (Medium, attestor agent) `"inf"`/`"nan"` numeric strings from a venue: panic crash-loop or a 0 µUSD sample — fixed: ycash-dd df784611f (fix/audit-contrib); ycash6 f5d205d01
 - [x] **D-3** (Medium, quote tool / agent) Serial fetch with per-socket timeout stalls on a slow-drip venue; no body size cap — fixed: ycash-dd 8cc5d605f, df784611f
 - [x] **D-5** (Medium, attestor subscriber) Unthrottled public gossip subscriber: every frame → one `yed_addattestation` + secp verify — fixed: ycash-dd 6a7c4b628 (dedup, window, per-seq bucket; local sig pre-check left to the node, residual recorded) + follow-up 3afff8581 (the cited-height window refreshed the tip only every 5 s, so under burst mining valid frames were dropped — found by the devnet validation; now one rate-limited `yed_getinfo` before any ahead-of-window drop)
 - [x] **E-2** (Medium, lightwalletd-dd) Rate limiter trusts client-supplied `x-real-ip`; bypass and unbounded map — fixed: lightwalletd-dd e5b55a2, f84ed92
@@ -284,20 +299,21 @@ One box per finding. A ticked box names the commit(s) and, for the node lines, b
 - [x] **H-13** (Low, chain-viz) No `Origin` check on `/ws` — fixed: chain-viz 48cb7e1
 - [x] **H-14** (Low, chain-viz) Static export embeds JSON in `<script>` without `</script>` escaping — fixed: chain-viz 48cb7e1
 - [x] **H-15** (Low, chain-viz CI) Actions by tag; release job `contents: write` — fixed: chain-viz cd04ee2
-- [x] **I-2** (Low, both nodes CI) "Blocking" rule→test tag step is `continue-on-error` — fixed: ycash-dd e6af4111a (ycash6 port pending)
+- [x] **I-2** (Low, both nodes CI) "Blocking" rule→test tag step is `continue-on-error` — fixed: ycash-dd e6af4111a; ycash6 d20ed19e5
 - [x] **I-3** (Low, both nodes CI) Variant jobs run scripts that SKIP without sidecar binaries — fixed: ycash-dd e6af4111a
-- [x] **I-5** (Low, both nodes CI) Node CI builds `chain-viz@main` unlocked — fixed: ycash-dd e6af4111a (CHAINVIZ_COMMIT dd87db83, --locked; bump to chain-viz c388ed2 in wave 2)
+- [x] **I-5** (Low, both nodes CI) Node CI builds `chain-viz@main` unlocked — fixed: ycash-dd e6af4111a (CHAINVIZ_COMMIT dd87db83, --locked), bumped to chain-viz c388ed2 in ycash-dd a283878bc; ycash6 d20ed19e5
+- [x] **I-4** (Low, both nodes CI) Third-party actions and bootstrap tooling pinned by mutable tag or fetched unverified — fixed: ycash-dd e6af4111a, a283878bc; ycash6 d20ed19e5
 - [x] **I-6** (Low, both nodes CI) Nightly builds the attestor agent without `--locked` — fixed: ycash-dd e6af4111a
 - [x] **I-7** (Low, agent, yolo, chain-viz) No advisory scan for the Rust components — fixed: ycash-dd e6af4111a (cargo audit) + attest deny.toml 410e0fe3d; yolo aba726b; chain-viz cd04ee2
 - [x] **I-8** (Low, yolo, chain-viz) Floating `stable` toolchain — fixed: yolo 72a97d8; chain-viz 8773e31 (both 1.91.0)
 - [x] **I-9** (Low, both nodes CI) No-ban gate greps `DoS(` but not `Misbehaving(` — fixed: ycash-dd e6af4111a
 - [x] **V-5** (Medium, both nodes) `yed_listclaimable` under-states the attestor fee while the pool is stale — fixed: ycash-dd ba793f1c1, ycash6 9e529e378
 - [x] **A-7** (Info, both nodes) `getblocktemplate` tag decoded from the served coinbase — fixed: ycash-dd 0b946b6e6 (merged as ff7f45947, re-tag decision), ycash6 0748c68a6
-- [ ] **Info items** A-8, B-5, B-6, B-7, C-8, C-9, C-10, C-11, D-9, D-10, D-11, D-12, E-7, E-8, E-9, E-10, E-11, F-9, F-10, F-11, G-12, H-7, H-10, H-16, H-17, I-10, I-11, I-12, I-13, I-14 (each ticked in its per-component section as resolved or accepted)
+- [ ] **Info items** A-8, B-5, B-6, B-7, C-8, C-9, C-10, C-11, D-9, D-10, D-11, D-12, E-7, E-8, E-9, E-10, E-11, F-9, F-10, F-11, G-12, H-7, H-10, H-16, H-17, I-10, I-11, I-12, I-13, I-14 — open: not yet triaged one by one, and the per-component sections carry no resolved/accepted marks. Commits that name an Info item (addressed, not yet checked against the finding): A-8 ycash-dd f13eb370b, ycash6 14a1b3d23; B-5 ycash6 5be4e9613; B-6 ycash6 c29004d14; B-7 ycash6 ea93da770; C-8..C-11 ycash-dd ed8f32735, a54e53503, ycash6 ec193e559, b23d1a2ac; D-9 ycash-dd 46382da96; D-10 ycash-dd 06d87a79b; D-11 ycash-dd 6a7c4b628, 780deeeda, 46382da96, 0557f301d (ycash6 ports); D-12 ycash-dd 410e0fe3d, a283878bc, 46382da96, ycash6 2332f057a, d20ed19e5; E-8 lightwalletd-dd d31e1ba; E-10 lightwalletd-dd d31e1ba, ycash-dd 8c9be146d, ycash6 b19d38902; F-9 yecwallet-dd 5750c4b; F-10 yecwallet-dd ce2fb3e, cf5fd83; F-11 yecwallet-dd ce2fb3e; H-7, H-10 yolo bb038e7; H-16 yolo 72a97d8, chain-viz 8773e31; H-17 yolo 392e84d, c498027; I-11 ycash6 ea93da770, f6d536375; I-13 yolo aba726b, f01c2d1. No commit names E-7, E-9, E-11, G-12, I-10, I-12 or I-14
 
 ### Validation after remediation (2026-10-02)
 
-Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, yecwallet-dd `3df3d49`): default devnet + the three role presets, `yellowback_attest_agent.py`, lightwalletd's devnet suite 4/4 (after a pre-existing harness race in `lwd-rawmint` was fixed, ycash-dd `8c9be146d`; a manual probe confirmed the 1 MB garbage address is refused in milliseconds and a forged `x-real-ip` does not bypass the limiter), YEW's devnet suites w1/w2/w4 (no false positive from the new local checks; redeem preview/confirm and mint terms exercised), `yellowback_stratum.py` and `yellowback_chainviz.py` all passed. YecWallet's two attested devnet cases exposed the D-5 tip-lag regression above (fixed, ycash-dd `3afff8581`, ycash6 `567075a08`; re-run: zero dropped frames under burst mining) and then V-5 (fixed, ycash-dd `ba793f1c1`, ycash6 `9e529e378`). After both fixes YecWallet's three devnet cases pass in one run (5 passed, 0 failed) with zero dropped subscriber frames. The ycash6 line was ported in full afterwards (HEAD `0748c68a6`; 21 functional scripts green on 6.20.0, and stock parity run for the first time on that line against `wt/ycash6-stock`). Final ycash-dd HEAD `02aa77cb7`, tag `yellowback-v3-baseline` re-tagged at `ff7f45947` by owner decision.
+Devnet run on the merged trees (ycash-dd `3129e06fa`+, lightwalletd-dd `77a9c0d`, yew `a90c2a1`, yolo `aba726b`, chain-viz `c388ed2`, yecwallet-dd `3df3d49`): default devnet + the three role presets, `yellowback_attest_agent.py`, lightwalletd's devnet suite 4/4 (after a pre-existing harness race in `lwd-rawmint` was fixed, ycash-dd `8c9be146d`; a manual probe confirmed the 1 MB garbage address is refused in milliseconds and a forged `x-real-ip` does not bypass the limiter), YEW's devnet suites w1/w2/w4 (no false positive from the new local checks; redeem preview/confirm and mint terms exercised), `yellowback_stratum.py` and `yellowback_chainviz.py` all passed. YecWallet's two attested devnet cases exposed the D-5 tip-lag regression above (fixed, ycash-dd `3afff8581`, ycash6 `567075a08`; re-run: zero dropped frames under burst mining) and then V-5 (fixed, ycash-dd `ba793f1c1`, ycash6 `9e529e378`). After both fixes YecWallet's three devnet cases pass in one run (5 passed, 0 failed) with zero dropped subscriber frames. The ycash6 line was ported in full afterwards (HEAD `0748c68a6`; 21 functional scripts green on 6.20.0, and stock parity run for the first time on that line against a local stock 6.20.0 build). Final ycash-dd HEAD `02aa77cb7`, tag `yellowback-v3-baseline` re-tagged at `ff7f45947` by owner decision.
 
 ### Pushed 2026-10-02 and owner actions
 

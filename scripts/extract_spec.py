@@ -431,7 +431,8 @@ def main(argv):
     lines = read_plan()
     lines_v3 = read_plan_v3()
     outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
-    if mode == "--check-workspace":
+    workspace_only = mode == "--check-workspace"
+    if workspace_only:
         # The workspace CI has no nested clones: compare only the copies that live in this repo.
         outputs = [(p, t) for p, t in outputs if os.path.relpath(p, ROOT).startswith("docs" + os.sep)]
         mode = "--check"
@@ -455,9 +456,12 @@ def main(argv):
         if stale:
             print("spec-check: STALE — run `make spec`:\n  " + "\n  ".join(stale))
             return 1
-        print("spec-check: docs/spec, %s/doc, %s/docs and lightwalletd-dd/testdata copies match the plan (revision %d%s)" % (
-            os.path.relpath(NODE_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT), revision(lines),
-            "" if lines_v3 is None else "; v3 revision %d" % revision(lines_v3)))
+        rev = "revision %d%s" % (revision(lines), "" if lines_v3 is None else "; v3 revision %d" % revision(lines_v3))
+        if workspace_only:
+            print("spec-check: docs/spec copy matches the plan (%s); the fork copies were not checked" % rev)
+        else:
+            print("spec-check: docs/spec, %s/doc, %s/docs and %s/testdata copies match the plan (%s)" % (
+                os.path.relpath(NODE_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT), os.path.relpath(LWD_DIR, ROOT), rev))
     return 0
 
 
