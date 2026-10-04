@@ -33,6 +33,7 @@ yellowback-workspace/
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
+├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, in
@@ -48,7 +49,7 @@ yellowback-workspace/
 ```
 
 **One overlay, six repos.** Yellowback is an overlay on the node; around it sit the GUI wallet,
-lightwalletd, the mobile wallet (YEW), the mining pool (yolo) and the visualizer (chain-viz), each
+lightwalletd, the mobile wallet (YEW), the mining pool (yolo), the visualizer (chain-viz) and x402 agent payments (x402-ycash), each
 in its own repo and each reaching the node only through a public interface (README.md, the
 components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
@@ -111,6 +112,11 @@ The visualizer goes in `chain-viz/` only — its own repository on `main` — an
 read-only sidecar: it reaches the node through the stock read RPCs (`getblock`, `getrawmempool`,
 `getchaintips`, `getblocktemplate`, …), the read-only `yed_*` RPCs and the node's notify hooks,
 never writes a transaction, and never needs a consensus change (`docs/plans/chain-viz-plan.md` §4).
+x402 agent payments go in `x402-ycash/` only — its own repository on `main`, net new, no reference
+and no baseline — and it reaches the node only through stock RPCs (`gettxout`, `sendrawtransaction`,
+`signrawtransaction` as a verifier, `z_*` receipt RPCs) and the read-only `yed_*` RPCs: no node
+change on either node line, nothing for node or pool operators to enable
+(`docs/plans/x402-agent-payments-plan.md` §4).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -211,7 +217,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across all sixteen repos: fetches origin, ahead/behind, pin verification
+make status     # git status across all seventeen repos: fetches origin, ahead/behind, pin verification
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each fork (ycash-dd, yecwallet-dd, lightwalletd-dd) vs its -legacy baseline

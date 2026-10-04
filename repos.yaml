@@ -138,3 +138,9 @@ chain-viz:
   url: https://github.com/boyfromcave/chain-viz.git
   branch: main
   what: chain-viz, the real-time chain, mempool and Yellowback-health visualizer (a read-only sidecar of ycashd on regtest, the devnet and mainnet; docs/plans/chain-viz-plan.md)
+
+x402-ycash:
+  role: app
+  url: https://github.com/boyfromcave/x402-ycash.git
+  branch: main
+  what: x402-ycash, x402 (HTTP-402) agent payments on Ycash in YEC and YED — binding specs, the TypeScript SDK mechanism and the facilitator; reaches ycashd only through public RPCs, no node change (docs/plans/x402-agent-payments-plan.md)
