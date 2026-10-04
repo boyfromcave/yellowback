@@ -1,5 +1,7 @@
 # ycashd 6.20.0 (`dev-rebase-6.20.0` @ 040894344b): baseline test report
 
+> **Draft — discussed with miodragpop.**
+
 To: miodragpop. From: boyfromcave. Date: 2026-09-30.
 
 Why this exists: we are porting a separate overlay onto your 6.20.0 tree. Before adding anything, we
