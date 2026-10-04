@@ -1,6 +1,9 @@
 # Pool regtest plan — real pool software on the devnet, and yolo in Rust
 
-**Status:** revision 1, 2026-09-28. In implementation. The status table is §8; agents update it.
+**Status:** revision 1, 2026-09-28. **Delivered** — Y0–Y7 done 2026-09-28; ycashd 6.20.0
+compatibility 2026-10-01 (yolo `4a28eef`, ycash6 plan Phase 7); the 2026-10-01 security audit's
+yolo findings fixed 2026-10-01/02 (yolo `1fd0465`..`dc9c57a`). The status table is §8.
+*(Status updated 2026-10-04; it read "In implementation".)*
 
 This plan is a delta on [`role-based-regtest-plan.md`](role-based-regtest-plan.md) scenario 3
 ("I am a mining pool", §4.3). It replaces the one thing that scenario cannot test as written:

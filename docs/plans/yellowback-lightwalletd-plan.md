@@ -1,44 +1,16 @@
 # Ycash Yellowback (YED) — lightwalletd Development Plan: a light-client relay for Yellowback
 
-**Status (2026-09-24, revision 8). Phase R0 complete: L0–L3 re-ported onto the yodl baseline
-and proven again on regtest** (§7 R0; `lightwalletd-dd/docs/yellowback.md` and `docs/review.md`
-are rewritten for this tree). Remaining: L4 (testnet with real attestors) and §9 Q6 (the armed
-carrier path). The revision-7 note, kept for the record:
-**BASELINE SWITCHED — the L0–L3 code must be re-ported.**
-On 2026-09-24 the owner re-created `boyfromcave/lightwalletd` as a fork of
-**`yodl/lightwalletd`** (`master` `187a26765e`, 2021-07-13: `zcash/lightwalletd` 0.4.6 plus four
-commits, the last adapting the transparent-address regex to Ycash's `s…`). That is the ECC
-lineage, a different codebase from the yecdev/Zecwallet-derived server this plan was written
-against and on which Phases L0–L3 were built and verified. The workspace is reconfigured
-(`repos.yaml`, `ref/lightwalletd` re-pinned, `lightwalletd-dd` re-cloned with
-`lightwalletd-legacy` = `187a267`, the mirrors updated). The delivered yecdev-based tree is
-kept locally at `wt/lightwalletd-dd-yecdev-baseline` (its branches no longer exist on the
-remote); §1.1, the budget table and the file-level findings F-1..F-10 describe the OLD
-baseline and are superseded by the re-port survey (§10, pending). The node side (N1,
-`yed_listtokens`, the devnet subcommand, `lwd-rawmint`) is unaffected; the devnet's
-`lightwalletd` subcommand and the nightly step call `cmd/lwdinfo`, which the new fork does not
-have until the re-port. **Next: Phase R0 (§7), the re-port.** The record below stands as the
-history of what was proven on the old baseline. Previous status:
-**Phases L0–L3 and N1 complete** (§7). The server has the
-nineteen-method `YellowbackStreamer` incl. `GetAddressTokens`, a per-peer rate limit, edge
-validation, the regtest suite (`scripts/devnet-test.sh`: the `GetBlockRange` byte-equality gate,
-wallet and raw-parts mints through the server) green on a five-node devnet, the review packet
-(`lightwalletd-dd/docs/review.md`) and the runbook. N1 (`yed_listtokens`) is merged into the
-node's `feature/yellowback-price-attest`. The nightly step is registered in the node's workflow
-and unverified until its next scheduled run. Remaining: L4 (testnet with real attestors, with
-v3 Phase A7), and §9's open items — the carrier path of the raw-parts mint on an ARMED devnet.
-Phase L1 record: the
-`YellowbackStreamer` service is implemented (18 methods, allow-listed proxies), the offline suite
-(24 cases against the contract) is green, and on a five-node regtest devnet every method answers
-through the real node while the legacy binary returns `UNIMPLEMENTED` for all of them and the old
-service's answers are byte-identical with the flag on and off. Next: N1 (`yed_listtokens`) and
-L2 (`GetAddressTokens`, the devnet integration test). Phase L0 record: Go 1.27.1 builds and tests the
-untouched baseline; the baseline binary is built from `lightwalletd-legacy`; the generator pin
-(protoc-gen-go v1.3.2) reproduces both generated files; CI skeleton in place; the node's devnet
-gained `lightwalletd start|stop|status` and `check` probes the server; on a five-node regtest
-devnet the fork build and the baseline binary answered `GetLightdInfo`/`GetLatestBlock`
-identically. Owner decisions D-L-4, D-L-7, D-L-8 and §9 Q3 taken on 2026-09-23 (§0). Next: L1
-(the `YellowbackStreamer` service) and N1 (`yed_listtokens`), in parallel. Written after a survey of
+**Status (2026-10-04, revision 8).** Phase R0 is complete: L0–L3 are re-ported onto the yodl
+baseline and proven on regtest (§7 R0). The 2026-10-01 security audit's lightwalletd findings
+E-1..E-6 are remediated (lightwalletd-dd `6c6422c`, `e5b55a2`, `f84ed92`, `3945107`, `f9218c1`;
+`docs/audits/yellowback-security-audit-20261001.md` §5); E-7..E-11 are info items, of which E-10's
+devnet race is fixed in ycash-dd `8c9be146d`. On 2026-10-04 `YellowbackStreamer` gained a
+twentieth method, `GetChainInfo` (lightwalletd-dd `7a8eaaa`, `0b3448e`; §4.1), for the x402
+light client and YEW. Remaining: L4 (testnet with real attestors) and §9 Q6 (the armed carrier
+path of the raw-parts mint is not yet recorded as run on a devnet). Earlier status headers are
+kept in §0, "Status headers before 2026-10-04".
+
+Written after a survey of
 `lightwalletd-dd` at its baseline (`lightwalletd-legacy` = upstream `master` `ec3b96f12`,
 2020-12-06) and of the delivered Yellowback node (`ycash-dd` `feature/yellowback-price-attest`,
 `rpcversion 3`). Work branch: **`feature/yellowback-price-attest`** in `lightwalletd-dd`, cut from
@@ -182,6 +154,48 @@ recommended answer applied in the text; each is reversible by a one-line change 
 starts.
 
 ---
+
+### Status headers before 2026-10-04 (moved here from the top of the plan, kept for the record)
+
+**Status (2026-09-24, revision 8). Phase R0 complete: L0–L3 re-ported onto the yodl baseline
+and proven again on regtest** (§7 R0; `lightwalletd-dd/docs/yellowback.md` and `docs/review.md`
+are rewritten for this tree). Remaining: L4 (testnet with real attestors) and §9 Q6 (the armed
+carrier path). The revision-7 note, kept for the record:
+**BASELINE SWITCHED — the L0–L3 code must be re-ported.**
+On 2026-09-24 the owner re-created `boyfromcave/lightwalletd` as a fork of
+**`yodl/lightwalletd`** (`master` `187a26765e`, 2021-07-13: `zcash/lightwalletd` 0.4.6 plus four
+commits, the last adapting the transparent-address regex to Ycash's `s…`). That is the ECC
+lineage, a different codebase from the yecdev/Zecwallet-derived server this plan was written
+against and on which Phases L0–L3 were built and verified. The workspace is reconfigured
+(`repos.yaml`, `ref/lightwalletd` re-pinned, `lightwalletd-dd` re-cloned with
+`lightwalletd-legacy` = `187a267`, the mirrors updated). The delivered yecdev-based tree is
+not published (it was kept locally only; its branches no longer exist on the remote); §1.1, the
+budget table and the file-level findings F-1..F-10 describe the OLD baseline and are superseded
+by the re-port survey (§10, since written). The node side (N1,
+`yed_listtokens`, the devnet subcommand, `lwd-rawmint`) is unaffected; the devnet's
+`lightwalletd` subcommand and the nightly step call `cmd/lwdinfo`, which the new fork does not
+have until the re-port. **Next: Phase R0 (§7), the re-port.** The record below stands as the
+history of what was proven on the old baseline. Previous status:
+**Phases L0–L3 and N1 complete** (§7). The server has the
+nineteen-method `YellowbackStreamer` incl. `GetAddressTokens`, a per-peer rate limit, edge
+validation, the regtest suite (`scripts/devnet-test.sh`: the `GetBlockRange` byte-equality gate,
+wallet and raw-parts mints through the server) green on a five-node devnet, the review packet
+(`lightwalletd-dd/docs/review.md`) and the runbook. N1 (`yed_listtokens`) is merged into the
+node's `feature/yellowback-price-attest`. The nightly step is registered in the node's workflow
+and unverified until its next scheduled run. Remaining: L4 (testnet with real attestors, with
+v3 Phase A7), and §9's open items — the carrier path of the raw-parts mint on an ARMED devnet.
+Phase L1 record: the
+`YellowbackStreamer` service is implemented (18 methods, allow-listed proxies), the offline suite
+(24 cases against the contract) is green, and on a five-node regtest devnet every method answers
+through the real node while the legacy binary returns `UNIMPLEMENTED` for all of them and the old
+service's answers are byte-identical with the flag on and off. Next: N1 (`yed_listtokens`) and
+L2 (`GetAddressTokens`, the devnet integration test). Phase L0 record: Go 1.27.1 builds and tests the
+untouched baseline; the baseline binary is built from `lightwalletd-legacy`; the generator pin
+(protoc-gen-go v1.3.2) reproduces both generated files; CI skeleton in place; the node's devnet
+gained `lightwalletd start|stop|status` and `check` probes the server; on a five-node regtest
+devnet the fork build and the baseline binary answered `GetLightdInfo`/`GetLatestBlock`
+identically. Owner decisions D-L-4, D-L-7, D-L-8 and §9 Q3 taken on 2026-09-23 (§0). Next: L1
+(the `YellowbackStreamer` service) and N1 (`yed_listtokens`), in parallel.
 
 ## 1. The decision in one page
 
@@ -410,8 +424,10 @@ as YecWallet does (`mapping.md` §12).
 | `GetNotice(TxFilter) → YedNotice` | `yed_getnotice <vaultTxid>` | claim-notice state of a vault |
 | `GetActivation(Empty) → YellowbackActivation` | `yed_getactivation` | signalling / lock-in / active |
 | `GetAddressTokens(AddressList) → stream YedToken` | **`yed_listtokens <addresses…>`** (new, §4.4) | **the authoritative YED UTXO set** of the client's addresses: `txid, vout, cents, nValue, height, address` |
+| `GetChainInfo(Empty) → YedChainInfo` (added 2026-10-04, lightwalletd-dd `7a8eaaa`) | stock `getblockchaininfo` (read-only; not a `yed_*` RPC) | the consensus branch id of the chain tip **and of the next block** — what a transaction built now must sign under (it differs from the tip's on the block before a network upgrade); upgrades, Sapling height. The frozen `service.proto`'s `LightdInfo` carries the tip's only (x402 X-F71) |
 
-Not offered, by allow-list: every wallet RPC (`yed_mint`, `yed_send`, …, they need the node's
+Twenty methods; nineteen proxy a read-only `yed_*` RPC, `GetChainInfo` the stock
+`getblockchaininfo`. Not offered, by allow-list: every wallet RPC (`yed_mint`, `yed_send`, …, they need the node's
 keys), `yed_setquote` (miner-local state), `yed_addattestation` and `yed_signattestation`
 (RPC-auth only, v3 §4.5), `yed_getstatehash`/`yed_gethistory`/`yed_getblockverdict`/`yed_gettag`/
 `yed_listminers` (test and operator tooling; nothing a wallet shows), `yed_getselection`'s

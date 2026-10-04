@@ -748,10 +748,10 @@ worktrees of `x402-ycash`. No node repository is edited.
 The coordinator (the main session) splits each phase into chunks and delegates them to parallel
 subagents:
 
-- **Worktree:** each agent gets `wt/x402-<chunk>`, a `git -C x402-ycash worktree add` on branch
+- **Worktree:** each agent gets its own worktree, a `git -C x402-ycash worktree add` on branch
   `x402/<chunk>` from `main`.
-- **Shared briefing:** `wt/BRIEFING-x402.md`, durable across sessions. It covers the rules, ports,
-  the node binaries and the report format.
+- **Shared briefing:** a briefing kept locally (not in the repo), durable across sessions. It
+  covers the rules, ports, the node binaries and the report format.
 - **Port seeds:** each agent has its own devnet port seed, a few apart from every other agent's
   (chain-viz finding C-F31).
 - **Agents never** edit `x402-ycash`'s main tree, a node repository or `ref/`.
@@ -784,7 +784,7 @@ X3; X4a can start after the node adapter.
 - [x] `yellowback.code-workspace` folder.
 - [x] `docs/plans/README.md` row (revision 1).
 - [x] `docs/mapping.md` §20 (revision 1).
-- [x] `wt/BRIEFING-x402.md`, the agents' briefing (§7.0).
+- [x] The agents' briefing (§7.0; local, not in the repo).
 - [x] Scaffold: TypeScript workspace, `@x402/core` v2 pinned, lint and test (vitest, as the
       Cardano package uses), CI on GitHub Actions.
 - [x] `specs/scheme_exact_ycash.md` and `specs/scheme_batch_settlement_ycash.md`, drafted from
@@ -902,7 +902,7 @@ end-to-end proof. The light client also becomes the engine of the YEW shielded p
 
 ### X5 — upstream and ecosystem
 
-- [x] **Staged locally, not published** (`x402-ycash` `d20419a`, `docs/upstream.md`, `tools/upstream/stage.sh`): PR 1 (specs) and PR 2 (`typescript/packages/mechanisms/ycash` as `@x402/ycash`, e2e config, examples, changeset) on a remote-less fork at `wt/scratch/x402-upstream-prep/x402-fork`; drafted issue and PR bodies and the owner's decisions in `PUBLISHING.md` there (licence MIT vs Apache-2.0, signed commits, account, PR 1 scope, CODEOWNERS). All ten upstream checks pass at `3940e56` (fork `ycash-spec` `c93dcb49`, `ycash-binding` `778e1e24`). Discussions are disabled upstream, so the proposal is a Feature Proposal issue. Original item: Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
+- [x] **Staged locally, not published** (`x402-ycash` `d20419a`, `docs/upstream.md`, `tools/upstream/stage.sh`): PR 1 (specs) and PR 2 (`typescript/packages/mechanisms/ycash` as `@x402/ycash`, e2e config, examples, changeset) on a local staging fork (not published, no remote); drafted issue and PR bodies and the owner's decisions in its `PUBLISHING.md` (licence MIT vs Apache-2.0, signed commits, account, PR 1 scope, CODEOWNERS). All ten upstream checks pass at `3940e56` (fork `ycash-spec` `c93dcb49`, `ycash-binding` `778e1e24`). Discussions are disabled upstream, so the proposal is a Feature Proposal issue. Original item: Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
       (after X1). Then `scheme_batch_settlement_ycash.md` (after X3).
 - [ ] **PR 2:** `typescript/packages/mechanisms/ycash` with unit, integration and e2e tests
       (`config/mechanisms_ycash.json`, client, server and facilitator registration), the
@@ -968,7 +968,13 @@ end-to-end proof. The light client also becomes the engine of the YEW shielded p
 
 ### Regression of record
 
-The current record is `x402-ycash` `docs/regression.md` at `3940e56` (2026-10-04): 84 devnet tests per line plus the Python devnet suite, green on ycash-dd 4.5.0 and ycash6 6.21.0-rc1, and the upstream staging passing all ten of upstream's checks (lint 0 errors, 608 tests, 94.2 % line coverage, integration 57/58 per line against live devnets). The earlier record follows.
+The current record is `x402-ycash` `docs/regression.md` at `9ec43d9` (2026-10-04): **94 devnet tests per line**, all green on ycash-dd 4.5.0 and ycash6 6.21.0-rc1, including the shielded `light.http` (5) and `sapling.http` (4), the Python devnet suite and `light/scripts/regtest.sh`; the upstream staging refreshed with `sapling` passes all ten of upstream's checks (702 tests, 94.3 % line coverage; integration 57/58 per line against live devnets). The earlier records follow.
+
+#### Earlier record (`x402-ycash` `3940e56`, 2026-10-04)
+
+84 devnet tests per line plus the Python devnet suite, green on ycash-dd 4.5.0 and ycash6
+6.21.0-rc1, and the upstream staging passing all ten of upstream's checks (lint 0 errors, 608
+tests, 94.2 % line coverage, integration 57/58 per line against live devnets).
 
 #### Earlier record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
 
@@ -1098,3 +1104,5 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F105 | **v4.5.0 penalises peers relaying expired transactions** (`ycash-dd/src/main.cpp:876-883`, 10 points each, drop at 100); fast-mining suites past short expiries split the devnet mesh (one-shot `addnode` links never return); 6.21.0 shows none | Devnet harness re-adds peers and re-feeds missing txs after 5 s of mempool disagreement (`89d754f`); the Python harness lacks the heal (open, it passes running last) |
 | X-F106 | Coordinator error: two parallel chunks were given the same devnet seed (371) and one stopped the other's devnet | Seeds are now allocated uniquely per chunk |
 | X-F107 | Staging drift: transform anchors, a missing `@noble/ciphers` overlay dependency, template-literal vector paths, citations of plan rows N-2/N-3 with no spec appendix row | Fixed in `tools/upstream` (`cf4e758`); spec Appendix A rows for N-2/N-3 are a spec decision (open) |
+| X-F108 | **Light-library reorg rewind stopped private sync near the birthday** (YEW Z-9): the store refuses `truncate_to_height(at − 10)` within 10 blocks of the birthday — and, since it checkpoints only blocks with note commitments, on any quiet stretch; a branch changing Sapling outputs below the birthday also failed the rewind (`CommitmentTree(Insert(Conflict))`) | Fixed in the library (`x402-ycash` `0c1d301`, 2026-10-04): birthday rewind via `GetTreeState` + `truncate_to_chain_state` (≤ 3 per sync), deeper transactional truncation for below-birthday conflicts (below `MAX_REORG_LENGTH` 99 on both lines), same-pass rescan; devnet `reorg_near_the_birthday_syncs_through` green on both lines; YEW's workaround being removed |
+| X-F109 | After `invalidateblock` of a multi-block branch, 6.21.0 peers keep a competing block headers-only until the new branch outweighs the old tip; v4.5.0 downloads it at once | Harness mines the whole competing branch in one `generate` (no node change) |

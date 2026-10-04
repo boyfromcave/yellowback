@@ -1,7 +1,8 @@
 # Role-based regtest plan — walking in each participant's shoes
 
-**Status:** revision 3 (2026-09-20), **in implementation** — see §8 for what is built, what is
-running and what remains; every chunk's row there is updated as it lands. Revision 2 scheduled the
+**Status:** revision 3 (2026-09-20), **delivered** — R1–R7 and R9 built and verified (§8); R8
+deferred (D-2). The owner walked Scenario 1 (§8.1 F-8–F-12; v3 W16, W17); the remaining scenario
+walk-throughs are the owner's. *(Status updated 2026-10-04; it read "in implementation".)* Revision 2 scheduled the
 work (owner decision D-4). This is a plan for a *testing and feedback* capability, not a change to Yellowback itself:
 nothing here touches consensus, mining or policy code. It exists so the product owner can occupy
 each seat in the Yellowback economy in turn and give grounded feedback before real attestors are

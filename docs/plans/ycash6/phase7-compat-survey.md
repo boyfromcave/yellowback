@@ -1,5 +1,11 @@
 # Phase 7 compatibility survey — non-`yed_*` node interfaces, v4.5.0 → 6.20.0
 
+> **Historical survey (2026-09-30).** Its findings are carried into
+> [`../yellowback-ycash6-plan.md`](../yellowback-ycash6-plan.md) §6 as the Phase 7 rows F-43, F-44
+> and F-46..F-58, which record how each was resolved; F-49's tree-state check is the one still
+> marked open there. (F-59..F-65 are later branding, attribution and process rows, not from this
+> survey.)
+
 Agent `compat`, 2026-09-30. Read-only: nothing was built, run or edited.
 
 **Pins compared**
