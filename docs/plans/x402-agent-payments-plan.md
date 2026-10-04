@@ -1,6 +1,6 @@
 # x402 agent payments plan — HTTP-402 payments in YEC and YED, on both node lines
 
-**Status:** revision 2, 2026-10-03, **in implementation**. The owner's decisions are recorded
+**Status:** revision 2, 2026-10-03, **in implementation — every phase item that does not need the owner is done (2026-10-04)**. The owner's decisions are recorded
 in §0.0; every X-decision of §0.2 is now decided. The repository `boyfromcave/x402-ycash` exists
 and is the primary repository for executing this plan. §3 is the
 on-paper proof: every claim the design rests on is checked against the code of **both** node
@@ -883,7 +883,7 @@ X3; X4a can start after the node adapter.
 
 ### X5 — upstream and ecosystem
 
-- [x] **Staged locally, not published** (`x402-ycash` `d20419a`, `docs/upstream.md`, `tools/upstream/stage.sh`): PR 1 (specs) and PR 2 (`typescript/packages/mechanisms/ycash` as `@x402/ycash`, e2e config, examples, changeset) on a remote-less fork at `wt/scratch/x402-upstream-prep/x402-fork`; drafted issue and PR bodies and the owner's decisions in `PUBLISHING.md` there (licence MIT vs Apache-2.0, signed commits, account, PR 1 scope, CODEOWNERS). Upstream checks pass except `lint:check` (fix in flight, `doclint`). Discussions are disabled upstream, so the proposal is a Feature Proposal issue. Original item: Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
+- [x] **Staged locally, not published** (`x402-ycash` `d20419a`, `docs/upstream.md`, `tools/upstream/stage.sh`): PR 1 (specs) and PR 2 (`typescript/packages/mechanisms/ycash` as `@x402/ycash`, e2e config, examples, changeset) on a remote-less fork at `wt/scratch/x402-upstream-prep/x402-fork`; drafted issue and PR bodies and the owner's decisions in `PUBLISHING.md` there (licence MIT vs Apache-2.0, signed commits, account, PR 1 scope, CODEOWNERS). All ten upstream checks pass at `3940e56` (fork `ycash-spec` `c93dcb49`, `ycash-binding` `778e1e24`). Discussions are disabled upstream, so the proposal is a Feature Proposal issue. Original item: Open a GitHub discussion at `x402-foundation/x402`, then **PR 1**: `scheme_exact_ycash.md`
       (after X1). Then `scheme_batch_settlement_ycash.md` (after X3).
 - [ ] **PR 2:** `typescript/packages/mechanisms/ycash` with unit, integration and e2e tests
       (`config/mechanisms_ycash.json`, client, server and facilitator registration), the
@@ -947,7 +947,11 @@ X3; X4a can start after the node adapter.
 | X5 | **Python SDK at parity**; **lightwalletd adapter** for light agents | ✓ (interop 8/8; light 5/5 per line) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
-### Regression of record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
+### Regression of record
+
+The current record is `x402-ycash` `docs/regression.md` at `3940e56` (2026-10-04): 84 devnet tests per line plus the Python devnet suite, green on ycash-dd 4.5.0 and ycash6 6.21.0-rc1, and the upstream staging passing all ten of upstream's checks (lint 0 errors, 608 tests, 94.2 % line coverage, integration 57/58 per line against live devnets). The earlier record follows.
+
+#### Earlier record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
 
 | Suite | ycash-dd (v4.5.0) | ycash6 (6.21.0) |
 |---|---|---|
@@ -1050,3 +1054,5 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F80 | 6.21.0 refuses a `z_sendmany` fee above 4× its ZIP-317 conventional fee; v4.5.0 has no cap | Clients setting a shielded fee on v6 stay under it |
 | X-F81 | A 6.21.0 node behind `-connect` to a single peer once stalled mid catch-up for > 2 min (not reproduced) | Rehearsal nodes connect to two peers |
 | X-F82 | Offline issuance rehearsed on both lines: the TS port (FF1-AES-256 + Jubjub via `@noble/curves`) reproduces the node wallets' and the Rust tool's addresses, including skipped invalid diversifiers (`vectors/shielded/divaddr.json`); merchant needs no node, settlement node holds only the viewing key, spending key offline yet able to spend | X4-M merchant defaults now implemented and rehearsed (`add0578`, `docs/mainnet-runbook.md` §4) |
+| X-F83 | Order-dependent devnet flake: after many stock-node blocks the overlay halts minting for low participation (`mintpol-participation … (ACT-4)`, `ycash-dd/src/yellowback/txbuilder.cpp:812`); helpers retried only on `mintpol-no-price` | Harness defect fixed in all four mint helpers (TS and Python) — mine 8 pool blocks; not a mechanism or node defect |
+| X-F84 | Upstream's lockfile carries `@noble/curves` 1.x; ours needs 2.x; `@grpc/*` is new upstream | Owner decision 9 in `PUBLISHING.md`: ship as is, or leave `src/lwd` out of PR 2 |
