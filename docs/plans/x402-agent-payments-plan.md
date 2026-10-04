@@ -939,12 +939,27 @@ X3; X4a can start after the node adapter.
 | Phase | State | Both lines green | Notes |
 |---|---|---|---|
 | X0 | **done** | — | workspace wiring `ad8cab8`; scaffold `eaa5fb6`; spec drafts `1c27b7c`; the acceptance's `make status` lists the repo clean |
-| X1 | **green on both lines, end to end** | ✓ | mechanisms `72633c2`; HTTP end-to-end over real processes (agent → merchant → facilitator service) `6a48e1c`: 6/6 per line incl. OP-1, OP-3 (yolo), OP-4, OP-6; `x402-ycash` CLI. Open: the regression run (wave 4, `harden`) |
+| X1 | **green on both lines, end to end** | ✓ | mechanisms `72633c2`; HTTP end-to-end over real processes (agent → merchant → facilitator service) `6a48e1c`: 6/6 per line incl. OP-1, OP-3 (yolo), OP-4, OP-6; `x402-ycash` CLI. Regression of every suite on both lines green at `e8ae7c0` (table below) |
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). Open: YED routes in the merchant/agent/CLI |
 | X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
 | X5 | not started | — | after X1 (PR 1) and X3 |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
+
+### Regression of record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
+
+| Suite | ycash-dd (v4.5.0) | ycash6 (6.21.0) |
+|---|---|---|
+| node | 8/8 | 8/8 |
+| assumptions (R-2, R-3, R-5, R-6, RBF, branch id, Z-3) | 7/7 | 7/7 |
+| exact_yec (incl. OP-1, OP-3 yolo, OP-6 stock facilitator) | 16/16 | 16/16 |
+| channel_yec (incl. merchant restart) | 7/7 | 7/7 |
+| shielded (X4a) | 6/6 | 6/6 |
+| yed (X3, incl. OP-2 strict pools, supply invariant) | 9/9 | 9/9 |
+| x4m | 2/2 | 2/2 |
+| HTTP end to end (agent → merchant → facilitator) | 6/6 | 6/6 |
+
+Unit tests at the same commit: 619 across five workspaces; lint and typecheck clean.
 
 ### Findings
 
@@ -1001,3 +1016,6 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F47 | lightwalletd-dd 0.4.6 serves a 6.21.0 node for GetLightdInfo/GetBlockRange/GetTreeState; public `lite.ycash.xyz` runs the workspace pin `187a267` | A light agent path is available against either line (SendTransaction/GetMempoolTx not yet tested) |
 | X-F48 | The explorer's `commitments` field is the Sprout tree size (`ycash-dd/src/rpc/blockchain.cpp:1148-1150`); its `/blocks` cannot page past the latest 10 | Mainnet Sapling counts taken from tree states instead |
 | X-F49 | Diversified-address walks differ: v4.5.0 walks up from index 1 skipping wallet addresses (`rpcdump.cpp:877-905`), 6.21.0 from the base address's index | An offline issuer uses a disjoint index range (from 2^40) |
+| X-F50 | The client caps the deposit D but not the server-chosen `closeFee`, which is also locked in V and paid to miners at close; a hostile server could inflate it | Add a client `maxCloseFee` (open) |
+| X-F51 | `FileChannelStore` never removes a closed channel's records, so `list()`/`resume()` slow over a merchant's lifetime | Prune closed channels (open) |
+| X-F52 | A channel funding has no expiry height, so its coin reservation is time-based (30 min); a server that never relays the funding ties up the agent's coins that long | Give funding txs an expiry height and release by height (open) |
