@@ -892,7 +892,7 @@ X3; X4a can start after the node adapter.
       (`python/x402/interfaces.py` protocols, `register` in `client_base.py`, `server_base.py`,
       `facilitator_base.py`). Facilitator and server first, which is what backends run. It must
       reproduce every `vectors/*.json` result, and the workspace `.venv` is used for development.
-- [ ] lightwalletd adapter for light agent wallets (UTXOs, broadcast, token lookup via
+- [x] lightwalletd adapter for light agent wallets (`x402-ycash` merge of `x402/lwd`: agents pay with only a WIF key and a lightwalletd URL — YEC/YED exact, channels, refunds via `SendTransaction`; devnet 5/5 on both lines). Original item: (UTXOs, broadcast, token lookup via
       `GetAddressTokens`; C-1).
 - [ ] x402-gated services around the node, each a small addendum to its own plan: a paid
       chain-viz API, paid lightwalletd tiers, a paid `yed_*` MCP server for keeper and vault
@@ -943,7 +943,7 @@ X3; X4a can start after the node adapter.
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). YED routes in merchant/agent/CLI merged `3db1468` (YED HTTP suite 12/12 per line) |
 | X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
-| X5 | **Python SDK at parity** (facilitator and server, every binding) | ✓ (interop 8/8 per line) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
+| X5 | **Python SDK at parity**; **lightwalletd adapter** for light agents | ✓ (interop 8/8; light 5/5 per line) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
 ### Regression of record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
@@ -1034,4 +1034,9 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F65 | libsecp256k1 refuses high-S signatures while noble (`lowS: false`) accepts them | Verifiers normalise s and accept; signers MUST emit low-S; pinned in `vectors/shielded`; spec sentence (wave 5) |
 | X-F66 | The resource server reads the facilitator's kinds once at initialize, so turning YED on later needs a reload of that cached view, not only a re-probe | Merchant `YedGate` + `SupportedCache.reload` (`73cf5a1`) |
 | X-F67 | The batch spec's example `payTo` failed its base58check checksum | Replaced with a valid mainnet address (`46106c9`) |
-| X-F68 | The Python batch server accepted but ignored `returnAddress` and the funding-expiry rule | Ported in wave 6 (`pyreturn`) |
+| X-F68 | The Python batch server accepted but ignored `returnAddress` and the funding-expiry rule | **Done** (`14281ff`): 331 Python tests, devnet 8/8 on both lines |
+| X-F69 | lightwalletd `SendTransaction` works on both lines (2–3 ms; success is the JSON-quoted txid in `errorMessage`; mempool re-send returns the txid; refusals carry the node's code and message) | `LwdChain` maps refusals to `SendRawTransactionError` |
+| X-F70 | **`GetMempoolTx` never streams transparent txs** (`lightwalletd-dd/frontend/service.go:470-489`), and `GetAddressUtxos`/`GetAddressTokens` list confirmed outputs, still listing a coin whose spend is in the mempool | The light path has no mempool-spend guard; it relies on the reservation store; a foreign spend of the same key surfaces as a broadcast refusal |
+| X-F71 | `GetLightdInfo` reports `consensus.chaintip`, not `nextblock` (`lightwalletd-dd/common/common.go:212`), so on the block before an upgrade a light client signs under the old branch id | Recorded; an N-ask for lightwalletd-dd (a `nextblock` field) |
+| X-F72 | `YellowbackStreamer` is rate-limited to a burst of 20 per peer IP, refilled 1/s (`frontend/yellowback_ratelimit.go`) | Fast light agents may see `RESOURCE_EXHAUSTED`; not hit in tests |
+| X-F73 | `GetAddressUtxos` carries no coinbase flag | Agent keys must never receive coinbase (documented) |
