@@ -877,9 +877,25 @@ X3; X4a can start after the node adapter.
 - [ ] **X4a acceptance:** green on both lines, plus OP-1 and OP-4; tiers P0 and P1 both
       exercised.
 - [x] **X4-M verdict (`x402-ycash` `docs/x4m-measurements.md`, Verdict):** P1 is practical **now for agents with a full-node wallet** (restart to a payment the merchant sees: 2.8 s on v4.5.0, 6.9 s on 6.21.0; mainnet sync a few hours); stateless agents use **P0** for now; P1 through a light wallet is cheap in bandwidth and CPU (122 B per output, ~121 KB a day on mainnet; 66.6 µs per output trial decryption on one core) but **no Ycash Sapling light client for agents exists yet**. Merchant defaults: one dedicated Sapling key; addresses issued **offline from the viewing key** (index range from 2^40, disjoint from both lines' wallet walks); a settlement node holding only the viewing key; self-hosted facilitator; JWS receipts for disclosure.
-- [ ] **X4b go/no-go (owner):** recommendation **no-go for now**. X4b does not remove the agent sync blocker; build it together with the agent light client (N-A), which needs the same Sapling builder and prover. N-asks from X4-M: N-A agent light client from `librustzcash6` (the main one); N-B `chainMetadata`/`GetSubtreeRoots` in lightwalletd-dd; N-C a node RPC to issue addresses from a viewing key or an incoming-viewing-key import; N-D Sapling payment disclosure (ZIP-311); plus N-3 and a published bootstrap snapshot (operational). the Rust builder from `librustzcash6` (WASM or N-API),
+- [x] **X4b go/no-go (owner): GO, 2026-10-04** — the owner directed "ship shielded Sapling x402" and build the agent light client now (N-A). Phase X4b below. The earlier recommendation was: **no-go for now**. X4b does not remove the agent sync blocker; build it together with the agent light client (N-A), which needs the same Sapling builder and prover. N-asks from X4-M: N-A agent light client from `librustzcash6` (the main one); N-B `chainMetadata`/`GetSubtreeRoots` in lightwalletd-dd; N-C a node RPC to issue addresses from a viewing key or an incoming-viewing-key import; N-D Sapling payment disclosure (ZIP-311); plus N-3 and a published bootstrap snapshot (operational). the Rust builder from `librustzcash6` (WASM or N-API),
       facilitator trial decryption, the nullifier-gap declaration. On a go, X4b gets its own
       chunk list in revision 2.
+
+### X4b — the agent light client and the facilitator-submitted `sapling` method (owner go 2026-10-04)
+
+Execution: chunks `lightcore` (Rust light client), `lwdnext` (lightwalletd-dd), `x4bspec` (spec + TS
+primitives), `zwallet` (research), `saplingwire` (service, merchant, agent, Python, vectors), then the
+end-to-end proof. The light client also becomes the engine of the YEW shielded plan
+(`yew-shielded-plan.md`, S1 library split).
+
+- [x] **lightwalletd-dd `GetChainInfo`** (next-block branch id, X-F71) on `YellowbackStreamer`; `GetTreeState` at arbitrary heights and `GetMempoolTx` Sapling-only pinned on both lines; no `GetSubtreeRoots` on Ycash (`z_getsubtreesbyindex` absent on 4.5.0). lightwalletd-dd `0b3448e`, pushed 2026-10-04. Mapping §20.1.
+- [x] **zwallet (YWallet) sync-core study**: stay on librustzcash6, adopt download/scan overlap, birthday `GetTreeState` bootstrap, checkpoint reorg (`x402-ycash/docs/zwallet-comparison.md`, 2026-10-04).
+- [x] **`sapling` method specified** (`specs/scheme_exact_ycash.md`: 11 verify rules, nullifier gap N-3 declared, ZIP-212 0x02 required, payTo exact match) and **pure-TS Sapling trial decryption + note commitment** proven against the Zcash test vectors; `SaplingExactFacilitator`, `ShieldedMethodRouter` (`x402-ycash` `272de75`, 2026-10-04).
+- [ ] **Rust light client `x402-light`** (`x402-ycash/light`): compact-block sync from lightwalletd-dd, `zcash_client_sqlite` store, build+prove+sign without broadcast, JSON-RPC on loopback; devnet proof on both lines (chunk `lightcore`, in flight).
+- [ ] `sapling` wired into the facilitator service (opt-in; refused on mainnet without an explicit flag), merchant route, agent/CLI builder contract, Python parity; Sapling devnet vectors on both lines; facilitator-side end to end on node-wallet-built transactions (chunk `saplingwire`, in flight).
+- [ ] Library split `light/core` (shared with YEW, S1).
+- [ ] End to end on both lines: an agent with only a spending key and a lightwalletd URL pays a `sapling` requirement (authorization flow) and a `sapling-proof` requirement from the light client; receipts verify.
+- [ ] Regression of record updated; upstream staging refreshed with the `sapling` method; mainnet runbook: `sapling` stays opt-in until the proof is on mainnet.
 
 ### X5 — upstream and ecosystem
 
@@ -943,7 +959,7 @@ X3; X4a can start after the node adapter.
 | X1 | **green on both lines, end to end** | ✓ | mechanisms `72633c2`; HTTP end-to-end over real processes (agent → merchant → facilitator service) `6a48e1c`: 6/6 per line incl. OP-1, OP-3 (yolo), OP-4, OP-6; `x402-ycash` CLI. Regression of every suite on both lines green at `e8ae7c0` (table below) |
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). YED routes in merchant/agent/CLI merged `3db1468` (YED HTTP suite 12/12 per line) |
-| X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
+| X4 | X4a **green on both lines**; X4-M done; **X4b GO (2026-10-04): spec + TS primitives + lightwalletd `GetChainInfo` merged; Rust light client and service wiring in flight** | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
 | X5 | **Python SDK at parity**; **lightwalletd adapter** for light agents | ✓ (interop 8/8; light 5/5 per line) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 

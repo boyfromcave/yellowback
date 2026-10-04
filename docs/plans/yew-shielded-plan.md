@@ -75,6 +75,16 @@ YED is transparent-only (V8) and mint/redeem need transparent YEC collateral and
 
 ## 6. Plan
 
+### Status (checklists are the status of record; tick with a date)
+
+- [x] S0 decisions taken (2026-10-04, S0-1..S0-6).
+- [ ] S1 library split of `x402-ycash/light` into `light/core` (starts when chunk `lightcore` lands).
+- [ ] S2 YEW core integration — groundwork in flight (chunk `yewkeys`, 2026-10-04): rusqlite 0.37, Ycash ZIP-32 key derivation at `m/32'/347'/0'` (YWallet-compatible), trust doc; the light-core dependency, sync and send follow S1.
+- [ ] S3 YEW app: send/receive/memo.
+- [ ] S4 shield/unshield.
+- [ ] S5 hardening (both node lines, devices).
+
+
 | Phase | Where | Size | Content |
 |---|---|---|---|
 | S0 Decisions | owner | â | reverse D-W-2/D-W-7 (shielded in scope; ZIP-32 account 0); params hosting; rusqlite 0.37 downgrade; `lite.ycash.xyz` upgrade |
