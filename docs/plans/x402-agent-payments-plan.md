@@ -888,7 +888,7 @@ X3; X4a can start after the node adapter.
 - [ ] **PR 2:** `typescript/packages/mechanisms/ycash` with unit, integration and e2e tests
       (`config/mechanisms_ycash.json`, client, server and facilitator registration), the
       `all_networks` example entries, signed commits and changesets (CONTRIBUTING.md:151-270).
-- [ ] **Python backend SDK (X-2):** `python/x402/mechanisms/ycash` in the upstream layout
+- [x] **Python backend SDK (X-2), first cut (`x402-ycash` `d6d6643`):** `python/x402_ycash` (tx, yed, node, store incl. SQLite, `exact` facilitator/server/client, channel builders), 233 tests, every vector reproduced, TS ↔ Python interop green on both lines; not yet ported: YED exact, `sapling-proof`, batch server/facilitator. Original item: `python/x402/mechanisms/ycash` in the upstream layout
       (`python/x402/interfaces.py` protocols, `register` in `client_base.py`, `server_base.py`,
       `facilitator_base.py`). Facilitator and server first, which is what backends run. It must
       reproduce every `vectors/*.json` result, and the workspace `.venv` is used for development.
@@ -943,7 +943,7 @@ X3; X4a can start after the node adapter.
 | X2 | mechanisms **green on both lines** | ✓ (mechanism level) | `84ded9a`: 1,000 requests in one close (2 txs, 2,500 zat fees vs ~1,000,000 for per-request), dynamic pricing, refusals, margin close, refund after t, 0-conf and depth-1 funding, closes mined by stock node 1. Open: client CLI (wave 3) |
 | X3 | **green on both lines** | ✓ | `x402-ycash` `6529969`: YED exact at $1/$25 (strict pools), $0.50 refused at server and facilitator, a $20 channel of 201 one-cent requests under the dollar floor closed by a strict pool, refund with payload, Yellowback supply unchanged in every non-burning case; a hand-built burning voucher refused by verify, skipped by strict templates, mined only by stock node 1 (supply −200 cents exactly). Open: YED routes in the merchant/agent/CLI |
 | X4 | X4a **green on both lines**; **X4-M done, verdict written** (X4b: recommend no-go for now) | ✓ (X4a) | `x402-ycash` merge of `x402/shielded` + `a03fb9b`: P1 at −1 and 1, P0, under/over-payment, wrong memo, replay, multi-request tx, JWS receipts; merchant scan cost negligible, no on-chain Sapling disclosure on either line (`docs/x4m-measurements.md`). X4-M: `x402-ycash` merge of `x402/x4m` |
-| X5 | not started | — | after X1 (PR 1) and X3 |
+| X5 | Python SDK first cut merged | ✓ (interop) | upstream PRs wait for the owner (outward-facing); lightwalletd adapter and x402-gated services open |
 | X6 | not started | — | owner-run; YED after height 3,075,000 |
 
 ### Regression of record (`x402-ycash` `e8ae7c0`, 2026-10-03, one devnet at a time)
@@ -1019,3 +1019,8 @@ Numbered in order of appearance; node and devnet facts are mirrored in `docs/map
 | X-F50 | The client caps the deposit D but not the server-chosen `closeFee`, which is also locked in V and paid to miners at close; a hostile server could inflate it | Add a client `maxCloseFee` (open) |
 | X-F51 | `FileChannelStore` never removes a closed channel's records, so `list()`/`resume()` slow over a merchant's lifetime | Prune closed channels (open) |
 | X-F52 | A channel funding has no expiry height, so its coin reservation is time-based (30 min); a server that never relays the funding ties up the agent's coins that long | Give funding txs an expiry height and release by height (open) |
+| X-F53 | Upstream's Python scheme protocols are **synchronous** (`x402Facilitator.verify` calls `scheme.verify` without awaiting; server `parse_price`/`enhance_payment_requirements` sync) | The Python mechanism's logic is async and runs behind the sync protocol on a private event-loop thread; upstream maintainers may prefer a sync client (TVM does) |
+| X-F54 | PyPI `x402` is at 2.25.0 (the Python SDK in upstream `751590a`); TS `@x402/core` at 2.28.0; versioned separately | Python pins `x402>=2.25.0,<3` |
+| X-F55 | JSON equality and integer typing were undefined in the spec: Python's `False == 0`, `1 == 1.0`; JS parses `1.0` as 1 | Spec now says values compare as JSON values with types, integers without fraction or exponent |
+| X-F56 | Python's `hashlib` offers RIPEMD-160 only with OpenSSL's legacy provider | The Python port carries a checked fallback |
+| X-F57 | `yellowback-devnet down` prints "5 node process(es) did not stop over RPC and were terminated" on both lines, every time (seen by every chunk) | Devnet-CLI quirk in the node repos' `contrib/` (likely the RPC `stop` with the emoji credentials); not an x402 issue, nodes do stop; recorded for the devnet's owner |
