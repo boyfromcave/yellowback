@@ -20,28 +20,6 @@ cd "$ROOT"
 # run directly, read the manifest rather than repeat its values here — a stale copy in this
 # file is how `make status` came to report a branch expectation nothing else believed.
 manifest() { "$ROOT/scripts/repos.sh" get "$1" "$2" 2>/dev/null; }
-DIGIBYTE_PIN="${DIGIBYTE_PIN:-$(manifest ref/digibyte tag)}"
-YCASH_PIN="${YCASH_PIN:-$(manifest ref/ycash tag)}"
-YECWALLET_PIN="${YECWALLET_PIN:-$(manifest ref/yecwallet tag)}"
-LWD_PIN="${LWD_PIN:-$(manifest ref/lightwalletd commit)}"      # no upstream tag: pinned by commit
-DD_BRANCH="${DD_BRANCH:-$(manifest ycash-dd branch)}"
-WALLET_BRANCH="${WALLET_BRANCH:-$(manifest yecwallet-dd branch)}"
-DD_BASE="${DD_BASE:-$(manifest ycash-dd base)}"
-WALLET_BASE="${WALLET_BASE:-$(manifest yecwallet-dd base)}"
-LWD_BRANCH="${LWD_BRANCH:-$(manifest lightwalletd-dd branch)}"
-LWD_BASE="${LWD_BASE:-$(manifest lightwalletd-dd base)}"
-YCASH6_PIN="${YCASH6_PIN:-$(manifest ref/ycash6 commit)}"        # ycashd 6.20.0 line: branch heads, no tags
-LRZ6_PIN="${LRZ6_PIN:-$(manifest ref/librustzcash6 commit)}"
-YCASH6_BRANCH="${YCASH6_BRANCH:-$(manifest ycash6 branch)}"
-YCASH6_BASE="${YCASH6_BASE:-$(manifest ycash6 base)}"
-LRZ6_BRANCH="${LRZ6_BRANCH:-$(manifest librustzcash6 branch)}"
-LRZ6_BASE="${LRZ6_BASE:-$(manifest librustzcash6 base)}"
-YEW_BRANCH="${YEW_BRANCH:-$(manifest yew branch)}"
-YOLO_PIN="${YOLO_PIN:-$(manifest ref/yolo commit)}"          # no upstream tag: pinned by commit
-YOLO_BRANCH="${YOLO_BRANCH:-$(manifest yolo branch)}"
-CHAINVIZ_BRANCH="${CHAINVIZ_BRANCH:-$(manifest chain-viz branch)}"
-X402_BRANCH="${X402_BRANCH:-$(manifest x402-ycash branch)}"
-YBCAL_BRANCH="${YBCAL_BRANCH:-$(manifest yb-calibration branch)}"
 
 SHORT=0; FETCH=1
 [ -n "${NOFETCH:-}" ] && FETCH=0
@@ -72,7 +50,7 @@ field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 # The pin is a tag, or — for a reference whose upstream publishes no tags — a commit prefix.
 # An app repo (repos.yaml role `app`) passes `-` as the base: branch check only, no fork delta.
 repo_status() {
-  local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:-$DD_BASE}"
+  local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:--}"
 
   if [ ! -e "$path/.git" ]; then
     printf "\n${B}▸ %s${R}  ${D}%s${R}\n" "$label" "$path"
@@ -197,24 +175,18 @@ repo_status() {
 printf "${B}%s${R} ${D}— repo status${R}\n" "$(basename "$ROOT")"
 printf "${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 
-repo_status "workspace"    "."            "-"                "-"
-repo_status "ref/digibyte" "ref/digibyte" "$DIGIBYTE_PIN"    "-"
-repo_status "ref/ycash"    "ref/ycash"    "$YCASH_PIN"       "-"
-repo_status "ref/yecwallet" "ref/yecwallet" "$YECWALLET_PIN" "-"
-repo_status "ref/lightwalletd" "ref/lightwalletd" "$LWD_PIN" "-"
-repo_status "ycash-dd"     "ycash-dd"     "-"                "$DD_BRANCH"    "$DD_BASE"
-repo_status "yecwallet-dd" "yecwallet-dd" "-"                "$WALLET_BRANCH" "$WALLET_BASE"
-repo_status "lightwalletd-dd" "lightwalletd-dd" "-"          "$LWD_BRANCH"   "$LWD_BASE"
-repo_status "ref/ycash6"   "ref/ycash6"   "$YCASH6_PIN"      "-"
-repo_status "ref/librustzcash6" "ref/librustzcash6" "$LRZ6_PIN" "-"
-repo_status "ycash6"       "ycash6"       "-"                "$YCASH6_BRANCH" "$YCASH6_BASE"
-repo_status "librustzcash6" "librustzcash6" "-"              "$LRZ6_BRANCH"  "$LRZ6_BASE"
-repo_status "yew"          "yew"          "-"                "$YEW_BRANCH"   "-"
-repo_status "ref/yolo"     "ref/yolo"     "$YOLO_PIN"        "-"
-repo_status "yolo"         "yolo"         "-"                "$YOLO_BRANCH"  "-"
-repo_status "chain-viz"    "chain-viz"    "-"                "$CHAINVIZ_BRANCH" "-"
-repo_status "x402-ycash"   "x402-ycash"   "-"                "$X402_BRANCH"  "-"
-repo_status "yb-calibration" "yb-calibration" "-"            "$YBCAL_BRANCH" "-"
+repo_status "workspace" "." "-" "-"
+# Every repository in manifest order; what is checked follows its role (repos.yaml header): a
+# reference against its tag (or its commit when upstream publishes no tags), a fork against its
+# branch and -legacy baseline, an app repo against its branch.
+for r in $("$ROOT/scripts/repos.sh" list); do
+  case "$(manifest "$r" role)" in
+    reference) pin=$(manifest "$r" tag); [ -n "$pin" ] || pin=$(manifest "$r" commit)
+               repo_status "$r" "$r" "$pin" "-" ;;
+    fork)      repo_status "$r" "$r" "-" "$(manifest "$r" branch)" "$(manifest "$r" base)" ;;
+    *)         repo_status "$r" "$r" "-" "$(manifest "$r" branch)" "-" ;;
+  esac
+done
 
 printf "\n${D}%s${R}\n" "$(printf '─%.0s' $(seq 1 64))"
 print_actions() {
