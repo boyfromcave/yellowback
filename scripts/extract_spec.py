@@ -9,13 +9,17 @@ READS
                                                      appended to the spec and its 4.5 heading supplies rpcversion
   ycash-dd/doc/yellowback-rpc.md                     optional: the fork's RPC contract document (Phase 3+); from
                                                      Phase A0 its "Error identifiers" tables are the error table
+  ycash6/doc/yellowback-rpc.md                       the same for the 6.20.0 node line (its contract is built from it)
 
 WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or stale)
   docs/spec/yellowback-spec.md                       the spec: header + body (below)
   ycash-dd/doc/yellowback-spec.md                    byte-identical copy the fork's CI can see (P4)
+  ycash6/doc/yellowback-spec.md                      byte-identical copy for the 6.20.0 node line
   ycash-dd/doc/yellowback-rpc-contract.json          the RPC contract (P7)
   yecwallet-dd/docs/yellowback-rpc-contract.json     byte-identical copy for the wallet fork
   lightwalletd-dd/testdata/yellowback/contract.json  byte-identical copy for the light-client server (its offline suite's fixture)
+  ycash6/doc/yellowback-rpc-contract.json            the 6.20.0 line's contract, from ycash6/doc/yellowback-rpc.md (its
+                                                     6.20.0 notes differ in places; everything else matches ycash-dd's)
 
 THE SPEC FILE
   line 1      `Source: yellowback-v2-development-plan.md revision N; sha256: <64 hex>`
@@ -76,7 +80,8 @@ THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in 
   the `wallet` CI job from Phase 7b; the node's registered `yed_*` names must all be keys (`audit`).
 
 WORKTREES
-  EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_WALLET_DIR override `ycash-dd` / `yecwallet-dd` (absolute paths), so
+  EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR override `ycash-dd` /
+  `ycash6` / `yecwallet-dd` / `lightwalletd-dd` (absolute paths), so
   an agent working in wt/<name> can write and check the copies of its own worktree.  Unset = the main trees.
 """
 import hashlib
@@ -91,17 +96,24 @@ PLAN_V3 = os.path.join(ROOT, "docs", "plans", "yellowback-v3-development-plan.md
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
 LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
+# The 6.20.0 node line carries the same overlay; its copies are generated too, so the two lines
+# cannot drift apart (they did before 2026-10-04: a stale revisionV3 and hand-edited MINTPOL texts).
+NODE6_DIR = os.environ.get("EXTRACT_SPEC_NODE6_DIR") or os.path.join(ROOT, "ycash6")
 RPCDOC = os.path.join(NODE_DIR, "doc", "yellowback-rpc.md")
+RPCDOC6 = os.path.join(NODE6_DIR, "doc", "yellowback-rpc.md")
 
 SPEC_OUT = [
     os.path.join(ROOT, "docs", "spec", "yellowback-spec.md"),
     os.path.join(NODE_DIR, "doc", "yellowback-spec.md"),
+    os.path.join(NODE6_DIR, "doc", "yellowback-spec.md"),
 ]
 JSON_OUT = [
     os.path.join(NODE_DIR, "doc", "yellowback-rpc-contract.json"),
     os.path.join(WALLET_DIR, "docs", "yellowback-rpc-contract.json"),
     os.path.join(LWD_DIR, "testdata", "yellowback", "contract.json"),
 ]
+# ycash6's contract is generated from ycash6's own RPC document (its prose differs in places).
+JSON6_OUT = os.path.join(NODE6_DIR, "doc", "yellowback-rpc-contract.json")
 
 
 def die(msg):
@@ -336,7 +348,12 @@ def errors_from_table(lines, stop_at_first_table=True):
         if len(cells) < 3 or cells[0].startswith("Identifier") or set(cells[0]) <= set("-: "):
             continue
         ids = re.findall(r"`([^`]+)`", cells[0])
-        raised = re.findall(r"`(yed_[a-z]+)`", cells[1]) or [cells[1]]
+        # The yed_* names when the cell is only names, separators and (parenthetical notes); otherwise the
+        # cell itself, so a mixed cell ("every signing command; on 6.20.0 also `yed_getnewaddress`")
+        # keeps its meaning.
+        names = re.findall(r"`(yed_[a-z]+)`", cells[1])
+        rest = re.sub(r"`yed_[a-z]+`|\([^)]*\)|[,/]|\band\b|\bor\b", "", cells[1]).strip()
+        raised = names if names and not rest else [cells[1]]
         when = cells[2].replace("`", "")
         for ident in ids:
             errors[ident] = {"raisedBy": raised, "when": when}
@@ -362,9 +379,10 @@ def errors_from_rpcdoc(path):
 
 
 RPCDOC_REL = "ycash-dd/doc/yellowback-rpc.md"   # the recorded path is the canonical one, whatever tree was read
+RPCDOC6_REL = "ycash6/doc/yellowback-rpc.md"
 
 
-def commands_from_rpcdoc(path):
+def commands_from_rpcdoc(path, rel=RPCDOC_REL):
     """Fenced ```json blocks whose nearest preceding non-blank line names a `yed_*` command,
     and the heading `### `yed_<name> <args>`` of each command (args = the text after the name)."""
     out = {}
@@ -394,24 +412,24 @@ def commands_from_rpcdoc(path):
                     die("%s: bad JSON in the block for %s: %s" % (path, m.group(1), e))
             i = k
         i += 1
-    return RPCDOC_REL, out, args
+    return rel, out, args
 
 
-def contract_text(lines, lines_v3=None):
+def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_REL):
     ver, sec = rpc_section(lines)
     cmds = commands_from_plan(sec)
     rev_v3 = None
     if lines_v3 is not None:
         ver, _ = rpc_section(lines_v3)  # the v3 heading states the current rpcversion (W14)
         rev_v3 = revision(lines_v3)
-    rpcdoc, overrides, doc_args = commands_from_rpcdoc(RPCDOC)
+    rpcdoc, overrides, doc_args = commands_from_rpcdoc(rpcdoc_path, rpcdoc_rel)
     for name, shape in overrides.items():
         cmds.setdefault(name, {"args": "", "returns": {}})["returns"] = shape
     for name, a in doc_args.items():
         if name in cmds:
             cmds[name]["args"] = a
     errors = errors_from_plan(sec)
-    errors.update(errors_from_rpcdoc(RPCDOC))
+    errors.update(errors_from_rpcdoc(rpcdoc_path))
     doc = {
         "rpcversion": ver,
         "source": {"plan": os.path.relpath(PLAN, ROOT), "revision": revision(lines), "section": "4.5", "rpcdoc": rpcdoc,
@@ -431,6 +449,7 @@ def main(argv):
     lines = read_plan()
     lines_v3 = read_plan_v3()
     outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
+    outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
     if workspace_only:
         # The workspace CI has no nested clones: compare only the copies that live in this repo.
@@ -460,8 +479,9 @@ def main(argv):
         if workspace_only:
             print("spec-check: docs/spec copy matches the plan (%s); the fork copies were not checked" % rev)
         else:
-            print("spec-check: docs/spec, %s/doc, %s/docs and %s/testdata copies match the plan (%s)" % (
-                os.path.relpath(NODE_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT), os.path.relpath(LWD_DIR, ROOT), rev))
+            print("spec-check: docs/spec, %s/doc, %s/doc, %s/docs and %s/testdata copies match the plan (%s)" % (
+                os.path.relpath(NODE_DIR, ROOT), os.path.relpath(NODE6_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT),
+                os.path.relpath(LWD_DIR, ROOT), rev))
     return 0
 
 
