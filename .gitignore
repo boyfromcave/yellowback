@@ -4,8 +4,13 @@
 /ycash-dd/
 /yecwallet-dd/
 /lightwalletd-dd/
+/ycash6/
+/librustzcash6/
 /yew/
 /yolo/
+/chain-viz/
+/x402-ycash/
+/yb-calibration/
 
 # macOS
 .DS_Store
@@ -16,6 +21,13 @@
 
 # Python virtual environment for the workspace (never install into the system Python).
 /.venv/
+
+# Python bytecode.
+__pycache__/
+*.pyc
+
+# Per-user VS Code settings (the shared workspace file is yellowback.code-workspace).
+/.vscode/
 
 # git worktrees of the forks, used by parallel agent sessions (created with `git -C ycash-dd worktree add ../wt/<name>`).
 /wt/

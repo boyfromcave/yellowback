@@ -1,17 +1,36 @@
 # Ycash Yellowback (YED) v3 — Development Plan: bond-weighted price attestation
 
-**Execution status (2026-09-14, coordinator).** Implementation began 2026-09-13 with parallel
-subagents, one per non-overlapping chunk, each in its own `wt/<name>` worktree off
-`feature/yellowback-price-attest` (the v2 pattern; the shared briefing is the orchestrator's
-`BRIEFING.md`). This table is the authoritative state; the checkboxes in §6 are flipped only
-when the coordinator has merged the chunk and seen its tests run.
+**Execution status (2026-10-04, coordinator).** Revisions 2–4 (W16–W21) are implemented on both
+node lines and in the wallet: W16 and W17 in September; W18/W19 (ycash-dd `f9b9311af`, ycash6
+`29f5b1cd9`), W20 (ycash-dd `0b76794ca`, ycash6 `deff6f539`, `a8291a0c7`) and W21 (ycash-dd
+`d94f5c79a`, ycash6 `4a824dabb`) on 2026-10-02/03, the wallet side in yecwallet-dd `38dd336` and
+`b02a351`. The ecosystem security audit of 2026-10-01
+(`docs/audits/yellowback-security-audit-20261001.md`) is remediated on both node lines; its two
+owner-approved hook changes (A-1, A-7) touched `main.cpp` and `rpc/mining.cpp`, and the tag
+`yellowback-v3-baseline` was re-tagged at `ff7f45947` on 2026-10-02 (see the budget table below).
+The overlay is ported to ycashd 6.20.0 (`ycash6`, `docs/plans/yellowback-ycash6-plan.md`), which is
+the release line: version 6.21.0-rc1 is set in its `configure.ac` (`0eff7c32e`) but **not tagged
+and not released**. The first mainnet parameter set — `START_HEIGHT` 3,075,000,
+`ENFORCE_UNTIL_HEIGHT` 3,495,480 — is on both lines (ycash6 `5f6714229`, ycash-dd `cdfc4945f`);
+testnet stays unset (unreachable on 2026-10-02: no fixed seeds, DNS seeders down). Landed
+2026-10-03/04 on both lines: the unused `YellowbackWallet::Bonds()`/`HotKeys()` removed (ycash6
+`fac88359c`, ycash-dd `9a3546293`), a wallet-layer unit suite (ycash6 `e6c49d743`, ycash-dd
+`d8242ff6a`), a fuzz-harness fix for repeated txids (ycash6 `a862a8a06`, ycash-dd `f78a5f8bb`),
+and weekly-fuzz corpus retention with fail-on-crash (ycash6 `fab0a5d9c`, ycash-dd `00ac17d91`).
+What remains is A6's measurement and review half and A7–A8 (table below).
+
+**Execution status (2026-09-14, coordinator; historical, A6 row updated 2026-10-04).**
+Implementation began 2026-09-13 with parallel subagents, one per non-overlapping chunk, each in
+its own git worktree off `feature/yellowback-price-attest` (the v2 pattern; the agents shared a
+briefing kept locally, not in the repo). This table is the authoritative state; the checkboxes
+in §6 are flipped only when the coordinator has merged the chunk and seen its tests run.
 
 **Where it stands: A0–A5 are implemented and merged in both forks.** On the node's
 `feature/yellowback-price-attest`: 224 unit cases green, the corpus check green, and
 `yellowback_rpc_contract`, `yellowback_attest`, `yellowback_attest_wallet`,
 `yellowback_attest_enforcement`, `yellowback_index`, `yellowback_stock_node`,
 `yellowback_wallet_restore` and the four v2 flow scripts in **both** unarmed and `--armed` modes
-all pass. Frozen files are at **zero** delta against `feature/yellowback-sf`, and `main.cpp` (11),
+all pass. Frozen files are at **zero** delta against the tag `yellowback-v3-baseline`, and `main.cpp` (11),
 `miner.cpp` (12) and `rpc/mining.cpp` (7) are unchanged from v2 against `ycash-legacy`; `init.cpp`
 gained 14 lines. On the wallet's: 83 QTest cases green offline, contract check green.
 **A4 is complete as of 2026-09-20, and the role-based regtest tooling
@@ -23,6 +42,13 @@ that economy found and fixed one wallet-tier defect the A0–A5 suites had never
 §6.2). What remains: the owner walking the four scenarios (Phase A7's rehearsal), A6 (hardening,
 packaging, the review document and the rc run-through), and A7–A8, which need real attestors and
 cannot run on one machine.
+
+**Comparison base (2026-10-01, owner).** The comparison base is the tag `yellowback-v3-baseline`
+in `ycash-dd` (= `feature/yellowback-price-attest` at `ff7f45947`, re-tagged 2026-10-02 at the
+security-audit merge; previously `9da72131e`); `feature/yellowback-sf` is
+superseded and is **no comparison base**. The frozen-file zero-delta check (§4.1, §8.4 item 1, the
+CI `audit` job, retargeted in `ycash-dd` `46d11402c`) measures against that tag; line budgets
+still measure against `ycash-legacy`.
 
 | Phase / chunk | State |
 |---|---|
@@ -39,9 +65,9 @@ cannot run on one machine.
 | A4 `calibrate` — `contrib/yellowback/attest/calibrate/`, attestor guide, contrib README | **complete, merged** (2026-09-13): 19 offline unit cases; `spreads.py`/`pinrate.py` end to end on synthetic CSVs. The contract gained `bondKeyAddress` (the P2PKH fee payee, distinct from the bond output's P2SH `bondAddress`) at the agent's suggestion |
 | A4 `devnet` — devnet that arms, `yellowback_attest_agent.py` (nightly), `check` extended | **complete, merged** (2026-09-20): the devnet is eight nodes, registers 5–7 with `yed_registerattestor 10 200`, mines through `BOND_MATURITY` and `ATTEST_ARM_DELAY`, and starts three real `yellowback-attest attest` agents plus one `subscribe` on the `dir` transport. Run end to end on one laptop: TRIGGERED at 242, ARMED at 250, `poolFresh` 3, and a mint with **no** `bundleHex` built from the agents' pool (`bundleSeqs [0,1,2]`, `aMint` the attested price, the attest fee paid to a selected attestor's `bondKeyAddress`). `attestor N stop\|start\|price`, `notice` and the extended `check` all exercised; `--no-attest` keeps the five-node v2 devnet. **0 C++**, frozen files at zero delta. Three defects found by running it — see §6.1 |
 | A5-a — YecWallet read-only views | **complete, merged** (2026-09-13): `RPC_VERSION 3`, every v3 field in `yellowbackrpc.h` (contract check green), Attestors page, source prices and selection line, `noticed` badge, transport settings; 73 QTest cases offline |
-| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6) |
+| A5-b — wallet actions (two-step mint, notice, launcher, attestor actions) | **complete, merged** (2026-09-14): 83 QTest cases offline; `build.sh --attest`; the devnet case is written and skips until `a4-devnet`; `--package --attest` not yet run (A6). *2026-10-01: the devnet cases are green on both node lines (yecwallet-dd `692187b`, `a05ab74`)* |
 | Role-based regtest (`role-based-regtest-plan.md`) — role presets, heartbeat, price walk, `yellowback-sim` personas, scenario checklists, `yellowback_devnet_roles.py` | **complete, verified** (2026-09-20): all seven chunks built; the suite green on `user`, `attestor` and `pool` (seed 7): seat empty, heartbeat on automated pools only, every persona acting, a redeem at maturity, a −70 % shock, a clause-(b) liquidation by a third party, one state hash on ten enforcing nodes. Found D-R-1 (§6.2) — a claimant-node segfault after an emergency claim — fixed the same day in the wallet layer with a regression case in `yellowback_attest_wallet.py`. 0 consensus lines; `wallet.cpp` untouched. R8 (a pool terminal view) stays deferred until Scenario 3 asks for it |
-| A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **not started** — the scenario walk-throughs' findings (regtest plan §5) are its input |
+| A6 — hardening, DoS measurement, sanitizers, the review document, rc2 | **in part** (2026-10-04): the ecosystem security audit (2026-10-01) is remediated on both node lines; the sanitizer, lock-order and coverage CI jobs are armed (ycash-dd `8323537bd`, `782696b3e`, `678fd2fb6`). Open, per the §6 A6 checklist: the 3,000-carrier DoS measurement, `yellowback_attest_stress.py`, the v3 review document (`doc/yellowback-review.md` is still the v2 package) and the rc2 run-through |
 | A7, A8 — testnet with real attestors, then mainnet | need real attestors; cannot run on one machine |
 
 **Note (2026-09-13/14):** the A2 and A3 agents were each terminated once by an API session limit
@@ -64,7 +90,7 @@ non-Yellowback), so "regenerate once at A1" was not achievable. It is regenerate
 `glue` chunk together with the two regtest flags joining the preimage, and once more at A1 when
 `Snapshots` gains its fields. Two regenerations, each with the C++ and the Python model agreeing.
 
-**Status (2026-09-13, revision 1).** Plan only at revision 1; implementation status above. Builds on the delivered v2 (miner-enforced
+**Status: revision 4 (2026-10-02); implementation status above.** Builds on the delivered v2 (miner-enforced
 Yellowback, `docs/plans/yellowback-v2-development-plan.md` revision 6, Phases 0–8 implemented on
 `feature/yellowback-sf`) and implements `docs/reference/yellowback-price-attestation.md`
 revision 6 ("the proposal") — the second price population, decided by the product owner on
@@ -78,6 +104,9 @@ carries four to six of those signatures in the scriptSig of a small P2SH *carrie
 enforcing nodes verify them and combine the bond-weighted quantile with the existing pool medians
 by `min` (mints) and `max` (claims); no new line in any consensus, mining or policy file of the
 node; every new rule is overlay state shared by enforcing miners, exactly as v2's are.
+*(Amended 2026-10-02: the security audit's owner-approved hook changes A-1 — the MP-1 hook moved
+after script verification, `20aa4c40a` — and A-7 — `getblocktemplate` decodes the tag from the
+served coinbase, `ff7f45947` — are the one exception; see the table.)*
 
 | | changed lines (v2 actual) | v3 budget |
 |---|---|---|
@@ -86,9 +115,29 @@ node; every new rule is overlay state shared by enforcing miners, exactly as v2'
 | `src/rpc/mining.cpp` | 7 | **7 — no new line** |
 | `src/policy/policy.cpp`, `src/script/*`, `src/consensus/*`, `src/primitives/*`, `configure.ac`, `src/wallet/wallet.{h,cpp}` | 0 | **0** |
 
+*Measured 2026-10-04 against `ycash-legacy` (`git diff --numstat ycash-legacy...feature/yellowback-price-attest`):
+`main.cpp` +12/−0, `miner.cpp` +10/−2 (unchanged), `rpc/mining.cpp` +9/−1 — the audit exception
+(A-1, A-7), owner-approved, and the frozen-file baseline re-tagged at `ff7f45947` to carry it.*
+
 ---
 
 ## 0. Revision log
+
+### Revision 4 (2026-10-02) — W18–W21: release continuity, the soft supply cap, a 30-day floor on the module's patience
+
+Setting the first mainnet parameter set for release 6.21.0-rc1 (`START_HEIGHT` 3,075,000,
+`ENFORCE_UNTIL_HEIGHT` 3,495,480) made the owner read the versioning rules as a release
+calendar, and three consequences were unacceptable for a small volunteer team: a successor set
+could only *start* at the previous sunset (so a late release meant an immediate gap), a wrong
+value could not be corrected before the sunset at all, and a halt turned into **abandonment**
+after 4,032 blocks (3.5 days) — the module declared itself dead faster than anyone could travel
+home and fix it. A fourth finding fell out of the same review: the supply cap refused mints
+outright, so after a price fall left supply above the cap, minting stayed locked until
+redemptions caught up. Decisions W18 (renewal releases are not parameter changes), W19 ("freeze,
+then fix" is a sanctioned replacement path), W20 (above the cap only mints at or over
+`RECAP_RATIO_BPS` are accepted — the W16 gate, reused) and W21 (`ABANDON_BLOCKS` = `GRACE`,
+34,560 ≈ 30 days: the minimum time the module waits for its developers). Owner decisions
+D-R-9..D-R-12, §6.2. `GRACE` and the lock classes stay as they are (D-R-6 reaffirmed).
 
 ### Revision 3 (2026-09-22) — W17: MINT-10 reads the fast median
 
@@ -315,6 +364,64 @@ would bound nothing) and 1.5× (class B, 90–365-day locks, entering during str
 `mint4_divergence_and_global_ratio`, `recap_floor_is_the_class_minimum_with_sigma`,
 `yellowback_void_mint.py` (a class A mint through the halt raises the ratio; class C stays VOID).
 
+### W18. Renewal releases are not parameter changes (owner decision D-R-9, 2026-10-02)
+v2 L8 says a set that *changes* a value may start only at or after the previous set's sunset,
+so that two enforcing releases never disagree at one height. A release that carries **the same
+values and only a later `ENFORCE_UNTIL_HEIGHT`** cannot produce that disagreement: a node left
+on the old release stops rejecting at the old sunset and becomes permissive, and a permissive
+node follows whatever the stricter majority builds. So a *renewal* is exempt from L8's start
+constraint and may ship any time before the sunset; it is judged by `ParamsHash` as a different
+set only in `enforceUntilHeight`. **Obligation (release doc):** the renewal for each year ships
+no later than six months before the sunset, so a missed date costs a warning, not a gap. A
+release that changes any other value remains a *parameter change* under L8 and W19.
+
+### W19. "Freeze, then fix" is a sanctioned replacement path (owner decision D-R-10, 2026-10-02)
+L8's reason for "start at or after the sunset" is that no released node may still be enforcing
+the old set when the new one starts. There is a second state in which that holds: **enforcement
+is halted on the chain itself.** Amended: a parameter-change set may start at height `X` if
+either `X ≥` the previous set's `ENFORCE_UNTIL_HEIGHT` (L8) **or** `Snapshots[h].haltMask` has
+had `ENFORCEMENT` set for every `h` in `[X − SIGNAL_WINDOW, X − 1]` — enforcement has been off
+for a full window, so no node validated a vault spend under the old set in that stretch and
+M12 holds. The runbook for a wrong value is therefore: pools set `-yellowbackenforce=0` (the
+existing switch; the halt bit sets within one window, ≈ 1.75 days), minting stops, vaults stay
+script-locked until their own `claimHeight`, the team ships the corrected set with `X` after the
+halt, pools upgrade and signal, activation runs again. Until W21's `ABANDON_BLOCKS` elapses the
+pools on the release still filter rule-breaking vault spends (TPL-1, MP-1), so leakage during the
+freeze is bounded by stock hashpower. Nothing in `SelectParams` changes (sets are already chosen
+by height); the clause is a release-time check and a unit case over a synthetic halt. Rejected:
+set-version signalling in the tag (a live switch with no freeze; a real design addition, kept for
+a later revision) and miner-voted parameters (a different design).
+
+### W20. The supply cap is soft above `RECAP_RATIO_BPS` (owner decision D-R-11, 2026-10-02)
+MINT-6 refused any mint that would take `supplyCents` over `SUPPLY_CAP_BPS` of issued market cap
+(V21). Two problems: at today's cap (≈ $9M issued) 15 % is ≈ $1.3M of YED, so healthy demand is
+simply turned away; and after a price fall leaves supply above the cap, minting stays locked
+until redemptions bring it under — the same stagnation W16 removed from HALT-2. The owner's
+reading: reaching the cap *is* the signal that demand for YED is strong relative to YEC, so the
+right response is not "no" but "only well over-collateralised". **Amended:** when a MINT would
+exceed the cap it is accepted iff `minRatioBps(class, S) ≥ RECAP_RATIO_BPS` (50,000) — the
+ratio the mint actually locks after the volatility multiplier, exactly W16's gate, so class A
+always qualifies and class B does at a multiplier ≥ 1.25×. Every YED minted above the cap locks
+five times its value in YEC: the marginal position is the safest, which is the buffer wanted if
+the market cap corrects. Supply above the cap is bounded by the YEC its minters are willing to
+lock and by HALT-2 behind it; the cap needs no hard ceiling. Verdict `mint-supply-cap` keeps its
+name for the refused case. **Wallets see it:** `yed_getinfo.supplyCapReached` (bool, at the
+tip), `yed_getstats.mintableClasses` now also excludes the classes the cap gate refuses, and the
+MINTPOL-1 message names the classes that can mint. Rejected: a hard cap at a multiple (arbitrary)
+and a soft cap with no ratio condition (demand above the cap would mint at 300 %).
+
+### W21. `ABANDON_BLOCKS` = `GRACE` (owner decision D-R-12, 2026-10-02)
+Abandonment (L10, L12) is the point at which pools on the release stop filtering rule-breaking
+vault spends and wallets offer `yed_sweep`: the module declaring itself dead. At 2 ×
+`SIGNAL_WINDOW` = 4,032 blocks that was 3.5 days after any halt — including a deliberate W19
+freeze — far too short for a volunteer team. **Amended:** `ABANDON_BLOCKS` = `GRACE` = 34,560
+(≈ 30 days) on mainnet and testnet; regtest keeps 128 (≥ its `GRACE` of 24; the scripts' timing
+is unchanged). Thirty days is the minimum time the module waits for its developers: during a
+freeze no YED can be created (evaluation never stops), vaults stay owner-only until
+`lockHeight + GRACE`, and only stock-mined blocks can carry a rule-breaking spend. Abandonment
+stays a rolling predicate (L12): enforcement resuming on day 40 ends it; what leaked meanwhile
+is the cost. The invariant `ABANDON_BLOCKS ≥ GRACE` is a unit case on every network.
+
 ### W14. Payload version 3, `rpcversion` 3
 One release; a v2 node ignores v3 payloads (V23). The wallet refuses an `rpcversion` mismatch as
 today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
@@ -339,7 +446,10 @@ today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
 | `DIVERGE_BPS_ATTEST` | 1,500 | same | MINT-10 |
 | `EMERGENCY_RATIO_BPS` / `EMERGENCY_PERSIST` / `EMERGENCY_NOTICE_TTL` | 10,500 / 48 / 1,152 | 10,500 / 4 / 64 | NOT-1, RED-4(b) |
 | `RESIDUAL_MIN_ZAT` | 100,000 | same | RED-5 |
-| `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt |
+| `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt; **and MINT-6 (amended, W20): the minimum a mint needs once it would exceed `SUPPLY_CAP_BPS`** |
+| `SUPPLY_CAP_BPS` | 1,500 (unchanged) | `-yellowbacksupplycapbps` | W20: no longer a ceiling — the point above which only mints at or over `RECAP_RATIO_BPS` are accepted |
+| `ABANDON_BLOCKS` | **34,560 (= `GRACE`)**, was 4,032 | 128 (unchanged; ≥ regtest `GRACE` 24) | W21; invariant `ABANDON_BLOCKS ≥ GRACE` |
+| `START_HEIGHT` / `ENFORCE_UNTIL_HEIGHT` (mainnet) | 3,075,000 / 3,495,480 | `-yellowbackstartheight` / `-yellowbackenforceuntil` | set by release 6.21.0-rc1 (M14 lead, L8 sunset); testnet unset (0) until it is reachable |
 | `ATTEST_FEE_BPS` | 2,500 | same | AFEE-1; D-3 |
 | `BOND_MIN` | 20,000 YEC | 10 YEC | |
 | `BOND_MIN_LOCK` / `BOND_MATURITY` | 420,480 / 16,128 | 200 / 8 | |
@@ -353,6 +463,10 @@ today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
 Every row not marked policy is consensus-shaped among enforcing miners and versioned by start
 height and sunset (v2 K10, L8). The two regtest overrides join the state-hash preimage with v2's
 four (M13). No mainnet value is read from configuration.
+
+*Note 2026-10-04:* the `yb-calibration` repository has produced calibrated recommendations for
+these and v2's parameters (`yb-calibration/docs/decisions.md`, e.g. D-RD-ACT-8: `SIGNAL_WINDOW`
+2,592); they await the owner's sign-off and no node parameter set has adopted them.
 
 ### 3.2 The coinbase tag — unchanged.
 
@@ -456,7 +570,7 @@ Attestors    seq → { attestorPubKey, bondPubKey, bondOutpoint, bondZat, bondLo
 BondIndex    bondOutpoint → seq
 AttestorSeq  { next u16 }
 Attest       { status ∈ {UNARMED, TRIGGERED, ARMED}, triggerHeight, armHeight }      (carried; copied into Snapshots)
-BundleLog    height → { aMint, aClaim, selectedSeqs[], seqs[], prices[] }             (one row per height with ≥ 1 verified bundle; R12:
+BundleLog    height → { aMint, aClaim, selectedSeqs[], seqs[], prices[], citedHeights[] } (one row per height with ≥ 1 verified bundle; R12:
                                                                                         aMint/aClaim = lowerMedian over that height's MINT, REDEEM
                                                                                         and CLAIM_NOTICE bundles for which BUNDLE-1 held — whatever the
                                                                                         transaction's final verdict; EQUIVOCATION bundles excluded;
@@ -469,7 +583,7 @@ TxLog        + { aMint, aClaim, bundleSeqs[], attestFeeZat, attestPayee, residua
 `Params` (the `P` record) gains `attestArmMin u32 ‖ bundleCarrier u8` after v2's four fields
 (scriptsig 0, opreturn 1, either 2) — landed in A0 with the golden vector regenerated. Key
 prefixes: `A<u16 seq>` Attestors, `B<outpoint>` BondIndex, `N` AttestorSeq, `M` Attest,
-`W<u32 height>` BundleLog, `E<outpoint>` Notices (`T` and `L` were taken by Tip and TxLog). `SCHEMA_VERSION = 3`: a v2 index directory is
+`W<u32 height>` BundleLog, `E<outpoint>` Notices (`T` and `L` were taken by Tip and TxLog). `SCHEMA_VERSION = 4` (3 before `citedHeights[]`): a v2 or v3 index directory is
 rebuilt from the chain at first start (`SyncToChain`'s wipe-and-rebuild path), as v2 did for v1.
 
 **State hash order** (after v2's `Params`): every `Attestors` record by `seq`; `AttestorSeq`;
@@ -532,7 +646,11 @@ PIN-1 armed iff `|{h ∈ W : BundleLog[h]}| ≥ PIN_MIN_BUNDLES` and `(aHi − a
 · aLo` over `BundleLog[h].aMint`; when armed `k ∈ pinnedKeys(H)` iff `k` has `≥ PIN_MIN_TAGS`
 quote tags in `W`, all one price. PIN-2 armed iff `Snapshots[H − 1].xMint` and `Snapshots[H − 1 −
 PIN_WINDOW].xMint` both defined and differ by more than `PIN_DELTA_BPS` of the smaller; `seq ∈
-pinnedSeqs(H)` iff it appears in `≥ PIN_MIN_TAGS` rows of `BundleLog` in `W`, all at one price.
+pinnedSeqs(H)` iff it appears in `≥ PIN_MIN_TAGS` rows of `BundleLog` in `W`, all at one price,
+with `≥ PIN_MIN_TAGS` distinct `citedHeight`s among those rows' attestations (audit A-2: one
+attestation reused by several bundles is one cited height and cannot pin; the rows carry
+`citedHeights[]` parallel to `seqs[]`/`prices[]` since `SCHEMA_VERSION = 4`). PIN-1 skips a row
+whose `aMint` is stored as 0 (undefined): 0 is never a value (audit A-4).
 
 **Dormancy predicate** (SNAP, **only at heights with `H mod DORMANCY_CHECK = 0`**, S15): `seq`
 DORMANT iff ELIGIBLE, `seatedSince(seq) ≤ H − DORMANCY_BLOCKS` (i.e. `seq ∈ Snapshots[h].seated`
@@ -555,6 +673,19 @@ HALT-2 / MINT-4** (revision 2, W16).
   one at or above the floor passes this clause and is judged by the remaining halts as if the bit
   were clear. The other bits keep their v2 effect: any of them set is still a halted mint.
   MINTPOL-1 mirrors it (`mintpol-global-ratio` names the classes that would go through).
+
+- **MINT-6 (amended, W20).** Let `cap = supplyCapCents(S)` (undefined ⇒ the clause passes, as
+  before). A MINT with `totals.supplyCents + cents > cap` has verdict `mint-supply-cap` iff
+  `minRatioBps(class, S) < RECAP_RATIO_BPS`; at or above the floor it passes this clause. The
+  cap still reads the cross-section `xMint` (R15) and precedes MINT-9. MINTPOL-1 mirrors it,
+  counting the MINT payloads in this node's mempool toward the cap as before (audit C-3) and
+  naming the classes that would go through.
+
+- **Parameter-set start (W19; v2 L8 amended).** A set differing from the previous one in any
+  value other than `enforceUntilHeight` may start at `X` iff `X ≥` the previous set's
+  `ENFORCE_UNTIL_HEIGHT`, or `ENFORCEMENT ∈ Snapshots[h].haltMask` for every `h ∈ [X −
+  SIGNAL_WINDOW, X − 1]`. A set differing only in `enforceUntilHeight` (a renewal, W18) may start
+  anywhere at or above `START_HEIGHT`.
 
 - **IN-2 (amended).** A spend of an outpoint in `BondIndex` sets that attestor `WITHDRAWN`
   (`bondSpentHeight = H`) unless EJECTED (then only `bondSpentHeight`); the record stays. When an
@@ -656,7 +787,7 @@ wrapper (`VerifyCompactSig`) so the fuzz harness can stub it.
 | the frozen set (`qa/yellowback-frozen-files.txt`): `src/main.cpp`, `src/miner.cpp`, `src/rpc/mining.cpp`, `src/policy/`, `src/script/`, `src/consensus/`, `src/primitives/`, `src/pow/`, `configure.ac`, `src/wallet/wallet.{h,cpp}`, `src/txdb.*`, `src/chainparams.cpp` | 0 | **0** | — |
 
 The `audit` job's line-budget assertion keeps v2's numbers (`main.cpp` ≤ 40 etc.); a v3 PR that
-moves them is refused. New: `git diff --numstat feature/yellowback-sf...HEAD -- src/main.cpp
+moves them is refused. New: `git diff --numstat yellowback-v3-baseline...HEAD -- src/main.cpp
 src/miner.cpp src/rpc/mining.cpp src/policy` must be empty.
 
 ### 4.2 Modules (new and adapted, all under `src/yellowback/` unless stated)
@@ -683,7 +814,8 @@ index.{h,cpp}      ADAPT  AttestationPool {add, list, freshest(seq)}; BundleCach
                           (needs cs_yellowback only); MempoolCheck fills the cache; -reindex notice on SCHEMA_VERSION change
 policy.{h,cpp}     ADAPT  FilterTemplate: TPL-2 additions; fills the cache
 wallet.{h,cpp}     ADAPT  carrier and bond tracking (W7): OutstandingCarriers() from carriers.dat, RecordCarrier/SpendCarrier,
-                          SweepLapsedCarriers(); Bonds() through Attestors by bondPubKey; nothing IsMine, nothing in wallet.dat
+                          SweepLapsedCarriers(); bonds found per seq through Attestors by bondPubKey (BuildWithdrawBond; the hot
+                          key likewise for sign/revive/equivocation) — no enumeration helper, nothing IsMine, nothing in wallet.dat
 txbuilder.{h,cpp}  ADAPT  BuildMint/BuildClaim gain the carrier input, attestor fee, bundle (from index or bundleHex), residual output
                           (claim); NEW BuildClaimNotice, BuildRegisterAttestor, BuildWithdrawBond, BuildRevive, BuildEquivocation,
                           BuildPrepareCarriers; carrier top-up in every builder (W7); SignCarrierInput
@@ -754,7 +886,8 @@ operator's only v3 change is upgrading `ycashd`.
 
 | Command | Purpose | Return shape (new fields) |
 |---|---|---|
-| `yed_getinfo` | + `attest {status, triggerHeight, armHeight, seatedCount, poolSize, poolFresh, carrierMode}`, `halts` unchanged | |
+| `yed_getinfo` | + `attest {status, triggerHeight, armHeight, seatedCount, poolSize, poolFresh, carrierMode}`, `halts` unchanged ; + `supplyCapReached` (W20: at the tip, the next mint of any class would exceed the cap) | |
+| `yed_getstats` | `mintableClasses` (W16) now also excludes the classes the W20 cap gate refuses | |
 | `yed_getprice [height]` | + `xMint, xClaim, pinnedKeys, pinnedSeqs, seated` (per-tx values are in `yed_gettxinfo`) | |
 | `yed_listattestors [height]` | every `Attestors` record: `seq, attestorPubKey, bondAddress (the bond output's P2SH), bondKeyAddress (P2PKH of bondPubKey: the fee payee), bondZat, bondLocktime, flags{tier, pool}, registerHeight, status, statusHeight, weight, seated, pinned, lastBundleHeight, poolFresh` | |
 | `yed_getattestations` | the node's pool: `[{seq, price, citedHeight, receivedHeight, seated}]` | |
@@ -885,7 +1018,7 @@ in CI. The v2 review rule (P13) applies unchanged: the four-part check per porte
 statement, the rule identifiers each test tags, the budget numbers; two reviewers for any PR
 touching `state.cpp`, `bundle.cpp` or `attest.cpp`; a PR touching the consensus set, `policy.cpp`,
 `main.cpp`, `miner.cpp` or `rpc/mining.cpp` is refused outright (the `audit` job enforces zero
-delta against `feature/yellowback-sf` for those files).
+delta against the tag `yellowback-v3-baseline` for those files).
 
 **Keeping the tree building.** Payload version 3 is a flag day inside the fork: at A0's first
 commit every v2 functional flow script that builds transactions through the wallet RPCs keeps
@@ -982,7 +1115,7 @@ v2's); the devnet ARMED for the GUI.
 | Job | Trigger | Steps |
 |---|---|---|
 | `main` | PR + push to `feature/yellowback-price-attest` | v2's steps **plus** the v3 scripts of §7 in `BASE_SCRIPTS`; the whole `test_bitcoin` |
-| `audit` | PR + push | v2's budgets; **zero delta vs `feature/yellowback-sf`** for the frozen set of §8.4 item 1 (one list, `qa/yellowback-frozen-files.txt`, read by the job and quoted by §4.1); the determinism grep over the §3.10 set; the rule-tag loop over the v3 identifiers; the contract check |
+| `audit` | PR + push | v2's budgets; **zero delta vs the tag `yellowback-v3-baseline`** for the frozen set of §8.4 item 1 (one list, `qa/yellowback-frozen-files.txt`, read by the job and quoted by §4.1); the determinism grep over the §3.10 set; the rule-tag loop over the v3 identifiers; the contract check |
 | `agent` | PR + push (paths `contrib/yellowback/attest/**`) | `cargo build --locked`, `cargo test`, `cargo clippy -D warnings`, the fixture cross-check against `yellowback_price.py` |
 | `python` | PR + push | v2's plus `pyflakes` over the new scripts and `test_framework/yellowback_attest.py`; a `sign_attestation` known-answer test |
 | `nightly` | schedule | v2's plus `yellowback_attest_agent.py` (starts the Rust agent with `dir://`), `yellowback_attest_stress.py` (random arming/outage/reorg), the `SCHEMA_VERSION` rebuild case |
@@ -996,7 +1129,8 @@ exchange feeds — is A7.
 
 - [x] Branch hygiene: `feature/yellowback-price-attest` exists in all three repos (done
       2026-09-13); `.github/PULL_REQUEST_TEMPLATE.md` gains the "no delta in the frozen files"
-      line; CI `audit` job's frozen-file zero-delta check against `feature/yellowback-sf`.
+      line; CI `audit` job's frozen-file zero-delta check against the tag `yellowback-v3-baseline`
+      (retargeted 2026-10-01, `ycash-dd` `46d11402c`; originally written against v2's branch).
 - [x] `doc/yellowback-rpc.md` v3 **first** (§4.5: every command, field, error identifier);
       `make spec` → `doc/yellowback-rpc-contract.json` in both forks; `doc/yellowback-spec.md`
       gains §3 of this plan; `doc/yellowback-attestor.md` (§4.7) drafted.
@@ -1156,7 +1290,8 @@ exchange feeds — is A7.
 - [x] **Exit:** the wallet scripts green in both modes; `src/wallet/wallet.{h,cpp}` and
       `rpcwallet.cpp` at zero v3 delta. *Met 2026-09-14 on the integrated tree: every flow script
       green in both modes, and `git diff feature/yellowback-sf...HEAD -- $(cat
-      qa/yellowback-frozen-files.txt)` is empty.*
+      qa/yellowback-frozen-files.txt)` is empty. The check measures against the tag
+      `yellowback-v3-baseline` since 2026-10-01.*
 
 ### Phase A4 — Agents, devnet, docs (Rust and Python; 0 C++)
 
@@ -1195,7 +1330,17 @@ exchange feeds — is A7.
       is empty. Running `--package --attest` end to end is an A6 item.*
 - [ ] **Exit:** `wallet` job green; the devnet case passes by hand and is recorded. *The offline
       half is met (83 QTest cases, contract check, copy rule); the devnet case QSKIPs until the
-      A4 devnet chunk exists.*
+      A4 devnet chunk exists.* *Update 2026-10-04: the devnet cases are green on both node lines
+      (yecwallet-dd `692187b`, `a05ab74`, 2026-10-01); the box stays open until the run is
+      recorded with the `wallet` job.*
+- *Note 2026-10-01 (ycash6 plan Phase 7, §6 F-43, F-44, F-50..F-54):* `yecwallet-dd`
+  `feature/yellowback-price-attest` now drives both node lines, v4.5.0 and 6.20.0: version-aware
+  node calls (`7fd1635`); the devnet cases follow the two-step mint, notice and claim, green on
+  both lines (`a05ab74`, `692187b`); `APP_VERSION` 6.20.0 (`2451fda`, which also keys the GitHub
+  update check); the package bundles the 6.20.0 ycashd and `--no-embedded` drives either line
+  (`f992b0c`); a warning before the bundled 6.20.0 node upgrades an older datadir one way
+  (`f2e2d2a`); `YECWALLET_TEST_ISOLATE` (`bab7f69`); `build.sh` finds the AGL SDK in the Command
+  Line Tools (`b6c8c20`). The A5 exit box above is unchanged by this note.
 
 ### Phase A6 — Hardening and review (≈ 2 weeks)
 
@@ -1210,7 +1355,7 @@ exchange feeds — is A7.
 - [ ] Sanitizers and `lockorder` over the v3 scripts; coverage floors for `attest.cpp`,
       `bundle.cpp`, the new `state.cpp` paths.
 - [ ] `doc/yellowback-review.md` v3: the §8.4 checklist scored; the frozen-file proof
-      (`git diff feature/yellowback-sf...HEAD -- <frozen>` empty); the trust statement delta
+      (`git diff yellowback-v3-baseline...HEAD -- <frozen>` empty); the trust statement delta
       (§8.1) as it will be published.
 - [ ] rc run-through `yellowback_rc2.py`: v2's rc1 steps with arming inserted after activation,
       an emergency claim, an attestor ejection and a withdrawal; hash ledger.
@@ -1279,7 +1424,24 @@ Its findings that are product defects, not tooling, graduate here for A6:
 | D-R-6 | Owner decision 2026-09-21: the mainnet grace period stays at 30 days (`GRACE` = 34,560); the wallet makes the deadline visible (regtest plan F-17) rather than the protocol lengthening the window an underwater vault sits unclaimable | none; a second walk with the Act-by column in place revisits the number |
 | D-R-7 | Owner decision 2026-09-22: **YecWallet's YEC/USD rate is the Yellowback protocol price** (the pools' fast median at the tip) whenever the node is enabled, activated and has one; CoinGecko is the fallback (pre-activation, undefined price, or a protocol price older than 15 minutes). One market, one number, across the Balance tab and the Yellowback tab (regtest plan F-23) | Wallet only (`Settings::setYellowbackPrice` / `setCoinGeckoPrice`, the controller's push on every stats and activation reply); no node change |
 | D-R-8 | **A rally paused minting for a whole slow window.** After a +100 % shock MINT-10 compared the attestors (at the new price) with `xMint`, the minimum of the windows, still at the old price for 64 blocks (2,016 on mainnet ≈ 42 h) | **Decided and applied 2026-09-22 as W17**: MINT-10 reads `pFast(R)`; collateral is still sized at the minimum |
+| D-R-9 | **A late renewal release meant an immediate enforcement gap**: L8 let a successor set start only at the previous sunset, and the first mainnet set (6.21.0-rc1) made that a yearly hard date for a volunteer team | **Decided and applied 2026-10-02 as W18**: a release with unchanged values and a later sunset is a renewal, exempt from L8's start rule, due six months before the sunset |
+| D-R-10 | **A wrong value could not be corrected before the sunset** — ≈ 70 consensus-shaped values go to mainnet for the first time with no sanctioned path to fix one | **Decided and applied 2026-10-02 as W19**: a replacement set may also start after the chain shows the ENFORCEMENT halt for a full signal window ("freeze, then fix"); runbook in `doc/yellowback-release.md` (ycash6) and `doc/yellowback.md` §Releases and continuity (ycash-dd) |
+| D-R-11 | **The supply cap was a hard ceiling** (≈ $1.3M of YED at today's issued cap) and a price fall left minting locked until redemptions brought supply back under it | **Decided and applied 2026-10-02 as W20**: above the cap a mint is accepted iff its post-multiplier ratio is ≥ `RECAP_RATIO_BPS` (the W16 gate: class A always, class B at ≥ 1.25×); `yed_getinfo.supplyCapReached`, `mintableClasses` and the MINTPOL-1 message show it. `SUPPLY_CAP_BPS` stays 1,500 |
+| D-R-12 | **Abandonment after 3.5 days.** `ABANDON_BLOCKS` = 2 × `SIGNAL_WINDOW` turned any halt, including a deliberate freeze, into "the module is dead" before a developer could get home | **Decided and applied 2026-10-02 as W21**: `ABANDON_BLOCKS` = `GRACE` = 34,560 (30 days) on mainnet/testnet; regtest 128 unchanged. `GRACE` (30 d) and the lock classes reaffirmed as they are |
 | D-R-2 | On regtest the emergency tier (`EMERGENCY_PERSIST = 4`) and the ordinary claim open within a few blocks of each other after a shock, because the price windows are 8/24/64 blocks; on mainnet the emergency tier leads by hours (48 vs 576/2,016) | none; a note for whoever reads a regtest walk-through as if it were mainnet timing |
+
+### 6.3 Found by the yecwallet-dd devnet runs on both node lines (2026-10-01)
+
+Two v3 RPC defects, found while porting to ycashd 6.20.0 (ycash6 plan §6 F-55..F-57), fixed on both
+lines: ycash6 `fb0b3be2c`, `e3bd2a3f8` (merged `3b0dfb6e3`); ycash-dd `c23f937dd`, `379f9d30b`
+(owner-approved backport). RPC read path only, Tier 0: field set and `rpcversion` 3 unchanged,
+frozen set zero against `yellowback-v3-baseline`.
+
+| # | Found | Fix |
+|---|---|---|
+| D-P7-1 | `poolFresh` (`yed_getinfo.attest`, `yed_listattestors`) overstated readiness: it counted any pooled citation above `R − ATTEST_MAX_AGE` with no upper bound at `R = tip − REF_LAG`, while `BuildBundleInfo` needs `(R − ATTEST_MAX_AGE, R]`; "3 of 3" fresh while a mint was refused `bundle-insufficient` | `PoolFreshAt(seq, R)` asks the builder's own `Freshest`; `yellowback_attest.py` and a unit test reproduce it |
+| D-P7-2 | `yed_getvault`, `yed_listvaults` and `yed_listpositions[].claimable` ignored RED-4 clause (b): they kept v2's clause-(a) test while `yed_listclaimable` listed the vault with `claimPath "b"` | All read `EstimateClaim`, as `yed_listclaimable` does; unarmed it is the old test |
+| D-P7-3 | Left as is on purpose: `yed_getattestations[].fresh` has no upper bound (it describes one attestation's age, not its usability at `R`); `PoolFreshAt` does not re-check a cited block hash after a reorg, which `BuildBundleInfo` does (R9) | none |
 
 ## 7. Test plan (v3 additions)
 
@@ -1361,7 +1523,7 @@ v2's paragraph "price honesty rests on the honest-majority-hashpower assumption"
 
 ### 8.4 Review checklist (v3, Phase A6)
 
-1. `git diff feature/yellowback-sf...HEAD -- $(cat qa/yellowback-frozen-files.txt)` is empty
+1. `git diff yellowback-v3-baseline...HEAD -- $(cat qa/yellowback-frozen-files.txt)` is empty
    (mechanical, `audit` job; the list is §4.1's frozen set).
 2. Determinism grep empty over the §3.10 set; `secp256k1` reached only through `VerifyCompactSig`.
 3. Every v3 rule identifier tagged (§7 loop); every functional flow has a script.

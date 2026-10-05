@@ -1,0 +1,82 @@
+From 33968ccad8bda0c481219929b0a997b78998c49e Mon Sep 17 00:00:00 2001
+From: boyfromcave <boyfromcave@gmail.com>
+Date: Wed, 30 Sep 2026 18:47:13 -0700
+Subject: [PATCH 2/3] qa: harness writes ycash.conf and defaults to src/ycashd
+
+ycashd reads ycash.conf (BITCOIN_CONF_FILENAME, src/util/system.cpp:82)
+and refuses to start without it, but the inherited qa/rpc-tests harness
+still wrote zcash.conf and looked for src/zcashd. Every functional test
+therefore died in initialize_chain.
+
+Write ycash.conf in test_framework/util.py (and in the two scripts that
+open the file themselves, multi_rpc.py and wallet_deprecation.py) and
+default ZCASHD_BINARY to src/ycashd. Tests run from the repository root,
+or with ZCASHD=<repo>/src/ycashd. With this series applied, 39 of
+the 119 BASE_SCRIPTS pass, wallet.py among them (most remaining failures are other upstream-Zcash
+assumptions in the harness and are not addressed here).
+---
+ qa/rpc-tests/multi_rpc.py           | 2 +-
+ qa/rpc-tests/test_framework/util.py | 4 ++--
+ qa/rpc-tests/wallet_deprecation.py  | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/qa/rpc-tests/multi_rpc.py b/qa/rpc-tests/multi_rpc.py
+index 879cef3ce..8e758ed9a 100755
+--- a/qa/rpc-tests/multi_rpc.py
++++ b/qa/rpc-tests/multi_rpc.py
+@@ -26,7 +26,7 @@ class HTTPBasicsTest (BitcoinTestFramework):
+         #Append rpcauth to zcash.conf before initialization
+         rpcauth = "rpcauth=rt:93648e835a54c573682c2eb19f882535$7681e9c5b74bdd85e78166031d2058e1069b3ed7ed967c93fc63abba06f31144"
+         rpcauth2 = "rpcauth=rt2:f8607b1a88861fac29dfccf9b52ff9f$ff36a0c23c8c62b4846112e50fa888416e94c17bfd4c42f88fd8f55ec6a3137e"
+-        with open(os.path.join(self.options.tmpdir+"/node0", "zcash.conf"), 'a', encoding='utf8') as f:
++        with open(os.path.join(self.options.tmpdir+"/node0", "ycash.conf"), 'a', encoding='utf8') as f:
+             f.write(rpcauth+"\n")
+             f.write(rpcauth2+"\n")
+ 
+diff --git a/qa/rpc-tests/test_framework/util.py b/qa/rpc-tests/test_framework/util.py
+index ca0621725..db1c5a84a 100644
+--- a/qa/rpc-tests/test_framework/util.py
++++ b/qa/rpc-tests/test_framework/util.py
+@@ -29,7 +29,7 @@ import errno
+ from . import coverage
+ from .authproxy import AuthServiceProxy, JSONRPCException
+ 
+-ZCASHD_BINARY = os.path.join('src', 'zcashd')
++ZCASHD_BINARY = os.path.join('src', 'ycashd')
+ 
+ COVERAGE_DIR = None
+ PRE_BLOSSOM_BLOCK_TARGET_SPACING = 150
+@@ -200,7 +200,7 @@ def initialize_datadir(dirname, n, clock_offset=0):
+     if not os.path.isdir(datadir):
+         os.makedirs(datadir)
+     rpc_u, rpc_p = rpc_auth_pair(n)
+-    with open(os.path.join(datadir, "zcash.conf"), 'w', encoding='utf8') as f:
++    with open(os.path.join(datadir, "ycash.conf"), 'w', encoding='utf8') as f:
+         f.write("regtest=1\n")
+         f.write("showmetrics=0\n")
+         f.write("rpcuser=" + rpc_u + "\n")
+diff --git a/qa/rpc-tests/wallet_deprecation.py b/qa/rpc-tests/wallet_deprecation.py
+index 55b41d7d8..8f31512c6 100755
+--- a/qa/rpc-tests/wallet_deprecation.py
++++ b/qa/rpc-tests/wallet_deprecation.py
+@@ -33,7 +33,7 @@ class WalletDeprecationTest(BitcoinTestFramework):
+     def setup_chain(self):
+         super().setup_chain()
+         # Save a copy of node 0's zcash.conf
+-        with open(os.path.join(self.options.tmpdir, "node0", "zcash.conf"), 'r', encoding='utf8') as f:
++        with open(os.path.join(self.options.tmpdir, "node0", "ycash.conf"), 'r', encoding='utf8') as f:
+             self.conf_lines = f.readlines()
+ 
+     def setup_network(self):
+@@ -48,7 +48,7 @@ class WalletDeprecationTest(BitcoinTestFramework):
+ 
+     def setup_network_with_config(self, allowed_deprecated):
+         conf_lines = self.conf_lines + ["allowdeprecated={}\n".format(v) for v in allowed_deprecated]
+-        with open(os.path.join(self.options.tmpdir, "node0", "zcash.conf"), 'w', encoding='utf8') as f:
++        with open(os.path.join(self.options.tmpdir, "node0", "ycash.conf"), 'w', encoding='utf8') as f:
+             f.writelines(conf_lines)
+ 
+         self.nodes = start_nodes(self.num_nodes, self.options.tmpdir)
+-- 
+2.50.1 (Apple Git-155)
+

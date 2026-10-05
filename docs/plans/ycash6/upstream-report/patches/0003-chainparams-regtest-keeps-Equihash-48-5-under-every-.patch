@@ -1,0 +1,54 @@
+From 6eba14131fdac6219f2188f7f196874fe99e93cc Mon Sep 17 00:00:00 2001
+From: boyfromcave <boyfromcave@gmail.com>
+Date: Wed, 30 Sep 2026 20:03:19 -0700
+Subject: [PATCH 3/3] chainparams: regtest keeps Equihash (48,5) under every
+ network upgrade
+
+v4.5.0's CChainParams::EquihashN/K returned consensus.nEquihashN/K on
+regtest before consulting the per-upgrade table. 6.20.0's
+GetEquihashOverride() walks NetworkUpgradeInfo on every network, so
+activating the Ycash upgrade (374d694f) on regtest switches the solver to
+(192,7): about five minutes per generated block on an Apple M-series
+machine. Because Blossom, Heartwood and Canopy must activate after Ycash,
+any regtest that needs them becomes impractical.
+
+The consumers that matter, the miner / generate path (miner.cpp) and the
+height-aware solution-size check in ContextualCheckBlockHeader (main.cpp),
+both read CChainParams::EquihashN/K, and the context-free
+CheckEquihashSolution already accepts a (48,5) solution, so a regtest
+guard in the two accessors keeps mining and validation consistent.
+Mainnet and testnet are untouched.
+
+Verified on regtest: Overwinter, Sapling, Ycash, Blossom, Heartwood and
+Canopy active at height 1 (tip branch id 19bd2d2f), 110 blocks in under
+a second, then shield, Sapling->Sapling, deshield and a transparent send
+all mined.
+---
+ src/chainparams.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/chainparams.cpp b/src/chainparams.cpp
+index 75c9f7fae..970fb71e2 100644
+--- a/src/chainparams.cpp
++++ b/src/chainparams.cpp
+@@ -981,6 +981,8 @@ const NUInfo* GetEquihashOverride(int nHeight, const Consensus::Params& params)
+ } // namespace
+ 
+ unsigned int CChainParams::EquihashN(int nHeight) const {
++    if (NetworkIDString() == CBaseChainParams::REGTEST)  // regtest keeps (48,5) under every upgrade, as in v4.5.0
++        return consensus.nEquihashN;
+     if (auto info = GetEquihashOverride(nHeight, consensus)) {
+         return info->nEquihashN;
+     }
+@@ -988,6 +990,8 @@ unsigned int CChainParams::EquihashN(int nHeight) const {
+ }
+ 
+ unsigned int CChainParams::EquihashK(int nHeight) const {
++    if (NetworkIDString() == CBaseChainParams::REGTEST)  // regtest keeps (48,5) under every upgrade, as in v4.5.0
++        return consensus.nEquihashK;
+     if (auto info = GetEquihashOverride(nHeight, consensus)) {
+         return info->nEquihashK;
+     }
+-- 
+2.50.1 (Apple Git-155)
+

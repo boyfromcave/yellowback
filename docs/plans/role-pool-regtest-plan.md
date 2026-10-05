@@ -1,6 +1,9 @@
 # Pool regtest plan — real pool software on the devnet, and yolo in Rust
 
-**Status:** revision 1, 2026-09-28. In implementation. The status table is §8; agents update it.
+**Status:** revision 1, 2026-09-28. **Delivered** — Y0–Y7 done 2026-09-28; ycashd 6.20.0
+compatibility 2026-10-01 (yolo `4a28eef`, ycash6 plan Phase 7); the 2026-10-01 security audit's
+yolo findings fixed 2026-10-01/02 (yolo `1fd0465`..`dc9c57a`). The status table is §8.
+*(Status updated 2026-10-04; it read "In implementation".)*
 
 This plan is a delta on [`role-based-regtest-plan.md`](role-based-regtest-plan.md) scenario 3
 ("I am a mining pool", §4.3). It replaces the one thing that scenario cannot test as written:
@@ -395,4 +398,5 @@ only for convenience; it drives `yolo` directly.
 | Y4 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 8871bc482, 4c61d5f1d: `up --role pool --stratum [--stratum-mode]`, `pool N stratum start\|stop\|status`, `mine N 4` via `stratum-miner`, `status`/`check`/`down`/`report`; scenario 3 walked in stratum mode (steps 1–5; 132/132 accepted) |
 | Y5 | `devnet-stratum` | **done 2026-09-28** | `ycash-dd` 5d115175b: `qa/rpc-tests/yellowback_stratum.py` (exec bit, `BASE_SCRIPTS`, `YELLOWBACK_SCRIPTS`, CI checks out yolo at `YOLO_COMMIT`); `Tests successful` re-run by the orchestrator (portseed 4712). CI unverified until yolo is pushed |
 | Y7 | `yolo-onepool`, `devnet-onepool` | **done 2026-09-28** | `yolo/` 121e3b4, 1343013 (v0.13.0: `--payout`/`--text`, 34 unit + 8 wire tests, regtest grid re-run by the orchestrator); `ycash-dd` 129112b1f..30f0ac39f + the `load()` BITCOIND fix: devnet seat without modes, `yellowback_stratum.py` four cells + negative (`Tests successful`, portseed 4717), docs, CI pinned at 1343013; devnet smoke with `--stratum-text` |
+| ycashd 6.20.0 | ycash6 plan Phase 7 | **done 2026-10-01**, merged on `main` (`4a28eef`) | Findings in `docs/plans/yellowback-ycash6-plan.md` §6: F-46 `79f51e5` header root from `defaultroots.blockcommitmentshash` → the top-level old names → a non-zero `defaultroots.chainhistoryroot`, else no work (6.20.0 withholds the old names under `-allowdeprecated=none`); F-47 pre-Heartwood with `-allowdeprecated=none` cannot be served (no template field carries the final Sapling root); F-48 `6b9b467` `tests/regtest.rs` starts node A with `-mocktime` instead of `setmocktime`. Regtest grid 6/6 on v4.5.0, 6.20.0, 6.20.0 `-allowdeprecated=none`; `yellowback_stratum.py` green with yolo `4a28eef` on 6.20.0 |
 | Y6 | orchestrator | **done 2026-09-28** | `pool/README.md` yolo per-stack section, `doc/yellowback-mining.md` pointer + template-cache note, `role-based-regtest-plan.md` R9, mapping §17 |

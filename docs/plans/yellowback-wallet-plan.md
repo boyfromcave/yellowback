@@ -1,6 +1,12 @@
-# Ycash Yellowback (YED) — YEW Development Plan: a transparent-only mobile wallet for YEC and YED
+# Ycash Yellowback (YED) — YEW Development Plan: the mobile wallet for YEC and YED (transparent phases W0–W6)
 
-**Status (2026-09-25, revision 11). W0–W5 delivered and the app runs**: on the iPhone 17 Pro simulator and the `yew_pixel` Android emulator the M1 integration test passes end to end against the armed devnet (`yew` `a6c0737`, `8547d0c`, `d7e0e9d`); M2 on iOS reaches the mint estimate and stops at the node's $100 mint floor, which the §6.3 flow's amounts must be re-based to (owner decision). Two findings: the seed-backup screen was never pushed after wallet creation (fixed), and `rustls-native-certs` has no iOS backend, so TLS on iOS needs webpki roots (an allow-list decision) or the CA-PEM pin. Remaining owner items (§7, README "What is left for the owner"): running the app on a device and the M1/M2 integration tests, the Ywallet vector, three security-review decisions, public endpoints, the testnet run, store metadata and signing. W5 (`yew` `d4f2e13`..`e637791`): threat review (`docs/security-review.md`, 17 findings, 12 fixed — key wiping, plain transport regtest-only, host validation, CA-PEM pinning in core and CLI, 0600 cache, no Android backups, FLAG_SECURE on seed and key screens, the trace logger removed), `cargo audit` clean over 227 crates, `docs/licenses.md`, `docs/release.md` (reproducible build, empty default endpoint lists for mainnet and testnet per §8.4, no telemetry, store checklist, signing, the testnet plan). W4 app: The W4 app half (`yew` `07dcff3`, `706b1ab`, `29e1ae4`) adds the ten Yellowback bridge calls and the Yellowback, Mint, progress, Vault and Claimable screens with 14 more widget tests (29 total); the M2 integration test is written and, like M1, unrun for lack of a device. W4 core: mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
+> **Scope amended 2026-10-04.** YEW now also holds **shielded (Sapling) YEC**: the owner reversed
+> D-W-2/D-W-7 in [`yew-shielded-plan.md`](yew-shielded-plan.md) decision S0-1, which carries that
+> work. **YED stays transparent.** The "transparent-only" statements in this plan describe phases
+> W0–W6 as delivered, not the wallet's scope today.
+
+**Status: revision 12 (2026-10-01, ycashd 6.20.0 compatibility, §0); the summary below is
+revision 11's (2026-09-25).** **W0–W5 delivered and the app runs**: on the iPhone 17 Pro simulator and the `yew_pixel` Android emulator the M1 integration test passes end to end against the armed devnet (`yew` `a6c0737`, `8547d0c`, `d7e0e9d`); M2 on iOS reaches the mint estimate and stops at the node's $100 mint floor, which the §6.3 flow's amounts must be re-based to (owner decision). Two findings: the seed-backup screen was never pushed after wallet creation (fixed), and `rustls-native-certs` has no iOS backend, so TLS on iOS needs webpki roots (an allow-list decision) or the CA-PEM pin. Remaining owner items (§7, README "What is left for the owner"): running the app on a device and the M1/M2 integration tests, the Ywallet vector, three security-review decisions, public endpoints, the testnet run, store metadata and signing. W5 (`yew` `d4f2e13`..`e637791`): threat review (`docs/security-review.md`, 17 findings, 12 fixed — key wiping, plain transport regtest-only, host validation, CA-PEM pinning in core and CLI, 0600 cache, no Android backups, FLAG_SECURE on seed and key screens, the trace logger removed), `cargo audit` clean over 227 crates, `docs/licenses.md`, `docs/release.md` (reproducible build, empty default endpoint lists for mainnet and testnet per §8.4, no telemetry, store checklist, signing, the testnet plan). W4 app: The W4 app half (`yew` `07dcff3`, `706b1ab`, `29e1ae4`) adds the ten Yellowback bridge calls and the Yellowback, Mint, progress, Vault and Claimable screens with 14 more widget tests (29 total); the M2 integration test is written and, like M1, unrun for lack of a device. W4 core: mint (two-step with carrier), redeem, claim, forced lapse and sweep, kill-and-resume and bundle verification all pass on the armed devnet through lightwalletd; open questions §8.6 and §8.7 and the lightwalletd plan's Q6 are answered. W3 note: the app exists (six M1 screens over a `WalletApi` interface, 15 widget tests, the bridge generated with flutter_rust_bridge 2.13.0) but **has never launched** — no Xcode, Android SDK, simulator or emulator on the build machine, so the M1 integration test and the device acceptance are written and `[owner]`-blocked. W2 summary: the core now holds the payload codec, the node's floor-aware selector (equal to `yed_estimatesend` input-for-input on the devnet), the `YellowbackStreamer` client, the TOKEN/PENDING_TOKEN classes, the YED transfer and the two-layer gate that refused a malformed transfer with the node's verdict; the WIF round trip into a node wallet passed. Next: W3 (the app). Earlier: the `yew` repository exists with the Rust core's keys, v4 serializer, ZIP-243 signer, T0 gRPC client, store, classifier, YEC send and `yew-cli`; all twelve node-signed vectors reproduce byte-for-byte and the devnet YEC round trip and seed restore pass. Next: W2 (YED tokens, TRANSFER, the gate) against lightwalletd L2. Revision 4 re-based the transparent path on the yodl `lightwalletd` baseline (0.4.6 lineage). Written after the
 lightwalletd plan reached revision 4 (Phases L0 and L1 complete; N1 `yed_listtokens` and L2
 `GetAddressTokens` in progress) and against the delivered node (`ycash-dd`
 `feature/yellowback-price-attest`, `rpcversion 3`). The owner decisions this plan needs are
@@ -35,6 +41,16 @@ a desktop client later.
 ---
 
 ## 0. Revision log
+
+### Revision 12 (2026-10-01) — ycashd 6.20.0 compatibility (ycash6 plan Phase 7)
+
+M1 on the iOS simulator and the W1/W2/W4 core tests are green against a 6.20.0 devnet through
+`lightwalletd-dd`, with one fix, merged on `main` (`aebaf9a`): 6.20.0 relays transactions later
+(ycash6 plan F-14), so W1 waits with the existing `wait_mempool` before both mines
+(`core/tests/devnet.rs`); a no-op on v4.5.0 (ycash6 plan §6 F-34). **Open**, harness only and
+not a 6.20.0 difference: `scripts/devnet-w1.sh` takes the workspace as `here/..` and fails from a
+worktree (w4 walks up instead), and its `down` without `--wipe` passes an empty argument that the
+devnet launcher rejects.
 
 ### Revision 11 (2026-09-25) — the app launched on both platforms (W6)
 
@@ -99,8 +115,8 @@ itself generated is returned once so the app can store it in the keystore; Dart 
 (`flutter_rust_bridge`, `flutter_secure_storage`, `local_auth`, `qr_flutter`, `mobile_scanner`,
 `path_provider`, `cupertino_icons`), no router package, no `intl`; Settings sub-pages in their
 own files to keep screens ≤ 300 lines; the default server is a placeholder until W5 (§8.4);
-`docs/trust.md` is the agent's draft pending owner review. W4 core runs in a worktree
-(`wt/yew-w4`, branch `w4-core`) in parallel and merges after.
+`docs/trust.md` is the agent's draft pending owner review. W4 core runs in a separate worktree
+(branch `w4-core`) in parallel and merges after.
 
 ### Revision 6 (2026-09-24) — W2 delivered
 
@@ -270,6 +286,10 @@ SwiftUI + Compose over UniFFI (only with dedicated platform engineers); pure-Dar
 the sighash and script bytes must be in one audited place with node-generated vectors).
 
 ### D-W-2. Transparent only, forever in this plan (recommended, applied)
+> **Superseded 2026-10-04 by S0-1** of [`yew-shielded-plan.md`](yew-shielded-plan.md): Sapling is
+> in scope for YEW (shielded receive/send/memo, then shield/unshield), on the Ycash light-client
+> core. Kept below as the record of the original decision.
+
 No shielded pool in any phase. A shielded YEC feature is a different product (Ywallet exists).
 This decision is what keeps the app at ≈ 9,000 lines and the sync model at "ask for my
 addresses' txids".
@@ -307,6 +327,11 @@ an SQLite file owned by the core (`rusqlite`, bundled). The database is a cache:
 restoring from seed plus birthday height rebuilds it.
 
 ### D-W-7. Seed and derivation compatible with Ywallet, one transparent address per account (owner decision 2026-09-24; applied)
+> **Amended 2026-10-04 by S0-1** of [`yew-shielded-plan.md`](yew-shielded-plan.md): the sentence
+> "No ZIP-32 / Sapling keys are derived, ever" no longer holds. The same seed also derives the
+> Ycash Sapling account 0 at `m/32'/347'/0'` (ZIP-32), as Ywallet does, so one seed restores both
+> pools (`yew/core/src/shielded_keys.rs`). Everything else below stands.
+
 YEW derives exactly as Ywallet does for a Ycash account, from `zcash-sync` at `8a3956c8c`:
 
 - **Mnemonic**: BIP39, English wordlist, 12 or 24 words, seed = `Seed::new(mnemonic, passphrase)`

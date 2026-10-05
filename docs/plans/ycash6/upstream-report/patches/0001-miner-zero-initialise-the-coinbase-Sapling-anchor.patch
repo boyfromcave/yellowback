@@ -1,0 +1,68 @@
+From 132a827669bcb8313eacc246aae1a96ac6eb28f8 Mon Sep 17 00:00:00 2001
+From: boyfromcave <boyfromcave@gmail.com>
+Date: Wed, 30 Sep 2026 18:47:13 -0700
+Subject: [PATCH 1/3] miner: zero-initialise the coinbase Sapling anchor
+
+All three coinbase-building paths in src/miner.cpp (the Orchard, Sapling
+and transparent recipient overloads of operator()) declare
+
+    std::array<uint8_t, 32> saplingAnchor;
+
+uninitialised and pass it to sapling::new_builder. The Rust side
+(src/rust/src/sapling.rs, new_sapling_builder) runs Anchor::from_bytes on
+it and returns "Invalid Sapling anchor" for any 32 bytes that are not a
+canonical field element. Whether a block template can be built therefore
+depends on stack contents.
+
+On macOS 26 arm64 (depends clang 15, Rust 1.96) this was deterministic:
+test_bitcoin failed miner_tests/CreateNewBlock_validity and
+tx_validationcache_tests/tx_mempool_block_doublespend, and on regtest
+getblocktemplate / generate failed with "Invalid Sapling anchor" as soon as
+a valid Sapling-spending transaction was in the mempool.
+
+Coinbase bundles have no spends, so the anchor is unconstrained, and the
+all-zero array is a canonical field element. With this change both tests
+pass, the full test_bitcoin suite reports "No errors detected", and the
+stuck Sapling spend is mined by the next generate.
+
+The uninitialised declaration comes from upstream zcashd fd675c320
+("rust: Migrate to zcash_primitives 0.14.0"), so zcashd may want the same
+one-line change.
+---
+ src/miner.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/miner.cpp b/src/miner.cpp
+index 6d57d1138..b3764cf54 100644
+--- a/src/miner.cpp
++++ b/src/miner.cpp
+@@ -193,7 +193,7 @@ public:
+ 
+     // Create Orchard output
+     void operator()(const libzcash::OrchardRawAddress &to) const {
+-        std::array<uint8_t, 32> saplingAnchor;
++        std::array<uint8_t, 32> saplingAnchor = {};  // coinbase bundles have no spends, so the anchor is unconstrained; it must still be a canonical field element for sapling::new_builder
+         auto saplingBuilder = sapling::new_builder(*chainparams.RustNetwork(), nHeight, saplingAnchor, true);
+ 
+         // `enableSpends` must be set to `false` for coinbase transactions. This
+@@ -232,7 +232,7 @@ public:
+ 
+     // Create Sapling output
+     void operator()(const libzcash::SaplingPaymentAddress &pa) const {
+-        std::array<uint8_t, 32> saplingAnchor;
++        std::array<uint8_t, 32> saplingAnchor = {};  // coinbase bundles have no spends, so the anchor is unconstrained; it must still be a canonical field element for sapling::new_builder
+         auto saplingBuilder = sapling::new_builder(*chainparams.RustNetwork(), nHeight, saplingAnchor, true);
+ 
+         auto miner_reward = SetFoundersRewardAndGetMinerValue(*saplingBuilder);
+@@ -249,7 +249,7 @@ public:
+     // Create transparent output
+     void operator()(const boost::shared_ptr<CReserveScript> &coinbaseScript) const {
+         // Add the FR output and fetch the miner's output value.
+-        std::array<uint8_t, 32> saplingAnchor;
++        std::array<uint8_t, 32> saplingAnchor = {};  // coinbase bundles have no spends, so the anchor is unconstrained; it must still be a canonical field element for sapling::new_builder
+         auto saplingBuilder = sapling::new_builder(*chainparams.RustNetwork(), nHeight, saplingAnchor, true);
+ 
+         // Miner output will be vout[0]; Founders' Reward & funding stream outputs
+-- 
+2.50.1 (Apple Git-155)
+

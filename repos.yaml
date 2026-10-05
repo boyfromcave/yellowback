@@ -48,6 +48,20 @@ ref/yecwallet:
   commit: 1eb277d
   what: YecWallet GUI (Qt 6, bundles ycashd), pristine baseline for yecwallet-dd
 
+ref/ycash6:
+  role: reference
+  url: https://github.com/miodragpop/ycash.git
+  branch: dev-rebase-6.20.0  # miodragpop's ycashd 6.20.0 rebase (Zcash 6.x lineage); the commit carries no tag
+  commit: 040894344b
+  what: Ycash node v6.20.0 (dev-rebase-6.20.0 as built by its author), pristine baseline for ycash6
+
+ref/librustzcash6:
+  role: reference
+  url: https://github.com/miodragpop/librustzcash.git
+  branch: ycashd-v6.20.0     # the patched librustzcash ref/ycash6's Cargo.toml [patch.crates-io] pins by rev
+  commit: ec525fae82
+  what: Ycash-aware librustzcash (Ycash NetworkUpgrade/BranchId, activation heights, address prefixes), pristine baseline for librustzcash6
+
 ref/lightwalletd:
   role: reference
   url: https://github.com/yodl/lightwalletd.git
@@ -82,11 +96,29 @@ lightwalletd-dd:
   base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)
 
+ycash6:
+  role: fork
+  url: https://github.com/boyfromcave/ycash6.git
+  upstream: https://github.com/miodragpop/ycash.git
+  branch: feature/yellowback   # the v6.20.0 port of the overlay; ycash-dd (v4.5.0) stays the proven line
+  base: ycash6-legacy
+  base-commit: 040894344b    # = ref/ycash6 pin
+  what: working fork of the 6.20.0 node — the Yellowback overlay on ycashd 6.20.0, the 6.21.x release line
+
+librustzcash6:
+  role: fork
+  url: https://github.com/boyfromcave/librustzcash6.git
+  upstream: https://github.com/miodragpop/librustzcash.git
+  branch: feature/yellowback   # same name as ycash6; ycash6's Cargo.toml [patch.crates-io] must point here if it ever diverges
+  base: librustzcash6-legacy
+  base-commit: ec525fae82    # = ref/librustzcash6 pin
+  what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork)
+
 yew:
   role: app
   url: https://github.com/boyfromcave/yew.git
   branch: main
-  what: YEW, the transparent-only mobile wallet for YEC and YED (Flutter + Rust core)
+  what: YEW, the mobile wallet for YEC (transparent and Sapling) and YED (transparent) (Flutter + Rust core)
 
 ref/yolo:
   role: reference
@@ -100,3 +132,21 @@ yolo:
   url: https://github.com/boyfromcave/yolo.git
   branch: main
   what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)
+
+chain-viz:
+  role: app
+  url: https://github.com/boyfromcave/chain-viz.git
+  branch: main
+  what: chain-viz, the real-time chain, mempool and Yellowback-health visualizer (a read-only sidecar of ycashd on regtest, the devnet and mainnet; docs/plans/chain-viz-plan.md)
+
+x402-ycash:
+  role: app
+  url: https://github.com/boyfromcave/x402-ycash.git
+  branch: main
+  what: x402-ycash, x402 (HTTP-402) agent payments on Ycash in YEC and YED — binding specs, the TypeScript SDK mechanism and the facilitator; reaches ycashd only through public RPCs, no node change (docs/plans/x402-agent-payments-plan.md)
+
+yb-calibration:
+  role: app
+  url: https://github.com/boyfromcave/yb-calibration.git
+  branch: main
+  what: yb-calibration, the calibration tool for the Yellowback parameters: derives and checks the constants baked into each Yellowback release
