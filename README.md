@@ -72,7 +72,7 @@ yellowback-workspace/
 │   └── innovation-acknowledgements.md   what DigiDollar contributed, and where Yellowback diverges
 ├── repos.yaml       THE MANIFEST — every repo, its URL and its pin (no submodules)
 ├── Makefile         `make bootstrap` — recreate the workspace; `make status` — repo state + pin check
-├── scripts/         bootstrap.sh, pull.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh + extract_spec.py
+├── scripts/         bootstrap.sh, pull.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh + extract_spec.py, check-ref-pins.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
 ├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
 ├── yellowback.code-workspace   VS Code: parent + all seventeen clones as roots, ref/ read-only

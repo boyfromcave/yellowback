@@ -47,7 +47,7 @@ yellowback-workspace/
 │                       §15, YEW §16, yolo §17, chain-viz §18, v4.5.0→6.20.0 port §19, x402 §20). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), pull.sh (`make pull`), repos.sh, repo-status.sh,
-│                    extract-spec.sh + extract_spec.py (`make spec`)
+│                    extract-spec.sh + extract_spec.py (`make spec`), check-ref-pins.sh (CI: pins vs upstream)
 ├── wt/              git worktrees of the forks for parallel agents (untracked, gitignored)
 ├── yellowback.code-workspace   VS Code multi-root workspace (ref/ folders read-only)
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)

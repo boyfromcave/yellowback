@@ -22,16 +22,7 @@ jobs:
         run: scripts/extract-spec.sh --check-workspace
       - name: Bootstrap dry run
         run: NO_COLOR=1 scripts/bootstrap.sh --dry-run --no-venv
-      # Only a tag pin can fail here: a commit pin (no tag upstream) falls back to the manifest's own
-      # commit when ls-remote does not list it, so for those this step only reports.
-      - name: Every ref/ tag pin still resolves upstream (commit pins are reported, not verified)
-        run: |
-          set -e
-          for r in $(scripts/repos.sh list); do
-            [ "$(scripts/repos.sh get "$r" role)" = reference ] || continue
-            url=$(scripts/repos.sh get "$r" url); tag=$(scripts/repos.sh get "$r" tag); commit=$(scripts/repos.sh get "$r" commit)
-            # An annotated tag lists the tag object and, with ^{}, the peeled commit: take the peel.
-            if [ -n "$tag" ]; then out=$(git ls-remote --tags "$url" "refs/tags/$tag" "refs/tags/$tag^{}"); at=$(printf '%s\n' "$out" | awk '/\^\{\}$/{print $1; f=1} END{if(!f) exit 1}') || at=$(printf '%s\n' "$out" | awk 'NR==1{print $1}')
-            else at=$(git ls-remote "$url" | awk -v c="$commit" 'index($1,c)==1{print $1; exit}'); [ -n "$at" ] || at=$commit; fi
-            case "$at" in "$commit"*) echo "ok   $r ${tag:-commit} $commit";; *) echo "MOVED $r: $tag now $at, manifest says $commit"; exit 1;; esac
-          done
+      # A tag pin must still name the recorded commit; a commit pin (upstream has no tags) must still be
+      # in the history of its recorded upstream branch (only the commit graph is fetched).
+      - name: Every ref/ pin still holds upstream (tags and commit pins)
+        run: scripts/check-ref-pins.sh
