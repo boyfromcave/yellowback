@@ -94,6 +94,12 @@ and update the pins recorded in this file and in `docs/mapping.md`.
 
 ### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/` on `feature/yellowback`.
 
+**Since 2026-10-05 every writable repository, the workspace included, is checked out on
+`harden/yellowback`** — the evidence-based hardening plan's branch
+(`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut from each repo's branch of record
+below and merged back into it when the plan's gates pass. `repos.yaml` records `harden/yellowback`
+for the duration; the branches of record named in this file are where the work returns.
+
 The current branch in all three v4.5.0-era forks is `feature/yellowback-price-attest` — the v3 price-attestation
 work, cut from `feature/yellowback-sf`. **Yellowback is v3 (price attestation).** `feature/yellowback-sf`
 is the superseded v2 fork, kept only as a record: never commit to it and **never use it as a

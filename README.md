@@ -393,6 +393,8 @@ What `make bootstrap` does, in order:
    `ycash6-legacy` / `librustzcash6-legacy` and miodragpop's repos as `upstream`.
    `yew`, `yolo`, `chain-viz`, `x402-ycash` and `yb-calibration` — the app repos — are cloned on
    `main`; they have no baseline branch and no `upstream` remote (`yolo`'s Perl ancestor is `ref/yolo`).
+   *2026-10-05:* every writable repo is on `harden/yellowback` (the hardening plan's branch, cut from
+   the branch of record named above); `repos.yaml` records it, so `make status` expects it.
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
 4. `make status-short` — a summary of the workspace and its seventeen clones, with the `ref/` pins verified.

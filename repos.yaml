@@ -73,7 +73,7 @@ ycash-dd:
   role: fork
   url: https://github.com/boyfromcave/ycash-dd.git
   upstream: https://github.com/ycashfoundation/ycash.git
-  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
+  branch: harden/yellowback   # hardening plan (docs/plans/yellowback-evidence-based-hardening-plan.md), cut 2026-10-05 from feature/yellowback-price-attest (v3, the branch of record it returns to)
   base: ycash-legacy
   base-commit: 624c12814     # = ref/ycash pin
   what: working fork of the node (Yellowback overlay, yed_* RPCs)
@@ -82,7 +82,7 @@ yecwallet-dd:
   role: fork
   url: https://github.com/boyfromcave/yecwallet-dd.git
   upstream: https://github.com/ycashfoundation/yecwallet.git
-  branch: feature/yellowback-price-attest   # v3; cut from feature/yellowback-sf (the delivered v2)
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from feature/yellowback-price-attest (v3)
   base: yecwallet-legacy
   base-commit: 1eb277d       # = ref/yecwallet pin
   what: working fork of the wallet (Yellowback tab)
@@ -91,7 +91,7 @@ lightwalletd-dd:
   role: fork
   url: https://github.com/boyfromcave/lightwalletd.git
   upstream: https://github.com/yodl/lightwalletd.git
-  branch: feature/yellowback-price-attest   # cut from master (= 187a26765e), the same name as the other forks
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from feature/yellowback-price-attest
   base: lightwalletd-legacy
   base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)
@@ -100,7 +100,7 @@ ycash6:
   role: fork
   url: https://github.com/boyfromcave/ycash6.git
   upstream: https://github.com/miodragpop/ycash.git
-  branch: feature/yellowback   # the v6.20.0 port of the overlay; ycash-dd (v4.5.0) stays the proven line
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from feature/yellowback (the v6.20.0 port of the overlay, the release line)
   base: ycash6-legacy
   base-commit: 040894344b    # = ref/ycash6 pin
   what: working fork of the 6.20.0 node — the Yellowback overlay on ycashd 6.20.0, the 6.21.x release line
@@ -109,7 +109,7 @@ librustzcash6:
   role: fork
   url: https://github.com/boyfromcave/librustzcash6.git
   upstream: https://github.com/miodragpop/librustzcash.git
-  branch: feature/yellowback   # same name as ycash6; ycash6's Cargo.toml [patch.crates-io] must point here if it ever diverges
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from feature/yellowback; ycash6's Cargo.toml [patch.crates-io] must point here if it ever diverges
   base: librustzcash6-legacy
   base-commit: ec525fae82    # = ref/librustzcash6 pin
   what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork)
@@ -117,7 +117,7 @@ librustzcash6:
 yew:
   role: app
   url: https://github.com/boyfromcave/yew.git
-  branch: main
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: YEW, the mobile wallet for YEC (transparent and Sapling) and YED (transparent) (Flutter + Rust core)
 
 ref/yolo:
@@ -130,23 +130,23 @@ ref/yolo:
 yolo:
   role: app
   url: https://github.com/boyfromcave/yolo.git
-  branch: main
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)
 
 chain-viz:
   role: app
   url: https://github.com/boyfromcave/chain-viz.git
-  branch: main
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: chain-viz, the real-time chain, mempool and Yellowback-health visualizer (a read-only sidecar of ycashd on regtest, the devnet and mainnet; docs/plans/chain-viz-plan.md)
 
 x402-ycash:
   role: app
   url: https://github.com/boyfromcave/x402-ycash.git
-  branch: main
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: x402-ycash, x402 (HTTP-402) agent payments on Ycash in YEC and YED — binding specs, the TypeScript SDK mechanism and the facilitator; reaches ycashd only through public RPCs, no node change (docs/plans/x402-agent-payments-plan.md)
 
 yb-calibration:
   role: app
   url: https://github.com/boyfromcave/yb-calibration.git
-  branch: main
+  branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: yb-calibration, the calibration tool for the Yellowback parameters: derives and checks the constants baked into each Yellowback release
