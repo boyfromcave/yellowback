@@ -11,7 +11,7 @@ owner-approved hook changes (A-1, A-7) touched `main.cpp` and `rpc/mining.cpp`, 
 The overlay is ported to ycashd 6.20.0 (`ycash6`, `docs/plans/yellowback-ycash6-plan.md`), which is
 the release line: version 6.21.0-rc1 is set in its `configure.ac` (`0eff7c32e`) but **not tagged
 and not released**. The first mainnet parameter set — `START_HEIGHT` 3,075,000,
-`ENFORCE_UNTIL_HEIGHT` 3,495,480 — is on both lines (ycash6 `5f6714229`, ycash-dd `cdfc4945f`);
+`ENFORCE_UNTIL_HEIGHT` 3,495,480 — was set on both lines (ycash6 `5f6714229`, ycash-dd `cdfc4945f`) and was **withdrawn on 2026-10-05** by hardening F-5 (both lines unset on `harden/yellowback`; ycash6 `5752fd0e3`, ycash-dd `fa6768f85`) until a gate-passing release;
 testnet stays unset (unreachable on 2026-10-02: no fixed seeds, DNS seeders down). Landed
 2026-10-03/04 on both lines: the unused `YellowbackWallet::Bonds()`/`HotKeys()` removed (ycash6
 `fac88359c`, ycash-dd `9a3546293`), a wallet-layer unit suite (ycash6 `e6c49d743`, ycash-dd
@@ -449,7 +449,7 @@ today; `RPC_VERSION = 3` lands in YecWallet's first v3 commit.
 | `RECAP_RATIO_BPS` | 50,000 (2 × `GLOBAL_RATIO_HALT_BPS`) | same | HALT-2 (amended, W16): the class minimum a mint needs to be accepted during a global-ratio halt; **and MINT-6 (amended, W20): the minimum a mint needs once it would exceed `SUPPLY_CAP_BPS`** |
 | `SUPPLY_CAP_BPS` | 1,500 (unchanged) | `-yellowbacksupplycapbps` | W20: no longer a ceiling — the point above which only mints at or over `RECAP_RATIO_BPS` are accepted |
 | `ABANDON_BLOCKS` | **34,560 (= `GRACE`)**, was 4,032 | 128 (unchanged; ≥ regtest `GRACE` 24) | W21; invariant `ABANDON_BLOCKS ≥ GRACE` |
-| `START_HEIGHT` / `ENFORCE_UNTIL_HEIGHT` (mainnet) | 3,075,000 / 3,495,480 | `-yellowbackstartheight` / `-yellowbackenforceuntil` | set by release 6.21.0-rc1 (M14 lead, L8 sunset); testnet unset (0) until it is reachable |
+| `START_HEIGHT` / `ENFORCE_UNTIL_HEIGHT` (mainnet) | unset (0) since 2026-10-05 (hardening F-5; was 3,075,000 / 3,495,480 for 6.21.0-rc1) | `-yellowbackstartheight` / `-yellowbackenforceuntil` | re-set only by the release that passes the hardening gates (H-8); testnet unset (0) until it is reachable |
 | `ATTEST_FEE_BPS` | 2,500 | same | AFEE-1; D-3 |
 | `BOND_MIN` | 20,000 YEC | 10 YEC | |
 | `BOND_MIN_LOCK` / `BOND_MATURITY` | 420,480 / 16,128 | 200 / 8 | |

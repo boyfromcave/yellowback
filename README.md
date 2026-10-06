@@ -31,9 +31,9 @@ built from the node's template, tag included. Each fork, and the Rust pool that 
 one, has a read-only reference under `ref/` (the pristine upstream it forks or rewrites) so its
 whole delta is one `git diff`; the other app repos are net new and have none.
 
-**Release state (2026-10-04).** Both node lines carry the first mainnet parameter set —
-`START_HEIGHT` 3,075,000 and `ENFORCE_UNTIL_HEIGHT` 3,495,480 (ycash6 `5f6714229`, ycash-dd
-`cdfc4945f`). Testnet stays unset: on 2026-10-02 it was unreachable (no fixed seeds, DNS seeders
+**Release state (2026-10-05).** The first mainnet parameter set (`START_HEIGHT` 3,075,000,
+`ENFORCE_UNTIL_HEIGHT` 3,495,480; ycash6 `5f6714229`, ycash-dd `cdfc4945f`) was **withdrawn** by
+hardening F-5: both lines are unset on `harden/yellowback` until a gate-passing release re-sets it. Testnet stays unset: on 2026-10-02 it was unreachable (no fixed seeds, DNS seeders
 down). Releases come from `ycash6` (`.github/workflows/yellowback-release.yml`,
 `doc/yellowback-release.md`); version 6.21.0-rc1 is set in its `configure.ac` but is **not yet
 tagged or released**.
