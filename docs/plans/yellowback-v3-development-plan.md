@@ -1518,6 +1518,13 @@ v2's paragraph "price honesty rests on the honest-majority-hashpower assumption"
 | A v2 node meets v3 payloads | ignores them | V23; nothing on mainnet yet |
 | A minter or claimant who is also a selected attestor pays the attestor fee to itself | no net fee on its own transactions | accepted, as v2's K23 for pools; no soundness effect |
 | Hot attestor key stolen | the thief signs prices | bounded like a colluding attestor (grief); equivocation by the thief ejects the seat; the bond key is separate |
+| The majority pool sets the miner medians alone *(hardening plan §5, 2026-10-05)* | cannot mint against an inflated price (H-1: `min` with the attested quantile); can depress `xMint` and over-collateralise everyone's mints; can withhold quotes and halt minting | H-1, H-2; gate G-3 measures quote availability before activation; residual: griefing and NO_PRICE; both visible in `yed_getinfo` and chain-viz; neither moves collateral |
+| The majority pool opens RED-4(b) on a noticed vault via `pEmerg = min` *(hardening plan §5, 2026-10-05)* | forced close at `pClaim = max`, residual to the owner | accepted (grief, bounded); residual: an owner can be closed early at an honest price |
+| The majority pool leaves, or signals without enforcing (never detected: D-RD-ACT-6) *(hardening plan §5, 2026-10-05)* | enforcement on with a minority in fact, then the valve (H-6) or the ENFORCEMENT halt; abandonment after 30 days | H-8 commitments; the trust statement; H-9 wallets redeem before `claimHeight`; residual: vaults past `claimHeight` whose owners do not act are anyone-can-spend during the gap |
+| Free valve attack by a matured-vault owner *(hardening plan §5, 2026-10-05)* | a stock burst must now hold a 12-block lead for 6 more tips | H-6; residual: a genuine stock majority still trips it, as designed |
+| Spurious lock-in by a hop coalition *(hardening plan §5, 2026-10-05)* | needs two consecutive windows | H-7, H-8; residual: an auto-switching pool that stays 2 × `signalWindow` still locks in |
+| Attestor set captured by seat splitting (≈ $50k) *(hardening plan §5, 2026-10-05)* | with H-1 the captured quantile can raise `pMint` only up to `xMint` (still `min`) | H-2 (7 seats), gate G-5, D-RD-ATT-4's renewal rule on `bondMin`; residual: a captured set plus the majority pool together move the price; stated in §6 |
+| Claimants cannot sell collateral *(hardening plan §5, 2026-10-05)* | claims that do not pay are not made; vaults stay underwater | H-12, θ 125 %, class A only; residual: YED depth is unknown; measured at renewal |
 
 ### 8.3 What Yellowback cannot affect — unchanged.
 

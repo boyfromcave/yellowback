@@ -46,7 +46,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 ### P1 hardening (hardening plan §9 as reshaped by §7) — on `harden/yellowback`, both lines
 | Chunk | Content | ycash-dd | ycash6 |
 |---|---|---|---|
-| H0-a | mapping §21 rows, plans README row, v3 §8.2 rows, `make spec` | [ ] | — |
+| H0-a | mapping §21 rows, plans README row, v3 §8.2 rows, `make spec` | [x] | — |
 | H0-b | `yb-calibration` policy `harden-2026-10.toml`, empty-class convention | [~] `hd/cal` | — |
 | H1-a | F-1 wallet spent-tracking, F-5 mainnet heights unset | [~] `hd/wallet` | [~] `hd/wallet` |
 | H1-b | F-2 agent sample configs and defaults | [~] `hd/wallet` | [~] `hd/wallet` |

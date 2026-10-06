@@ -1134,3 +1134,22 @@ row holds on **both** node lines. `ycash-dd` is cited at `feature/yellowback-pri
 | A light client signs under the next block's consensus branch id | `LightdInfo.consensusBranchId` is `consensus.chaintip` only (`lightwalletd-dd/common/common.go:212`); `service.proto` is frozen by the fork's byte-equality gate; the node reports both (`ycash-dd/src/rpc/blockchain.cpp:1174-1175`; `ycash6` `:1730-1731`) | `YellowbackStreamer.GetChainInfo` (`walletrpc/yellowback.proto`, +16 lines, `7a8eaaa`) carries `nextBlockBranchId`, `consensusBranchId`, `saplingActivationHeight`, `upgrades[]`; `CallYed` gains a one-entry `StockMethods` allow-list (`getblockchaininfo`) rather than widening `YedMethods`. Clients fall back to `LightdInfo` on `UNIMPLEMENTED` (plan X-F71 closed) |
 | Mempool visibility for unconfirmed spends | `GetMempoolTx` keeps a tx only when `HasSaplingElements()` (`lightwalletd-dd/frontend/service.go:~470-489`), fork = baseline, both lines | Shielded mempool notes are visible to light clients; transparent coins have no light mempool-spend guard (plan X-F70, pinned by `TestDevnetMempoolStreamsSaplingOnly`) |
 | Putting a Sapling note on a regtest chain cheaply | — | `z_shieldcoinbase "*" <zaddr> 0.0001 5` + `z_getoperationstatus` from node 0 (devnet harness idiom) |
+
+## 21. Rows added by the evidence-based hardening plan (2026-10-05, `harden/yellowback`)
+
+From `docs/plans/yellowback-evidence-based-hardening-plan.md` Appendix A. Citations are at
+`harden/yellowback` as of 2026-10-05 (both node lines carry the same overlay files). Under the
+network-upgrade plan (`docs/plans/yellowback-upgrade-plan.md` §7) the **work valve**, **lock-in** and
+**sunset** rows are retired on the `upgrade/vault` line: they exist only because enforcement is by
+opt-in miners. They stand for the v3 overlay line.
+
+| Item | DigiByte / earlier plan mechanism | Ycash reality | Adaptation | Citation |
+|---|---|---|---|---|
+| Mint price source | v3: `pMint = xMint` until ARMED (D-4) | one pool sets every median (D-RD-ORA-4) | `mintRequiresArmed` halt bit in MINT-4 | `state.cpp:311-320`, `:332-334` |
+| Term classes | three contiguous classes (D-R-6) | B/C bad debt 7×/17× tolerance (D-RD-COL-4) | empty term ranges for B/C; MINT-3 refuses | `state.cpp:303`, `params.cpp:44-53` |
+| Work valve | trip on first header crossing 6 blocks of work (L7) | free sustained attack trips in hours (D-RD-ACT-5) | note cap 256, persisted lead, 12 blocks | `index.cpp:563-674`, `index.h:65` |
+| Lock-in | one window ≥ 75 % (ACT-2) | hop coalition locks in spuriously (D-RD-ACT-4) | two consecutive windows | `state.cpp:1080-1090` |
+| Soft cap gate | ratio ≥ `recapRatioBps` (W20) | admits B/C once σref rises (D-RD-COL-9) | class A only above the cap | `state.cpp:338-340` |
+| Sunset | MP-1/TPL stand down only on abandonment | ≈ 5-day anyone-can-spend gap (audit A-5) | stand down on `enforceUntilHeight` for owner-path spends | `index.cpp:769-834`, `policy.cpp:115-116` |
+| Wallet spent-tracking | `IsSpent` on depth ≥ 0 | mined-unstamped wtx at depth −1 (F-DEV-1) | lock inputs until spender depth ≥ 1 | `txbuilder.cpp:507-534`, `wallet.cpp:2531`, `:7812-7819` |
+| Agent fail-closed | `min_sources = 3` | three venues, one often stale (D-RD-ATT-2) | `min_sources = 2`, fourth source enabled | `attest.toml.sample:35`, `price.rs:26` |
