@@ -69,7 +69,7 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
-| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [~] `up/up-pyfw` | [ ] copy |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [~] `up/up-pyfw` done (33 unit tests); D-1 regen pending | [ ] copy |
 | Unit tests `vault_*_tests.cpp` | [~] core-dd, cons-dd | [~] cons6 (script) |
 | Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
 
@@ -693,7 +693,7 @@ YED-specific (P4) choices: U-21..U-24 in §15.10.
 
 **`OP_CHECKSEQUENCEVERIFY` (0xb2)** with `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY`: BIP112 exactly, except that the transaction version test reads Ycash's `nVersion` (4 ≥ 2 always passes) and a stack argument with the type flag (bit 22) set fails (`SCRIPT_ERR_UNSATISFIED_LOCKTIME`). Without the flag it is `OP_NOP3` as today.
 
-**BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ spending height − 1 (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
+**BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ the spending height (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
 
 **`OP_CHECKSETSIG` (0xc0)** with `SCRIPT_VERIFY_VAULT` (without it: `SCRIPT_ERR_BAD_OPCODE` as today):
 1. Pop `setId` (exactly 32 bytes) and `role` (exactly one byte, 1 or 2); else `SCRIPT_ERR_SETSIG`.
@@ -778,7 +778,7 @@ Acts apply in block order against the running state (U-17); mempool validates ag
 
 | Type | Body | Signatures | Rule |
 |---|---|---|---|
-| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `bondMin ≥ 1`; `admitKey` compressed; other flag bits 0. `setId = txid` |
+| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `1 ≤ bondMin ≤ MAX_MONEY`; `admitKey` compressed; other flag bits 0. `setId = txid` |
 | 0x02 `SET_JOIN` | `setId 32, memberKey 33, bondLocktime u32, bondVout u8` (70) | `S_1` by `memberKey`; then, unless OPEN: `slashThreshold` current-member signatures if the set has ≥ `slashThreshold` current members, else one by `admitKey` | set exists (created in an earlier block), not wound down; seats free; key not ACTIVE in the set; `vout[bondVout]` = P2SH(B(memberKey, bondLocktime)), value ≥ `bondMin`; `bondLocktime ≥ h + bondLockMin`, `< 500000000` |
 | 0x03 `SET_HEARTBEAT` | `setId 32, memberKey 33` (65) | `S_1` by `memberKey` | key is a current member; `lastAct = h` |
 | 0x04 `SET_REMOVE` | `setId 32, memberKey 33, burn u8 (0/1)` (66) | `slashThreshold` distinct current members other than the target | target ACTIVE → `REMOVED`; `burn = 1` also freezes its bond (contested-cancel slash); `burn = 0` is O-6 (bond returned) |
@@ -787,6 +787,17 @@ Acts apply in block order against the running state (U-17); mempool validates ag
 
 Bond rules: spending a frozen bond outpoint is invalid (`bad-vault-bond-frozen`); spending the bond
 of an ACTIVE member sets `WITHDRAWN`.
+
+**Reconciled 2026-10-05 (Python ↔ C++ cross-check, `up-pyfw`):** (1) BIP68 is Bitcoin's height
+test exactly, so RELEASE (valid from `coinHeight + delay`) and CANCEL (valid while
+`h − coinHeight < delay`) meet with no gap and no overlap. (2) `bondMin` is bounded by `MAX_MONEY`.
+(3) Field ranges the codec does not check (`bondLocktime < 500000000`, `burn ∈ {0,1}`, roles 1/2 in
+`SET_EQUIVOCATION`, signature header 31..34) are rejected at rule time (`ActFieldsValid`), with the
+same `bad-vault-act-*` reason. (4) "Compressed" means the 02/03 prefix; an off-curve key parses and
+can never sign. (5) Act signature counts are exact and signers distinct; extra scriptSig pushes
+before a template's arguments are not rejected (no CLEANSTACK). (6) The epoch in which a set is
+created has basis 0: nothing unlocks under a rate limit until the next epoch. (7) setId, txids and
+prevouts are internal byte order; a prevout is the `COutPoint` serialisation.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
