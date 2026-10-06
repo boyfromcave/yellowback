@@ -109,13 +109,13 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [x] `a787a5af5` |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [x] `a787a5af5` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [x] `a787a5af5` (byte-identical) |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half `up/up-p4b6-yed` |
-| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree ; full re-run on `6740a4160` (after setquote, fix-validate, devnet-dd, residual, dd-followup): build, 28,047 unit assertions and all 30 suites green, none skipped (chainviz against P6 chain-viz, stratum against the fixed yolo, yellowback_devnet_upgrade) | [~] on wt/up6 `007931dc9` all suites green (28 in the full run + 4 re-run after port collisions / the D-U6 rebuild) except `yellowback_devnet_upgrade`, which needs P4-b's YED half |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e` | [x] `b7ed33c64` (YED half; golden `b0103e92…` byte-identical) |
+| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree ; full re-run on `6740a4160` (after setquote, fix-validate, devnet-dd, residual, dd-followup): build, 28,047 unit assertions and all 30 suites green, none skipped (chainviz against P6 chain-viz, stratum against the fixed yolo, yellowback_devnet_upgrade) | [~] on wt/up6 `007931dc9` all suites green (28 in the full run + 4 re-run after port collisions / the D-U6 rebuild) ; after P4-b (`b7ed33c64`, tree = the tested branch) `yellowback_devnet_upgrade` and the attestor suites green too |
 
 ### Devnet and clients
 - [~] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel — **ycash-dd [x]**
   (`492550751`: `upgrade-walk` 103/103 checks across 11 nodes with chain-viz, both lightwalletds and yolo; transcript
-  `contrib/yellowback/devnet/upgrade-walk-transcript.txt`; regression `yellowback_devnet_upgrade.py` 534 s); ycash6 pending its P4 port
+  `contrib/yellowback/devnet/upgrade-walk-transcript.txt`; regression `yellowback_devnet_upgrade.py` 534 s); **ycash6 [x]** (`b7ed33c64`: full walk 101 check lines, as on ycash-dd; `yellowback_devnet_upgrade.py` green)
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
@@ -1106,6 +1106,13 @@ persona are on ycash6; ycash6 walk 85 checks PASS with `members` and `cancel` sk
 checker reads both forms — back-port to ycash-dd so the script is identical); mininode's `hashBlockCommitments`
 for hand-built blocks. (91) Coordinator error: the full ycash6 run's per-suite seeds 600-631 overlapped an agent's
 610-629 range (four collision failures, re-run); coordinator bases are now 700-739 / 900-939.
+
+**up-p4b6-yed (2026-10-06, merged ycash6 `b7ed33c64`):** P4-b complete on both lines; byte-identical across lines:
+`src/vault/{state,module}.*`, `src/yellowback/{view,state.h,module}.*`, both golden JSONs, the Python model, vault.py,
+SERIALISATION.md, `vault_vectors.json`, both RPC contracts, bridge-sim, `qa/vault-rpc-contract.py` (back-ported to
+ycash-dd `cd591ad4d`). (92) upgrade-walk race on both lines: a bridge heartbeat mined just after `bridge silence`
+moved the dormancy height (fixed on both). (93) Test-environment traps: REF_YCASHD = stock 6.20.0 kills every suite
+that starts a stock node on the upgrade; walking with the main-tree lightwalletd gives a false green (use the P6 build).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
