@@ -1054,12 +1054,10 @@ yolo `ci/upgrade` (abort-on-drop guard).
   mempool change after 5 s), so a pool can mine one block on its previous quote. Same on `harden/yellowback`; not a
   regression; consistent with audit A-7. Recommendation: a one-line change on both lines (bump the template-cache key
   in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed.** Part A (the bump) merged and
-  pushed on `harden/yellowback` (ycash-dd `b62d6bfc2`, ycash6 `bfcc01c6e`); part B (immediate, upgrade line): the owner
-  approved (2026-10-06) but the session's permission classifier refused adding the permission rule and then refused
-  further edits/reads of `src/yellowback/index.{h,cpp}` in `wt/setquote-up-dd` / `wt/setquote-up6`. State:
-  `wt/setquote-up-dd` has an uncommitted, incomplete edit to `index.h` (a `QuoteGeneration()` accessor whose member is
-  not yet declared) plus the uncommitted bump and test from agent `setquote`; nothing merged. **Owner action:** add a
-  permission rule for those files (or apply the patch by hand), then the coordinator finishes it. Correction found while
+  pushed on `harden/yellowback` (ycash-dd `b62d6bfc2`, ycash6 `bfcc01c6e`); part B (immediate, upgrade line) **done 2026-10-06** after the owner added a
+  permission rule: a quote generation in the Yellowback index checked in getblocktemplate's rebuild condition —
+  ycash-dd `9fc76540b` (merged `7052c6e9b`), ycash6 `78bf0da75` (merged `76a20ab4e`); `setquote_rebuilds_template`
+  green on both lines and failing against the binary without the change (negative control). Correction found while
   implementing: the cache is a set of static locals in `getblocktemplate` (`src/rpc/mining.cpp`, both lines), so a
   bump from the Yellowback RPC only forces a rebuild once the cached template is > 5 s old; "immediate" needs a
   rebuild condition in `mining.cpp`, a frozen file on `harden/yellowback`. Applied per line: **harden** — the bump
