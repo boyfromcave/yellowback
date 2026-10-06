@@ -1045,7 +1045,8 @@ yolo `ci/upgrade` (abort-on-drop guard).
 - **D-U6 (owner):** `yed_setquote` does not invalidate the node's cached `getblocktemplate` (rebuilt on a new tip, or a
   mempool change after 5 s), so a pool can mine one block on its previous quote. Same on `harden/yellowback`; not a
   regression; consistent with audit A-7. Recommendation: a one-line change on both lines (bump the template-cache key
-  in `yed_setquote`) plus a functional assertion — not made without the owner's word.
+  in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed** — implemented on
+  `harden/yellowback` on both lines (agent `setquote`, branch `hd/setquote`), reaching `upgrade/vault` by merge.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
