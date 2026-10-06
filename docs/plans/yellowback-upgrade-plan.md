@@ -1005,6 +1005,18 @@ slow price window starves later mints (pMint = lowest window median) until ~64 p
 by design, noted for the devnet; (64) a devnet attestor went DORMANT after ~6,000 fast blocks despite heartbeats
 (S15 missed-bundle rule), bearing on D-U5.
 
+**dd-polish (2026-10-06, ycash-dd `b7c387c61`):** (65) `vault_buildcancel` builds a cancel for an intent still in
+the mempool (the V script from the spent vault coin, checked against `vaultHash`); a cancel is accepted as the
+mempool child of an unconfirmed intent and both mine in one block — no consensus change (a mempool parent already
+counts at tip+1) — closing (50) for G-11; (66) `doc/vault-rpc-contract.json` generated and checked by
+`qa/vault-rpc-contract.py` against the doc, the RPC table and client.cpp conversions; `vault_rpc_contract.py` checks
+all 21 commands and 19 error reasons live — closing (47); (67) new fuzz target `Vault` (template/act/selector
+parsers, 7 properties, 44 seeds) in the nightly and weekly loops; `DecodePayload` accepts a non-02/03 33-byte key
+that re-encodes as zeros, but `DecodeAct`'s round-trip check and `ActFieldsValid` reject the act (consensus-safe;
+Python rejects it as `bad-vault-act-key` — reason strings differ, outcomes identical); (68) retired signalling / valve /
+sunset wording removed from the devnet, the quote agent and the docs; `doc/yellowback.md`'s trust statement still
+mirrors the spec's §8.1 and changes with the generator source; the −32601 text names what is missing.
+
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
