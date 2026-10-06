@@ -119,7 +119,9 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
   panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
-- [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
+- [x] `docs/mapping.md` §22: P2 rows and P4 rows (ycash-dd citations; ycash6 citations after its P4 port); contract
+  generator for the upgrade line + `make spec-check-upgrade` (`382d1dc`). Open: the −32601 text in
+  `src/rpc/yellowback.cpp:70` still names `-experimentalfeatures -yellowback` (both lines)
 
 ### P1, P5, P7, P8
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
@@ -912,8 +914,9 @@ without the offending transaction. (37) A real v4.5.0 reference binary cannot fo
 height (the stock-parity variants run without it). (38) `rpcversion` 5; `yed_sweep` removed (owner sweeps are
 ordinary owner-branch spends). (39) The workspace `make spec` still sources the RPC contract's version and command
 list from the v3 plan (rpcversion 4 on `harden/yellowback`); on `upgrade/vault` the contract is generated from the
-node's `doc/yellowback-rpc.md`. When `upgrade/vault` becomes a branch of record the generator must take this plan
-and that doc as its source (open, coordinator).
+node's `doc/yellowback-rpc.md`. Resolved 2026-10-06 (`382d1dc`): the generator detects the line from the doc's rpcversion (≥ 5 = upgrade)
+and, on the upgrade line, takes the whole contract from the node doc; `make spec-check-upgrade` checks the
+integration-tree copies (byte-identical to the hand-edited JSON).
 
 **Owner decisions raised by P4 (open, not blocking the devnet):**
 - **D-U1** A claim to a Sapling (`ys1…`) destination is refused (`bad-address`): an intent commits a transparent
