@@ -151,6 +151,9 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
   plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
 - 2026-10-05: **P2 complete on both node lines** (ycash6 `a56cd4e20`: 65 vault unit cases, all five vault functional
   suites and the Yellowback regressions green). P3's Ycash side complete on both lines. P1 node chunks complete.
+- 2026-10-06 (wave 7): CI/CD team `ci-dd`, `ci-6`, `ci-rust`, `ci-misc`; fixes `fix-validate` (finding 56) and
+  `yew-shielded-vault` (finding 58). Ten agents at once drove the load to 30 on 10 cores: every agent now builds
+  at `-j2` and waits while the load is above 16 (briefing "Machine load rule").
 - 2026-10-06 (wave 6, owner asked to widen parallelism): seven agents in flight — `up-yed6` (P4-a → ycash6),
   `up-p4b6-prim` (P4-b's primitive hook → ycash6, in parallel with P4-a), `devnet-dd` (full ecosystem walk on the
   upgrade + the P3 bridge persona), `docs-tooling` (contract generator for the upgrade line, mapping §22 P4 rows),
