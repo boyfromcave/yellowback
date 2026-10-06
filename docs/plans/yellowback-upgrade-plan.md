@@ -107,7 +107,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [~] `up/up-p4b-dd` | [ ] after dd |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e` (225 yellowback + 66 vault unit cases; 28 suites on the branch) | [ ] after P4-a port |
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
@@ -708,7 +708,9 @@ payloads are fixed-width little-endian; script numbers are minimal `CScriptNum` 
 | U-19 | Liveness counts only `SET_JOIN` (at maturity) and `SET_HEARTBEAT`; signing an unlock or cancel is not an act | no interpreter side effects; daemons heartbeat |
 | U-20 | Rate windows are fixed epochs `floor(h / rateWindow)`; the basis is the set's locked value at the epoch's start | O(1) state; up to 2× cap across an epoch boundary, stated in §10 |
 
-YED-specific (P4) choices: U-21..U-24 in §15.10.
+YED-specific (P4) choices: U-21..U-24 in §15.10; U-25 below.
+
+| U-25 | **Module ejection hook.** A registered module may name the one set its vaults govern (`GovernedSet`) and return member keys to eject (`Ejections`); the primitive applies `SET_EQUIVOCATION`'s effect (eject, freeze bond) inside the block overlay, undo-covered. The hook never invalidates a transaction and never touches another set | EQV-1 (two prices at one height) is about signed prices, which the primitive cannot see; the hook keeps the primitive agnostic ("a module may eject a member of its own set"), at the cost of one generic module-to-primitive effect |
 
 ### 15.1 Upgrade and constants
 
@@ -907,6 +909,26 @@ and that doc as its source (open, coordinator).
   Recommendation: accept (it is what consensus requires).
 - **D-U3** A cancelled wrong-price claim forfeits its burn (U-24). Recommendation: accept (it prices a griefing
   attempt and only over-collateralises the system).
+
+**Found by P4-b (`up-p4b-dd`, 2026-10-06):** (40) the YED module mirrors the set's acts from the block's own
+transactions into its `Attestors[seq]` records (one seq per join; weight = bond × age as in v3), so the Yellowback
+index never reads the vault DB and still rebuilds alone; (41) seat eligibility = the set's rules plus the module's
+stricter ones (maturity `max(set, BOND_MATURITY)`, `BOND_MIN`/`BOND_MIN_LOCK`, a key that ever had a frozen bond
+never seats again; S15 dormancy on top of the set's; revival = a `SET_HEARTBEAT` after dormancy); `ATTESTOR_REGISTER`
+/ `ATTESTOR_REVIVE` invalid after activation; `seated` ≤ min(`N_SLOTS`, set `seats`); (42) EQV-1 finds the signing
+key by trying candidate members and must bypass the W8 signature cache (keyed by attestation, not key);
+(43) `SCHEMA_VERSION` 7; golden state hash `b0103e92…20bc`; `yed_registerattestor`/`yed_revive` now send
+`set_join`/`set_heartbeat` with unchanged result shapes (rpcversion stays 5); the Rust agent heartbeats every
+`heartbeat_blocks` (default 1,152). (44) The workspace contract generator does not reproduce the upgrade line's
+contract JSON (cf. (39)); the JSON is edited to the generator's shape by hand until (39) is resolved.
+
+**Owner decisions raised by P4-b (open, not blocking the devnet):**
+- **D-U4** An attestor's price key, bond key and fee key are now **one key** (the set keys the bond by the member
+  key, and heartbeats need it online), so the bond can no longer be held cold. Recommendation: accept for this
+  round; a later act could let a member name a separate hot key (one more field in `SET_JOIN`), recorded as given up.
+- **D-U5** Signing prices is not a set act (U-19), so attestors must heartbeat on chain to stay live: mainnet's
+  attestor-set `livenessWindow` must be well above the agent's `heartbeat_blocks` (devnet: 1,000 vs 100; framework:
+  100,000). Recommendation: `livenessWindow` 4 × `heartbeat_blocks`, set in P8 with O-13.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
