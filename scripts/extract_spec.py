@@ -10,6 +10,8 @@ READS
   ycash-dd/doc/yellowback-rpc.md                     optional: the fork's RPC contract document (Phase 3+); from
                                                      Phase A0 its "Error identifiers" tables are the error table
   ycash6/doc/yellowback-rpc.md                       the same for the 6.20.0 node line (its contract is built from it)
+  docs/plans/yellowback-upgrade-plan.md              the upgrade line only (below): must have its `### 15.10` heading,
+                                                     which the contract cites as sectionUpgrade
 
 WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or stale)
   docs/spec/yellowback-spec.md                       the spec: header + body (below)
@@ -81,10 +83,26 @@ THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in 
   The wallet's field names (yecwallet-dd/src/yellowbackrpc.h) are checked against this file by
   the `wallet` CI job from Phase 7b; the node's registered `yed_*` names must all be keys (`audit`).
 
+TWO LINES  (upgrade plan findings (39), (44))
+  Each contract is generated for the line its rpc doc belongs to.  The line is `upgrade` when the doc's
+  title states rpcversion >= 5 (the `upgrade/vault` branches: UPGRADE_VAULT, YED on the primitive) and
+  `harden` otherwise; EXTRACT_SPEC_LINE=harden|upgrade forces it.  The harden line is generated exactly as
+  described above.  On the upgrade line the node's rpc doc is the WHOLE contract: its `### `yed_*``
+  headings and ```json blocks are the command list and its `## Error identifiers` tables are the error
+  table, and nothing is taken from v2's §4.5 (v2/v3 commands and errors the upgrade retired --
+  `yed_sweep`, `sweep-*`, `mintpol-participation` -- would otherwise come back from the plan).  The
+  plans then supply only the `source` metadata, which gains
+      "planUpgrade": "docs/plans/yellowback-upgrade-plan.md", "sectionUpgrade": "15.10".
+  The doc must state rpcversion and give every command both a heading and a JSON block.
+
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR override `ycash-dd` /
   `ycash6` / `yecwallet-dd` / `lightwalletd-dd` (absolute paths), so
   an agent working in wt/<name> can write and check the copies of its own worktree.  Unset = the main trees.
+  `--check-upgrade` (`make spec-check-upgrade`) checks the upgrade line's copies: the same variables, defaulting
+  to the integration worktrees wt/up-dd, wt/up6, wt/p6-wallet and wt/p6-lightwalletd-dd (relative to the
+  workspace); a tree that does not exist, or whose node doc is not yet on the upgrade line, is skipped and
+  said so.  The docs/spec copy is the harden check's, not this one's.
 """
 import hashlib
 import json
@@ -95,6 +113,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLAN = os.path.join(ROOT, "docs", "plans", "yellowback-v2-development-plan.md")
 PLAN_V3 = os.path.join(ROOT, "docs", "plans", "yellowback-v3-development-plan.md")
+PLAN_UPGRADE = os.path.join(ROOT, "docs", "plans", "yellowback-upgrade-plan.md")
+SECTION_UPGRADE = "15.10"
+UPGRADE_RPCVERSION = 5   # the first rpcversion of the upgrade line (finding (38))
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
 LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
@@ -427,7 +448,49 @@ def commands_from_rpcdoc(path, rel=RPCDOC_REL):
     return rel, out, args
 
 
+def doc_line(rpcdoc_path):
+    """`upgrade` or `harden`: EXTRACT_SPEC_LINE when set, else from the rpc doc's title rpcversion."""
+    forced = os.environ.get("EXTRACT_SPEC_LINE")
+    if forced:
+        if forced not in ("harden", "upgrade"):
+            die("EXTRACT_SPEC_LINE must be harden or upgrade, not %r" % forced)
+        return forced
+    v = rpcdoc_version(rpcdoc_path)
+    return "upgrade" if v is not None and v >= UPGRADE_RPCVERSION else "harden"
+
+
+def contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
+    """The upgrade line: the rpc doc is the whole contract (commands, args, shapes, errors)."""
+    ver = rpcdoc_version(rpcdoc_path)
+    if ver is None:
+        die("%s: an upgrade-line rpc doc must state rpcversion in its title" % rpcdoc_path)
+    if not os.path.exists(PLAN_UPGRADE):
+        die("the upgrade line needs %s" % os.path.relpath(PLAN_UPGRADE, ROOT))
+    if not any(l.startswith("### %s " % SECTION_UPGRADE) for l in read_plan(PLAN_UPGRADE)):
+        die("%s has no '### %s' heading" % (os.path.relpath(PLAN_UPGRADE, ROOT), SECTION_UPGRADE))
+    rpcdoc, shapes, doc_args = commands_from_rpcdoc(rpcdoc_path, rpcdoc_rel)
+    if not shapes:
+        die("%s: no yed_* commands" % rpcdoc_path)
+    missing = sorted(set(shapes) ^ set(doc_args))
+    if missing:
+        die("%s: every command needs a ### heading and a ```json block on the upgrade line; unpaired: %s"
+            % (rpcdoc_path, ", ".join(missing)))
+    doc = {
+        "rpcversion": ver,
+        "source": {"plan": os.path.relpath(PLAN, ROOT), "revision": revision(lines), "section": "4.5", "rpcdoc": rpcdoc,
+                   "planV3": os.path.relpath(PLAN_V3, ROOT) if lines_v3 is not None else None,
+                   "revisionV3": revision(lines_v3) if lines_v3 is not None else None,
+                   "planUpgrade": os.path.relpath(PLAN_UPGRADE, ROOT), "sectionUpgrade": SECTION_UPGRADE},
+        "errors": errors_from_rpcdoc(rpcdoc_path),
+    }
+    for name in shapes:
+        doc[name] = {"args": doc_args[name], "returns": shapes[name]}
+    return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
 def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_REL):
+    if doc_line(rpcdoc_path) == "upgrade":
+        return contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     ver, sec = rpc_section(lines)
     cmds = commands_from_plan(sec)
     rev_v3 = None
@@ -457,12 +520,84 @@ def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_RE
 
 # ── main ───────────────────────────────────────────────────────────────────────────────────
 
+UPGRADE_TREES = {   # env override -> default integration worktree (relative to the workspace)
+    "EXTRACT_SPEC_NODE_DIR": "wt/up-dd",
+    "EXTRACT_SPEC_NODE6_DIR": "wt/up6",
+    "EXTRACT_SPEC_WALLET_DIR": "wt/p6-wallet",
+    "EXTRACT_SPEC_LWD_DIR": "wt/p6-lightwalletd-dd",
+}
+
+
+def compare(path, text):
+    try:
+        with open(path, encoding="utf-8", newline="") as f:
+            return f.read() == text
+    except OSError:
+        return None
+
+
+def check_upgrade(lines, lines_v3):
+    """`--check-upgrade`: the upgrade line's copies in the integration worktrees that exist."""
+    d = {k: os.environ.get(k) or os.path.join(ROOT, v) for k, v in UPGRADE_TREES.items()}
+    node, node6, wallet, lwd = (d[k] for k in UPGRADE_TREES)
+    rel = lambda p: os.path.relpath(p, ROOT)
+    spec = spec_text(lines, lines_v3)
+    checks, skipped = [], []
+
+    def node_line(tree):
+        doc = os.path.join(tree, "doc", "yellowback-rpc.md")
+        if not os.path.isdir(tree):
+            skipped.append("%s (no such tree)" % rel(tree))
+            return None
+        if doc_line(doc) != "upgrade":
+            skipped.append("%s (its rpc doc is rpcversion %s, not yet the upgrade line)" % (rel(tree), rpcdoc_version(doc)))
+            return None
+        return doc
+
+    doc = node_line(node)
+    if doc is not None:
+        text = contract_text(lines, lines_v3, doc, RPCDOC_REL)
+        checks += [(os.path.join(node, "doc", "yellowback-spec.md"), spec),
+                   (os.path.join(node, "doc", "yellowback-rpc-contract.json"), text)]
+        for tree, sub in ((wallet, ("docs", "yellowback-rpc-contract.json")),
+                          (lwd, ("testdata", "yellowback", "contract.json"))):
+            if os.path.isdir(tree):
+                checks.append((os.path.join(tree, *sub), text))
+            else:
+                skipped.append("%s (no such tree)" % rel(tree))
+    else:
+        skipped.append("%s and %s (their contract is ycash-dd's upgrade-line contract)" % (rel(wallet), rel(lwd)))
+    doc6 = node_line(node6)
+    if doc6 is not None:
+        checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
+                   (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
+                    contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
+    stale = []
+    for path, text in checks:
+        ok = compare(path, text)
+        if not ok:
+            stale.append(rel(path) + (" (missing)" if ok is None else ""))
+    for s in skipped:
+        print("spec-check-upgrade: skipped %s" % s)
+    if stale:
+        print("spec-check-upgrade: STALE — regenerate with the same EXTRACT_SPEC_*_DIR and `scripts/extract-spec.sh`:\n  "
+              + "\n  ".join(stale))
+        return 1
+    if not checks:
+        print("spec-check-upgrade: no upgrade-line tree found; nothing checked")
+        return 0
+    print("spec-check-upgrade: %d upgrade-line copies match (%s)" % (len(checks), ", ".join(rel(p) for p, _ in checks)))
+    return 0
+
+
 def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
-    if mode not in ("--write", "--check", "--check-workspace"):
-        die("usage: extract_spec.py [--write|--check|--check-workspace]")
+    if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade"):
+        die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
+    if mode == "--check-upgrade":
+        return check_upgrade(lines, lines_v3)
     outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
