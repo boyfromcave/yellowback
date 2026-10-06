@@ -81,11 +81,11 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [x] `91c557ecb` |
 | `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [x] merged `ae1ab3a3c` (49 / 1432, vectors byte-identical) |
 | Module table (empty in P2) + interface | [x] `bd33dc0b9` | [x] `ae1ab3a3c` |
-| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [x] `f4b2e2dc6` | [~] `up/up-int6` |
-| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [x] `f4b2e2dc6` | [~] `up/up-int6` |
-| RPCs `set_*` / `vault_*` (§15.8) | [x] `f4b2e2dc6` (21 RPCs, `doc/vault-rpc.md`) | [~] `up/up-int6` |
+| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [x] `f4b2e2dc6` | [x] `a56cd4e20` (+ miner `TemplateRun`) |
+| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [x] `f4b2e2dc6` | [x] `a56cd4e20` |
+| RPCs `set_*` / `vault_*` (§15.8) | [x] `f4b2e2dc6` (21 RPCs, `doc/vault-rpc.md`) | [x] `a56cd4e20` |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
-| Unit tests `vault_*_tests.cpp` | [x] 65 cases on `99f33ea04` | [x] 59 cases on `91c557ecb` |
+| Unit tests `vault_*_tests.cpp` | [x] 65 cases on `99f33ea04` | [x] 65 cases on `a56cd4e20` |
 | Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [x] `99f33ea04`: vault_upgrade, vault_rpc, vault_primitive, vault_slashing, vault_bridge all pass | [~] `vault_upgrade.py` [x]; rest `up/up-int6` |
 
 ### P3 bridge template (Ycash side only)
@@ -106,7 +106,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
 - [ ] YecWallet (activation screens → upgrade status), YEW / yolo / x402 branch ID, chain-viz, lightwalletd
-- [ ] `docs/mapping.md` §22, `make spec` copies
+- [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
 
 ### P1, P5, P7, P8
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
@@ -865,6 +865,15 @@ across sets would need a new act (`SET_REMOVE` naming a second, authorised set),
 Foundation picks the single-relayer shape. (27) A bridge destination OP_RETURN whose first push
 starts `YV` is parsed as an act and invalidates the lock; the `wyec` wallet and daemon must write
 destinations as ABI `bytes32` (left-padded) and never begin one with `0x5956`.
+
+**Found by the 6.20.0 wiring (`up-int6`, 2026-10-05):** (28) 6.20.0's `TestBlockValidity` for a
+template runs **no scripts** (`CheckAs::BlockTemplate` clears `fExpensiveChecks`), so finding (21)'s
+premise was incomplete: a stale set-dependent spend would have been mined into an invalid template.
+ycash6's miner now re-runs acts, template rules and template-input scripts per candidate
+(`vault::TemplateRun`), independently of the mempool re-check (both shown to work alone by a negative
+control); v4.5.0's miner already re-checks inputs per transaction. (29) The audit exemption for
+`upgrade/vault` also covers `src/policy/policy.{cpp,h}` (§15.3/§15.5 require them). (30) `-reindex-chainstate`
+(6.20.0 only) also wipes the vault DB.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
