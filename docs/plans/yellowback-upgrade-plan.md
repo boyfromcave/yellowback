@@ -127,6 +127,12 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
   generator for the upgrade line + `make spec-check-upgrade` (`382d1dc`). Open: the −32601 text in
   `src/rpc/yellowback.cpp:70` still names `-experimentalfeatures -yellowback` (both lines)
 
+**CI state 2026-10-06:** `harden/yellowback` push tier **green in all 11 repos** (nightly/weekly tiers run from tonight's
+schedule — the owner switched the node repos' default branch to `harden/yellowback`). `upgrade/vault` pushed in all
+repos (ycash-dd `d06748ed6` with ci/upgrade merged; clients and librustzcash6 fast-forwarded to their ci/upgrade);
+ycash6 `upgrade/vault` (`b7ed33c64`) still carries the pre-CI workflow until `ci-6` carries the P4 edits onto its
+structure (in flight); upgrade-line runs being read.
+
 ### CI/CD (owner request 2026-10-06; design in `wt/BRIEFING-upgrade.md` "CI/CD design")
 Every repo: triggers on `harden/yellowback`, `upgrade/vault`, `main`; push tier ≤ 25 min warm (build once,
 sharded functional matrix from one artifact), nightly variants and cross-repo devnets, weekly fuzz; exact cache keys;
@@ -137,9 +143,9 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
 | Repo | Agent | `ci/harden` | `ci/upgrade` | pushed + green |
 |---|---|---|---|---|
 | ycash-dd | `ci-dd` | [x] `d8e4898ba` (pushed as `harden/yellowback`) | [x] `ci/upgrade` (push after ycash6 P4) | [x] harden green at `b62d6bfc2` (build, unit, 4 shards, audit, python, agent) |
-| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [~] build green after C-8; functional shards running at `bfcc01c6e` |
+| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [x] harden green at `bfcc01c6e` (run 37469045728) |
 | librustzcash6 | `ci-6` | — | [x] `ci/upgrade` (fork test workflow; upstream scoped) | [ ] |
-| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [x] pushed | [x] `ci/upgrade` | [x] chain-viz, x402, yolo green; yew `app (macos)` lacked protoc (C-10, fixed `9f9de9c`, re-run pending) |
+| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [x] pushed | [x] `ci/upgrade` | [x] harden green: chain-viz `3ced39a`, x402 `9780a2e`, yolo `27eda96`, yew `9f9de9c` (run 37475873262) |
 | yecwallet-dd, lightwalletd-dd | `ci-misc` | [x] `7bca835`, `d1736b4` (pushed) | [x] `ci/upgrade` | [x] harden green (runs 37461538299, 37461508021) |
 | yb-calibration, workspace | `ci-misc` | [x] `936e2a3`, `43bea93` (pushed) | — | [x] harden green (runs 37461545877, 37461635708) |
 
