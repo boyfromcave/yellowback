@@ -76,10 +76,10 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
 | Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [x] 59 cases on `91c557ecb` |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; rest `up/up-ftest-dd` | [~] `vault_upgrade.py` [x] |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; `vault_primitive`/`vault_slashing`/`vault_bridge` pass on `up/up-ftest-dd` (merge pending `up-int-dd`) | [~] `vault_upgrade.py` [x] |
 
 ### P3 bridge template (Ycash side only)
-- [ ] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` (both lines)
+- [~] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd passes on `up/up-ftest-dd`; ycash6 port pending
 - [ ] devnet bridge persona (mock burn feed, no Ethereum)
 - [-] anvil / local Ethereum, `wyec/` repo (P5)
 
@@ -839,6 +839,19 @@ hold a transaction invalid at tip+1: the per-block re-validation of template spe
 mandatory on that line, not an optimisation; (22) 6.20.0 has no script-execution cache; set
 signatures bypass the ECDSA cache; (23) on `upgrade/vault` the audit's frozen-set leg also exempts
 `Cargo.toml`, `Cargo.lock` and `src/rust/*` (the `librustzcash6` repoint), under the review gate.
+
+**Found by the functional suites (`up-ftest-dd`, 2026-10-05):** (24) mempool re-validation after a
+tip change must re-run the **scripts** of template spends, not only the primitive rules (set
+membership and dormancy are read by the opcodes); (25) an `OP_CHECKSETSIG`/`OP_CHECKSETDORMANT`
+failure in the mempool is state-dependent and must not carry DoS 100 (a peer on another tip would
+be banned); both fixed in `up-int-dd`. (26) **Open, for O-9:** §4.2's "challenger-set majority
+slashes the relayer" is not expressible: `SET_REMOVE` is signed by members of the target's own
+set, and a one-seat relayer set has no other member. Today the relayer is slashable only by
+equivocation (which also makes its set dormant, so every owner recovers). A contested-cancel slash
+across sets would need a new act (`SET_REMOVE` naming a second, authorised set), to be added if the
+Foundation picks the single-relayer shape. (27) A bridge destination OP_RETURN whose first push
+starts `YV` is parsed as an act and invalidates the lock; the `wyec` wallet and daemon must write
+destinations as ABI `bytes32` (left-padded) and never begin one with `0x5956`.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
