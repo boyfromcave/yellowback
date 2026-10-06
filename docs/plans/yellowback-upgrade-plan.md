@@ -64,12 +64,12 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 | `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
 | BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [x] `f71eb7ddd` | [~] `up/up-cons6` |
 | `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [~] `up/up-cons6` |
-| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [~] `up/up-core6` |
-| Module table (empty in P2) + interface | [x] `bd33dc0b9` | [~] `up/up-core6` |
+| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [x] merged `ae1ab3a3c` (49 / 1432, vectors byte-identical) |
+| Module table (empty in P2) + interface | [x] `bd33dc0b9` | [x] `ae1ab3a3c` |
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [~] `up/up-int-dd` | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [~] `up/up-int-dd` | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
-| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0); C++ replay registration with core | [ ] copy |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
 | Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [~] cons6 (script) |
 | Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; rest `up/up-ftest-dd` | [ ] |
 
