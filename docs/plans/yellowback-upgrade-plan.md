@@ -110,7 +110,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [x] `a787a5af5` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [x] `a787a5af5` (byte-identical) |
 | P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half `up/up-p4b6-yed` |
-| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
+| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5); full re-run on `6740a4160` in progress | [~] on wt/up6 `007931dc9` all suites green (28 in the full run + 4 re-run after port collisions / the D-U6 rebuild) except `yellowback_devnet_upgrade`, which needs P4-b's YED half |
 
 ### Devnet and clients
 - [~] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel — **ycash-dd [x]**
