@@ -136,8 +136,8 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
 | ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [~] harden run in progress |
 | librustzcash6 | `ci-6` | — | [x] `ci/upgrade` (fork test workflow; upstream scoped) | [ ] |
 | yew, yolo, chain-viz, x402-ycash | `ci-rust` | [~] (chain-viz `harden/yellowback` 4b010df pushed as a pin) | [~] | [ ] |
-| yecwallet-dd, lightwalletd-dd | `ci-misc` | [x] `7bca835`, `d1736b4` (pushed) | [x] `ci/upgrade` | [~] harden runs in progress |
-| yb-calibration, workspace | `ci-misc` | [x] `936e2a3`, `43bea93` (pushed) | — | [~] harden runs in progress |
+| yecwallet-dd, lightwalletd-dd | `ci-misc` | [x] `7bca835`, `d1736b4` (pushed) | [x] `ci/upgrade` | [x] harden green (runs 37461538299, 37461508021) |
+| yb-calibration, workspace | `ci-misc` | [x] `936e2a3`, `43bea93` (pushed) | — | [x] harden green (runs 37461545877, 37461635708) |
 
 CI findings (2026-10-06): (C-1) scheduled runs only ever executed the default branch's workflow — owner decided
 to switch the GitHub default branch of the node repos to `harden/yellowback` (owner action in GitHub settings);
@@ -1028,7 +1028,7 @@ Python rejects it as `bad-vault-act-key` — reason strings differ, outcomes ide
 sunset wording removed from the devnet, the quote agent and the docs; `doc/yellowback.md`'s trust statement still
 mirrors the spec's §8.1 and changes with the generator source; the −32601 text names what is missing.
 
-**fix-validate (2026-10-06, ycash-dd `up/fix-validate`, merging):** (69) `yed_validaterawtransaction` verifies as the
+**fix-validate (2026-10-06, merged into ycash-dd `upgrade/vault` `1c39991d8`; 292 unit cases):** (69) `yed_validaterawtransaction` verifies as the
 mempool does at tip+1 (vault flags, `SetSigChecker` over the tip snapshot, BIP68) and returns `invalidReason` when
 invalid — closes (56); (70) **sign-once guard**: the node wallet refuses a second, different OP_CHECKSETSIG
 signature for the same (setId, prevout) (persisted `vaultsetsig` record; re-signing the identical sighash is
