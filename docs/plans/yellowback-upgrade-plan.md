@@ -133,6 +133,11 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
   plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
 - 2026-10-05: **P2 complete on both node lines** (ycash6 `a56cd4e20`: 65 vault unit cases, all five vault functional
   suites and the Yellowback regressions green). P3's Ycash side complete on both lines. P1 node chunks complete.
+- 2026-10-06 (wave 6, owner asked to widen parallelism): seven agents in flight — `up-yed6` (P4-a → ycash6),
+  `up-p4b6-prim` (P4-b's primitive hook → ycash6, in parallel with P4-a), `devnet-dd` (full ecosystem walk on the
+  upgrade + the P3 bridge persona), `docs-tooling` (contract generator for the upgrade line, mapping §22 P4 rows),
+  `dd-polish` (cancel from the mempool, vault RPC contract, fuzz corpus, signalling wording), `p6-wallet`, `p6-yew`.
+  Waiting on them: P4-b's YED half on ycash6 (after `up-yed6`), the ycash6 devnet and client runs against `wt/up6`.
 - 2026-10-06: **P4-a and P4-b complete on ycash-dd** (`a903fae2f`): all 28 functional suites, devnet_roles presets,
   chain-viz against the node. P6: lightwalletd, chain-viz, x402, yolo done on `upgrade/vault` branches (unmerged);
   YecWallet, YEW and the ycash6 P4 port in flight.
