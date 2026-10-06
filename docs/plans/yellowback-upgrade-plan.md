@@ -151,7 +151,11 @@ by depends' `cargo vendor`; the cache key also lacked Cargo.lock) — fixed; (C-
 workflows (~30 jobs per PR) scoped to upstream `master` PRs / zcash-owned repos, contents kept; (C-4) the release
 workflow refuses a tag unless the version matches the line (6.21.x harden, 6.22.x upgrade) and the heights are set;
 (C-5) the upgrade audit's cross-line golden-vector leg is red until ycash6's P4-b YED half lands (by design);
-(C-6) yecwallet-dd never ran CI on its hardening branch (trigger was the old branch of record); (C-7) parallel local
+(C-6) yecwallet-dd never ran CI on its hardening branch (trigger was the old branch of record); (C-8) ycash6's first push run (37461531652) failed in `build`: the depends cache key hashed `depends/**`, which
+covers the built tree and the vendored crates, and the post-job save failed to hash it — fixed to depends' inputs
++ Cargo.lock/Cargo.toml (ycash6 `3b63a093d` harden, `d3a3319ef` ci/upgrade), as ycash-dd already did (reported by the
+owner); (C-9) the anonymous GitHub API (60/h per IP) is the bottleneck for reading CI — a token would lift it;
+(C-7) parallel local
 functional runs in one tree race on the shared `qa/cache` (harness, not a defect; CI shards are separate runners).
 
 ### P1, P5, P7, P8
