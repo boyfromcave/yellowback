@@ -98,7 +98,9 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 
 ### P3 bridge template (Ycash side only)
 - [x] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd `99f33ea04`, ycash6 `a56cd4e20`
-- [ ] devnet bridge persona (mock burn feed, no Ethereum)
+- [x] devnet bridge persona (mock burn feed, no Ethereum): `bridge-sim` + `yellowback-devnet bridge …`, both shapes
+  (9/6/7 guardians; relayer + OPEN challengers): lock → burn → intent → release; rogue intent cancelled; owner
+  recovery on dormancy (ycash-dd `492550751`)
 - [-] anvil / local Ethereum, `wyec/` repo (P5)
 
 ### P4 YED module — both lines
@@ -111,7 +113,9 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
-- [~] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel — ycash-dd up and armed; full walk pending
+- [~] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel — **ycash-dd [x]**
+  (`492550751`: `upgrade-walk` 103/103 checks across 11 nodes with chain-viz, both lightwalletds and yolo; transcript
+  `contrib/yellowback/devnet/upgrade-walk-transcript.txt`; regression `yellowback_devnet_upgrade.py` 534 s); ycash6 pending its P4 port
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
@@ -1052,6 +1056,16 @@ yolo `ci/upgrade` (abort-on-drop guard).
   only (new quote within ~6 s for polling pools, no frozen file); **upgrade/vault** — the immediate rebuild condition
   (a quote-generation counter next to the tip check; the frozen rule is retired there, review gate instead) plus the
   bump. Agent `setquote`.
+
+**devnet-dd (2026-10-06):** (73) `vault_lock` has no data/extra-output parameter, so a bridge wallet cannot write
+§4.1's destination OP_RETURN through it (bridge-sim builds the lock itself) — a `"data"` parameter would serve the
+wyec wallet; (74) a node without `-yellowbackattestorset` after the upgrade runs the YED module inert, i.e. it does
+not enforce YED consensus — the attestor set must be a chain parameter on mainnet (unset today; P8 sets it);
+(75) `set_getinfo.current` counts a joiner after the set's maturity while the module keeps it PENDING until
+BOND_MATURITY — clients that show seats must read the module's `yed_listattestors`; (76) every set_*/vault_*
+transaction locks a whole confirmed coin and its change confirms a block later: operators need several coins;
+(77) block bursts outrun the attest agents' 4-block ticks (`bundle-insufficient`); (78) after a cancel the position
+moves to the cancel txid — clients follow `reopenedVaults`; (79) the regression's 534 s nears the 10-min budget.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
