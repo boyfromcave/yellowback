@@ -107,7 +107,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [ ] after P4-a port |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half after the P4-a port |
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
@@ -979,6 +979,11 @@ wrong branch on the block before an upgrade; clients must use `YellowbackStreame
 (asked once per tip height: the streamer is rate-limited); (53) librustzcash6 `4867cf85` marks Vault
 `has_orchard = true` and accepts V5 while `suggested_for_branch(Vault)` is V4 — permissive, Ycash's own NU5 gate
 decides; noted for other crate users.
+
+**Found by the 6.20.0 P4-b primitive port (2026-10-06):** (54) on 6.20.0 the miner's running copy is
+`vault::TemplateRun`, which takes the ancestor hashes in its constructor (miner.cpp unchanged); (55) ycash6 splits
+`VaultState::ApplyEjections` into a loop plus `ApplyEjectionsOf(const Module&, tx, h)` as a test seam (no behaviour
+change) — back-port to ycash-dd so the two lines' `state.cpp` stay identical (assigned with the YED-half port).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
