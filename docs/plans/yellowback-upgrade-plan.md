@@ -113,7 +113,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 ### Devnet and clients
 - [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
-- [ ] YecWallet (activation screens → upgrade status), YEW / yolo / x402 branch ID, chain-viz, lightwalletd
+- [~] P6 clients on `upgrade/vault` branches: lightwalletd-dd, chain-viz (set/vault panels), x402, yolo `p6-light`; YecWallet `p6-wallet`; YEW (V/I templates, branch ID in the Rust signer) `p6-yew`
 - [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
 
 ### P1, P5, P7, P8
