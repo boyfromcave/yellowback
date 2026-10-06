@@ -47,11 +47,11 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Chunk | Content | ycash-dd | ycash6 |
 |---|---|---|---|
 | H0-a | mapping §21 rows, plans README row, v3 §8.2 rows, `make spec` | [ ] | — |
-| H0-b | `yb-calibration` policy `harden-2026-10.toml`, empty-class convention | [ ] | — |
-| H1-a | F-1 wallet spent-tracking, F-5 mainnet heights unset | [ ] | [ ] |
-| H1-b | F-2 agent sample configs and defaults | [ ] | [ ] |
-| H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [ ] | [ ] |
-| H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [ ] | [ ] |
+| H0-b | `yb-calibration` policy `harden-2026-10.toml`, empty-class convention | [~] `hd/cal` | — |
+| H1-a | F-1 wallet spent-tracking, F-5 mainnet heights unset | [~] `hd/wallet` | [~] `hd/wallet` |
+| H1-b | F-2 agent sample configs and defaults | [~] `hd/wallet` | [~] `hd/wallet` |
+| H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [~] `hd/rules` | [~] `hd/rules` |
+| H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [~] `hd/wallet` | [~] `hd/wallet` |
 | H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] | — |
 | H5 | wallets (YecWallet, YEW, lightwalletd, chain-viz) — after H3-c | [ ] | — |
 | merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [ ] | [ ] |
@@ -60,17 +60,17 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 ### P2 primitive — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [ ] | [ ] |
-| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [ ] |
-| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [ ] | [ ] |
-| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [ ] | [ ] |
-| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [ ] | [ ] |
-| Module table (empty in P2) + interface | [ ] | [ ] |
+| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
+| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
+| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
+| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
+| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [~] `up/up-core-dd` | [ ] port after dd |
+| Module table (empty in P2) + interface | [~] `up/up-core-dd` | [ ] |
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
-| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [ ] | [ ] |
-| Unit tests `vault_*_tests.cpp` | [ ] | [ ] |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [~] `up/up-pyfw` | [ ] copy |
+| Unit tests `vault_*_tests.cpp` | [~] core-dd, cons-dd | [~] cons6 (script) |
 | Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
 
 ### P3 bridge template (Ycash side only)
@@ -97,7 +97,9 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
 
 ### Log
-- 2026-10-05: revision 2; spec §15; integration branches cut; wave 1 dispatched.
+- 2026-10-05: revision 2; spec §15; integration branches `upgrade/vault` cut (ycash-dd, ycash6, librustzcash6) with
+  integration worktrees `wt/up-dd`, `wt/up6`; wave 1 dispatched: `up-core-dd`, `up-cons-dd`, `up-cons6` (+`up-rz6`),
+  `up-pyfw`, `hd-rules`, `hd-wallet`, `hd-cal`. Owner: include P1.
 
 ## 0. Assumptions about the Foundation's primitive
 
