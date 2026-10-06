@@ -39,7 +39,9 @@ THE SPEC FILE
 
 THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in both forks)
   {
-    "rpcversion": <int>,            from the §4.5 heading "(`rpcversion = N`)" — of the v3 plan when it exists
+    "rpcversion": <int>,            from the §4.5 heading "(`rpcversion = N`)" — of the v3 plan when it exists —
+                                    unless the rpc doc's title line names one ("…, rpcversion N"): the doc wins,
+                                    as it does for shapes and args (hardening H-9.3 bumped it to 4 in the doc alone)
     "source": {"plan": "...", "revision": N, "section": "4.5", "rpcdoc": <path or null>,
                "planV3": <path or null>, "revisionV3": <M or null>},
     "errors": {"<identifier>": {"raisedBy": ["yed_…", …], "when": "…"}, …},   the §4.5 error table, then every
@@ -382,6 +384,16 @@ RPCDOC_REL = "ycash-dd/doc/yellowback-rpc.md"   # the recorded path is the canon
 RPCDOC6_REL = "ycash6/doc/yellowback-rpc.md"
 
 
+def rpcdoc_version(path):
+    """The rpcversion the rpc doc's title line states (`# … rpcversion N`), or None."""
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        first = f.readline()
+    m = re.match(r"^# .*\brpcversion (\d+)\s*$", first)
+    return int(m.group(1)) if m else None
+
+
 def commands_from_rpcdoc(path, rel=RPCDOC_REL):
     """Fenced ```json blocks whose nearest preceding non-blank line names a `yed_*` command,
     and the heading `### `yed_<name> <args>`` of each command (args = the text after the name)."""
@@ -423,6 +435,9 @@ def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_RE
         ver, _ = rpc_section(lines_v3)  # the v3 heading states the current rpcversion (W14)
         rev_v3 = revision(lines_v3)
     rpcdoc, overrides, doc_args = commands_from_rpcdoc(rpcdoc_path, rpcdoc_rel)
+    doc_ver = rpcdoc_version(rpcdoc_path)
+    if doc_ver is not None:
+        ver = doc_ver
     for name, shape in overrides.items():
         cmds.setdefault(name, {"args": "", "returns": {}})["returns"] = shape
     for name, a in doc_args.items():
