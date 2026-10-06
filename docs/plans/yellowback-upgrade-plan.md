@@ -60,18 +60,18 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 ### P2 primitive — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
+| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [x] `f71eb7ddd` | [~] `up/up-cons6` |
 | `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
-| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
-| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
+| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [x] `f71eb7ddd` | [~] `up/up-cons6` |
+| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [~] `up/up-cons6` |
 | `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [~] `up/up-core6` |
 | Module table (empty in P2) + interface | [x] `bd33dc0b9` | [~] `up/up-core6` |
-| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
-| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
-| RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
+| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [~] `up/up-int-dd` | [ ] |
+| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [~] `up/up-int-dd` | [ ] |
+| RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0); C++ replay registration with core | [ ] copy |
-| Unit tests `vault_*_tests.cpp` | [~] core-dd, cons-dd | [~] cons6 (script) |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
+| Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [~] cons6 (script) |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; rest `up/up-ftest-dd` | [ ] |
 
 ### P3 bridge template (Ycash side only)
 - [ ] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` (both lines)
@@ -696,7 +696,7 @@ YED-specific (P4) choices: U-21..U-24 in §15.10.
 **BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ the spending height (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
 
 **`OP_CHECKSETSIG` (0xc0)** with `SCRIPT_VERIFY_VAULT` (without it: `SCRIPT_ERR_BAD_OPCODE` as today):
-1. Pop `setId` (exactly 32 bytes) and `role` (exactly one byte, 1 or 2); else `SCRIPT_ERR_SETSIG`.
+1. Pop `role` (top of stack, as the templates push it last; exactly one byte, 1 or 2) and then `setId` (exactly 32 bytes); else `SCRIPT_ERR_SETSIG`.
 2. `k = checker.SetThreshold(setId, role)`; unknown set → `SCRIPT_ERR_SETSIG`.
 3. Pop `k` elements; each must be 65 bytes (`header || r || s`, header 31..34 = compressed recoverable, the `signmessage` format) with low S.
 4. `msg = SHA256d("YcashSetSig" (11 ASCII bytes) || setId (32) || role (1) || prevout.hash (32) || prevout.n (u32 LE) || sighash (32))`, `sighash = SignatureHash(scriptCode, txTo, nIn, SIGHASH_ALL, amount, consensusBranchId)` with `scriptCode` from the last `OP_CODESEPARATOR`, as `OP_CHECKSIG`.
@@ -809,6 +809,19 @@ subtracts it, floored at 0; (11) the bond index covers every unspent member bond
 bond of an ACTIVE member marks it WITHDRAWN; (12) a second `SET_WINDDOWN` and a `SET_CREATE` of an
 existing set are invalid; a missing input coin is `bad-txns-vault-inputs-missing`. Undo records are
 not pruned (≈ 40 bytes per block).
+
+**Added by the consensus plumbing (`up-cons-dd`, 2026-10-05), adopted for both lines:** (13) the
+one-`OP_CHECKSETSIG` limit is per `EvalScript` call; (14) a CSV operand with bit 31 set is a NOP even
+if bit 22 is set (BIP112's disable flag wins); (15) `PrevEpochBranchId` for Vault walks back to the
+highest upgrade **with an activation height** (NU5 never activated on Ycash), so an old-branch spend
+after activation is diagnosed `old-consensus-branch-id` (DoS 10) as at every other upgrade;
+(16) `nProtocolVersion` for Vault is today's `PROTOCOL_VERSION` (270013) on every network until P8
+picks a fresh value and bumps `version.h` on both lines together (a higher value now would make
+regtest nodes disconnect each other at activation); (17) the vault flags are added by height, never
+to the static `STANDARD`/`MANDATORY` sets, so wallet signing verification (`sign.cpp`,
+`signrawtransaction`) must add `GetVaultScriptFlags(tip+1)`; (18) on the plain regtest harness
+`getblocktemplate` aborts at height ≥ 150 (the known founders'-reward defect), so functional tests
+activate below that or pass the Ycash upgrade arguments.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
