@@ -132,12 +132,23 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
 
 | Repo | Agent | `ci/harden` | `ci/upgrade` | pushed + green |
 |---|---|---|---|---|
-| ycash-dd | `ci-dd` | [~] | [~] | [ ] |
-| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [~] | [~] | [ ] |
-| librustzcash6 | `ci-6` | — | [~] | [ ] |
-| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [~] | [~] | [ ] |
-| yecwallet-dd, lightwalletd-dd | `ci-misc` | [~] | [~] | [ ] |
-| yb-calibration, workspace | `ci-misc` | [~] | — | [ ] |
+| ycash-dd | `ci-dd` | [x] `d8e4898ba` (pushed as `harden/yellowback`) | [x] `ci/upgrade` (push after ycash6 P4) | [~] harden run in progress |
+| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [~] harden run in progress |
+| librustzcash6 | `ci-6` | — | [x] `ci/upgrade` (fork test workflow; upstream scoped) | [ ] |
+| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [~] (chain-viz `harden/yellowback` 4b010df pushed as a pin) | [~] | [ ] |
+| yecwallet-dd, lightwalletd-dd | `ci-misc` | [x] `7bca835`, `d1736b4` (pushed) | [x] `ci/upgrade` | [~] harden runs in progress |
+| yb-calibration, workspace | `ci-misc` | [x] `936e2a3`, `43bea93` (pushed) | — | [~] harden runs in progress |
+
+CI findings (2026-10-06): (C-1) scheduled runs only ever executed the default branch's workflow — owner decided
+to switch the GitHub default branch of the node repos to `harden/yellowback` (owner action in GitHub settings);
+each node workflow has a `schedule-fanout` job that then dispatches nightly/weekly on both lines; (C-2) ycash6's
+offline Rust build broke whenever the depends cache hit (git-patched crates come from `~/.cargo/git`, filled only
+by depends' `cargo vendor`; the cache key also lacked Cargo.lock) — fixed; (C-3) ycash6 inherited upstream zcashd
+workflows (~30 jobs per PR) scoped to upstream `master` PRs / zcash-owned repos, contents kept; (C-4) the release
+workflow refuses a tag unless the version matches the line (6.21.x harden, 6.22.x upgrade) and the heights are set;
+(C-5) the upgrade audit's cross-line golden-vector leg is red until ycash6's P4-b YED half lands (by design);
+(C-6) yecwallet-dd never ran CI on its hardening branch (trigger was the old branch of record); (C-7) parallel local
+functional runs in one tree race on the shared `qa/cache` (harness, not a defect; CI shards are separate runners).
 
 ### P1, P5, P7, P8
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
