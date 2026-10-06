@@ -18,9 +18,12 @@ both still apply where this plan does not amend them. Items are numbered **U-\**
 ## Execution status (authoritative; update as work lands)
 
 **Goal of this round (owner, 2026-10-05):** the primitive in `ycash-dd` and `ycash6`, functional on
-the devnet / regtest, and the Yellowback system running on it (the YED module). P1 (hardening) is
-its own plan and not part of this round; P5 (the `wyec` contract and daemon, external audit) and
-the Ethereum half of P3 are not either. The owner's instruction was to execute without questions:
+the devnet / regtest, and the Yellowback system running on it (the YED module). P1 (hardening, as
+reshaped by §7) is **in** this round by owner instruction: its node chunks land first on
+`harden/yellowback` (both lines) and are merged into `upgrade/vault` before P4 opens, because P4
+rewrites the same `src/yellowback/` files; P2 runs in parallel with P1 (new files and consensus
+files only). P5 (the `wyec` contract and daemon, external audit) and the Ethereum half of P3 are
+not in this round. The owner's instruction was to execute without questions:
 open points are recorded here and in §15.0, never blocked on.
 
 **Branches.** Integration branch `upgrade/vault` in `ycash-dd`, `ycash6` and `librustzcash6`,
@@ -36,8 +39,23 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 ### P0 decide
 - [x] Plan promoted with §0's assumptions (revision 1)
 - [x] Implementation spec §15 written (revision 2); U-9..U-20 recorded
-- [x] AGENTS.md §9 amendments applied (P2 opened, 2026-10-05)
+- [ ] AGENTS.md §9 amendments: **awaiting the owner** (the session's edit of AGENTS.md was refused by its permission
+  classifier; the amendments are in force for agents through `wt/BRIEFING-upgrade.md` meanwhile)
 - [-] Foundation's written primitive, O-9, O-12, O-13 values (theirs; §15 uses regtest values)
+
+### P1 hardening (hardening plan §9 as reshaped by §7) — on `harden/yellowback`, both lines
+| Chunk | Content | ycash-dd | ycash6 |
+|---|---|---|---|
+| H0-a | mapping §21 rows, plans README row, v3 §8.2 rows, `make spec` | [ ] | — |
+| H0-b | `yb-calibration` policy `harden-2026-10.toml`, empty-class convention | [ ] | — |
+| H1-a | F-1 wallet spent-tracking, F-5 mainnet heights unset | [ ] | [ ] |
+| H1-b | F-2 agent sample configs and defaults | [ ] | [ ] |
+| H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [ ] | [ ] |
+| H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [ ] | [ ] |
+| H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] | — |
+| H5 | wallets (YecWallet, YEW, lightwalletd, chain-viz) — after H3-c | [ ] | — |
+| merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [ ] | [ ] |
+Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
 
 ### P2 primitive — both lines
 | Item | ycash-dd | ycash6 |
