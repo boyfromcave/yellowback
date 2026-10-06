@@ -106,10 +106,10 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 ### P4 YED module — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half after the P4-a port |
+| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [x] `a787a5af5` |
+| P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [x] `a787a5af5` |
+| P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [x] `a787a5af5` (byte-identical) |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half `up/up-p4b6-yed` |
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
@@ -1053,7 +1053,9 @@ yolo `ci/upgrade` (abort-on-drop guard).
 - **D-U6 (owner):** `yed_setquote` does not invalidate the node's cached `getblocktemplate` (rebuilt on a new tip, or a
   mempool change after 5 s), so a pool can mine one block on its previous quote. Same on `harden/yellowback`; not a
   regression; consistent with audit A-7. Recommendation: a one-line change on both lines (bump the template-cache key
-  in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed.** Correction found while
+  in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed.** Part A (the bump) merged and
+  pushed on `harden/yellowback` (ycash-dd `b62d6bfc2`, ycash6 `bfcc01c6e`); part B (immediate, upgrade line) is
+  **blocked**: the session's permission classifier refused the edit to `src/yellowback/index.{h,cpp}` — awaiting the owner. Correction found while
   implementing: the cache is a set of static locals in `getblocktemplate` (`src/rpc/mining.cpp`, both lines), so a
   bump from the Yellowback RPC only forces a rebuild once the cached template is > 5 s old; "immediate" needs a
   rebuild condition in `mining.cpp`, a frozen file on `harden/yellowback`. Applied per line: **harden** — the bump
@@ -1070,6 +1072,18 @@ BOND_MATURITY — clients that show seats must read the module's `yed_listattest
 transaction locks a whole confirmed coin and its change confirms a block later: operators need several coins;
 (77) block bursts outrun the attest agents' 4-block ticks (`bundle-insufficient`); (78) after a cancel the position
 moves to the cancel txid — clients follow `reopenedVaults`; (79) the regression's 534 s nears the 10-min budget.
+
+**up-yed6 (2026-10-06, ycash6 P4-a, merged `a787a5af5`):** (80) miner ordering defect: the YED template filter
+committed a candidate's YED effect before `vault::TemplateRun::Try` could still skip it (fixed on ycash6 `f282f45b0`;
+ycash-dd's miner has the same order — `dd-followup`); (81) a stale mint (reference height = tip) survives
+`invalidateblock` in the mempool (nothing re-checks a mint on DisconnectTip) but is never templated
+(`stale_invalid_mint_never_templated`); (82) 6.20.0-only enforcement machinery removed (headers-loop valve skip,
+`pendingWipe` reconsideration, the extra ActivateBestChain before ThreadImport); (83) claim fees under ZIP-317 come from
+the claimant's YEC with re-selection on fee growth; (84) a stock 6.20.0 ycashd rejects `-nuparams=6d5b7a31`, so the
+nightly REF_YCASHD steps must change (`dd-followup` for the scripts); (85) `yed_getinfo.supplyCapReached` drift on ycash6
+fixed. Wave 8 (2026-10-06): `up-p4b6-yed` (P4-b YED half → ycash6), `up6-mirror` (fix-validate rest, dd-polish,
+devnet walk + ycash6 transcript, D-U6 A → ycash6 upgrade), `dd-followup` (miner order, pyflakes, ApplyEjectionsOf
+back-port, REF steps).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
