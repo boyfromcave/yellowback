@@ -1098,6 +1098,15 @@ turnstile's running pool values; test `tpl_primitive_skip_leaves_no_yed_effect` 
 reference (v4.5.0) binary only below the vault activation, then continue fork-against-fork — never run yet with a
 real ycash-legacy binary (none in the workspace; open for CI).
 
+**up6-mirror (2026-10-06, merged ycash6 `007931dc9`):** fix-validate remainder, dd-polish (mempool cancel,
+vault RPC contract byte-identical to ycash-dd's, Vault fuzz target + corpus, wording) and the devnet walk + bridge
+persona are on ycash6; ycash6 walk 85 checks PASS with `members` and `cancel` skipped until P4-b's YED half lands
+(then the full 103-check walk and `yellowback_devnet_upgrade.py`). (90) 6.20.0 differences: `mempool.get(hash)`
+(no `lookup`); `CWallet::IsSpent(asOfHeight)`; the CLI conversion table lives in `rpc/common.h` (the contract
+checker reads both forms — back-port to ycash-dd so the script is identical); mininode's `hashBlockCommitments`
+for hand-built blocks. (91) Coordinator error: the full ycash6 run's per-suite seeds 600-631 overlapped an agent's
+610-629 range (four collision failures, re-run); coordinator bases are now 700-739 / 900-939.
+
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
