@@ -104,11 +104,11 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 ### P4 YED module — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [~] `up/up-yed-dd` | [ ] port after dd |
-| P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [ ] | [ ] |
-| P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [ ] | [ ] |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [ ] | [ ] |
-| Functional suites rewritten (obsolete enforcement suites removed) | [ ] | [ ] |
+| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
+| P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
+| P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [~] `up/up-p4b-dd` | [ ] after dd |
+| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c` (28 suites; full re-run on the integration tree in progress) | [~] `up/up-yed6` |
 
 ### Devnet and clients
 - [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
@@ -884,6 +884,29 @@ ycash6's miner now re-runs acts, template rules and template-input scripts per c
 control); v4.5.0's miner already re-checks inputs per transaction. (29) The audit exemption for
 `upgrade/vault` also covers `src/policy/policy.{cpp,h}` (§15.3/§15.5 require them). (30) `-reindex-chainstate`
 (6.20.0 only) also wipes the vault DB.
+
+**Found by P4-a (`up-yed-dd`, 2026-10-06):** (31) `-yellowback`/`-experimentalfeatures` no longer gate YED;
+regtest needs `-nuparams=6d5b7a31:<h>` + `-yellowbackattestorset=<setid>`; `-yellowbackstartheight` and
+`-yellowbackenforceuntil` are init errors; the enforce/signal/template-policy/require-healthy flags are logged and
+ignored. (32) An unhealthy Yellowback index now stops the node (`AbortNode`): under consensus a node that cannot
+evaluate YED cannot validate blocks. (33) The claimant intent carries the collateral less the RED-5 residual
+(the residual stays with the owner); fees come from the claimant's YEC; a cancel re-creates the vault from the
+claimant intent only. (34) A failed TRANSFER still burns and is valid (unchanged semantics). (35) Issuance for the
+supply cap counts from the upgrade height. (36) Golden vector: blocks 137, 217 and 251 are invalid and re-mined
+without the offending transaction. (37) A real v4.5.0 reference binary cannot follow the chain past the upgrade
+height (the stock-parity variants run without it). (38) `rpcversion` 5; `yed_sweep` removed (owner sweeps are
+ordinary owner-branch spends). (39) The workspace `make spec` still sources the RPC contract's version and command
+list from the v3 plan (rpcversion 4 on `harden/yellowback`); on `upgrade/vault` the contract is generated from the
+node's `doc/yellowback-rpc.md`. When `upgrade/vault` becomes a branch of record the generator must take this plan
+and that doc as its source (open, coordinator).
+
+**Owner decisions raised by P4 (open, not blocking the devnet):**
+- **D-U1** A claim to a Sapling (`ys1…`) destination is refused (`bad-address`): an intent commits a transparent
+  recipient script. Recommendation: accept; the claimant shields afterwards.
+- **D-U2** A node whose Yellowback index is unhealthy halts (`AbortNode`) instead of running unpoliced.
+  Recommendation: accept (it is what consensus requires).
+- **D-U3** A cancelled wrong-price claim forfeits its burn (U-24). Recommendation: accept (it prices a griefing
+  attempt and only over-collateralises the system).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
