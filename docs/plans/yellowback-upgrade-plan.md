@@ -1028,6 +1028,16 @@ Python rejects it as `bad-vault-act-key` — reason strings differ, outcomes ide
 sunset wording removed from the devnet, the quote agent and the docs; `doc/yellowback.md`'s trust statement still
 mirrors the spec's §8.1 and changes with the generator source; the −32601 text names what is missing.
 
+**fix-validate (2026-10-06, ycash-dd `up/fix-validate`, merging):** (69) `yed_validaterawtransaction` verifies as the
+mempool does at tip+1 (vault flags, `SetSigChecker` over the tip snapshot, BIP68) and returns `invalidReason` when
+invalid — closes (56); (70) **sign-once guard**: the node wallet refuses a second, different OP_CHECKSETSIG
+signature for the same (setId, prevout) (persisted `vaultsetsig` record; re-signing the identical sighash is
+idempotent), and `vault_buildcancel` returns a byte-identical cancel while its fee inputs are unspent — closes the
+node side of (60); (71) `yed_listpositions` carries `intents` (61); `yed_listtransactions` types claim /
+claim_release / claim_cancel for claimant and owner (62); open: the owner's RED-5 residual-intent release has no
+row (the TxLog names no vault; a TxLog change must stay byte-identical across lines); `set_signact` signatures have
+no guard (no equivocation rule reads them).
+
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
