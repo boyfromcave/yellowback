@@ -52,7 +52,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H1-b | F-2 agent sample configs and defaults | [x] `fa6768f85` | [x] `5752fd0e3` |
 | H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [x] `6e1df81ad` | [x] `6cb6753b3` |
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [x] `fa6768f85` | [x] `5752fd0e3` |
-| H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] **deferred (owner, 2026-10-05)**: reduced run done (`docs/reports/2026-10-harden/`); full sweeps stopped and run only once both node lines are built and green end to end (P4 + devnet done), on the existing frozen snapshot `data/local/frozen-20261004` plus the live spreads log — no data re-pulls | — |
+| H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [~] **started 2026-10-06 (owner)** on `frozen-20261004` (checksums verified), standard + window + stress sweeps, `nice` 15, 3 jobs, `.work/cache`, no data pulls; earlier note: reduced run done (`docs/reports/2026-10-harden/`); full sweeps stopped and run only once both node lines are built and green end to end (P4 + devnet done), on the existing frozen snapshot `data/local/frozen-20261004` plus the live spreads log — no data re-pulls | — |
 | H5 | wallets — rpcversion 4 + new fields: YecWallet `78ea158` [x] (108 QTest + 4 devnet cases; renew flow; client plausibility); lightwalletd `916d836`, chain-viz `4b010df` (NO_PRICE-hours counter; coalition/valve panels not built — retired), x402 `756b045`, YEW `4a93c12` [x]; YEW H5-b deadlines/plausibility `acb7f1a` [x] (stale mainnet constants fixed; trust text wording changed — owner to review) | [x] | — |
 | merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [x] `4e4ae0b13` | [x] `ed0806d65` |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
@@ -130,8 +130,12 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 **CI state 2026-10-06:** `harden/yellowback` push tier **green in all 11 repos** (nightly/weekly tiers run from tonight's
 schedule — the owner switched the node repos' default branch to `harden/yellowback`). `upgrade/vault` pushed in all
 repos (ycash-dd `d06748ed6` with ci/upgrade merged; clients and librustzcash6 fast-forwarded to their ci/upgrade);
-ycash6 `upgrade/vault` (`b7ed33c64`) still carries the pre-CI workflow until `ci-6` carries the P4 edits onto its
-structure (in flight); upgrade-line runs being read.
+ycash6 `upgrade/vault` moved onto the new CI (`467a639a1`, incl. the seed corpus the ports never committed).
+Upgrade-line push tier **green in 8 of 9 repos** (ycash-dd `d06748ed6` incl. the upgrade audit's cross-line leg, ycash6
+`467a639a1`, x402, chain-viz, yolo, YecWallet, YEW, lightwalletd); librustzcash6's new fork workflow fixed twice
+(C-11: clippy on library targets — an upstream test file fails `-D warnings` at 1.85.1; C-12: zcash_transparent
+tested with `transparent-inputs`, six tests that fail identically at the pin ec525fae skipped by name — a baseline
+defect of the upstream fork, to report) — re-run at `285f48ba2` in progress.
 
 ### CI/CD (owner request 2026-10-06; design in `wt/BRIEFING-upgrade.md` "CI/CD design")
 Every repo: triggers on `harden/yellowback`, `upgrade/vault`, `main`; push tier ≤ 25 min warm (build once,
