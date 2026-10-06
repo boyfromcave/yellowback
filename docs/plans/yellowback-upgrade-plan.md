@@ -1038,6 +1038,15 @@ claim_release / claim_cancel for claimant and owner (62); open: the owner's RED-
 row (the TxLog names no vault; a TxLog change must stay byte-identical across lines); `set_signact` signatures have
 no guard (no equivocation rule reads them).
 
+**quote-tag (2026-10-06):** (72) the yolo vault-mode regtest flake was yolo's test harness, not the node: `Bound::serve`
+detached its poller and status tasks, so after `server.abort()` a leaked poller fetched a template before the test's
+`yed_setquote` and the node served that cached, quote-less template; fixed in yolo `27eda96` (harden, pushed) and
+yolo `ci/upgrade` (abort-on-drop guard).
+- **D-U6 (owner):** `yed_setquote` does not invalidate the node's cached `getblocktemplate` (rebuilt on a new tip, or a
+  mempool change after 5 s), so a pool can mine one block on its previous quote. Same on `harden/yellowback`; not a
+  regression; consistent with audit A-7. Recommendation: a one-line change on both lines (bump the template-cache key
+  in `yed_setquote`) plus a functional assertion — not made without the owner's word.
+
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
