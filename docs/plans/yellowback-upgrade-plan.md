@@ -50,31 +50,36 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H0-b | `yb-calibration` policy `harden-2026-10.toml`, empty-class convention | [~] `hd/cal` | — |
 | H1-a | F-1 wallet spent-tracking, F-5 mainnet heights unset | [~] `hd/wallet` | [~] `hd/wallet` |
 | H1-b | F-2 agent sample configs and defaults | [~] `hd/wallet` | [~] `hd/wallet` |
-| H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [~] `hd/rules` | [~] `hd/rules` |
+| H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [x] `6e1df81ad` | [x] `6cb6753b3` |
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [~] `hd/wallet` | [~] `hd/wallet` |
 | H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] | — |
 | H5 | wallets (YecWallet, YEW, lightwalletd, chain-viz) — after H3-c | [ ] | — |
 | merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [ ] | [ ] |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
+P1 notes (2026-10-05, `hd-rules`): until H4 sets class A's `baseRatioBps[0]` (H-3 expects ≥ 72,500), mainnet's
+current 50,000 is below the 60,000 recap floor, so under a global-ratio halt or above the supply cap nothing
+mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's refusal is MINT-2's
+`bad-mint-lock-height` (no `mint-class-term` verdict exists). `SCHEMA_VERSION` 4 → 5; golden stateHash
+`d3d60429…dbd0`. Devnet `--mint-requires-armed` (hardening §10) not yet done.
 
 ### P2 primitive — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
-| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
-| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
-| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
-| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [~] `up/up-core-dd` | [ ] port after dd |
-| Module table (empty in P2) + interface | [~] `up/up-core-dd` | [ ] |
-| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
-| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
-| RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
-| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [~] `up/up-pyfw` | [ ] copy |
-| Unit tests `vault_*_tests.cpp` | [~] core-dd, cons-dd | [~] cons6 (script) |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
+| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [x] `f71eb7ddd` | [x] `91c557ecb` |
+| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [x] librustzcash6 `4867cf85` pushed (`upgrade/vault`); Cargo repointed |
+| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [x] `f71eb7ddd` | [x] `91c557ecb` |
+| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [x] `91c557ecb` |
+| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [x] merged `ae1ab3a3c` (49 / 1432, vectors byte-identical) |
+| Module table (empty in P2) + interface | [x] `bd33dc0b9` | [x] `ae1ab3a3c` |
+| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [~] `up/up-int-dd` | [ ] |
+| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [~] `up/up-int-dd` | [ ] |
+| RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
+| Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [x] 59 cases on `91c557ecb` |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; `vault_primitive`/`vault_slashing`/`vault_bridge` pass on `up/up-ftest-dd` (merge pending `up-int-dd`) | [~] `vault_upgrade.py` [x] |
 
 ### P3 bridge template (Ycash side only)
-- [ ] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` (both lines)
+- [~] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd passes on `up/up-ftest-dd`; ycash6 port pending
 - [ ] devnet bridge persona (mock burn feed, no Ethereum)
 - [-] anvil / local Ethereum, `wyec/` repo (P5)
 
@@ -693,10 +698,10 @@ YED-specific (P4) choices: U-21..U-24 in §15.10.
 
 **`OP_CHECKSEQUENCEVERIFY` (0xb2)** with `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY`: BIP112 exactly, except that the transaction version test reads Ycash's `nVersion` (4 ≥ 2 always passes) and a stack argument with the type flag (bit 22) set fails (`SCRIPT_ERR_UNSATISFIED_LOCKTIME`). Without the flag it is `OP_NOP3` as today.
 
-**BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ spending height − 1 (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
+**BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ the spending height (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
 
 **`OP_CHECKSETSIG` (0xc0)** with `SCRIPT_VERIFY_VAULT` (without it: `SCRIPT_ERR_BAD_OPCODE` as today):
-1. Pop `setId` (exactly 32 bytes) and `role` (exactly one byte, 1 or 2); else `SCRIPT_ERR_SETSIG`.
+1. Pop `role` (top of stack, as the templates push it last; exactly one byte, 1 or 2) and then `setId` (exactly 32 bytes); else `SCRIPT_ERR_SETSIG`.
 2. `k = checker.SetThreshold(setId, role)`; unknown set → `SCRIPT_ERR_SETSIG`.
 3. Pop `k` elements; each must be 65 bytes (`header || r || s`, header 31..34 = compressed recoverable, the `signmessage` format) with low S.
 4. `msg = SHA256d("YcashSetSig" (11 ASCII bytes) || setId (32) || role (1) || prevout.hash (32) || prevout.n (u32 LE) || sighash (32))`, `sighash = SignatureHash(scriptCode, txTo, nIn, SIGHASH_ALL, amount, consensusBranchId)` with `scriptCode` from the last `OP_CODESEPARATOR`, as `OP_CHECKSIG`.
@@ -778,7 +783,7 @@ Acts apply in block order against the running state (U-17); mempool validates ag
 
 | Type | Body | Signatures | Rule |
 |---|---|---|---|
-| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `bondMin ≥ 1`; `admitKey` compressed; other flag bits 0. `setId = txid` |
+| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `1 ≤ bondMin ≤ MAX_MONEY`; `admitKey` compressed; other flag bits 0. `setId = txid` |
 | 0x02 `SET_JOIN` | `setId 32, memberKey 33, bondLocktime u32, bondVout u8` (70) | `S_1` by `memberKey`; then, unless OPEN: `slashThreshold` current-member signatures if the set has ≥ `slashThreshold` current members, else one by `admitKey` | set exists (created in an earlier block), not wound down; seats free; key not ACTIVE in the set; `vout[bondVout]` = P2SH(B(memberKey, bondLocktime)), value ≥ `bondMin`; `bondLocktime ≥ h + bondLockMin`, `< 500000000` |
 | 0x03 `SET_HEARTBEAT` | `setId 32, memberKey 33` (65) | `S_1` by `memberKey` | key is a current member; `lastAct = h` |
 | 0x04 `SET_REMOVE` | `setId 32, memberKey 33, burn u8 (0/1)` (66) | `slashThreshold` distinct current members other than the target | target ACTIVE → `REMOVED`; `burn = 1` also freezes its bond (contested-cancel slash); `burn = 0` is O-6 (bond returned) |
@@ -787,6 +792,66 @@ Acts apply in block order against the running state (U-17); mempool validates ag
 
 Bond rules: spending a frozen bond outpoint is invalid (`bad-vault-bond-frozen`); spending the bond
 of an ACTIVE member sets `WITHDRAWN`.
+
+**Reconciled 2026-10-05 (Python ↔ C++ cross-check, `up-pyfw`):** (1) BIP68 is Bitcoin's height
+test exactly, so RELEASE (valid from `coinHeight + delay`) and CANCEL (valid while
+`h − coinHeight < delay`) meet with no gap and no overlap. (2) `bondMin` is bounded by `MAX_MONEY`.
+(3) Field ranges the codec does not check (`bondLocktime < 500000000`, `burn ∈ {0,1}`, roles 1/2 in
+`SET_EQUIVOCATION`, signature header 31..34) are rejected at rule time (`ActFieldsValid`), with the
+same `bad-vault-act-*` reason. (4) "Compressed" means the 02/03 prefix; an off-curve key parses and
+can never sign. (5) Act signature counts are exact and signers distinct; extra scriptSig pushes
+before a template's arguments are not rejected (no CLEANSTACK). (6) The epoch in which a set is
+created has basis 0: nothing unlocks under a rate limit until the next epoch. (7) setId, txids and
+prevouts are internal byte order; a prevout is the `COutPoint` serialisation.
+
+**Added by the C++ implementation (`up-core-dd`, 2026-10-05), adopted:** (8) an I-shaped output
+that is malformed (non-minimal push, out-of-range field) is invalid like a malformed V
+(`bad-txns-vault-malformed`), so I-0 cannot be bypassed by mis-encoding; (9) an act in a coinbase
+is invalid (`bad-vault-act-coinbase`: every coinbase shares a null `vin[0]`, so act signatures
+would replay) and so is an act in a transaction with no transparent input (`bad-vault-act-novin`);
+(10) every V output under a set adds its value to `lockedValue` and every V spend (any selector)
+subtracts it, floored at 0; (11) the bond index covers every unspent member bond, so spending the
+bond of an ACTIVE member marks it WITHDRAWN; (12) a second `SET_WINDDOWN` and a `SET_CREATE` of an
+existing set are invalid; a missing input coin is `bad-txns-vault-inputs-missing`. Undo records are
+not pruned (≈ 40 bytes per block).
+
+**Added by the consensus plumbing (`up-cons-dd`, 2026-10-05), adopted for both lines:** (13) the
+one-`OP_CHECKSETSIG` limit is per `EvalScript` call; (14) a CSV operand with bit 31 set is a NOP even
+if bit 22 is set (BIP112's disable flag wins); (15) `PrevEpochBranchId` for Vault walks back to the
+highest upgrade **with an activation height** (NU5 never activated on Ycash), so an old-branch spend
+after activation is diagnosed `old-consensus-branch-id` (DoS 10) as at every other upgrade;
+(16) `nProtocolVersion` for Vault is today's `PROTOCOL_VERSION` (270013) on every network until P8
+picks a fresh value and bumps `version.h` on both lines together (a higher value now would make
+regtest nodes disconnect each other at activation); (17) the vault flags are added by height, never
+to the static `STANDARD`/`MANDATORY` sets, so wallet signing verification (`sign.cpp`,
+`signrawtransaction`) must add `GetVaultScriptFlags(tip+1)`; (18) on the plain regtest harness
+`getblocktemplate` aborts at height ≥ 150 (the known founders'-reward defect), so functional tests
+activate below that or pass the Ycash upgrade arguments.
+
+**Added by the 6.20.0 plumbing (`up-cons6`, 2026-10-05):** (19) 6.20.0's regtest `-nuparams` back-fill
+(an unset upgrade takes the next-higher one's height) excludes Vault, so `-nuparams=6d5b7a31:h`
+does not also schedule NU5..NU6.2 (whose protocol versions would partition regtest); (20) the
+ZIP-221 history tree uses **V1 leaves under Vault** (6.20.0's Rust default would have sent an
+unnamed branch to V2 while ConnectBlock builds V1 with NU5 inactive); if NU5 ever activates
+alongside Vault this becomes state-dependent; (21) 6.20.0's `CreateNewBlock` does not re-check each
+transaction (it validates the template through `TestBlockValidity`), so the mempool must never
+hold a transaction invalid at tip+1: the per-block re-validation of template spends and acts is
+mandatory on that line, not an optimisation; (22) 6.20.0 has no script-execution cache; set
+signatures bypass the ECDSA cache; (23) on `upgrade/vault` the audit's frozen-set leg also exempts
+`Cargo.toml`, `Cargo.lock` and `src/rust/*` (the `librustzcash6` repoint), under the review gate.
+
+**Found by the functional suites (`up-ftest-dd`, 2026-10-05):** (24) mempool re-validation after a
+tip change must re-run the **scripts** of template spends, not only the primitive rules (set
+membership and dormancy are read by the opcodes); (25) an `OP_CHECKSETSIG`/`OP_CHECKSETDORMANT`
+failure in the mempool is state-dependent and must not carry DoS 100 (a peer on another tip would
+be banned); both fixed in `up-int-dd`. (26) **Open, for O-9:** §4.2's "challenger-set majority
+slashes the relayer" is not expressible: `SET_REMOVE` is signed by members of the target's own
+set, and a one-seat relayer set has no other member. Today the relayer is slashable only by
+equivocation (which also makes its set dormant, so every owner recovers). A contested-cancel slash
+across sets would need a new act (`SET_REMOVE` naming a second, authorised set), to be added if the
+Foundation picks the single-relayer shape. (27) A bridge destination OP_RETURN whose first push
+starts `YV` is parsed as an act and invalidates the lock; the `wyec` wallet and daemon must write
+destinations as ABI `bytes32` (left-padded) and never begin one with `0x5956`.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
