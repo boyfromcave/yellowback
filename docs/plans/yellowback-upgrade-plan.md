@@ -54,7 +54,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [~] `hd/wallet` | [~] `hd/wallet` |
 | H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] | — |
 | H5 | wallets (YecWallet, YEW, lightwalletd, chain-viz) — after H3-c | [ ] | — |
-| merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [ ] | [ ] |
+| merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [~] hd/rules in (`34f2659b9`); hd/wallet pending | [~] hd/rules in (`365cc6bdf`); hd/wallet pending |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
 P1 notes (2026-10-05, `hd-rules`): until H4 sets class A's `baseRatioBps[0]` (H-3 expects ≥ 72,500), mainnet's
 current 50,000 is below the 60,000 recap floor, so under a global-ratio halt or above the supply cap nothing
@@ -86,7 +86,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 ### P4 YED module — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [ ] | [ ] |
+| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [~] `up/up-yed-dd` | [ ] port after dd |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [ ] | [ ] |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [ ] | [ ] |
 | P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [ ] | [ ] |
