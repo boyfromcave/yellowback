@@ -53,8 +53,8 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [x] `6e1df81ad` | [x] `6cb6753b3` |
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [x] `fa6768f85` | [x] `5752fd0e3` |
 | H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] **deferred (owner, 2026-10-05)**: reduced run done (`docs/reports/2026-10-harden/`); full sweeps stopped and run only once both node lines are built and green end to end (P4 + devnet done), on the existing frozen snapshot `data/local/frozen-20261004` plus the live spreads log — no data re-pulls | — |
-| H5 | wallets — rpcversion 4 + new fields: YecWallet `hd/h5-wallet` [~]; lightwalletd `916d836`, chain-viz `4b010df` (NO_PRICE-hours counter; coalition/valve panels not built — retired), x402 `756b045`, YEW `4a93c12` [x]; YEW H5-b deadlines/plausibility `hd/h5-yew` [~] | [~] | — |
-| merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [~] hd/rules in (`34f2659b9`); hd/wallet pending | [~] hd/rules in (`365cc6bdf`); hd/wallet pending |
+| H5 | wallets — rpcversion 4 + new fields: YecWallet `78ea158` [x] (108 QTest + 4 devnet cases; renew flow; client plausibility); lightwalletd `916d836`, chain-viz `4b010df` (NO_PRICE-hours counter; coalition/valve panels not built — retired), x402 `756b045`, YEW `4a93c12` [x]; YEW H5-b deadlines/plausibility `hd/h5-yew` [~] | [~] | — |
+| merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [x] `4e4ae0b13` | [x] `ed0806d65` |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
 
 **H4 reduced result (2026-10-05, `yb-calibration/docs/reports/2026-10-harden/`, REDUCED — owner decisions
@@ -69,7 +69,7 @@ the parameter values are the owner's (hardening plan §8).
 P1 notes (2026-10-05, `hd-wallet`): F-1 reproduced (30/30 back-to-back mints failed on the unfixed binary, 0/30
 with the fix, both lines); F-5 adds `qa/yellowback-release-heights.sh` and a release-workflow guard; the spreads replay
 at `min_sources` 2 fails closed 0.18–1.43 % per hour (G-1 should be read from ybcal's per-block replay); `make spec-check`
-is red on the yecwallet-dd and lightwalletd-dd copies until H5 lands (clients still expect rpcversion 3).
+was red on the client copies until H5 landed; green again since YecWallet `78ea158`.
 P1 notes (2026-10-05, `hd-rules`): until H4 sets class A's `baseRatioBps[0]` (H-3 expects ≥ 72,500), mainnet's
 current 50,000 is below the 60,000 recap floor, so under a global-ratio halt or above the supply cap nothing
 mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's refusal is MINT-2's
