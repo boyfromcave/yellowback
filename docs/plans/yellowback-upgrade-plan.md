@@ -123,6 +123,22 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
   generator for the upgrade line + `make spec-check-upgrade` (`382d1dc`). Open: the −32601 text in
   `src/rpc/yellowback.cpp:70` still names `-experimentalfeatures -yellowback` (both lines)
 
+### CI/CD (owner request 2026-10-06; design in `wt/BRIEFING-upgrade.md` "CI/CD design")
+Every repo: triggers on `harden/yellowback`, `upgrade/vault`, `main`; push tier ≤ 25 min warm (build once,
+sharded functional matrix from one artifact), nightly variants and cross-repo devnets, weekly fuzz; exact cache keys;
+SHA-pinned actions; actionlint + zizmor clean. Node-line audit on `upgrade/vault`: frozen/budget legs report-only
+(G-9 review gate), consensus-diff artifact, DoS rule, rpcversion 5 contract via the generator, cross-line vector
+identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes and reads the runs.
+
+| Repo | Agent | `ci/harden` | `ci/upgrade` | pushed + green |
+|---|---|---|---|---|
+| ycash-dd | `ci-dd` | [~] | [~] | [ ] |
+| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [~] | [~] | [ ] |
+| librustzcash6 | `ci-6` | — | [~] | [ ] |
+| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [~] | [~] | [ ] |
+| yecwallet-dd, lightwalletd-dd | `ci-misc` | [~] | [~] | [ ] |
+| yb-calibration, workspace | `ci-misc` | [~] | — | [ ] |
+
 ### P1, P5, P7, P8
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
 
