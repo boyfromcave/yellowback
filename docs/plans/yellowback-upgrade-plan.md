@@ -115,8 +115,8 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
-  (no source change; mines across the activation; yellowback_stratum green); chain-viz `8b4d922` and x402 [~] (to
-  verify); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
+  (no source change; mines across the activation; yellowback_stratum green); chain-viz `b4eb44b` [x] (rpcversion 5 tolerant, set/vault
+  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 [~] (to verify); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
@@ -941,6 +941,11 @@ and `vault_list[].wallet` reveal which keys the serving node's wallet holds — 
 must strip them; (47) the vault RPCs have no machine-readable contract (prose doc, decimal YEC amounts): a
 `vault-rpc-contract.json` on the node would let clients share fixtures (open); (48) yolo needs no change: a v4
 coinbase carries no branch ID and the pool uses the node's `coinbasetxn` and roots.
+
+**Found by chain-viz (2026-10-06):** (49) `vault_decodescript` emitted a duplicate `"type"` key for acts; it is now
+`"type": "act"` with `"acttype"` (ycash-dd `a903fae2f`; ycash6 to mirror); (50) `vault_buildcancel` cannot pre-build
+a cancel for an intent still in the mempool (it reads the originating vault from the vault DB) — relevant to G-11
+cancel latency; (51) the rate fields render in YEC decimals in RPCs though §15.4 stores zatoshi (units only).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
