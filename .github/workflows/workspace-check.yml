@@ -1,28 +1,141 @@
 # The workspace repo holds documents, the manifest and the scripts. This check is what makes
 # `main` trustworthy mechanically: the generated spec copies match the plan, the scripts parse,
-# the manifest reads, and a bootstrap dry run resolves every entry in repos.yaml.
+# the manifest reads, the Markdown's relative links resolve, and a bootstrap dry run resolves every
+# entry in repos.yaml.
+#
+# Jobs (workspace CI/CD design, 2026-10-06; all push-tier, a minute or two each):
+#   check          this repository alone (no clones), as before, plus the link check.
+#   spec-copies    `make spec-check` across repositories: the four component repos whose copies the
+#                  plan generates (ycash-dd, ycash6, yecwallet-dd, lightwalletd) are cloned shallow
+#                  and sparse at the branch matching this one (main -> their branches of record,
+#                  harden/yellowback -> harden/yellowback) and compared. Skipped, with a notice, while
+#                  one of them does not have that branch on GitHub yet.
+#   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
+#                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
+#                  node doc is not on the upgrade line yet, and says so.
 name: workspace-check
+
+# The branch list lives once, here: pull_request is unfiltered, push runs on main (the branch of
+# record), the hardening and upgrade lines, feature/** and the ci/* branches that carry CI changes
+# before they merge.
 on:
   push:
-    branches: [main, feature/**]
+    branches: [ main, harden/yellowback, upgrade/vault, 'feature/**', 'ci/**' ]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+env:
+  REPO_YCASH_DD: boyfromcave/ycash-dd
+  REPO_YCASH6: boyfromcave/ycash6
+  REPO_YECWALLET_DD: boyfromcave/yecwallet-dd
+  REPO_LIGHTWALLETD_DD: boyfromcave/lightwalletd
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with: { python-version: '3.11' }
       - name: Scripts parse
-        run: for f in scripts/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py
+        run: for f in scripts/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py scripts/check-md-links.py
       - name: Manifest reads
         run: scripts/repos.sh list && for r in $(scripts/repos.sh list); do printf '%-18s %s\n' "$r" "$(scripts/repos.sh get "$r" role)"; done
       - name: Generated spec copies match the plan (the parts that live in this repo)
         run: scripts/extract-spec.sh --check-workspace
+      - name: Relative Markdown links resolve
+        run: scripts/check-md-links.py
       - name: Bootstrap dry run
         run: NO_COLOR=1 scripts/bootstrap.sh --dry-run --no-venv
       # A tag pin must still name the recorded commit; a commit pin (upstream has no tags) must still be
       # in the history of its recorded upstream branch (only the commit graph is fetched).
       - name: Every ref/ pin still holds upstream (tags and commit pins)
         run: scripts/check-ref-pins.sh
+
+  spec-copies:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with: { python-version: '3.11' }
+      - name: Clone the four component repos' generated copies (shallow, sparse)
+        id: clone
+        env:
+          BRANCH: ${{ github.base_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            harden/yellowback|upgrade/vault|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
+            *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
+          esac
+          clone() {  # repo branch dir sparse-dir
+            if ! git ls-remote --exit-code --heads "https://github.com/$1.git" "$2" >/dev/null; then
+              echo "::notice::$1 has no branch $2 on GitHub yet; cross-repo spec-check skipped"
+              echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            git clone -q --depth 1 --filter=blob:none --sparse --branch "$2" "https://github.com/$1.git" "$3"
+            git -C "$3" sparse-checkout set "$4"
+            echo "$1@$2 = $(git -C "$3" rev-parse HEAD)"
+          }
+          clone "$REPO_YCASH_DD"        "$v4" "$RUNNER_TEMP/ycash-dd"        doc
+          clone "$REPO_YCASH6"          "$v6" "$RUNNER_TEMP/ycash6"          doc
+          clone "$REPO_YECWALLET_DD"    "$v4" "$RUNNER_TEMP/yecwallet-dd"    docs
+          clone "$REPO_LIGHTWALLETD_DD" "$v4" "$RUNNER_TEMP/lightwalletd-dd" testdata
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+      - name: make spec-check (docs/spec and the four repos' copies)
+        if: steps.clone.outputs.ok == 'true'
+        run: |
+          EXTRACT_SPEC_NODE_DIR="$RUNNER_TEMP/ycash-dd" EXTRACT_SPEC_NODE6_DIR="$RUNNER_TEMP/ycash6" \
+          EXTRACT_SPEC_WALLET_DIR="$RUNNER_TEMP/yecwallet-dd" EXTRACT_SPEC_LWD_DIR="$RUNNER_TEMP/lightwalletd-dd" \
+            scripts/extract-spec.sh --check
+
+  spec-upgrade:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with: { python-version: '3.11' }
+      - name: Does this checkout carry the upgrade-line generator?
+        id: gen
+        run: |
+          if grep -q -- '--check-upgrade' scripts/extract_spec.py; then echo "ok=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::scripts/extract_spec.py has no --check-upgrade on this branch; skipped"; echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Clone the four component repos at upgrade/vault (those that have it)
+        if: steps.gen.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          clone() {  # repo dir sparse-dir; a repo without the branch is left out (extract_spec.py skips it)
+            if git ls-remote --exit-code --heads "https://github.com/$1.git" upgrade/vault >/dev/null; then
+              git clone -q --depth 1 --filter=blob:none --sparse --branch upgrade/vault "https://github.com/$1.git" "$2"
+              git -C "$2" sparse-checkout set "$3"
+              echo "$1@upgrade/vault = $(git -C "$2" rev-parse HEAD)"
+            else
+              echo "::notice::$1 has no upgrade/vault on GitHub yet"
+            fi
+          }
+          clone "$REPO_YCASH_DD"        "$RUNNER_TEMP/up/ycash-dd"        doc
+          clone "$REPO_YCASH6"          "$RUNNER_TEMP/up/ycash6"          doc
+          clone "$REPO_YECWALLET_DD"    "$RUNNER_TEMP/up/yecwallet-dd"    docs
+          clone "$REPO_LIGHTWALLETD_DD" "$RUNNER_TEMP/up/lightwalletd-dd" testdata
+      - name: make spec-check-upgrade (the upgrade line's copies)
+        if: steps.gen.outputs.ok == 'true'
+        run: |
+          EXTRACT_SPEC_NODE_DIR="$RUNNER_TEMP/up/ycash-dd" EXTRACT_SPEC_NODE6_DIR="$RUNNER_TEMP/up/ycash6" \
+          EXTRACT_SPEC_WALLET_DIR="$RUNNER_TEMP/up/yecwallet-dd" EXTRACT_SPEC_LWD_DIR="$RUNNER_TEMP/up/lightwalletd-dd" \
+            scripts/extract-spec.sh --check-upgrade
