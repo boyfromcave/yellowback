@@ -52,7 +52,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H1-b | F-2 agent sample configs and defaults | [~] `hd/wallet` | [~] `hd/wallet` |
 | H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [x] `6e1df81ad` | [x] `6cb6753b3` |
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [~] `hd/wallet` | [~] `hd/wallet` |
-| H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [~] reduced run done (`docs/reports/2026-10-harden/`); full standard + window + stress sweeps running | — |
+| H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] **deferred (owner, 2026-10-05)**: reduced run done (`docs/reports/2026-10-harden/`); full sweeps stopped and run only once both node lines are built and green end to end (P4 + devnet done), on the existing frozen snapshot `data/local/frozen-20261004` plus the live spreads log — no data re-pulls | — |
 | H5 | wallets (YecWallet, YEW, lightwalletd, chain-viz) — after H3-c | [ ] | — |
 | merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [~] hd/rules in (`34f2659b9`); hd/wallet pending | [~] hd/rules in (`365cc6bdf`); hd/wallet pending |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
