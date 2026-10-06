@@ -116,7 +116,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
   (no source change; mines across the activation; yellowback_stratum green); chain-viz `b4eb44b` [x] (rpcversion 5 tolerant, set/vault
-  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 [~] (to verify); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
+  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
@@ -946,6 +946,12 @@ coinbase carries no branch ID and the pool uses the node's `coinbasetxn` and roo
 `"type": "act"` with `"acttype"` (ycash-dd `a903fae2f`; ycash6 to mirror); (50) `vault_buildcancel` cannot pre-build
 a cancel for an intent still in the mempool (it reads the originating vault from the vault DB) — relevant to G-11
 cancel latency; (51) the rate fields render in YEC decimals in RPCs though §15.4 stores zatoshi (units only).
+
+**Found by x402 (2026-10-06):** (52) a light client that signs with `GetLightdInfo`'s chain-tip branch signs the
+wrong branch on the block before an upgrade; clients must use `YellowbackStreamer.GetChainInfo.nextBlockBranchId`
+(asked once per tip height: the streamer is rate-limited); (53) librustzcash6 `4867cf85` marks Vault
+`has_orchard = true` and accepts V5 while `suggested_for_branch(Vault)` is V4 — permissive, Ycash's own NU5 gate
+decides; noted for other crate users.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
