@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yellowback — Keep your Ycash. Spend dollars.</title>
+<meta name="description" content="Ycash Yellowback (YED) is a decentralized dollar on Ycash. Lock YEC as collateral, mint YED (1 YED = $1), and unlock every coin when the timelock ends. You never have to sell your Ycash.">
+<meta name="theme-color" content="#0a1633">
+<meta property="og:title" content="Yellowback — Keep your Ycash. Spend dollars.">
+<meta property="og:description" content="Lock YEC. Mint dollars. Unlock every coin later. A decentralized dollar backed by Ycash.">
+<meta property="og:image" content="assets/img/yellowback-mark.svg">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<!-- Ycash glyph, redrawn from YecWallet's res/logo.svg (MIT, The Ycash developers) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="yglyph" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M20 18V55" stroke-width="11"/><path d="M80 18V55" stroke-width="11"/>
+      <path d="M20 55A30 30 0 0 0 80 55" stroke-width="9"/>
+      <path d="M38 36V58M50 36V58M62 36V58" stroke-width="10"/>
+    </g>
+  </symbol>
+  <symbol id="yec-coin" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#f56733"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="#ffb08f" stroke-opacity=".5" stroke-width="2"/>
+    <use href="#yglyph" x="18" y="18" width="64" height="64" color="#fff"/>
+  </symbol>
+  <symbol id="yed-note" viewBox="0 0 120 70">
+    <rect x="1" y="1" width="118" height="68" rx="9" fill="url(#noteGrad)" stroke="#8a4b0b" stroke-opacity=".35"/>
+    <rect x="7" y="7" width="106" height="56" rx="5" fill="none" stroke="#7a3f06" stroke-opacity=".4" stroke-dasharray="1 3"/>
+    <circle cx="60" cy="35" r="17" fill="#f56733"/>
+    <use href="#yglyph" x="47" y="22" width="26" height="26" color="#fff"/>
+    <text x="13" y="24" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#5a2e05">$1</text>
+    <text x="84" y="57" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5a2e05">YED</text>
+  </symbol>
+  <defs>
+    <linearGradient id="noteGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe38a"/><stop offset=".55" stop-color="#f7b733"/><stop offset="1" stop-color="#d98a1c"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="status-bar">
+  <div class="wrap"><span class="status-dot"></span>
+    <span>status: release-candidate testing<span class="hide-sm"> · first mainnet parameter set starts at block 3,075,000 · minting opens once mining pools signal support</span></span>
+  </div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
+    <nav class="nav-links" id="nav-links">
+      <a href="how-it-works.html">How it works</a>
+      <a href="index.html#calculator">Calculator</a>
+      <a href="docs.html">Docs</a>
+      <a href="faq.html">FAQ</a>
+      <a class="btn btn-gold" href="docs.html#get-started">Get started</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="fiber" data-seed="2026" data-lines="7" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span data-scramble>lock --collateral YEC --mint YED</span><span class="cursor"></span></span>
+      <h1>Keep your Ycash.<span class="line2 gold-text">Spend dollars.</span></h1>
+      <p class="lede">
+        <strong>Ycash Yellowback (YED)</strong> is a decentralized dollar backed by Ycash.
+        Lock your YEC in a vault only you can open, mint dollars against it — <span class="mono">1&nbsp;YED&nbsp;=&nbsp;$1</span> —
+        and when the timelock ends, hand the dollars back and unlock <em>every single coin</em>.
+        You never have to sell your Ycash.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn btn-gold" href="#how">See how it works →</a>
+        <a class="btn btn-ghost" href="#calculator">Try the calculator</a>
+      </div>
+      <div class="hero-facts">
+        <div><b>300–500%</b>over-collateralized</div>
+        <div><b>1 key</b>yours, on every vault</div>
+        <div><b>0</b>custodians · committees</div>
+      </div>
+    </div>
+
+    <div class="hero-art" aria-label="Illustration: Ycash coins drop into a timelocked vault and Yellowback dollar notes fly out.">
+      <svg viewBox="0 0 520 480" role="img">
+        <defs>
+          <radialGradient id="heroGlow" cx="50%" cy="55%" r="50%">
+            <stop offset="0" stop-color="#f7b733" stop-opacity=".28"/><stop offset="1" stop-color="#f7b733" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="vaultGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1d3a85"/><stop offset="1" stop-color="#0c1a40"/>
+          </linearGradient>
+          <linearGradient id="vaultEdge" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffe38a"/><stop offset="1" stop-color="#d98a1c"/>
+          </linearGradient>
+        </defs>
+        <circle cx="260" cy="270" r="230" fill="url(#heroGlow)"/>
+
+        <!-- coins dropping into the slot -->
+        <g class="coin-drop"><use href="#yec-coin" x="232" y="60" width="56" height="56"/></g>
+        <g class="coin-drop c2"><use href="#yec-coin" x="232" y="60" width="56" height="56"/></g>
+        <g class="coin-drop c3"><use href="#yec-coin" x="232" y="60" width="56" height="56"/></g>
+
+        <!-- vault -->
+        <g class="float">
+          <rect x="120" y="196" width="280" height="230" rx="30" fill="url(#vaultGrad)" stroke="url(#vaultEdge)" stroke-width="4"/>
+          <rect x="132" y="208" width="256" height="206" rx="22" fill="none" stroke="#ffe38a" stroke-opacity=".12"/>
+          <rect x="208" y="188" width="104" height="14" rx="7" fill="#050b1c" stroke="#f7b733" stroke-width="2"/>
+          <circle cx="260" cy="306" r="88" fill="none" stroke="#45e0ff" stroke-width="3" stroke-dasharray="4 10" class="lock-ring" opacity=".85"/>
+          <circle cx="260" cy="306" r="72" fill="#0a1633" stroke="url(#vaultEdge)" stroke-width="5"/>
+          <g stroke="#f7b733" stroke-width="5" stroke-linecap="round" opacity=".9">
+            <path d="M260 226v18M260 368v18M180 306h18M322 306h18M203 249l13 13M304 350l13 13M317 249l-13 13M216 350l-13 13"/>
+          </g>
+          <use href="#yec-coin" x="222" y="268" width="76" height="76"/>
+          <rect x="176" y="392" width="168" height="24" rx="12" fill="#03070f" stroke="#4dffb0" stroke-opacity=".4"/>
+          <text x="260" y="408" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#4dffb0">CLTV · unlocks @ height H</text>
+        </g>
+
+        <!-- notes flying out -->
+        <g class="note-fly glow-gold"><use href="#yed-note" x="360" y="230" width="120" height="70"/></g>
+        <g class="note-fly n2 glow-gold"><use href="#yed-note" x="360" y="230" width="120" height="70"/></g>
+        <g class="note-fly n3 glow-gold"><use href="#yed-note" x="360" y="230" width="120" height="70"/></g>
+
+        <!-- chips -->
+        <g font-family="JetBrains Mono, monospace" font-size="12">
+          <rect x="40" y="96" width="132" height="30" rx="15" fill="#f56733" fill-opacity=".15" stroke="#f56733"/>
+          <text x="106" y="116" text-anchor="middle" fill="#ffc2a8">YEC in → locked</text>
+          <rect x="356" y="40" width="148" height="30" rx="15" fill="#f7b733" fill-opacity=".15" stroke="#f7b733"/>
+          <text x="430" y="60" text-anchor="middle" fill="#ffe38a">YED out · 1 = $1</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE GOLD STORY ============ -->
+<section id="story">
+  <div class="wrap">
+    <figure class="cert-stage reveal">
+      <div class="cert" data-tilt>
+<!-- CERTIFICATE:BEGIN (generated by tools/make-certificate.py --inline) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 552" role="img" aria-label="The Yellowback certificate: an engraved gold certificate, One YED, backed by Ycash locked on chain, redeemable to the keyholder on unlock.">
+<defs>
+<filter id="cpaper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 .35  0 0 0 0 .3  0 0 0 0 .2  0 0 0 .09 0" result="t"/><feComposite in="t" in2="SourceGraphic" operator="in" result="tt"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="tt"/></feMerge></filter>
+<pattern id="chatch" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 0V5" stroke="#4a4434" stroke-width="1.6"/></pattern>
+<pattern id="cxhatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V4" stroke="#2f2b22" stroke-width="1.1"/></pattern>
+<pattern id="cframe" width="18" height="18" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#2f2b22"/><circle cx="9" cy="9" r="7" fill="none" stroke="#f2ead2" stroke-opacity=".35" stroke-width=".8"/><circle cx="0" cy="0" r="7" fill="none" stroke="#f2ead2" stroke-opacity=".25" stroke-width=".8"/><circle cx="18" cy="18" r="7" fill="none" stroke="#f2ead2" stroke-opacity=".25" stroke-width=".8"/></pattern>
+<linearGradient id="cshine" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="cvig" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#fbf6e6"/><stop offset="1" stop-color="#e2d6b0"/></radialGradient>
+<clipPath id="cclip"><rect x="0" y="0" width="1300" height="552" rx="10"/></clipPath>
+<clipPath id="coval"><ellipse cx="650" cy="290" rx="128" ry="160"/></clipPath>
+<path id="carcTop" d="M312 150 C 475 50, 825 50, 988 150"/>
+<path id="cseal" d="M300 270 m -96 0 a 96 96 0 1 1 192 0 a 96 96 0 1 1 -192 0"/>
+</defs>
+<g clip-path="url(#cclip)">
+<rect width="1300" height="552" fill="#f2ead2" filter="url(#cpaper)"/>
+<path fill="url(#cframe)" fill-rule="evenodd" d="M0 0H1300V552H0Z M120 92 Q 120 70 150 70 H1150 Q 1180 70 1180 92 V440 Q 1180 460 1150 460 H150 Q 120 460 120 440 Z"/>
+<rect x="10" y="10" width="1280" height="532" fill="none" stroke="#f2ead2" stroke-opacity=".5" stroke-width="2"/>
+<path fill="none" stroke="#2f2b22" stroke-width="3" d="M126 96 Q 126 76 152 76 H1148 Q 1174 76 1174 96 V436 Q 1174 454 1148 454 H152 Q 126 454 126 436 Z"/>
+<g fill="none" stroke="#4a4434" stroke-width="0.5" opacity="0.12"><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(0.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(2.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(5.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(7.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(10.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(12.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(15.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(17.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(20.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(22.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(25.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(27.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(30.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(32.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(35.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(37.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(40.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(42.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(45.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(47.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(50.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(52.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(55.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(57.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(60.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(62.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(65.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(67.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(70.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(72.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(75.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(77.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(80.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(82.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(85.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(87.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(90.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(92.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(95.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(97.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(100.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(102.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(105.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(107.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(110.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(112.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(115.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(117.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(120.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(122.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(125.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(127.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(130.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(132.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(135.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(137.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(140.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(142.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(145.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(147.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(150.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(152.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(155.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(157.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(160.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(162.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(165.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(167.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(170.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(172.50 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(175.00 650 290)"/><ellipse cx="650" cy="290" rx="330.0" ry="138.6" transform="rotate(177.50 650 290)"/></g>
+<g fill="none" stroke="#4a4434" stroke-width="0.5" opacity="0.1"><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(0.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(3.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(7.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(11.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(15.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(18.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(22.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(26.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(30.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(33.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(37.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(41.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(45.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(48.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(52.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(56.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(60.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(63.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(67.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(71.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(75.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(78.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(82.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(86.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(90.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(93.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(97.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(101.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(105.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(108.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(112.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(116.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(120.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(123.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(127.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(131.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(135.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(138.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(142.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(146.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(150.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(153.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(157.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(161.25 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(165.00 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(168.75 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(172.50 980 300)"/><ellipse cx="980" cy="300" rx="170.0" ry="85.0" transform="rotate(176.25 980 300)"/></g>
+<g transform="translate(120 276) scale(1 1)" fill="none" stroke="#f2ead2" stroke-width="3" opacity=".8"><path d="M0 -110 C 40 -100, 52 -40, 22 -20 C 2 -6, 4 20, 24 30 C 56 46, 44 104, 0 116"/><path d="M22 -20 C 40 -30, 46 -8, 32 0 C 22 6, 20 -6, 28 -8" stroke-width="2"/></g>
+<text x="38" y="276" transform="rotate(-90 38 276)" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="22" letter-spacing="6" fill="#f2ead2" opacity=".9">YEC</text>
+<g transform="translate(1180 276) scale(-1 1)" fill="none" stroke="#f2ead2" stroke-width="3" opacity=".8"><path d="M0 -110 C 40 -100, 52 -40, 22 -20 C 2 -6, 4 20, 24 30 C 56 46, 44 104, 0 116"/><path d="M22 -20 C 40 -30, 46 -8, 32 0 C 22 6, 20 -6, 28 -8" stroke-width="2"/></g>
+<text x="1262" y="276" transform="rotate(90 1262 276)" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="22" letter-spacing="6" fill="#f2ead2" opacity=".9">YEC</text>
+<g fill="none" stroke="#f2ead2" stroke-width="0.7" opacity="0.5"><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(0.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(5.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(10.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(15.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(20.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(25.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(30.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(35.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(40.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(45.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(50.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(55.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(60.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(65.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(70.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(75.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(80.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(85.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(90.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(95.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(100.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(105.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(110.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(115.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(120.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(125.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(130.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(135.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(140.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(145.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(150.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(155.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(160.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(165.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(170.00 76 66)"/><ellipse cx="76" cy="66" rx="52.0" ry="23.4" transform="rotate(175.00 76 66)"/></g>
+<circle cx="76" cy="66" r="42" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<circle cx="76" cy="66" r="36" fill="none" stroke="#4a4434" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="76" y="88" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="64" fill="#2f2b22">1</text>
+<g fill="none" stroke="#f2ead2" stroke-width="0.7" opacity="0.5"><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(0.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(5.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(10.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(15.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(20.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(25.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(30.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(35.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(40.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(45.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(50.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(55.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(60.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(65.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(70.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(75.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(80.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(85.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(90.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(95.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(100.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(105.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(110.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(115.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(120.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(125.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(130.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(135.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(140.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(145.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(150.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(155.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(160.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(165.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(170.00 1224 66)"/><ellipse cx="1224" cy="66" rx="52.0" ry="23.4" transform="rotate(175.00 1224 66)"/></g>
+<circle cx="1224" cy="66" r="42" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<circle cx="1224" cy="66" r="36" fill="none" stroke="#4a4434" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="1224" y="88" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="64" fill="#2f2b22">1</text>
+<g fill="none" stroke="#f2ead2" stroke-width="0.7" opacity="0.5"><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(0.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(5.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(10.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(15.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(20.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(25.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(30.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(35.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(40.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(45.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(50.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(55.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(60.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(65.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(70.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(75.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(80.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(85.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(90.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(95.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(100.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(105.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(110.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(115.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(120.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(125.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(130.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(135.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(140.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(145.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(150.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(155.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(160.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(165.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(170.00 76 486)"/><ellipse cx="76" cy="486" rx="52.0" ry="23.4" transform="rotate(175.00 76 486)"/></g>
+<circle cx="76" cy="486" r="42" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<circle cx="76" cy="486" r="36" fill="none" stroke="#4a4434" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="76" y="508" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="64" fill="#2f2b22">1</text>
+<g fill="none" stroke="#f2ead2" stroke-width="0.7" opacity="0.5"><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(0.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(5.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(10.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(15.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(20.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(25.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(30.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(35.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(40.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(45.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(50.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(55.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(60.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(65.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(70.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(75.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(80.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(85.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(90.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(95.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(100.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(105.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(110.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(115.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(120.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(125.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(130.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(135.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(140.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(145.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(150.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(155.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(160.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(165.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(170.00 1224 486)"/><ellipse cx="1224" cy="486" rx="52.0" ry="23.4" transform="rotate(175.00 1224 486)"/></g>
+<circle cx="1224" cy="486" r="42" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<circle cx="1224" cy="486" r="36" fill="none" stroke="#4a4434" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="1224" y="508" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="64" fill="#2f2b22">1</text>
+<rect x="300" y="22" width="700" height="24" fill="#f2ead2" stroke="#2f2b22" stroke-width="1.5"/>
+<text x="650" y="39.5" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="12.5" letter-spacing="1.6" fill="#2f2b22">THIS CERTIFIES THAT THERE HAS BEEN LOCKED IN A VAULT ON THE YCASH CHAIN</text>
+<path d="M300 158 C 470 52, 830 52, 1000 158 L 990 126 C 830 22, 470 22, 310 126 Z" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<path d="M300 158 L 262 150 L 286 132 L 270 112 L 310 126" fill="#4a4434" stroke="#2f2b22" stroke-width="2"/>
+<path d="M1000 158 L 1038 150 L 1014 132 L 1030 112 L 990 126" fill="#4a4434" stroke="#2f2b22" stroke-width="2"/>
+<text font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="31" letter-spacing="6" fill="url(#chatch)" stroke="#2f2b22" stroke-width="1.3"><textPath href="#carcTop" startOffset="50%" text-anchor="middle">YCASH YELLOWBACK</textPath></text>
+<polygon points="300.0,158.0 306.5,170.2 314.6,159.0 319.5,171.9 329.0,161.8 332.1,175.3 342.9,166.5 344.2,180.3 356.0,173.0 355.6,186.9 368.2,181.1 365.9,194.8 379.2,190.8 375.2,204.1 388.9,201.8 383.1,214.4 397.0,214.0 389.7,225.8 403.5,227.1 394.7,237.9 408.2,241.0 398.1,250.5 411.0,255.4 399.8,263.5 412.0,270.0 399.8,276.5 411.0,284.6 398.1,289.5 408.2,299.0 394.7,302.1 403.5,312.9 389.7,314.2 397.0,326.0 383.1,325.6 388.9,338.2 375.2,335.9 379.2,349.2 365.9,345.2 368.2,358.9 355.6,353.1 356.0,367.0 344.2,359.7 342.9,373.5 332.1,364.7 329.0,378.2 319.5,368.1 314.6,381.0 306.5,369.8 300.0,382.0 293.5,369.8 285.4,381.0 280.5,368.1 271.0,378.2 267.9,364.7 257.1,373.5 255.8,359.7 244.0,367.0 244.4,353.1 231.8,358.9 234.1,345.2 220.8,349.2 224.8,335.9 211.1,338.2 216.9,325.6 203.0,326.0 210.3,314.2 196.5,312.9 205.3,302.1 191.8,299.0 201.9,289.5 189.0,284.6 200.2,276.5 188.0,270.0 200.2,263.5 189.0,255.4 201.9,250.5 191.8,241.0 205.3,237.9 196.5,227.1 210.3,225.8 203.0,214.0 216.9,214.4 211.1,201.8 224.8,204.1 220.8,190.8 234.1,194.8 231.8,181.1 244.4,186.9 244.0,173.0 255.8,180.3 257.1,166.5 267.9,175.3 271.0,161.8 280.5,171.9 285.4,159.0 293.5,170.2" fill="#d4a019" opacity=".9"/>
+<g fill="none" stroke="#a8770c" stroke-width="0.8" opacity="0.9"><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(0.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(4.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(9.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(13.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(18.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(22.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(27.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(31.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(36.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(40.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(45.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(49.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(54.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(58.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(63.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(67.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(72.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(76.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(81.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(85.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(90.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(94.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(99.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(103.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(108.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(112.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(117.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(121.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(126.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(130.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(135.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(139.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(144.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(148.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(153.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(157.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(162.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(166.50 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(171.00 300 270)"/><ellipse cx="300" cy="270" rx="92.0" ry="33.1" transform="rotate(175.50 300 270)"/></g>
+<circle cx="300" cy="270" r="96" fill="none" stroke="#a8770c" stroke-width="2"/>
+<circle cx="300" cy="270" r="74" fill="none" stroke="#a8770c" stroke-width="1.5"/>
+<text font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="13" letter-spacing="3" fill="#a8770c"><textPath href="#cseal" startOffset="0">· YELLOWBACK · AS GOOD AS GOLD · BACKED BY YCASH · SINCE BLOCK 3,075,000 </textPath></text>
+<text x="300" y="226" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="30" letter-spacing="3" fill="#a8770c" opacity=".95">GOLD</text>
+<text x="300" y="338" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="24" letter-spacing="2" fill="#2f2b22" opacity=".75">CERTIFICATE</text>
+<text x="300" y="262" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="10.5" letter-spacing=".4" fill="#2f2b22">THIS CERTIFICATE IS BACKED BY YEC</text>
+<text x="300" y="278" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="10.5" letter-spacing=".4" fill="#2f2b22">LOCKED ON CHAIN, REDEEMABLE IN FULL</text>
+<text x="300" y="294" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="10.5" letter-spacing=".4" fill="#2f2b22">TO THE KEYHOLDER AT THE UNLOCK HEIGHT.</text>
+<text x="300" y="404" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="34" letter-spacing="3" fill="#d4a019" stroke="#a8770c" stroke-width=".6">Y03075000A</text>
+<text x="848" y="200" text-anchor="start" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="34" letter-spacing="3" fill="#d4a019" stroke="#a8770c" stroke-width=".6">Y03075000A</text>
+<text x="220" y="190" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="20" fill="#2f2b22">Y</text>
+<text x="420" y="196" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="12" letter-spacing="1" fill="#2f2b22">SERIES OF</text>
+<text x="420" y="212" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="13" letter-spacing="1" fill="#2f2b22">2026</text>
+<ellipse cx="650" cy="290" rx="140" ry="172" fill="#f2ead2" stroke="#2f2b22" stroke-width="3"/>
+<g fill="none" stroke="#4a4434" stroke-width="0.5" opacity="0.35"><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(0.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(3.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(6.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(9.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(12.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(15.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(18.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(21.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(24.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(27.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(30.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(33.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(36.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(39.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(42.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(45.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(48.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(51.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(54.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(57.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(60.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(63.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(66.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(69.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(72.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(75.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(78.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(81.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(84.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(87.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(90.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(93.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(96.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(99.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(102.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(105.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(108.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(111.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(114.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(117.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(120.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(123.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(126.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(129.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(132.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(135.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(138.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(141.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(144.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(147.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(150.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(153.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(156.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(159.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(162.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(165.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(168.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(171.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(174.00 650 290)"/><ellipse cx="650" cy="290" rx="143.5" ry="171.6" transform="rotate(177.00 650 290)"/></g>
+<ellipse cx="650" cy="290" rx="128" ry="160" fill="url(#cvig)" stroke="#2f2b22" stroke-width="2"/>
+<g clip-path="url(#coval)">
+<ellipse cx="650" cy="300" rx="20.0" ry="24.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.55"/>
+<ellipse cx="650" cy="300" rx="24.2" ry="29.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.54"/>
+<ellipse cx="650" cy="300" rx="28.4" ry="34.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.53"/>
+<ellipse cx="650" cy="300" rx="32.6" ry="39.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.51"/>
+<ellipse cx="650" cy="300" rx="36.8" ry="44.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.50"/>
+<ellipse cx="650" cy="300" rx="41.0" ry="50.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.49"/>
+<ellipse cx="650" cy="300" rx="45.2" ry="55.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.48"/>
+<ellipse cx="650" cy="300" rx="49.4" ry="60.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.47"/>
+<ellipse cx="650" cy="300" rx="53.6" ry="65.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.45"/>
+<ellipse cx="650" cy="300" rx="57.8" ry="70.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.44"/>
+<ellipse cx="650" cy="300" rx="62.0" ry="76.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.43"/>
+<ellipse cx="650" cy="300" rx="66.2" ry="81.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.42"/>
+<ellipse cx="650" cy="300" rx="70.4" ry="86.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.41"/>
+<ellipse cx="650" cy="300" rx="74.6" ry="91.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.39"/>
+<ellipse cx="650" cy="300" rx="78.8" ry="96.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.38"/>
+<ellipse cx="650" cy="300" rx="83.0" ry="102.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.37"/>
+<ellipse cx="650" cy="300" rx="87.2" ry="107.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.36"/>
+<ellipse cx="650" cy="300" rx="91.4" ry="112.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.35"/>
+<ellipse cx="650" cy="300" rx="95.6" ry="117.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.33"/>
+<ellipse cx="650" cy="300" rx="99.8" ry="122.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.32"/>
+<ellipse cx="650" cy="300" rx="104.0" ry="128.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.31"/>
+<ellipse cx="650" cy="300" rx="108.2" ry="133.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.30"/>
+<ellipse cx="650" cy="300" rx="112.4" ry="138.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.29"/>
+<ellipse cx="650" cy="300" rx="116.6" ry="143.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.27"/>
+<ellipse cx="650" cy="300" rx="120.8" ry="148.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.26"/>
+<ellipse cx="650" cy="300" rx="125.0" ry="154.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.25"/>
+<ellipse cx="650" cy="300" rx="129.2" ry="159.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.24"/>
+<ellipse cx="650" cy="300" rx="133.4" ry="164.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.23"/>
+<ellipse cx="650" cy="300" rx="137.6" ry="169.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.21"/>
+<ellipse cx="650" cy="300" rx="141.8" ry="174.8" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.20"/>
+<ellipse cx="650" cy="300" rx="146.0" ry="180.0" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.19"/>
+<ellipse cx="650" cy="300" rx="150.2" ry="185.2" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.18"/>
+<ellipse cx="650" cy="300" rx="154.4" ry="190.4" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.17"/>
+<ellipse cx="650" cy="300" rx="158.6" ry="195.6" fill="none" stroke="#4a4434" stroke-width=".55" opacity="0.15"/>
+</g>
+<circle cx="650" cy="284" r="86" fill="url(#cxhatch)" opacity=".35"/>
+<circle cx="650" cy="284" r="86" fill="none" stroke="#2f2b22" stroke-width="3"/>
+<g transform="translate(650 284) scale(1.2) translate(-50 -50)" fill="none" stroke="#2f2b22" stroke-linecap="round"><path d="M20 18V55" stroke-width="11"/><path d="M80 18V55" stroke-width="11"/><path d="M20 55A30 30 0 0 0 80 55" stroke-width="9"/><path d="M38 36V58M50 36V58M62 36V58" stroke-width="10"/></g>
+<g transform="translate(650 284) scale(1.2) translate(-50 -50)" fill="none" stroke="#f2ead2" stroke-linecap="round" stroke-opacity=".55"><path d="M18 20V53M78 20V53M36 38V56M48 38V56M60 38V56" stroke-width="1.4"/></g>
+<path d="M590 420 Q 650 438 710 420 L 704 440 Q 650 456 596 440 Z" fill="#f2ead2" stroke="#2f2b22" stroke-width="1.6"/>
+<text x="650" y="439" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="12" letter-spacing="3" fill="#2f2b22">YCASH</text>
+<text x="988" y="350" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="138" letter-spacing="2" fill="url(#chatch)" stroke="#2f2b22" stroke-width="2.4">ONE</text>
+<text x="985" y="398" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="14" letter-spacing="4" fill="#2f2b22">YELLOWBACK DOLLAR · 1 YED</text>
+<path d="M186 428 c 10 -22, 22 -24, 18 -4 c -3 14, 10 -20, 24 -12 c 10 6, -8 16, 6 10 c 16 -8, 26 -18, 30 -6 c 3 10, 18 -8, 30 -2 c 8 4, 18 -4, 28 -6" fill="none" stroke="#2f2b22" stroke-width="1.8"/>
+<text x="240" y="446" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-style="italic" font-size="11" fill="#2f2b22">Keyholder of the Vault</text>
+<path d="M1006 428 c 8 -18, 18 -22, 22 -6 c 4 14, 12 -14, 22 -10 c 12 6, -2 16, 10 12 c 18 -6, 22 -16, 32 -8 c 10 8, 22 -6, 34 -4" fill="none" stroke="#2f2b22" stroke-width="1.8"/>
+<text x="1060" y="446" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-style="italic" font-size="11" fill="#2f2b22">Enforced by the Miners</text>
+<text x="830" y="432" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="15" letter-spacing="1" fill="#2f2b22">ON THE YCASH CHAIN</text>
+<text x="830" y="448" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="10" letter-spacing="1.4" fill="#2f2b22">P2SH · CHECKLOCKTIMEVERIFY</text>
+<rect x="300" y="470" width="700" height="46" fill="#2f2b22"/>
+<g opacity=".18" fill="none" stroke="#f2ead2" stroke-width="0.5"><path d="M300,476.0 Q303.5,473.8 307.0,476.0 T314.0,476.0 Q317.5,473.8 321.0,476.0 T328.0,476.0 Q331.5,473.8 335.0,476.0 T342.0,476.0 Q345.5,473.8 349.0,476.0 T356.0,476.0 Q359.5,473.8 363.0,476.0 T370.0,476.0 Q373.5,473.8 377.0,476.0 T384.0,476.0 Q387.5,473.8 391.0,476.0 T398.0,476.0 Q401.5,473.8 405.0,476.0 T412.0,476.0 Q415.5,473.8 419.0,476.0 T426.0,476.0 Q429.5,473.8 433.0,476.0 T440.0,476.0 Q443.5,473.8 447.0,476.0 T454.0,476.0 Q457.5,473.8 461.0,476.0 T468.0,476.0 Q471.5,473.8 475.0,476.0 T482.0,476.0 Q485.5,473.8 489.0,476.0 T496.0,476.0 Q499.5,473.8 503.0,476.0 T510.0,476.0 Q513.5,473.8 517.0,476.0 T524.0,476.0 Q527.5,473.8 531.0,476.0 T538.0,476.0 Q541.5,473.8 545.0,476.0 T552.0,476.0 Q555.5,473.8 559.0,476.0 T566.0,476.0 Q569.5,473.8 573.0,476.0 T580.0,476.0 Q583.5,473.8 587.0,476.0 T594.0,476.0 Q597.5,473.8 601.0,476.0 T608.0,476.0 Q611.5,473.8 615.0,476.0 T622.0,476.0 Q625.5,473.8 629.0,476.0 T636.0,476.0 Q639.5,473.8 643.0,476.0 T650.0,476.0 Q653.5,473.8 657.0,476.0 T664.0,476.0 Q667.5,473.8 671.0,476.0 T678.0,476.0 Q681.5,473.8 685.0,476.0 T692.0,476.0 Q695.5,473.8 699.0,476.0 T706.0,476.0 Q709.5,473.8 713.0,476.0 T720.0,476.0 Q723.5,473.8 727.0,476.0 T734.0,476.0 Q737.5,473.8 741.0,476.0 T748.0,476.0 Q751.5,473.8 755.0,476.0 T762.0,476.0 Q765.5,473.8 769.0,476.0 T776.0,476.0 Q779.5,473.8 783.0,476.0 T790.0,476.0 Q793.5,473.8 797.0,476.0 T804.0,476.0 Q807.5,473.8 811.0,476.0 T818.0,476.0 Q821.5,473.8 825.0,476.0 T832.0,476.0 Q835.5,473.8 839.0,476.0 T846.0,476.0 Q849.5,473.8 853.0,476.0 T860.0,476.0 Q863.5,473.8 867.0,476.0 T874.0,476.0 Q877.5,473.8 881.0,476.0 T888.0,476.0 Q891.5,473.8 895.0,476.0 T902.0,476.0 Q905.5,473.8 909.0,476.0 T916.0,476.0 Q919.5,473.8 923.0,476.0 T930.0,476.0 Q933.5,473.8 937.0,476.0 T944.0,476.0 Q947.5,473.8 951.0,476.0 T958.0,476.0 Q961.5,473.8 965.0,476.0 T972.0,476.0 Q975.5,473.8 979.0,476.0 T986.0,476.0 Q989.5,473.8 993.0,476.0 T1000.0,476.0"/><path d="M300,480.4 Q303.5,478.2 307.0,480.4 T314.0,480.4 Q317.5,478.2 321.0,480.4 T328.0,480.4 Q331.5,478.2 335.0,480.4 T342.0,480.4 Q345.5,478.2 349.0,480.4 T356.0,480.4 Q359.5,478.2 363.0,480.4 T370.0,480.4 Q373.5,478.2 377.0,480.4 T384.0,480.4 Q387.5,478.2 391.0,480.4 T398.0,480.4 Q401.5,478.2 405.0,480.4 T412.0,480.4 Q415.5,478.2 419.0,480.4 T426.0,480.4 Q429.5,478.2 433.0,480.4 T440.0,480.4 Q443.5,478.2 447.0,480.4 T454.0,480.4 Q457.5,478.2 461.0,480.4 T468.0,480.4 Q471.5,478.2 475.0,480.4 T482.0,480.4 Q485.5,478.2 489.0,480.4 T496.0,480.4 Q499.5,478.2 503.0,480.4 T510.0,480.4 Q513.5,478.2 517.0,480.4 T524.0,480.4 Q527.5,478.2 531.0,480.4 T538.0,480.4 Q541.5,478.2 545.0,480.4 T552.0,480.4 Q555.5,478.2 559.0,480.4 T566.0,480.4 Q569.5,478.2 573.0,480.4 T580.0,480.4 Q583.5,478.2 587.0,480.4 T594.0,480.4 Q597.5,478.2 601.0,480.4 T608.0,480.4 Q611.5,478.2 615.0,480.4 T622.0,480.4 Q625.5,478.2 629.0,480.4 T636.0,480.4 Q639.5,478.2 643.0,480.4 T650.0,480.4 Q653.5,478.2 657.0,480.4 T664.0,480.4 Q667.5,478.2 671.0,480.4 T678.0,480.4 Q681.5,478.2 685.0,480.4 T692.0,480.4 Q695.5,478.2 699.0,480.4 T706.0,480.4 Q709.5,478.2 713.0,480.4 T720.0,480.4 Q723.5,478.2 727.0,480.4 T734.0,480.4 Q737.5,478.2 741.0,480.4 T748.0,480.4 Q751.5,478.2 755.0,480.4 T762.0,480.4 Q765.5,478.2 769.0,480.4 T776.0,480.4 Q779.5,478.2 783.0,480.4 T790.0,480.4 Q793.5,478.2 797.0,480.4 T804.0,480.4 Q807.5,478.2 811.0,480.4 T818.0,480.4 Q821.5,478.2 825.0,480.4 T832.0,480.4 Q835.5,478.2 839.0,480.4 T846.0,480.4 Q849.5,478.2 853.0,480.4 T860.0,480.4 Q863.5,478.2 867.0,480.4 T874.0,480.4 Q877.5,478.2 881.0,480.4 T888.0,480.4 Q891.5,478.2 895.0,480.4 T902.0,480.4 Q905.5,478.2 909.0,480.4 T916.0,480.4 Q919.5,478.2 923.0,480.4 T930.0,480.4 Q933.5,478.2 937.0,480.4 T944.0,480.4 Q947.5,478.2 951.0,480.4 T958.0,480.4 Q961.5,478.2 965.0,480.4 T972.0,480.4 Q975.5,478.2 979.0,480.4 T986.0,480.4 Q989.5,478.2 993.0,480.4 T1000.0,480.4"/><path d="M300,484.8 Q303.5,482.6 307.0,484.8 T314.0,484.8 Q317.5,482.6 321.0,484.8 T328.0,484.8 Q331.5,482.6 335.0,484.8 T342.0,484.8 Q345.5,482.6 349.0,484.8 T356.0,484.8 Q359.5,482.6 363.0,484.8 T370.0,484.8 Q373.5,482.6 377.0,484.8 T384.0,484.8 Q387.5,482.6 391.0,484.8 T398.0,484.8 Q401.5,482.6 405.0,484.8 T412.0,484.8 Q415.5,482.6 419.0,484.8 T426.0,484.8 Q429.5,482.6 433.0,484.8 T440.0,484.8 Q443.5,482.6 447.0,484.8 T454.0,484.8 Q457.5,482.6 461.0,484.8 T468.0,484.8 Q471.5,482.6 475.0,484.8 T482.0,484.8 Q485.5,482.6 489.0,484.8 T496.0,484.8 Q499.5,482.6 503.0,484.8 T510.0,484.8 Q513.5,482.6 517.0,484.8 T524.0,484.8 Q527.5,482.6 531.0,484.8 T538.0,484.8 Q541.5,482.6 545.0,484.8 T552.0,484.8 Q555.5,482.6 559.0,484.8 T566.0,484.8 Q569.5,482.6 573.0,484.8 T580.0,484.8 Q583.5,482.6 587.0,484.8 T594.0,484.8 Q597.5,482.6 601.0,484.8 T608.0,484.8 Q611.5,482.6 615.0,484.8 T622.0,484.8 Q625.5,482.6 629.0,484.8 T636.0,484.8 Q639.5,482.6 643.0,484.8 T650.0,484.8 Q653.5,482.6 657.0,484.8 T664.0,484.8 Q667.5,482.6 671.0,484.8 T678.0,484.8 Q681.5,482.6 685.0,484.8 T692.0,484.8 Q695.5,482.6 699.0,484.8 T706.0,484.8 Q709.5,482.6 713.0,484.8 T720.0,484.8 Q723.5,482.6 727.0,484.8 T734.0,484.8 Q737.5,482.6 741.0,484.8 T748.0,484.8 Q751.5,482.6 755.0,484.8 T762.0,484.8 Q765.5,482.6 769.0,484.8 T776.0,484.8 Q779.5,482.6 783.0,484.8 T790.0,484.8 Q793.5,482.6 797.0,484.8 T804.0,484.8 Q807.5,482.6 811.0,484.8 T818.0,484.8 Q821.5,482.6 825.0,484.8 T832.0,484.8 Q835.5,482.6 839.0,484.8 T846.0,484.8 Q849.5,482.6 853.0,484.8 T860.0,484.8 Q863.5,482.6 867.0,484.8 T874.0,484.8 Q877.5,482.6 881.0,484.8 T888.0,484.8 Q891.5,482.6 895.0,484.8 T902.0,484.8 Q905.5,482.6 909.0,484.8 T916.0,484.8 Q919.5,482.6 923.0,484.8 T930.0,484.8 Q933.5,482.6 937.0,484.8 T944.0,484.8 Q947.5,482.6 951.0,484.8 T958.0,484.8 Q961.5,482.6 965.0,484.8 T972.0,484.8 Q975.5,482.6 979.0,484.8 T986.0,484.8 Q989.5,482.6 993.0,484.8 T1000.0,484.8"/><path d="M300,489.2 Q303.5,487.0 307.0,489.2 T314.0,489.2 Q317.5,487.0 321.0,489.2 T328.0,489.2 Q331.5,487.0 335.0,489.2 T342.0,489.2 Q345.5,487.0 349.0,489.2 T356.0,489.2 Q359.5,487.0 363.0,489.2 T370.0,489.2 Q373.5,487.0 377.0,489.2 T384.0,489.2 Q387.5,487.0 391.0,489.2 T398.0,489.2 Q401.5,487.0 405.0,489.2 T412.0,489.2 Q415.5,487.0 419.0,489.2 T426.0,489.2 Q429.5,487.0 433.0,489.2 T440.0,489.2 Q443.5,487.0 447.0,489.2 T454.0,489.2 Q457.5,487.0 461.0,489.2 T468.0,489.2 Q471.5,487.0 475.0,489.2 T482.0,489.2 Q485.5,487.0 489.0,489.2 T496.0,489.2 Q499.5,487.0 503.0,489.2 T510.0,489.2 Q513.5,487.0 517.0,489.2 T524.0,489.2 Q527.5,487.0 531.0,489.2 T538.0,489.2 Q541.5,487.0 545.0,489.2 T552.0,489.2 Q555.5,487.0 559.0,489.2 T566.0,489.2 Q569.5,487.0 573.0,489.2 T580.0,489.2 Q583.5,487.0 587.0,489.2 T594.0,489.2 Q597.5,487.0 601.0,489.2 T608.0,489.2 Q611.5,487.0 615.0,489.2 T622.0,489.2 Q625.5,487.0 629.0,489.2 T636.0,489.2 Q639.5,487.0 643.0,489.2 T650.0,489.2 Q653.5,487.0 657.0,489.2 T664.0,489.2 Q667.5,487.0 671.0,489.2 T678.0,489.2 Q681.5,487.0 685.0,489.2 T692.0,489.2 Q695.5,487.0 699.0,489.2 T706.0,489.2 Q709.5,487.0 713.0,489.2 T720.0,489.2 Q723.5,487.0 727.0,489.2 T734.0,489.2 Q737.5,487.0 741.0,489.2 T748.0,489.2 Q751.5,487.0 755.0,489.2 T762.0,489.2 Q765.5,487.0 769.0,489.2 T776.0,489.2 Q779.5,487.0 783.0,489.2 T790.0,489.2 Q793.5,487.0 797.0,489.2 T804.0,489.2 Q807.5,487.0 811.0,489.2 T818.0,489.2 Q821.5,487.0 825.0,489.2 T832.0,489.2 Q835.5,487.0 839.0,489.2 T846.0,489.2 Q849.5,487.0 853.0,489.2 T860.0,489.2 Q863.5,487.0 867.0,489.2 T874.0,489.2 Q877.5,487.0 881.0,489.2 T888.0,489.2 Q891.5,487.0 895.0,489.2 T902.0,489.2 Q905.5,487.0 909.0,489.2 T916.0,489.2 Q919.5,487.0 923.0,489.2 T930.0,489.2 Q933.5,487.0 937.0,489.2 T944.0,489.2 Q947.5,487.0 951.0,489.2 T958.0,489.2 Q961.5,487.0 965.0,489.2 T972.0,489.2 Q975.5,487.0 979.0,489.2 T986.0,489.2 Q989.5,487.0 993.0,489.2 T1000.0,489.2"/><path d="M300,493.6 Q303.5,491.4 307.0,493.6 T314.0,493.6 Q317.5,491.4 321.0,493.6 T328.0,493.6 Q331.5,491.4 335.0,493.6 T342.0,493.6 Q345.5,491.4 349.0,493.6 T356.0,493.6 Q359.5,491.4 363.0,493.6 T370.0,493.6 Q373.5,491.4 377.0,493.6 T384.0,493.6 Q387.5,491.4 391.0,493.6 T398.0,493.6 Q401.5,491.4 405.0,493.6 T412.0,493.6 Q415.5,491.4 419.0,493.6 T426.0,493.6 Q429.5,491.4 433.0,493.6 T440.0,493.6 Q443.5,491.4 447.0,493.6 T454.0,493.6 Q457.5,491.4 461.0,493.6 T468.0,493.6 Q471.5,491.4 475.0,493.6 T482.0,493.6 Q485.5,491.4 489.0,493.6 T496.0,493.6 Q499.5,491.4 503.0,493.6 T510.0,493.6 Q513.5,491.4 517.0,493.6 T524.0,493.6 Q527.5,491.4 531.0,493.6 T538.0,493.6 Q541.5,491.4 545.0,493.6 T552.0,493.6 Q555.5,491.4 559.0,493.6 T566.0,493.6 Q569.5,491.4 573.0,493.6 T580.0,493.6 Q583.5,491.4 587.0,493.6 T594.0,493.6 Q597.5,491.4 601.0,493.6 T608.0,493.6 Q611.5,491.4 615.0,493.6 T622.0,493.6 Q625.5,491.4 629.0,493.6 T636.0,493.6 Q639.5,491.4 643.0,493.6 T650.0,493.6 Q653.5,491.4 657.0,493.6 T664.0,493.6 Q667.5,491.4 671.0,493.6 T678.0,493.6 Q681.5,491.4 685.0,493.6 T692.0,493.6 Q695.5,491.4 699.0,493.6 T706.0,493.6 Q709.5,491.4 713.0,493.6 T720.0,493.6 Q723.5,491.4 727.0,493.6 T734.0,493.6 Q737.5,491.4 741.0,493.6 T748.0,493.6 Q751.5,491.4 755.0,493.6 T762.0,493.6 Q765.5,491.4 769.0,493.6 T776.0,493.6 Q779.5,491.4 783.0,493.6 T790.0,493.6 Q793.5,491.4 797.0,493.6 T804.0,493.6 Q807.5,491.4 811.0,493.6 T818.0,493.6 Q821.5,491.4 825.0,493.6 T832.0,493.6 Q835.5,491.4 839.0,493.6 T846.0,493.6 Q849.5,491.4 853.0,493.6 T860.0,493.6 Q863.5,491.4 867.0,493.6 T874.0,493.6 Q877.5,491.4 881.0,493.6 T888.0,493.6 Q891.5,491.4 895.0,493.6 T902.0,493.6 Q905.5,491.4 909.0,493.6 T916.0,493.6 Q919.5,491.4 923.0,493.6 T930.0,493.6 Q933.5,491.4 937.0,493.6 T944.0,493.6 Q947.5,491.4 951.0,493.6 T958.0,493.6 Q961.5,491.4 965.0,493.6 T972.0,493.6 Q975.5,491.4 979.0,493.6 T986.0,493.6 Q989.5,491.4 993.0,493.6 T1000.0,493.6"/><path d="M300,498.0 Q303.5,495.8 307.0,498.0 T314.0,498.0 Q317.5,495.8 321.0,498.0 T328.0,498.0 Q331.5,495.8 335.0,498.0 T342.0,498.0 Q345.5,495.8 349.0,498.0 T356.0,498.0 Q359.5,495.8 363.0,498.0 T370.0,498.0 Q373.5,495.8 377.0,498.0 T384.0,498.0 Q387.5,495.8 391.0,498.0 T398.0,498.0 Q401.5,495.8 405.0,498.0 T412.0,498.0 Q415.5,495.8 419.0,498.0 T426.0,498.0 Q429.5,495.8 433.0,498.0 T440.0,498.0 Q443.5,495.8 447.0,498.0 T454.0,498.0 Q457.5,495.8 461.0,498.0 T468.0,498.0 Q471.5,495.8 475.0,498.0 T482.0,498.0 Q485.5,495.8 489.0,498.0 T496.0,498.0 Q499.5,495.8 503.0,498.0 T510.0,498.0 Q513.5,495.8 517.0,498.0 T524.0,498.0 Q527.5,495.8 531.0,498.0 T538.0,498.0 Q541.5,495.8 545.0,498.0 T552.0,498.0 Q555.5,495.8 559.0,498.0 T566.0,498.0 Q569.5,495.8 573.0,498.0 T580.0,498.0 Q583.5,495.8 587.0,498.0 T594.0,498.0 Q597.5,495.8 601.0,498.0 T608.0,498.0 Q611.5,495.8 615.0,498.0 T622.0,498.0 Q625.5,495.8 629.0,498.0 T636.0,498.0 Q639.5,495.8 643.0,498.0 T650.0,498.0 Q653.5,495.8 657.0,498.0 T664.0,498.0 Q667.5,495.8 671.0,498.0 T678.0,498.0 Q681.5,495.8 685.0,498.0 T692.0,498.0 Q695.5,495.8 699.0,498.0 T706.0,498.0 Q709.5,495.8 713.0,498.0 T720.0,498.0 Q723.5,495.8 727.0,498.0 T734.0,498.0 Q737.5,495.8 741.0,498.0 T748.0,498.0 Q751.5,495.8 755.0,498.0 T762.0,498.0 Q765.5,495.8 769.0,498.0 T776.0,498.0 Q779.5,495.8 783.0,498.0 T790.0,498.0 Q793.5,495.8 797.0,498.0 T804.0,498.0 Q807.5,495.8 811.0,498.0 T818.0,498.0 Q821.5,495.8 825.0,498.0 T832.0,498.0 Q835.5,495.8 839.0,498.0 T846.0,498.0 Q849.5,495.8 853.0,498.0 T860.0,498.0 Q863.5,495.8 867.0,498.0 T874.0,498.0 Q877.5,495.8 881.0,498.0 T888.0,498.0 Q891.5,495.8 895.0,498.0 T902.0,498.0 Q905.5,495.8 909.0,498.0 T916.0,498.0 Q919.5,495.8 923.0,498.0 T930.0,498.0 Q933.5,495.8 937.0,498.0 T944.0,498.0 Q947.5,495.8 951.0,498.0 T958.0,498.0 Q961.5,495.8 965.0,498.0 T972.0,498.0 Q975.5,495.8 979.0,498.0 T986.0,498.0 Q989.5,495.8 993.0,498.0 T1000.0,498.0"/><path d="M300,502.4 Q303.5,500.2 307.0,502.4 T314.0,502.4 Q317.5,500.2 321.0,502.4 T328.0,502.4 Q331.5,500.2 335.0,502.4 T342.0,502.4 Q345.5,500.2 349.0,502.4 T356.0,502.4 Q359.5,500.2 363.0,502.4 T370.0,502.4 Q373.5,500.2 377.0,502.4 T384.0,502.4 Q387.5,500.2 391.0,502.4 T398.0,502.4 Q401.5,500.2 405.0,502.4 T412.0,502.4 Q415.5,500.2 419.0,502.4 T426.0,502.4 Q429.5,500.2 433.0,502.4 T440.0,502.4 Q443.5,500.2 447.0,502.4 T454.0,502.4 Q457.5,500.2 461.0,502.4 T468.0,502.4 Q471.5,500.2 475.0,502.4 T482.0,502.4 Q485.5,500.2 489.0,502.4 T496.0,502.4 Q499.5,500.2 503.0,502.4 T510.0,502.4 Q513.5,500.2 517.0,502.4 T524.0,502.4 Q527.5,500.2 531.0,502.4 T538.0,502.4 Q541.5,500.2 545.0,502.4 T552.0,502.4 Q555.5,500.2 559.0,502.4 T566.0,502.4 Q569.5,500.2 573.0,502.4 T580.0,502.4 Q583.5,500.2 587.0,502.4 T594.0,502.4 Q597.5,500.2 601.0,502.4 T608.0,502.4 Q611.5,500.2 615.0,502.4 T622.0,502.4 Q625.5,500.2 629.0,502.4 T636.0,502.4 Q639.5,500.2 643.0,502.4 T650.0,502.4 Q653.5,500.2 657.0,502.4 T664.0,502.4 Q667.5,500.2 671.0,502.4 T678.0,502.4 Q681.5,500.2 685.0,502.4 T692.0,502.4 Q695.5,500.2 699.0,502.4 T706.0,502.4 Q709.5,500.2 713.0,502.4 T720.0,502.4 Q723.5,500.2 727.0,502.4 T734.0,502.4 Q737.5,500.2 741.0,502.4 T748.0,502.4 Q751.5,500.2 755.0,502.4 T762.0,502.4 Q765.5,500.2 769.0,502.4 T776.0,502.4 Q779.5,500.2 783.0,502.4 T790.0,502.4 Q793.5,500.2 797.0,502.4 T804.0,502.4 Q807.5,500.2 811.0,502.4 T818.0,502.4 Q821.5,500.2 825.0,502.4 T832.0,502.4 Q835.5,500.2 839.0,502.4 T846.0,502.4 Q849.5,500.2 853.0,502.4 T860.0,502.4 Q863.5,500.2 867.0,502.4 T874.0,502.4 Q877.5,500.2 881.0,502.4 T888.0,502.4 Q891.5,500.2 895.0,502.4 T902.0,502.4 Q905.5,500.2 909.0,502.4 T916.0,502.4 Q919.5,500.2 923.0,502.4 T930.0,502.4 Q933.5,500.2 937.0,502.4 T944.0,502.4 Q947.5,500.2 951.0,502.4 T958.0,502.4 Q961.5,500.2 965.0,502.4 T972.0,502.4 Q975.5,500.2 979.0,502.4 T986.0,502.4 Q989.5,500.2 993.0,502.4 T1000.0,502.4"/><path d="M300,506.8 Q303.5,504.6 307.0,506.8 T314.0,506.8 Q317.5,504.6 321.0,506.8 T328.0,506.8 Q331.5,504.6 335.0,506.8 T342.0,506.8 Q345.5,504.6 349.0,506.8 T356.0,506.8 Q359.5,504.6 363.0,506.8 T370.0,506.8 Q373.5,504.6 377.0,506.8 T384.0,506.8 Q387.5,504.6 391.0,506.8 T398.0,506.8 Q401.5,504.6 405.0,506.8 T412.0,506.8 Q415.5,504.6 419.0,506.8 T426.0,506.8 Q429.5,504.6 433.0,506.8 T440.0,506.8 Q443.5,504.6 447.0,506.8 T454.0,506.8 Q457.5,504.6 461.0,506.8 T468.0,506.8 Q471.5,504.6 475.0,506.8 T482.0,506.8 Q485.5,504.6 489.0,506.8 T496.0,506.8 Q499.5,504.6 503.0,506.8 T510.0,506.8 Q513.5,504.6 517.0,506.8 T524.0,506.8 Q527.5,504.6 531.0,506.8 T538.0,506.8 Q541.5,504.6 545.0,506.8 T552.0,506.8 Q555.5,504.6 559.0,506.8 T566.0,506.8 Q569.5,504.6 573.0,506.8 T580.0,506.8 Q583.5,504.6 587.0,506.8 T594.0,506.8 Q597.5,504.6 601.0,506.8 T608.0,506.8 Q611.5,504.6 615.0,506.8 T622.0,506.8 Q625.5,504.6 629.0,506.8 T636.0,506.8 Q639.5,504.6 643.0,506.8 T650.0,506.8 Q653.5,504.6 657.0,506.8 T664.0,506.8 Q667.5,504.6 671.0,506.8 T678.0,506.8 Q681.5,504.6 685.0,506.8 T692.0,506.8 Q695.5,504.6 699.0,506.8 T706.0,506.8 Q709.5,504.6 713.0,506.8 T720.0,506.8 Q723.5,504.6 727.0,506.8 T734.0,506.8 Q737.5,504.6 741.0,506.8 T748.0,506.8 Q751.5,504.6 755.0,506.8 T762.0,506.8 Q765.5,504.6 769.0,506.8 T776.0,506.8 Q779.5,504.6 783.0,506.8 T790.0,506.8 Q793.5,504.6 797.0,506.8 T804.0,506.8 Q807.5,504.6 811.0,506.8 T818.0,506.8 Q821.5,504.6 825.0,506.8 T832.0,506.8 Q835.5,504.6 839.0,506.8 T846.0,506.8 Q849.5,504.6 853.0,506.8 T860.0,506.8 Q863.5,504.6 867.0,506.8 T874.0,506.8 Q877.5,504.6 881.0,506.8 T888.0,506.8 Q891.5,504.6 895.0,506.8 T902.0,506.8 Q905.5,504.6 909.0,506.8 T916.0,506.8 Q919.5,504.6 923.0,506.8 T930.0,506.8 Q933.5,504.6 937.0,506.8 T944.0,506.8 Q947.5,504.6 951.0,506.8 T958.0,506.8 Q961.5,504.6 965.0,506.8 T972.0,506.8 Q975.5,504.6 979.0,506.8 T986.0,506.8 Q989.5,504.6 993.0,506.8 T1000.0,506.8"/><path d="M300,511.2 Q303.5,509.0 307.0,511.2 T314.0,511.2 Q317.5,509.0 321.0,511.2 T328.0,511.2 Q331.5,509.0 335.0,511.2 T342.0,511.2 Q345.5,509.0 349.0,511.2 T356.0,511.2 Q359.5,509.0 363.0,511.2 T370.0,511.2 Q373.5,509.0 377.0,511.2 T384.0,511.2 Q387.5,509.0 391.0,511.2 T398.0,511.2 Q401.5,509.0 405.0,511.2 T412.0,511.2 Q415.5,509.0 419.0,511.2 T426.0,511.2 Q429.5,509.0 433.0,511.2 T440.0,511.2 Q443.5,509.0 447.0,511.2 T454.0,511.2 Q457.5,509.0 461.0,511.2 T468.0,511.2 Q471.5,509.0 475.0,511.2 T482.0,511.2 Q485.5,509.0 489.0,511.2 T496.0,511.2 Q499.5,509.0 503.0,511.2 T510.0,511.2 Q513.5,509.0 517.0,511.2 T524.0,511.2 Q527.5,509.0 531.0,511.2 T538.0,511.2 Q541.5,509.0 545.0,511.2 T552.0,511.2 Q555.5,509.0 559.0,511.2 T566.0,511.2 Q569.5,509.0 573.0,511.2 T580.0,511.2 Q583.5,509.0 587.0,511.2 T594.0,511.2 Q597.5,509.0 601.0,511.2 T608.0,511.2 Q611.5,509.0 615.0,511.2 T622.0,511.2 Q625.5,509.0 629.0,511.2 T636.0,511.2 Q639.5,509.0 643.0,511.2 T650.0,511.2 Q653.5,509.0 657.0,511.2 T664.0,511.2 Q667.5,509.0 671.0,511.2 T678.0,511.2 Q681.5,509.0 685.0,511.2 T692.0,511.2 Q695.5,509.0 699.0,511.2 T706.0,511.2 Q709.5,509.0 713.0,511.2 T720.0,511.2 Q723.5,509.0 727.0,511.2 T734.0,511.2 Q737.5,509.0 741.0,511.2 T748.0,511.2 Q751.5,509.0 755.0,511.2 T762.0,511.2 Q765.5,509.0 769.0,511.2 T776.0,511.2 Q779.5,509.0 783.0,511.2 T790.0,511.2 Q793.5,509.0 797.0,511.2 T804.0,511.2 Q807.5,509.0 811.0,511.2 T818.0,511.2 Q821.5,509.0 825.0,511.2 T832.0,511.2 Q835.5,509.0 839.0,511.2 T846.0,511.2 Q849.5,509.0 853.0,511.2 T860.0,511.2 Q863.5,509.0 867.0,511.2 T874.0,511.2 Q877.5,509.0 881.0,511.2 T888.0,511.2 Q891.5,509.0 895.0,511.2 T902.0,511.2 Q905.5,509.0 909.0,511.2 T916.0,511.2 Q919.5,509.0 923.0,511.2 T930.0,511.2 Q933.5,509.0 937.0,511.2 T944.0,511.2 Q947.5,509.0 951.0,511.2 T958.0,511.2 Q961.5,509.0 965.0,511.2 T972.0,511.2 Q975.5,509.0 979.0,511.2 T986.0,511.2 Q989.5,509.0 993.0,511.2 T1000.0,511.2"/></g>
+<text x="650" y="506" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="900" font-size="38" letter-spacing="10" fill="#f2ead2" stroke="#2f2b22" stroke-width="1">ONE DOLLAR</text>
+<rect x="300" y="518" width="700" height="22" fill="#f2ead2" stroke="#2f2b22" stroke-width="1.5"/>
+<text x="650" y="534" text-anchor="middle" font-family="'Playfair Display', 'Old Standard TT', Georgia, 'Times New Roman', serif" font-weight="700" font-size="12.5" letter-spacing="1.8" fill="#2f2b22">IN YCASH COLLATERAL · RETURNED TO THE KEYHOLDER ON UNLOCK</text>
+<rect class="cert-shine" x="-400" y="-60" width="260" height="672" fill="url(#cshine)" transform="skewX(-18)" opacity=".5"/>
+</g>
+</svg>
+<!-- CERTIFICATE:END -->
+      </div>
+      <figcaption class="mono">fig. 1 — US gold certificates (1863–1933) were nicknamed “yellowbacks.” This one is backed by Ycash.</figcaption>
+    </figure>
+  </div>
+  <div class="wrap history">
+    <div class="reveal">
+      <span class="eyebrow">cat history/yellowback.txt</span>
+      <h2>A gold-backed idea, <span class="gold-text">reborn on Ycash.</span></h2>
+      <p class="lede">From 1863 to 1933, America printed <strong>gold certificates</strong> — paper money whose backs were printed in
+        gold-orange ink. People called them <strong>“yellowbacks.”</strong> Each note was a claim on real gold sitting in
+        the Treasury: hand it in, get your gold.</p>
+      <p class="muted">Yellowback brings that idea back with an as-good-as-gold asset you control yourself: <strong class="orange">Ycash (YEC)</strong>.
+        Instead of a Treasury holding the gold, <em>you</em> hold the vault key. Instead of a promise, there's a timelock
+        the Ycash network enforces in every block. And instead of 100% backing, every Yellowback dollar starts out
+        backed <strong>three to five times over</strong>.</p>
+    </div>
+
+    <div class="then-now reveal" role="table" aria-label="Then and now">
+      <div class="tn-row" role="row"><div class="tn-head" role="columnheader">1882 · gold certificate</div><div></div><div class="tn-head" role="columnheader">2026 · Yellowback</div></div>
+      <div class="tn-row" role="row">
+        <div class="tn-cell tn-then" role="cell"><small>collateral</small>Gold bars in a Treasury vault</div><div class="tn-arrow">→</div>
+        <div class="tn-cell tn-now" role="cell"><small>collateral</small>Your YEC, in your own on-chain vault</div>
+      </div>
+      <div class="tn-row" role="row">
+        <div class="tn-cell tn-then" role="cell"><small>backing</small>Up to 100%</div><div class="tn-arrow">→</div>
+        <div class="tn-cell tn-now" role="cell"><small>backing</small>300–500% at mint</div>
+      </div>
+      <div class="tn-row" role="row">
+        <div class="tn-cell tn-then" role="cell"><small>who holds the key</small>The government</div><div class="tn-arrow">→</div>
+        <div class="tn-cell tn-now" role="cell"><small>who holds the key</small>You. Only you.</div>
+      </div>
+      <div class="tn-row" role="row">
+        <div class="tn-cell tn-then" role="cell"><small>redemption</small>Until 1933, when it was suspended</div><div class="tn-arrow">→</div>
+        <div class="tn-cell tn-now" role="cell"><small>redemption</small>Return the YED, unlock the YEC — no one can pause it</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="fiber-divider" aria-hidden="true"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20H520L540 8H660L680 20H1200" fill="none" stroke="#f7b733" stroke-opacity=".25" stroke-width="2"/></svg></div>
+
+<!-- ============ HOW IT WORKS: TRANSIT LINE ============ -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-head center center reveal">
+      <span class="eyebrow">route --from lock --to unlock</span>
+      <h2>Four stops. <span class="gold-text">Round trip.</span></h2>
+      <p class="lede">Yellowback is a loop, not a sale. Your Ycash leaves on the outbound line and comes home on the return line.</p>
+    </div>
+
+    <div class="metro reveal">
+      <svg class="metro-svg" viewBox="0 0 1200 250" role="group" aria-label="The Yellowback line: Lock, Mint, Spend, Unlock">
+        <defs>
+          <linearGradient id="trackGrad" x1="0" x2="1">
+            <stop offset="0" stop-color="#f56733"/><stop offset=".38" stop-color="#f7b733"/>
+            <stop offset=".7" stop-color="#45e0ff"/><stop offset="1" stop-color="#ffe38a"/>
+          </linearGradient>
+          <filter id="mglow" x="-10%" y="-50%" width="120%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <path class="track-bg" d="M70,160 H330 L380,110 H620 L670,160 H860 L910,110 H1130"/>
+        <path class="track" stroke="url(#trackGrad)" d="M70,160 H330 L380,110 H620 L670,160 H860 L910,110 H1130"/>
+        <path class="train" pathLength="2026" d="M70,160 H330 L380,110 H620 L670,160 H860 L910,110 H1130"/>
+        <!-- return line, dashed: the coins come home -->
+        <path d="M1130,110 C1180,110 1180,225 1100,225 H120 C40,225 40,160 70,160" fill="none" stroke="#f56733" stroke-opacity=".35" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+        <text x="600" y="243" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" fill="#c9c3b4" opacity=".75">return line · your YEC comes home</text>
+
+        <g class="station" tabindex="0" role="button" aria-label="Stop 1: Lock">
+          <circle class="outer" cx="70" cy="160" r="24" stroke="#f56733"/><circle class="inner" cx="70" cy="160" r="9"/>
+          <text x="70" y="112" text-anchor="middle">Lock</text><text class="sub" x="70" y="92" text-anchor="middle">01</text>
+        </g>
+        <g class="station" tabindex="0" role="button" aria-label="Stop 2: Mint">
+          <circle class="outer" cx="480" cy="110" r="24" stroke="#f7b733"/><circle class="inner" cx="480" cy="110" r="9"/>
+          <text x="480" y="62" text-anchor="middle">Mint</text><text class="sub" x="480" y="42" text-anchor="middle">02</text>
+        </g>
+        <g class="station" tabindex="0" role="button" aria-label="Stop 3: Spend">
+          <circle class="outer" cx="760" cy="160" r="24" stroke="#45e0ff"/><circle class="inner" cx="760" cy="160" r="9"/>
+          <text x="760" y="112" text-anchor="middle">Spend</text><text class="sub" x="760" y="92" text-anchor="middle">03</text>
+        </g>
+        <g class="station" tabindex="0" role="button" aria-label="Stop 4: Unlock">
+          <circle class="outer" cx="1130" cy="110" r="24" stroke="#ffe38a"/><circle class="inner" cx="1130" cy="110" r="9"/>
+          <text x="1130" y="62" text-anchor="middle">Unlock</text><text class="sub" x="1130" y="42" text-anchor="middle">04</text>
+        </g>
+      </svg>
+
+      <div class="metro-tabs" role="tablist">
+        <button role="tab" aria-selected="true">01 Lock</button>
+        <button role="tab" aria-selected="false">02 Mint</button>
+        <button role="tab" aria-selected="false">03 Spend</button>
+        <button role="tab" aria-selected="false">04 Unlock</button>
+      </div>
+
+      <div class="metro-panel" aria-live="polite">
+        <div class="viz"></div>
+        <div>
+          <div class="step-no mono">STOP 1 / 4</div>
+          <h3>Lock your YEC</h3>
+          <p>Put YEC into a vault on the Ycash chain and choose how long: 30 days to 5 years. The vault is a timelocked script
+            that only your key can open, and only after the unlock height.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="metro-steps">[
+    {"code":"lock","title":"Lock your YEC","body":"Put YEC into a vault on the Ycash chain and choose how long: <b>30 days to 5 years</b>. The vault is a timelocked script that <b>only your key</b> can open, and only after the unlock height. No exchange, no custodian, no counterparty."},
+    {"code":"mint","title":"Mint dollars against it","body":"In the same transaction you mint YED: <b>up to 1/5</b> of the vault's value for 30–90 days, <b>1/4</b> for up to a year, <b>1/3</b> for 1–5 years. The rest is a safety buffer. <span class='mono'>1 YED = $1</span>, always counted in whole cents."},
+    {"code":"spend","title":"Spend, send, save","body":"YED are yours to use: pay someone, send them to a friend, hold them as a stable balance. Meanwhile your YEC sit in the vault — still yours, still riding every move in the Ycash price."},
+    {"code":"unlock","title":"Unlock every coin","body":"When the timelock ends, return the dollars you minted — <b>any</b> YED will do — and the vault opens. All of your YEC come back to you. You never sold a coin. While your vault stays healthy there is <b>no deadline</b>."}
+  ]</script>
+  <template id="viz-0"><svg viewBox="0 0 180 160"><rect x="40" y="70" width="100" height="80" rx="14" fill="#10224d" stroke="#f7b733" stroke-width="3"/><circle cx="90" cy="110" r="22" fill="#0a1633" stroke="#45e0ff" stroke-width="3" stroke-dasharray="3 5"/><path d="M80 108v-6a10 10 0 0 1 20 0v6" fill="none" stroke="#ffe38a" stroke-width="4"/><rect x="76" y="106" width="28" height="18" rx="4" fill="#ffe38a"/><g class="coin-drop"><use href="#yec-coin" x="72" y="-6" width="36" height="36"/></g></svg></template>
+  <template id="viz-1"><svg viewBox="0 0 180 160"><rect x="20" y="70" width="90" height="75" rx="12" fill="#10224d" stroke="#f7b733" stroke-width="3"/><use href="#yec-coin" x="45" y="88" width="40" height="40"/><g class="note-fly"><use href="#yed-note" x="80" y="60" width="80" height="47"/></g><g class="note-fly n2"><use href="#yed-note" x="80" y="60" width="80" height="47"/></g><text x="65" y="160" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#8f8a7e">vault · 1/3–1/5 minted</text></svg></template>
+  <template id="viz-2"><svg viewBox="0 0 180 160"><use href="#yed-note" x="10" y="56" width="80" height="47" class="glow-gold"/><path class="flow" d="M95 80 C120 40 140 40 160 40" stroke="#45e0ff" fill="none" stroke-width="3" stroke-dasharray="6 6" style="animation:dash 1s linear infinite"/><path d="M95 80 C120 120 140 120 160 120" stroke="#45e0ff" fill="none" stroke-width="3" stroke-dasharray="6 6" style="animation:dash 1s linear infinite"/><circle cx="162" cy="40" r="12" fill="#10224d" stroke="#45e0ff" stroke-width="2"/><text x="162" y="45" text-anchor="middle" font-size="13" fill="#45e0ff">☕</text><circle cx="162" cy="120" r="12" fill="#10224d" stroke="#45e0ff" stroke-width="2"/><text x="162" y="125" text-anchor="middle" font-size="12" fill="#45e0ff">✉</text></svg></template>
+  <template id="viz-3"><svg viewBox="0 0 180 160"><rect x="40" y="70" width="100" height="80" rx="14" fill="#10224d" stroke="#ffe38a" stroke-width="3"/><path d="M80 102v-14a10 10 0 0 1 20 0" fill="none" stroke="#4dffb0" stroke-width="4"/><rect x="76" y="100" width="28" height="18" rx="4" fill="#4dffb0"/><g class="note-fly" style="animation-direction:reverse"><use href="#yed-note" x="100" y="40" width="60" height="35"/></g><use href="#yec-coin" x="10" y="20" width="34" height="34" class="float"/><use href="#yec-coin" x="40" y="6" width="30" height="30" class="float"/><use href="#yec-coin" x="68" y="18" width="32" height="32" class="float"/></svg></template>
+</section>
+
+<!-- ============ CALCULATOR ============ -->
+<section id="calculator">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_estimatecollateral --interactive</span>
+      <h2>How many dollars can <span class="gold-text">your YEC mint?</span></h2>
+      <p class="lede">Play with the numbers. The price below is an example — type in today's YEC price. The node computes the real figures from the on-chain price feed at the moment you mint.</p>
+    </div>
+
+    <div class="calc reveal" id="calc">
+      <div class="panel">
+        <div class="field">
+          <label for="c-yec">YEC to lock <output id="c-yec-out">10,000 YEC</output></label>
+          <input type="number" id="c-yec" min="0" step="100" value="10000" inputmode="decimal">
+          <input type="range" id="c-yec-range" min="0" max="200000" step="500" value="10000" aria-label="YEC to lock">
+        </div>
+        <div class="field">
+          <label for="c-price">YEC price (USD) <output>example</output></label>
+          <input type="number" id="c-price" min="0" step="0.01" value="0.40" inputmode="decimal">
+        </div>
+        <div class="field">
+          <div class="label" id="c-term-label">Lock term</div>
+          <div class="seg" id="c-term" role="group" aria-labelledby="c-term-label">
+            <button type="button" data-cls="A" aria-pressed="false"><b>30–90 days</b><span>500% backed</span></button>
+            <button type="button" data-cls="B" aria-pressed="true"><b>90 d – 1 yr</b><span>400% backed</span></button>
+            <button type="button" data-cls="C" aria-pressed="false"><b>1–5 years</b><span>300% backed</span></button>
+          </div>
+          <div class="hint">Longer locks need less collateral per dollar.</div>
+        </div>
+        <div class="field">
+          <label for="c-sigma">Volatility multiplier <output id="c-sigma-out">1.00×</output></label>
+          <input type="range" id="c-sigma" min="1" max="3" step="0.05" value="1">
+          <div class="hint">When YEC gets choppy, the protocol raises the collateral requirement automatically (1× calm, up to 3× wild).</div>
+        </div>
+      </div>
+
+      <div class="panel" aria-live="polite">
+        <div class="muted small mono">you can mint up to</div>
+        <div class="result-big gold-text" id="r-yed">2,500<small> YED</small></div>
+        <div class="stack">
+          <div class="stack-bar"><div class="seg-yed" style="width:25%"></div><div class="seg-buffer" style="width:75%"></div></div>
+          <div class="stack-legend">
+            <span><i style="background:var(--gold-2)"></i>dollars you mint</span>
+            <span><i style="background:rgba(245,103,51,.5)"></i>collateral buffer — still your YEC</span>
+          </div>
+        </div>
+        <dl class="kv">
+          <dt>Collateral value locked</dt><dd id="r-value">$4,000</dd>
+          <dt>Required backing</dt><dd id="r-ratio">400%</dd>
+          <dt>Share of value you can mint</dt><dd id="r-share">1 / 4</dd>
+          <dt>Lock term</dt><dd id="r-term">90 days – 1 year</dd>
+          <dt>Enforcement fee (mint, and again at redeem)</dt><dd id="r-fee">25 YEC</dd>
+          <dt>YEC price where the vault drops below 110%</dt><dd id="r-claim">$0.11</dd>
+          <dt>…a fall of</dt><dd id="r-drop">73%</dd>
+        </dl>
+        <div class="warn" id="c-warn" role="status"></div>
+        <p class="small muted" style="margin-top:16px">Fee is the greater of 0.5 YEC or 0.25% of the collateral, paid to the mining pools and price attestors that keep the system honest, plus the ordinary network fee. Per-mint limits: $100 – $10,000.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NEVER SELL ============ -->
+<section id="never-sell">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">diff sell.txt hold.txt</span>
+      <h2>Need dollars? <span class="gold-text">Don't sell the gold.</span></h2>
+      <p class="lede">Two holders each own 10,000 YEC at $0.40 and need cash for a year. One sells. One locks and mints. Drag the slider to choose where the YEC price ends up a year later.</p>
+    </div>
+
+    <div class="reveal" id="versus">
+      <div class="slider-row panel">
+        <label for="vs-move" style="font-weight:600">YEC price change by unlock day</label>
+        <input type="range" id="vs-move" min="-80" max="400" step="5" value="100">
+        <output id="vs-move-out" class="gold-text">+100%</output>
+      </div>
+      <div class="versus">
+        <div class="vs-col">
+          <h3>Sold the YEC <span class="chip" style="color:var(--ink-3)">the old way</span></h3>
+          <div class="vs-bars">
+            <div class="vs-bar" id="vs-sell-usd"><div class="lbl">Dollars to use this year <b></b></div><div class="track"><div class="fill fill-usd"></div></div></div>
+            <div class="vs-bar" id="vs-sell-yec"><div class="lbl">YEC owned on unlock day <b></b></div><div class="track"><div class="fill fill-yec"></div></div></div>
+          </div>
+          <p class="vs-note">More dollars up front, but the Ycash is gone. Any rise in YEC belongs to whoever bought it.</p>
+        </div>
+        <div class="vs-col win">
+          <h3>Locked &amp; minted <span class="chip" style="color:var(--gold-1)">Yellowback</span></h3>
+          <div class="vs-bars">
+            <div class="vs-bar" id="vs-yb-usd"><div class="lbl">Dollars to use this year <b></b></div><div class="track"><div class="fill fill-usd"></div></div></div>
+            <div class="vs-bar" id="vs-yb-yec"><div class="lbl">YEC owned on unlock day <b></b></div><div class="track"><div class="fill fill-yec"></div></div></div>
+          </div>
+          <p class="vs-note" id="vs-verdict"></p>
+        </div>
+      </div>
+      <p class="small muted center" style="margin-top:14px">Example: 90-day-to-1-year term, 400% backing, calm market. Fees left out to keep the picture simple.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TIMELINE ============ -->
+<section id="timeline">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_getvault --timeline</span>
+      <h2>Your vault, <span class="gold-text">from lock to home.</span></h2>
+      <p class="lede">Before the unlock height nobody — not even you — can move the coins. After it, only you can, by returning the dollars. A vault that stays healthy has no deadline at all.</p>
+    </div>
+    <figure class="diagram timeline scroll-sm reveal">
+      <svg viewBox="0 0 1200 230" role="img" aria-label="Timeline of a vault: locked period, unlock height, 30-day grace period, then open-ended redemption while healthy.">
+        <defs><filter id="tglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <line x1="100" y1="120" x2="560" y2="120" stroke="#f56733" stroke-width="10" stroke-linecap="round" filter="url(#tglow)"/>
+        <line x1="560" y1="120" x2="820" y2="120" stroke="#f7b733" stroke-width="10" filter="url(#tglow)"/>
+        <line x1="820" y1="120" x2="1160" y2="120" stroke="#45e0ff" stroke-width="10" stroke-dasharray="2 16" stroke-linecap="round" filter="url(#tglow)"/>
+        <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="20" fill="#f7f1e3">
+          <circle cx="100" cy="120" r="18" fill="#050b1c" stroke="#f56733" stroke-width="5"/><text x="100" y="78" text-anchor="middle">Lock + mint</text>
+          <circle cx="560" cy="120" r="18" fill="#050b1c" stroke="#f7b733" stroke-width="5"/><text x="560" y="78" text-anchor="middle">Unlock height</text>
+          <circle cx="820" cy="120" r="18" fill="#050b1c" stroke="#45e0ff" stroke-width="5"/><text x="820" y="78" text-anchor="middle">+30 days</text>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="13" fill="#c9c3b4">
+          <text x="330" y="165" text-anchor="middle">LOCKED · 30 days – 5 years</text>
+          <text x="330" y="185" text-anchor="middle" fill="#8f8a7e">no one can move the coins</text>
+          <text x="690" y="165" text-anchor="middle">GRACE · redeem any time</text>
+          <text x="690" y="185" text-anchor="middle" fill="#8f8a7e">only you can open it</text>
+          <text x="990" y="165" text-anchor="middle">healthy → still only you</text>
+          <text x="990" y="185" text-anchor="middle" fill="#8f8a7e">no deadline</text>
+          <text x="100" y="52" text-anchor="middle" fill="#8f8a7e">day 0</text>
+        </g>
+        <g transform="translate(1160 120)"><path d="M-6 -10 L8 0 L-6 10" fill="none" stroke="#45e0ff" stroke-width="4" stroke-linecap="round"/></g>
+      </svg>
+      <div class="tl-legend">
+        <div style="border-color:#f56733"><b>Locked</b>Your coins sit in a timelocked vault, enforced by every Ycash node.</div>
+        <div style="border-color:#f7b733"><b>Unlock</b>Return the YED you minted, pay a small fee, and the vault opens.</div>
+        <div style="border-color:#45e0ff"><b>No deadline</b>If your vault stays above 110% of its debt, take as long as you like.</div>
+        <div style="border-color:#ff6b6b"><b>Only if underwater</b>After the grace period, a vault worth under 110% of its debt can be claimed by a YED holder who pays off the debt — and the excess still returns to you.</div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ WHY TRUST IT ============ -->
+<section id="trust">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">grep -r "custodian" yellowback/ → 0 results</span>
+      <h2>Nobody in the middle. <span class="gold-text">On purpose.</span></h2>
+    </div>
+    <div class="grid-3">
+      <div class="card reveal"><span class="tag">self-custody</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></div>
+        <h3>Only your key opens your vault</h3><p>There is no second key, no admin key, no federation. Your collateral sits in an ordinary Ycash script that the whole network already enforces.</p></div>
+      <div class="card reveal"><span class="tag">over-collateralized</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 17h14M7 13h10M9 9h6M12 3v3"/></svg></div>
+        <h3>Backed 3–5× at mint</h3><p>Every dollar starts with $3 to $5 of YEC behind it, and the requirement rises automatically when the market gets volatile.</p></div>
+      <div class="card reveal"><span class="tag">price feed</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg></div>
+        <h3>Two independent price sources</h3><p>Mining pools quote YEC/USD in every block, and bonded attestors sign prices off-chain. Minting uses the lower of the two; claims use the higher, protecting minters.</p></div>
+      <div class="card reveal"><span class="tag">enforcement</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Enforced by miners</h3><p>Pools running the Yellowback node refuse any block that releases collateral without burning its debt. No new opcode, no network upgrade.</p></div>
+      <div class="card reveal"><span class="tag">safety rails</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <h3>Fails safe</h3><p>No reliable price? Minting pauses. Supply too big? Minting pauses. Redemptions by minters never depend on a price and never pause.</p></div>
+      <div class="card reveal"><span class="tag">open source</span><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg></div>
+        <h3>Verify, don't trust</h3><p>Every Yellowback-aware node computes the same state from the same chain — balances, vaults, prices — and you can check it yourself.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CYPHERPUNK ROOTS ============ -->
+<section id="roots">
+  <div class="wrap">
+    <div class="manifesto reveal">
+      <div class="hex" aria-hidden="true"></div>
+      <div class="content">
+        <span class="eyebrow">./roots --since 1993</span>
+        <blockquote>“Privacy is necessary for an open society in the electronic age.”</blockquote>
+        <cite>— Eric Hughes, A Cypherpunk's Manifesto, 1993</cite>
+        <p class="muted" style="margin-top:22px">Ycash grew out of that tradition: Bitcoin's peer-to-peer cash, Zcash's zero-knowledge proofs, and a 2020 fork that took the code back to the community.
+          Yellowback follows the same rule — <span class="mono" style="color:var(--mint)">cypherpunks write code</span> — so the dollar it adds needs no bank, no issuer and no one's permission.</p>
+      </div>
+    </div>
+
+    <figure class="diagram scroll-sm reveal" style="margin-top:24px">
+      <svg viewBox="0 0 1200 170" role="img" aria-label="Lineage line: 1993 Cypherpunk Manifesto, 2008 Bitcoin whitepaper, 2016 Zcash, 2020 Ycash, 2026 Yellowback">
+        <path d="M110 90 H300 L330 60 H560 L590 90 H840 L870 60 H1140" fill="none" stroke="#4dffb0" stroke-opacity=".7" stroke-width="5" stroke-linecap="round" filter="url(#tglow)"/>
+        <g font-family="JetBrains Mono, monospace" font-size="13" fill="#8f8a7e" text-anchor="middle">
+          <circle cx="110" cy="90" r="11" fill="#050b1c" stroke="#4dffb0" stroke-width="4"/><text x="110" y="130">1993</text><text x="110" y="150" fill="#c9c3b4">Cypherpunk Manifesto</text>
+          <circle cx="330" cy="60" r="11" fill="#050b1c" stroke="#4dffb0" stroke-width="4"/><text x="330" y="30">2008</text><text x="330" y="110" fill="#c9c3b4">Bitcoin whitepaper</text>
+          <circle cx="590" cy="90" r="11" fill="#050b1c" stroke="#4dffb0" stroke-width="4"/><text x="590" y="130">2016</text><text x="590" y="150" fill="#c9c3b4">Zcash · zk-SNARKs</text>
+          <circle cx="870" cy="60" r="11" fill="#050b1c" stroke="#f56733" stroke-width="4"/><text x="870" y="30">2020</text><text x="870" y="110" fill="#c9c3b4">Ycash forks from Zcash</text>
+          <circle cx="1140" cy="60" r="14" fill="#f7b733" stroke="#ffe38a" stroke-width="4"/><text x="1140" y="30" fill="#ffe38a">2026</text><text x="1110" y="110" fill="#ffe38a">Yellowback</text>
+        </g>
+      </svg>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ FAQ TEASER ============ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">man yellowback</span>
+      <h2>Quick answers</h2>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Do I ever have to sell my Ycash?</summary><div>No. You lock it, you mint dollars against it, and when the lock ends you return the dollars and get every YEC back. The only way a vault changes hands is if it falls below 110% of its debt and you leave it there past the 30-day grace period — and even then, everything above the debt plus a 10% margin is returned to you.</div></details>
+      <details><summary>What do I need to give back to unlock?</summary><div>The same number of YED you minted (any YED — they're interchangeable), plus a small enforcement fee in YEC. Your wallet builds the redemption in one step.</div></details>
+      <details><summary>Can anyone freeze or confiscate my collateral?</summary><div>No one holds a key to your vault except you. There is no company, committee or federation that can pause, veto or redirect a redemption.</div></details>
+      <details><summary>Is Yellowback live?</summary><div>It is in release-candidate testing. The first mainnet parameter set starts at block 3,075,000, and minting opens only after mining pools signal support (75% of blocks over a two-week window) and a further two-week delay — so no YED exists before the network is ready to protect it.</div></details>
+    </div>
+    <p style="margin-top:22px"><a href="faq.html">All questions →</a></p>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section>
+  <div class="wrap">
+    <div class="cta-band reveal">
+      <div class="fiber" data-seed="77" data-lines="4" data-h="500" aria-hidden="true"></div>
+      <div style="position:relative">
+        <span class="eyebrow">./get-started</span>
+        <h2>Your Ycash, working for you — <span class="gold-text">without leaving you.</span></h2>
+        <p class="lede">Yellowback lives inside YecWallet, the full-node Ycash wallet, with a mobile wallet on the way. Read the docs, then try it on a local test network.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-gold" href="docs.html#get-started">Read the quick start</a>
+          <a class="btn btn-ghost" href="how-it-works.html">Deep dive: how it works</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+      <p style="margin-top:14px">A decentralized dollar backed by Ycash. Open source. Not a bank, not a company, not an investment product. Nothing here is financial advice.</p>
+      <div class="hash" data-pagehash></div>
+    </div>
+    <div><h4>Learn</h4><a href="how-it-works.html">How it works</a><a href="index.html#calculator">Calculator</a><a href="faq.html">FAQ</a></div>
+    <div><h4>Docs</h4><a href="docs.html#get-started">Quick start</a><a href="docs.html#parameters">Parameters</a><a href="docs.html#rpc">RPC reference</a><a href="docs.html#risks">Risks</a></div>
+    <div><h4>Ycash</h4><a href="https://www.ycash.xyz" rel="noopener">ycash.xyz</a><a href="https://github.com/ycashfoundation" rel="noopener">Ycash on GitHub</a><a href="docs.html#components">Wallets &amp; components</a></div>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>

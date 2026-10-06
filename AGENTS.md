@@ -35,6 +35,7 @@ yellowback-workspace/
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
 ├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `main` — calibrates the constants baked into Yellowback releases
+├── website/         yellowbacks.com: the static public site and user documentation (`make site`, website/README.md)
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, revision 4;
@@ -234,6 +235,7 @@ make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the five forks vs its -legacy baseline
 make log        # commits on each fork branch beyond its baseline
+make site       # serve website/ (yellowbacks.com) on http://localhost:8000
 make spec       # regenerate the spec + RPC contract copies from the plans (make spec-check verifies)
 ```
 

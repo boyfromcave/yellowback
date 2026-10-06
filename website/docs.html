@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation — Yellowback</title>
+<meta name="description" content="Ycash Yellowback (YED) documentation: quick start, concepts, lifecycle, fees, claims, parameters, price feed, enforcement, RPC reference, privacy and risks.">
+<meta name="theme-color" content="#0a1633">
+<meta property="og:title" content="Documentation — Yellowback">
+<meta property="og:description" content="Ycash Yellowback (YED) documentation: quick start, concepts, lifecycle, fees, claims, parameters, price feed, enforcement, RPC reference, privacy and risks.">
+<meta property="og:image" content="assets/img/yellowback-mark.svg">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<!-- Ycash glyph, redrawn from YecWallet's res/logo.svg (MIT, The Ycash developers) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="yglyph" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M20 18V55" stroke-width="11"/><path d="M80 18V55" stroke-width="11"/>
+      <path d="M20 55A30 30 0 0 0 80 55" stroke-width="9"/>
+      <path d="M38 36V58M50 36V58M62 36V58" stroke-width="10"/>
+    </g>
+  </symbol>
+  <symbol id="yec-coin" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#f56733"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="#ffb08f" stroke-opacity=".5" stroke-width="2"/>
+    <use href="#yglyph" x="18" y="18" width="64" height="64" color="#fff"/>
+  </symbol>
+  <symbol id="yed-note" viewBox="0 0 120 70">
+    <rect x="1" y="1" width="118" height="68" rx="9" fill="url(#noteGrad)" stroke="#8a4b0b" stroke-opacity=".35"/>
+    <rect x="7" y="7" width="106" height="56" rx="5" fill="none" stroke="#7a3f06" stroke-opacity=".4" stroke-dasharray="1 3"/>
+    <circle cx="60" cy="35" r="17" fill="#f56733"/>
+    <use href="#yglyph" x="47" y="22" width="26" height="26" color="#fff"/>
+    <text x="13" y="24" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#5a2e05">$1</text>
+    <text x="84" y="57" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5a2e05">YED</text>
+  </symbol>
+  <defs>
+    <linearGradient id="noteGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe38a"/><stop offset=".55" stop-color="#f7b733"/><stop offset="1" stop-color="#d98a1c"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="status-bar">
+  <div class="wrap"><span class="status-dot"></span>
+    <span>status: release-candidate testing<span class="hide-sm"> · first mainnet parameter set starts at block 3,075,000 · minting opens once mining pools signal support</span></span>
+  </div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
+    <nav class="nav-links" id="nav-links">
+      <a href="how-it-works.html">How it works</a>
+      <a href="index.html#calculator">Calculator</a>
+      <a href="docs.html" aria-current="page">Docs</a>
+      <a href="faq.html">FAQ</a>
+      <a class="btn btn-gold" href="docs.html#get-started">Get started</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="page-head">
+  <div class="fiber" data-seed="88" data-lines="4" data-h="500" aria-hidden="true"></div>
+  <div class="wrap" style="position:relative">
+    <span class="eyebrow"><span data-scramble>yed help</span><span class="cursor"></span></span>
+    <h1>Documentation</h1>
+    <p class="lede" style="max-width:720px">Everything you need to use Ycash Yellowback (YED): concepts, the lifecycle of a position, every user-facing parameter, the wallet RPCs, and the risks — stated plainly.</p>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="wrap docs">
+    <nav aria-label="Documentation sections">
+      <div class="group">Start</div>
+      <a href="#overview">Overview</a>
+      <a href="#get-started">Quick start</a>
+      <a href="#concepts">Concepts &amp; glossary</a>
+      <div class="group">Using it</div>
+      <a href="#lifecycle">Lifecycle of a position</a>
+      <a href="#fees">Fees</a>
+      <a href="#claims">Claims &amp; liquidation</a>
+      <div class="group">Reference</div>
+      <a href="#parameters">Parameters</a>
+      <a href="#price-feed">Price feed</a>
+      <a href="#enforcement">Enforcement &amp; activation</a>
+      <a href="#rpc">RPC reference</a>
+      <a href="#components">Wallets &amp; components</a>
+      <div class="group">Read before you mint</div>
+      <a href="#privacy">Privacy</a>
+      <a href="#risks">Risks</a>
+      <a href="#status">Project status</a>
+    </nav>
+
+    <article>
+      <h2 id="overview">Overview</h2>
+      <p><strong>Ycash Yellowback (YED)</strong> is a decentralized US-dollar token on the Ycash blockchain. You create YED by locking YEC in a timelocked vault and minting up to a fixed fraction of the vault's value; you get the YEC back by returning (burning) the same amount of YED after the lock ends. <code>1 YED = $1</code>, counted in whole cents.</p>
+      <p>Yellowback is an <strong>overlay</strong> on ordinary Ycash transactions: vaults are standard pay-to-script-hash outputs with <code>CHECKLOCKTIMEVERIFY</code>, YED live on small transparent outputs described by one <code>OP_RETURN</code> note per transaction, and every Yellowback-aware node computes the same state from the same chain. The one rule a Ycash script cannot express — <em>collateral may only leave a vault if its debt is burned</em> — is enforced by mining pools that run the Yellowback node.</p>
+      <div class="callout gold"><b>In one sentence:</b> lock YEC, mint dollars, spend them, and later return the dollars to unlock every coin — you never have to sell your Ycash.</div>
+
+      <h2 id="get-started">Quick start</h2>
+      <p>Yellowback is used through <strong>YecWallet</strong>, the desktop full-node Ycash wallet, which has a Yellowback tab (mint, send, redeem, claim, sweep) and bundles a Yellowback-enabled <code>ycashd</code>. A mobile wallet, <strong>YEW</strong>, is in development.</p>
+      <ol>
+        <li><strong>Install and sync</strong> a Yellowback-enabled YecWallet. The node feature is behind the <code>-yellowback</code> flag; the wallet sets it for you.</li>
+        <li><strong>Fund</strong> the wallet with YEC: the collateral, plus the enforcement fee for both the mint and the later redemption, plus ordinary network fees.</li>
+        <li><strong>Estimate</strong>: choose an amount in dollars and a lock term; the wallet shows the YEC required at the current mint price.</li>
+        <li><strong>Mint</strong>: confirm. Your YED appear on a <code>ye…</code> address once the transaction is mined.</li>
+        <li><strong>Use</strong> your YED: send, receive, hold.</li>
+        <li><strong>Redeem</strong> after the unlock height: the wallet burns the YED, pays the fee, and returns your collateral in one step.</li>
+      </ol>
+      <div class="terminal" role="region" aria-label="Example RPC session">
+        <div class="bar"><i></i><i></i><i></i><span>ycash-cli · example</span></div>
+<pre><span class="c"># how much YEC to mint $1,000 for ~1 year (420,480 blocks)?</span>
+<span class="p">$</span> ycash-cli <span class="k">yed_estimatecollateral</span> 100000 420480
+<span class="c"># → requiredZat, termClass, lockHeight, claimHeight, minRatioBps, pMint …</span>
+
+<span class="p">$</span> ycash-cli <span class="k">yed_mint</span> 100000 420480
+<span class="p">$</span> ycash-cli <span class="k">yed_getbalance</span>
+<span class="p">$</span> ycash-cli <span class="k">yed_send</span> ye1…recipient 2500       <span class="c"># $25.00</span>
+
+<span class="c"># a year later, at or after lockHeight:</span>
+<span class="p">$</span> ycash-cli <span class="k">yed_redeem</span> &lt;vaultTxid&gt;</pre>
+      </div>
+      <p class="small muted">Amounts in RPCs are integer US cents; lock lengths are in blocks (75-second blocks: 1,152 per day, 420,480 per year). Exact argument lists are in the <a href="#rpc">RPC reference</a> and the node's <code>doc/yellowback-rpc.md</code>.</p>
+      <div class="callout"><b>Try it without real money.</b> The project ships a regtest devnet with simulated pools, attestors and users, so you can mint, redeem and even watch a liquidation on one laptop. See <code>contrib/yellowback/devnet/</code> in the node repository.</div>
+
+      <h2 id="concepts">Concepts &amp; glossary</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Yellowback</strong></td><td>The system. “Yellowback is a decentralized dollar on Ycash.”</td></tr>
+          <tr><td><strong>YED</strong></td><td>The unit. 1 YED = $1. “You minted 250 YED.”</td></tr>
+          <tr><td><strong>YEC</strong></td><td>Ycash's native coin; the collateral.</td></tr>
+          <tr><td><strong>Vault</strong></td><td>The timelocked P2SH output holding your collateral. Two spend paths: owner and claim.</td></tr>
+          <tr><td><strong>Lock height / unlock height</strong></td><td>The block height before which nobody can spend the vault.</td></tr>
+          <tr><td><strong>Claim height</strong></td><td>Lock height + 30 days (34,560 blocks). The claim path opens here, and only for an underwater vault.</td></tr>
+          <tr><td><strong>Term class</strong></td><td>A, B or C, by lock length; sets the base collateral ratio.</td></tr>
+          <tr><td><strong>Collateral ratio</strong></td><td>Vault value ÷ debt. Minimum at mint: 500% / 400% / 300% × the volatility multiplier.</td></tr>
+          <tr><td><strong>Mint price</strong></td><td>The YEC/USD price used to size new vaults: the lower of the pool and attestor prices.</td></tr>
+          <tr><td><strong>Claim price</strong></td><td>The price used to judge whether a vault is underwater: the higher of the slow pool prices and the attestor price.</td></tr>
+          <tr><td><strong>Quote tag</strong></td><td>A pool's YEC/USD quote and payout key, carried in its block's coinbase.</td></tr>
+          <tr><td><strong>Attestor</strong></td><td>Anyone who posts a timelocked bond and signs YEC/USD prices off-chain.</td></tr>
+          <tr><td><strong>Redeem</strong></td><td>Owner-path spend: burn the debt, pay the fee, take the collateral.</td></tr>
+          <tr><td><strong>Claim</strong></td><td>Claim-path spend by anyone: burn the debt of an underwater vault, take up to debt + 10%; the rest returns to the owner.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="lifecycle">Lifecycle of a position</h2>
+      <figure class="diagram scroll-sm" style="margin:1em 0 1.5em">
+        <svg viewBox="0 0 1000 200" role="img" aria-label="Vault states: Active after mint; Closed after redeem; Claimed if underwater after claim height.">
+          <g fill="none" stroke-width="6" stroke-linecap="round" filter="url(#dglow2)">
+            <path d="M80 100 H420" stroke="#f7b733"/>
+            <path d="M420 100 L470 50 H900" stroke="#4dffb0"/>
+            <path d="M420 100 L470 150 H900" stroke="#ff6b6b" stroke-dasharray="2 12"/>
+          </g>
+          <defs><filter id="dglow2"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="17" fill="#f7f1e3">
+            <circle cx="80" cy="100" r="13" fill="#050b1c" stroke="#f7b733" stroke-width="5"/><text x="80" y="70" text-anchor="middle">mint</text>
+            <circle cx="420" cy="100" r="16" fill="#050b1c" stroke="#fff" stroke-width="5"/><text x="300" y="80" text-anchor="middle">ACTIVE</text>
+            <circle cx="900" cy="50" r="13" fill="#050b1c" stroke="#4dffb0" stroke-width="5"/><text x="880" y="30" text-anchor="end">CLOSED (redeemed)</text>
+            <circle cx="900" cy="150" r="13" fill="#050b1c" stroke="#ff6b6b" stroke-width="5"/><text x="880" y="185" text-anchor="end">CLAIMED (underwater)</text>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="12" fill="#8f8a7e">
+            <text x="660" y="40" text-anchor="middle">owner · ≥ lockHeight · burn debt + fee</text>
+            <text x="660" y="140" text-anchor="middle">anyone · ≥ claimHeight · &lt;110% · burn debt</text>
+          </g>
+        </svg>
+      </figure>
+      <h3>Mint</h3>
+      <p>One transaction locks the collateral, creates the YED, pays the enforcement fee and records a note describing which output carries how many cents. It commits to a recent <em>reference height</em>, and the collateral it needs is computed from the price snapshot at that height. A mint must lock at least $100 and at most $10,000 of YED; open several vaults for more.</p>
+      <h3>Hold &amp; transfer</h3>
+      <p>YED move like coins: a transfer spends YED outputs and creates new ones; the totals must balance. YED addresses start with <code>ye</code> on mainnet.</p>
+      <h3>Redeem</h3>
+      <p>From the unlock height on, the owner can spend the vault by burning exactly the vault's debt in YED (any YED) and paying the enforcement fee. Redemption never depends on a price and is never paused by a halt. A healthy vault has no deadline.</p>
+      <h3>Void mints</h3>
+      <p>Rarely, a mint can lose a race with the supply cap or be invalidated by a deep chain reorganisation. It is then <strong>VOID</strong>: no YED were created, and the collateral stays locked until the unlock height, after which the wallet's Redeem button releases it with no burn and no fee.</p>
+
+      <h2 id="fees">Fees</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Fee</th><th>Amount</th><th>When</th><th>Paid to</th></tr></thead>
+        <tbody>
+          <tr><td>Enforcement fee</td><td>max(0.5 YEC, 0.25% of the vault's collateral)</td><td>mint, redeem, claim</td><td>a mining pool that quoted a price in the last 100 blocks</td></tr>
+          <tr><td>Attestation fee</td><td>small, per transaction that carries attestor signatures</td><td>mint, claim</td><td>a selected attestor</td></tr>
+          <tr><td>Network fee</td><td>the ordinary Ycash transaction fee</td><td>every transaction</td><td>the miner of the block</td></tr>
+        </tbody>
+      </table></div>
+      <p>Because every redemption pays the enforcement fee, a mint must lock at least four times the minimum fee. If no pool quoted recently, no enforcement fee is required, so a redemption never waits on miners.</p>
+
+      <h2 id="claims">Claims &amp; liquidation</h2>
+      <p>There is no liquidation engine, no keeper and no auction. A vault can only change hands by the <strong>claim path</strong>, and only when all of these hold:</p>
+      <ul>
+        <li>the chain is at or past the vault's <strong>claim height</strong> (unlock height + 30 days);</li>
+        <li>the vault is <strong>underwater</strong>: worth less than <strong>110%</strong> of its debt at the claim price (or, under the emergency rule for extreme crashes, below a lower threshold shown twice at least an hour apart);</li>
+        <li>the claimant <strong>burns the full debt</strong> in YED.</li>
+      </ul>
+      <p>The claimant receives collateral worth at most the debt plus a 10% margin at the claim price (no margin under the emergency rule); <strong>everything above that is returned to the owner</strong> in the same transaction. Owners see a warning in the wallet when someone posts an emergency notice against their vault.</p>
+      <div class="callout"><b>Think of it as non-recourse.</b> If YEC crashes and you choose not to redeem, the worst outcome is that your collateral pays your debt. You keep the dollars you minted, and nobody can come after anything else you own.</div>
+
+      <h2 id="parameters">Parameters</h2>
+      <p>The first mainnet parameter set. These values are identical on every enforcing node; changing one is a coordinated release with a new start height.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Parameter</th><th>Mainnet value</th></tr></thead>
+        <tbody>
+          <tr><td>Start height</td><td><code>3,075,000</code></td></tr>
+          <tr><td>Enforcement sunset (this release)</td><td><code>3,495,480</code> (~1 year of blocks after start)</td></tr>
+          <tr><td>Block time</td><td>75 s · 1,152 blocks/day · 420,480 blocks/year</td></tr>
+          <tr><td>Term class A</td><td>34,560 – 103,680 blocks (30–90 days) · 500%</td></tr>
+          <tr><td>Term class B</td><td>103,681 – 420,480 blocks (90 days – 1 year) · 400%</td></tr>
+          <tr><td>Term class C</td><td>420,481 – 2,102,400 blocks (1–5 years) · 300%</td></tr>
+          <tr><td>Volatility multiplier</td><td>1× – 3× (reference volatility 100%/yr)</td></tr>
+          <tr><td>Mint size</td><td>$100 – $10,000 per vault</td></tr>
+          <tr><td>Grace period</td><td>34,560 blocks (30 days)</td></tr>
+          <tr><td>Claim threshold</td><td>110% of debt</td></tr>
+          <tr><td>Enforcement fee</td><td>max(0.5 YEC, 25 bps of collateral)</td></tr>
+          <tr><td>Supply cap</td><td>15% of YEC market cap (soft: mints backed ≥ 500% still allowed)</td></tr>
+          <tr><td>Global-ratio halt</td><td>250% (mints backed ≥ 500% still allowed)</td></tr>
+          <tr><td>Price divergence halt</td><td>20%</td></tr>
+          <tr><td>Price windows (pools)</td><td>96 / 576 / 2,016 blocks (~2 h / 12 h / 42 h)</td></tr>
+          <tr><td>Activation</td><td>75% of a 2,016-block window signalling, then a 2,016-block delay</td></tr>
+          <tr><td>Mint halt / resume</td><td>participation below 60% / back at 75%</td></tr>
+          <tr><td>Address prefix</td><td><code>ye…</code> mainnet · <code>yt…</code> testnet · <code>yr…</code> regtest</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="price-feed">Price feed</h2>
+      <p><strong>Pools.</strong> Each enforcing pool writes a YEC/USD quote (from exchange sources it chooses) into the coinbase of every block it mines. The node keeps rolling medians over the last 96, 576 and 2,016 blocks; a window needs at least half (fast) or two-thirds (mid, slow) of its blocks to carry a quote before it yields a price.</p>
+      <p><strong>Attestors.</strong> Anyone can register as an attestor by posting a timelocked YEC bond. Attestors sign prices off-chain and gossip them; a mint or claim carries four to six of those signatures in a small extra input, and the nodes combine them by a bond-weighted quantile.</p>
+      <p><strong>Combination.</strong> The <strong>mint price</strong> is the lower of the pool price and the attestor price; the <strong>claim price</strong> is the higher. An attacker who wants to over-mint or to liquidate healthy vaults must move both populations at once.</p>
+
+      <h2 id="enforcement">Enforcement &amp; activation</h2>
+      <p>Pools that run the Yellowback node do three things: publish quotes, keep rule-breaking Yellowback transactions out of their block templates, and — once activated — refuse to build on a block that releases vault collateral without burning its debt. To a stock Ycash node, every block an enforcing pool mines is valid; nothing a stock node accepts today is ever rejected by it. This is a soft fork carried by mining software: no new opcode, no branch ID, no network upgrade.</p>
+      <ul>
+        <li><strong>Activation:</strong> minting is impossible until 75% of blocks in a 2,016-block window signal support, plus a further 2,016-block delay — no YED can exist before the network is ready to protect it.</li>
+        <li><strong>Work valve:</strong> if a chain the node rejected gets six blocks of work ahead, the node stops enforcing for the session and follows the majority chain, so enforcers can't split off.</li>
+        <li><strong>Sunset:</strong> each release stops rejecting blocks at its enforcement end height, so a stale release never splits from an upgraded one.</li>
+      </ul>
+
+      <h2 id="rpc">RPC reference</h2>
+      <p>All Yellowback commands use the <code>yed_</code> prefix and need a node started with <code>-yellowback</code>. Selected commands:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>yed_getinfo</code></td><td>Node status: enabled, healthy, enforcing, heights, parameters.</td></tr>
+          <tr><td><code>yed_getstats</code></td><td>Supply, total collateral, vault counts, prices, global ratio, halts.</td></tr>
+          <tr><td><code>yed_getprice [height]</code></td><td>The fast/mid/slow medians, mint and claim prices, window fill.</td></tr>
+          <tr><td><code>yed_estimatecollateral &lt;cents&gt; &lt;lockBlocks&gt; [price]</code></td><td>YEC required, term class, lock and claim heights.</td></tr>
+          <tr><td><code>yed_mint &lt;cents&gt; &lt;lockBlocks&gt; [from]</code></td><td>Lock collateral and mint YED.</td></tr>
+          <tr><td><code>yed_getnewaddress</code> · <code>yed_getbalance</code> · <code>yed_listunspent</code></td><td>Receive and inspect YED.</td></tr>
+          <tr><td><code>yed_send</code> · <code>yed_sendmany</code></td><td>Transfer YED.</td></tr>
+          <tr><td><code>yed_listpositions</code> · <code>yed_getvault &lt;txid&gt;</code></td><td>Your vaults and their status, heights, ratios, warnings.</td></tr>
+          <tr><td><code>yed_redeem &lt;vaultTxid&gt; [to]</code></td><td>Burn the debt and take the collateral back (one step).</td></tr>
+          <tr><td><code>yed_listclaimable</code> · <code>yed_claim</code></td><td>Find and claim underwater vaults past their claim height.</td></tr>
+          <tr><td><code>yed_listtransactions</code> · <code>yed_gettxinfo</code></td><td>History and per-transaction verdicts.</td></tr>
+          <tr><td><code>yed_listminers</code> · <code>yed_listattestors</code></td><td>Who is quoting and attesting prices.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="small muted">The complete, versioned contract lives in the node repository as <code>doc/yellowback-rpc.md</code>.</p>
+
+      <h2 id="components">Wallets &amp; components</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Component</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ycashd</strong> (Yellowback node)</td><td>The Ycash node with the Yellowback overlay and <code>yed_*</code> RPCs, behind <code>-yellowback</code>. Released from the ycashd 6.2x line.</td></tr>
+          <tr><td><strong>YecWallet</strong></td><td>Desktop full-node wallet with a Yellowback tab: mint, send, redeem, claim, sweep.</td></tr>
+          <tr><td><strong>YEW</strong></td><td>Mobile wallet (iOS/Android): YEC transparent and shielded, YED, mint/redeem/claim — in development.</td></tr>
+          <tr><td><strong>lightwalletd</strong></td><td>Light-client server with a read-only Yellowback service for mobile wallets.</td></tr>
+          <tr><td><strong>yolo</strong></td><td>Stratum pool software that carries the Yellowback price tag into every block it builds.</td></tr>
+          <tr><td><strong>chain-viz</strong></td><td>A real-time dashboard of blocks, mempool and Yellowback health.</td></tr>
+          <tr><td><strong>x402-ycash</strong></td><td>HTTP-402 payments in YEC and YED for AI agents and APIs.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="privacy">Privacy</h2>
+      <p>Ycash is a privacy coin: YEC can be held and sent in shielded (Sapling) addresses. <strong>YED, however, lives on transparent outputs</strong>, and vault collateral is transparent while it is locked — the miners who enforce the rules have to be able to read them. Your other YEC can stay shielded the whole time. Shielded YED is an open research item.</p>
+
+      <h2 id="risks">Risks</h2>
+      <div class="callout risk"><b>Read this before minting.</b> Yellowback is new, experimental software. Nothing on this site is financial advice.</div>
+      <ul>
+        <li><strong>Price crashes.</strong> If YEC falls far enough that your vault is below 110% of its debt after the grace period, it can be claimed. You keep the YED you minted; you lose collateral up to the debt plus 10%.</li>
+        <li><strong>Miner participation.</strong> The burn rule is enforced by pools. If enforcing pools fall below half of recent blocks, block enforcement pauses and abandoned vaults are protected only by pools that still filter. A sustained hashpower majority that stops enforcing could release collateral without a burn — the same assumption the chain already makes about reorganisations.</li>
+        <li><strong>Price-feed manipulation.</strong> Moving the price requires a sustained majority of quote-tagged blocks <em>and</em> corrupting bonded attestors.</li>
+        <li><strong>Software bugs.</strong> A bug in the enforcement code could make enforcing pools orphan blocks; the work valve and kill switch bound this, but don't eliminate it.</li>
+        <li><strong>Pools see claims first.</strong> A pool can front-run a claim in a block it mines.</li>
+        <li><strong>Locked means locked.</strong> You cannot get your collateral back before the unlock height, for any reason.</li>
+        <li><strong>The dollar peg is not guaranteed.</strong> YED is redeemable against vaults, not against a bank account; its market price depends on demand and on the backing.</li>
+      </ul>
+
+      <h2 id="status">Project status</h2>
+      <p>As of October 2026: the overlay is implemented and tested on both Ycash node lines and in YecWallet; a security audit has been completed and remediated; the 6.21.0 release candidate is being prepared; and the first mainnet parameter set (start height 3,075,000) is set. Minting on mainnet requires pools to signal support and pass a published pool-diversity bar (at least three independent pools, none above 40% of quote-tagged blocks).</p>
+      <p>Yellowback's design draws on DigiByte's DigiDollar; it diverges where Ycash's architecture differs, most visibly in replacing consensus opcodes with miner enforcement.</p>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+      <p style="margin-top:14px">A decentralized dollar backed by Ycash. Open source. Not a bank, not a company, not an investment product. Nothing here is financial advice.</p>
+      <div class="hash" data-pagehash></div>
+    </div>
+    <div><h4>Learn</h4><a href="how-it-works.html">How it works</a><a href="index.html#calculator">Calculator</a><a href="faq.html">FAQ</a></div>
+    <div><h4>Docs</h4><a href="docs.html#get-started">Quick start</a><a href="docs.html#parameters">Parameters</a><a href="docs.html#rpc">RPC reference</a><a href="docs.html#risks">Risks</a></div>
+    <div><h4>Ycash</h4><a href="https://www.ycash.xyz" rel="noopener">ycash.xyz</a><a href="https://github.com/ycashfoundation" rel="noopener">Ycash on GitHub</a><a href="docs.html#components">Wallets &amp; components</a></div>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works — Yellowback</title>
+<meta name="description" content="How Ycash Yellowback (YED) works: the timelocked vault, who does what, where the price comes from, lock terms, what happens when YEC moves, and the safety rails.">
+<meta name="theme-color" content="#0a1633">
+<meta property="og:title" content="How it works — Yellowback">
+<meta property="og:description" content="How Ycash Yellowback (YED) works: the timelocked vault, who does what, where the price comes from, lock terms, what happens when YEC moves, and the safety rails.">
+<meta property="og:image" content="assets/img/yellowback-mark.svg">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<!-- Ycash glyph, redrawn from YecWallet's res/logo.svg (MIT, The Ycash developers) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="yglyph" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M20 18V55" stroke-width="11"/><path d="M80 18V55" stroke-width="11"/>
+      <path d="M20 55A30 30 0 0 0 80 55" stroke-width="9"/>
+      <path d="M38 36V58M50 36V58M62 36V58" stroke-width="10"/>
+    </g>
+  </symbol>
+  <symbol id="yec-coin" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#f56733"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="#ffb08f" stroke-opacity=".5" stroke-width="2"/>
+    <use href="#yglyph" x="18" y="18" width="64" height="64" color="#fff"/>
+  </symbol>
+  <symbol id="yed-note" viewBox="0 0 120 70">
+    <rect x="1" y="1" width="118" height="68" rx="9" fill="url(#noteGrad)" stroke="#8a4b0b" stroke-opacity=".35"/>
+    <rect x="7" y="7" width="106" height="56" rx="5" fill="none" stroke="#7a3f06" stroke-opacity=".4" stroke-dasharray="1 3"/>
+    <circle cx="60" cy="35" r="17" fill="#f56733"/>
+    <use href="#yglyph" x="47" y="22" width="26" height="26" color="#fff"/>
+    <text x="13" y="24" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#5a2e05">$1</text>
+    <text x="84" y="57" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#5a2e05">YED</text>
+  </symbol>
+  <defs>
+    <linearGradient id="noteGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe38a"/><stop offset=".55" stop-color="#f7b733"/><stop offset="1" stop-color="#d98a1c"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="status-bar">
+  <div class="wrap"><span class="status-dot"></span>
+    <span>status: release-candidate testing<span class="hide-sm"> · first mainnet parameter set starts at block 3,075,000 · minting opens once mining pools signal support</span></span>
+  </div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
+    <nav class="nav-links" id="nav-links">
+      <a href="how-it-works.html" aria-current="page">How it works</a>
+      <a href="index.html#calculator">Calculator</a>
+      <a href="docs.html">Docs</a>
+      <a href="faq.html">FAQ</a>
+      <a class="btn btn-gold" href="docs.html#get-started">Get started</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="page-head">
+  <div class="fiber" data-seed="31" data-lines="5" data-h="500" aria-hidden="true"></div>
+  <div class="wrap" style="position:relative">
+    <span class="eyebrow"><span data-scramble>less how-it-works.md</span><span class="cursor"></span></span>
+    <h1>How Yellowback <span class="gold-text">works</span></h1>
+    <p class="lede" style="max-width:720px">A vault, a price, and a rule the miners enforce. That's the whole machine. This page walks through each part with pictures, then the numbers.</p>
+    <div class="metro-tabs" style="margin-top:22px">
+      <a class="btn btn-ghost" href="#vault">The vault</a>
+      <a class="btn btn-ghost" href="#map">Who does what</a>
+      <a class="btn btn-ghost" href="#price">The price</a>
+      <a class="btn btn-ghost" href="#terms">Lock terms</a>
+      <a class="btn btn-ghost" href="#scenarios">What if YEC moves?</a>
+      <a class="btn btn-ghost" href="#rails">Safety rails</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VAULT ANATOMY ============ -->
+<section id="vault" style="padding-top:20px">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_getvault &lt;txid&gt;</span>
+      <h2>Anatomy of a vault: <span class="gold-text">two doors, one key.</span></h2>
+      <p class="lede">A Yellowback vault is an ordinary Ycash pay-to-script-hash output with a timelock (<span class="mono">CHECKLOCKTIMEVERIFY</span>) — a kind of script every Ycash node has enforced for years. It has exactly two ways out.</p>
+    </div>
+    <figure class="diagram scroll-sm reveal">
+      <svg viewBox="0 0 1100 470" role="img" aria-label="A vault with an owner door that opens at the unlock height with your key, and a claim door that opens 30 days later only if the vault is underwater.">
+        <defs>
+          <linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3a85"/><stop offset="1" stop-color="#0c1a40"/></linearGradient>
+          <filter id="dglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <!-- vault -->
+        <rect x="390" y="80" width="320" height="300" rx="30" fill="url(#vg)" stroke="#f7b733" stroke-width="4"/>
+        <text x="550" y="60" text-anchor="middle" class="lbl" style="font-size:20px">Your vault</text>
+        <use href="#yec-coin" x="490" y="140" width="56" height="56"/><use href="#yec-coin" x="540" y="170" width="56" height="56"/><use href="#yec-coin" x="505" y="205" width="56" height="56"/>
+        <text x="550" y="300" text-anchor="middle" class="sub" style="font-size:13px">collateral: your YEC</text>
+        <text x="550" y="322" text-anchor="middle" class="sub" style="font-size:13px">debt: the YED you minted</text>
+        <text x="550" y="352" text-anchor="middle" class="sub" style="fill:#4dffb0">P2SH · CLTV</text>
+
+        <!-- owner door (left) -->
+        <rect x="372" y="150" width="36" height="110" rx="8" fill="#0a1633" stroke="#4dffb0" stroke-width="3"/>
+        <circle cx="390" cy="205" r="6" fill="#4dffb0"/>
+        <path d="M368 205 H180" stroke="#4dffb0" stroke-width="4" class="flow" filter="url(#dglow)"/>
+        <rect x="20" y="110" width="300" height="200" rx="18" fill="rgba(77,255,176,.06)" stroke="#4dffb0" stroke-opacity=".5"/>
+        <text x="40" y="145" class="lbl" style="fill:#4dffb0">Door 1 · the owner door</text>
+        <text x="40" y="178" class="sub" style="fill:#c9c3b4">opens at: the unlock height</text>
+        <text x="40" y="200" class="sub" style="fill:#c9c3b4">needs: your signature</text>
+        <text x="40" y="222" class="sub" style="fill:#c9c3b4">and: burn the YED you minted</text>
+        <text x="40" y="244" class="sub" style="fill:#c9c3b4">plus: a small enforcement fee</text>
+        <text x="40" y="282" class="lbl" style="font-size:14px">→ all your YEC come back</text>
+
+        <!-- claim door (right) -->
+        <rect x="692" y="150" width="36" height="110" rx="8" fill="#0a1633" stroke="#ff6b6b" stroke-width="3" stroke-dasharray="6 5"/>
+        <circle cx="710" cy="205" r="6" fill="#ff6b6b"/>
+        <path d="M732 205 H900" stroke="#ff6b6b" stroke-width="4" class="flow" stroke-opacity=".8"/>
+        <rect x="780" y="110" width="300" height="230" rx="18" fill="rgba(255,107,107,.05)" stroke="#ff6b6b" stroke-opacity=".45"/>
+        <text x="800" y="145" class="lbl" style="fill:#ff9a9a">Door 2 · the claim door</text>
+        <text x="800" y="178" class="sub" style="fill:#c9c3b4">opens at: unlock height + 30 days</text>
+        <text x="800" y="200" class="sub" style="fill:#c9c3b4">only if: worth &lt; 110% of the debt</text>
+        <text x="800" y="222" class="sub" style="fill:#c9c3b4">needs: no key — anyone who</text>
+        <text x="800" y="244" class="sub" style="fill:#c9c3b4">burns the full debt in YED</text>
+        <text x="800" y="282" class="lbl" style="font-size:14px">→ claimant gets debt + ≤10%</text>
+        <text x="800" y="306" class="lbl" style="font-size:14px">→ the rest returns to you</text>
+
+        <!-- timelock bar -->
+        <g font-family="JetBrains Mono, monospace" font-size="12">
+          <line x1="390" y1="420" x2="560" y2="420" stroke="#f56733" stroke-width="6" stroke-linecap="round"/>
+          <line x1="560" y1="420" x2="640" y2="420" stroke="#f7b733" stroke-width="6"/>
+          <line x1="640" y1="420" x2="710" y2="420" stroke="#45e0ff" stroke-width="6" stroke-dasharray="2 8" stroke-linecap="round"/>
+          <text x="475" y="450" text-anchor="middle" fill="#8f8a7e">locked</text>
+          <text x="600" y="450" text-anchor="middle" fill="#8f8a7e">grace</text>
+          <text x="675" y="450" text-anchor="middle" fill="#8f8a7e">open</text>
+          <circle cx="560" cy="420" r="7" fill="#050b1c" stroke="#4dffb0" stroke-width="3"/>
+          <circle cx="640" cy="420" r="7" fill="#050b1c" stroke="#ff6b6b" stroke-width="3"/>
+        </g>
+      </svg>
+      <figcaption>The Ycash script enforces the timelocks and your signature. The “burn the debt” part is the one rule a Ycash script can't express — that's what the mining pools enforce.</figcaption>
+    </figure>
+
+    <div class="grid-3" style="margin-top:24px">
+      <div class="card reveal"><h3>Nobody opens it early</h3><p>Before the unlock height, not even your own key can spend the vault. The network rejects it outright.</p></div>
+      <div class="card reveal"><h3>A healthy vault is yours forever</h3><p>Door 2 only opens for a vault worth less than 110% of its debt. Stay above that and there is no deadline to redeem.</p></div>
+      <div class="card reveal"><h3>Even a claim gives back the rest</h3><p>A claimant keeps at most the debt's value plus a 10% margin, priced at the claim price. Anything above that is paid back to your address in the same transaction.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SUBWAY MAP OF PARTICIPANTS ============ -->
+<section id="map">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">netstat --yellowback</span>
+      <h2>Who does what: <span class="gold-text">the network map.</span></h2>
+      <p class="lede">Four lines, no central station. Each party only does its own job, and none of them can touch your vault.</p>
+    </div>
+    <figure class="diagram scroll-sm reveal">
+      <svg viewBox="0 0 1100 520" role="img" aria-label="Network map: the mint line runs from you through your vault to YED; the price line runs from exchanges through attestors and mining pools to the node; the enforcement line runs from mining pools to blocks; the wallet line runs from YecWallet and the mobile wallet to the node.">
+        <defs><filter id="mapglow" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <g fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#mapglow)">
+          <!-- gold: mint line -->
+          <path d="M80 400 H300 L380 320 H620 L700 400 H1020" stroke="#f7b733"/>
+          <!-- cyan: price line -->
+          <path d="M80 100 H260 L340 180 H560 L620 240 V320" stroke="#45e0ff"/>
+          <!-- magenta: enforcement line -->
+          <path d="M560 180 H780 L860 100 H1020" stroke="#ff5fa2"/>
+          <!-- mint green: wallet line -->
+          <path d="M1020 250 H820 L760 310 V320" stroke="#4dffb0"/>
+        </g>
+        <!-- stations -->
+        <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="17" fill="#f7f1e3">
+          <g><circle cx="80" cy="400" r="14" fill="#050b1c" stroke="#f7b733" stroke-width="5"/><text x="80" y="440" text-anchor="middle">You</text></g>
+          <g><rect x="604" y="300" width="172" height="40" rx="20" fill="#050b1c" stroke="#fff" stroke-width="5"/><text x="690" y="326" text-anchor="middle">Yellowback node</text></g>
+          <g><circle cx="380" cy="320" r="14" fill="#050b1c" stroke="#f7b733" stroke-width="5"/><text x="380" y="295" text-anchor="middle">Your vault</text></g>
+          <g><circle cx="1020" cy="400" r="14" fill="#050b1c" stroke="#f7b733" stroke-width="5"/><text x="1020" y="440" text-anchor="middle">YED holders</text></g>
+          <g><circle cx="80" cy="100" r="14" fill="#050b1c" stroke="#45e0ff" stroke-width="5"/><text x="80" y="70" text-anchor="middle">Exchanges</text></g>
+          <g><circle cx="260" cy="100" r="14" fill="#050b1c" stroke="#45e0ff" stroke-width="5"/><text x="260" y="70" text-anchor="middle">Attestors</text></g>
+          <g><circle cx="560" cy="180" r="16" fill="#050b1c" stroke="#ff5fa2" stroke-width="5"/><circle cx="560" cy="180" r="7" fill="#45e0ff"/><text x="560" y="150" text-anchor="middle">Mining pools</text></g>
+          <g><circle cx="1020" cy="100" r="14" fill="#050b1c" stroke="#ff5fa2" stroke-width="5"/><text x="1020" y="70" text-anchor="middle">Blocks</text></g>
+          <g><circle cx="1020" cy="250" r="14" fill="#050b1c" stroke="#4dffb0" stroke-width="5"/><text x="1020" y="220" text-anchor="middle">Wallets</text></g>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="12" fill="#8f8a7e">
+          <text x="80" y="460" text-anchor="middle">lock YEC · mint YED</text>
+          <text x="398" y="352" text-anchor="start">timelocked script</text>
+          <text x="1020" y="460" text-anchor="middle">send · hold · claim</text>
+          <text x="245" y="132" text-anchor="end">bonded · sign prices</text>
+          <text x="560" y="215" text-anchor="end">quote YEC/USD per block</text>
+          <text x="1020" y="130" text-anchor="middle">no burn, no block</text>
+          <text x="1020" y="280" text-anchor="middle">YecWallet · YEW</text>
+        </g>
+        <!-- legend -->
+        <g font-family="JetBrains Mono, monospace" font-size="13" fill="#c9c3b4" transform="translate(80 490)">
+          <rect x="0" y="-10" width="26" height="6" rx="3" fill="#f7b733"/><text x="34" y="-3">mint line</text>
+          <rect x="160" y="-10" width="26" height="6" rx="3" fill="#45e0ff"/><text x="194" y="-3">price line</text>
+          <rect x="320" y="-10" width="26" height="6" rx="3" fill="#ff5fa2"/><text x="354" y="-3">enforcement line</text>
+          <rect x="530" y="-10" width="26" height="6" rx="3" fill="#4dffb0"/><text x="564" y="-3">wallet line</text>
+        </g>
+      </svg>
+      <figcaption>Every Yellowback-aware node computes the same balances, vaults and prices from the same chain. The node is the only place a rule lives.</figcaption>
+    </figure>
+
+    <div class="grid-4" style="margin-top:24px">
+      <div class="card reveal"><div class="tag" style="color:#f7b733">mint line</div><h3>You</h3><p>Lock YEC, mint YED, spend it, and later redeem. Your key is the only one on your vault.</p></div>
+      <div class="card reveal"><div class="tag" style="color:#45e0ff">price line</div><h3>Attestors</h3><p>Anyone can post a timelocked bond and sign YEC/USD prices off-chain. Mints and claims carry a handful of these signatures.</p></div>
+      <div class="card reveal"><div class="tag" style="color:#ff5fa2">enforcement</div><h3>Mining pools</h3><p>Put a price quote in every block they mine, keep rule-breaking Yellowback transactions out, and refuse blocks that release collateral without a burn.</p></div>
+      <div class="card reveal"><div class="tag" style="color:#4dffb0">wallet line</div><h3>Wallets</h3><p>YecWallet (desktop, full node) has a Yellowback tab; YEW, the mobile wallet, reaches the chain through lightwalletd.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICE FEED ============ -->
+<section id="price">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_getprice</span>
+      <h2>Where the price comes from: <span class="gold-text">two sources, cautious math.</span></h2>
+      <p class="lede">A dollar on a blockchain is only as good as its price feed. Yellowback uses two independent populations — hashpower and bonded money — and always picks the answer that protects the system.</p>
+    </div>
+    <figure class="diagram scroll-sm reveal">
+      <svg viewBox="0 0 1100 400" role="img" aria-label="Pools quote prices in every block, medianed over 2 hours, 12 hours and 42 hours. Attestors sign prices, combined by a bond-weighted quantile. The mint price is the lower of the two; the claim price is the higher.">
+        <!-- pools -->
+        <rect x="20" y="40" width="300" height="140" rx="16" fill="rgba(255,95,162,.06)" stroke="#ff5fa2" stroke-opacity=".5"/>
+        <text x="40" y="72" class="lbl">Mining pools</text>
+        <text x="40" y="96" class="sub">a YEC/USD quote in each coinbase</text>
+        <g font-family="JetBrains Mono, monospace" font-size="12" fill="#f7f1e3">
+          <rect x="40" y="114" width="80" height="44" rx="8" fill="#050b1c" stroke="#ff5fa2"/><text x="80" y="134" text-anchor="middle">96 blk</text><text x="80" y="150" text-anchor="middle" fill="#8f8a7e">~2 h</text>
+          <rect x="130" y="114" width="80" height="44" rx="8" fill="#050b1c" stroke="#ff5fa2"/><text x="170" y="134" text-anchor="middle">576 blk</text><text x="170" y="150" text-anchor="middle" fill="#8f8a7e">~12 h</text>
+          <rect x="220" y="114" width="80" height="44" rx="8" fill="#050b1c" stroke="#ff5fa2"/><text x="260" y="134" text-anchor="middle">2016 blk</text><text x="260" y="150" text-anchor="middle" fill="#8f8a7e">~42 h</text>
+        </g>
+        <!-- attestors -->
+        <rect x="20" y="220" width="300" height="140" rx="16" fill="rgba(69,224,255,.06)" stroke="#45e0ff" stroke-opacity=".5"/>
+        <text x="40" y="252" class="lbl">Bonded attestors</text>
+        <text x="40" y="276" class="sub">sign prices off-chain, YEC at stake</text>
+        <g>
+          <circle cx="60" cy="320" r="16" fill="#050b1c" stroke="#45e0ff"/><circle cx="105" cy="320" r="16" fill="#050b1c" stroke="#45e0ff"/>
+          <circle cx="150" cy="320" r="16" fill="#050b1c" stroke="#45e0ff"/><circle cx="195" cy="320" r="16" fill="#050b1c" stroke="#45e0ff"/>
+          <circle cx="240" cy="320" r="16" fill="#050b1c" stroke="#45e0ff"/>
+          <text x="282" y="325" class="sub">4–6/tx</text>
+        </g>
+        <!-- combiners -->
+        <path d="M320 110 C400 110 400 140 470 140" class="flow" stroke="#ff5fa2"/>
+        <path d="M320 290 C400 290 400 260 470 260" class="flow" stroke="#45e0ff"/>
+        <path d="M320 110 C420 110 420 300 470 300" class="flow" stroke="#ff5fa2" stroke-opacity=".5"/>
+        <path d="M320 290 C420 290 420 100 470 100" class="flow" stroke="#45e0ff" stroke-opacity=".5"/>
+
+        <rect x="470" y="70" width="270" height="110" rx="16" fill="#050b1c" stroke="#f7b733" stroke-width="2"/>
+        <text x="490" y="104" class="lbl" style="fill:#ffe38a">Mint price = the LOWER</text>
+        <text x="490" y="130" class="sub">min(pool medians, attestors)</text>
+        <text x="490" y="152" class="sub">→ fewer YED per YEC: cautious</text>
+
+        <rect x="470" y="220" width="270" height="110" rx="16" fill="#050b1c" stroke="#4dffb0" stroke-width="2"/>
+        <text x="490" y="254" class="lbl" style="fill:#4dffb0">Claim price = the HIGHER</text>
+        <text x="490" y="280" class="sub">max(slow pool medians, attestors)</text>
+        <text x="490" y="302" class="sub">→ harder to call a vault underwater</text>
+
+        <path d="M740 125 H820" class="flow" stroke="#f7b733"/>
+        <path d="M740 275 H820" class="flow" stroke="#4dffb0"/>
+        <rect x="820" y="90" width="260" height="70" rx="14" fill="rgba(247,183,51,.08)" stroke="#f7b733" stroke-opacity=".5"/>
+        <text x="840" y="120" class="lbl">sizes the collateral</text><text x="840" y="142" class="sub">for every new mint</text>
+        <rect x="820" y="240" width="260" height="70" rx="14" fill="rgba(77,255,176,.06)" stroke="#4dffb0" stroke-opacity=".5"/>
+        <text x="840" y="270" class="lbl">decides claimability</text><text x="840" y="292" class="sub">for door 2 only</text>
+      </svg>
+      <figcaption>Moving the price in the direction that profits an attacker means corrupting a sustained majority of quoting blocks and the bonded attestors at the same time.</figcaption>
+    </figure>
+    <div class="grid-3" style="margin-top:24px">
+      <div class="card reveal"><h3>Slow on purpose</h3><p>The pool side of the mint price is the lowest of three rolling medians, so a sudden spike can't be used to over-mint. A crash shows up within about two hours.</p></div>
+      <div class="card reveal"><h3>No price, no mint</h3><p>If too few recent blocks carry a quote, the price is undefined and minting simply stops. Redemptions never need a price.</p></div>
+      <div class="card reveal"><h3>Accountable in public</h3><p>Every quote sits in a permanent block next to the pool's payout key. Attestors sign with keys tied to an on-chain bond.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TERM CLASSES ============ -->
+<section id="terms">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_estimatecollateral &lt;cents&gt; &lt;lockBlocks&gt;</span>
+      <h2>Pick a lock term. <span class="gold-text">Longer is cheaper.</span></h2>
+      <p class="lede">Three term classes. The share of your collateral you can mint (in a calm market) grows with the lock length.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card reveal">
+        <div class="tag">class A</div>
+        <h3>30 – 90 days</h3>
+        <div class="vs-bar" style="margin:18px 0"><div class="lbl">mint up to <b>20%</b></div><div class="track"><div class="fill fill-usd" style="width:20%"></div></div></div>
+        <p><b class="mono" style="color:var(--gold-1)">500%</b> backing. For a short bridge — a bill, a purchase, a gap until payday.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tag">class B</div>
+        <h3>90 days – 1 year</h3>
+        <div class="vs-bar" style="margin:18px 0"><div class="lbl">mint up to <b>25%</b></div><div class="track"><div class="fill fill-usd" style="width:25%"></div></div></div>
+        <p><b class="mono" style="color:var(--gold-1)">400%</b> backing. The everyday choice: a season or a year of dollars.</p>
+      </div>
+      <div class="card reveal">
+        <div class="tag">class C</div>
+        <h3>1 – 5 years</h3>
+        <div class="vs-bar" style="margin:18px 0"><div class="lbl">mint up to <b>33%</b></div><div class="track"><div class="fill fill-usd" style="width:33.3%"></div></div></div>
+        <p><b class="mono" style="color:var(--gold-1)">300%</b> backing. For long-term holders who are happy to let the coins sleep.</p>
+      </div>
+    </div>
+    <div class="callout gold reveal" style="margin-top:22px"><b>The volatility multiplier.</b> When YEC's recent price swings are wilder than the reference level, every class's backing requirement is multiplied — smoothly — by up to 3×. Calm market, 1×. It only affects new mints; it never changes a vault you already opened.</div>
+  </div>
+</section>
+
+<!-- ============ SCENARIOS ============ -->
+<section id="scenarios">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">./simulate --yec 10000 --price 0.40 --term 1y</span>
+      <h2>What if YEC moves? <span class="gold-text">Three stories.</span></h2>
+      <p class="lede">Same start every time: 10,000 YEC at $0.40 ($4,000) locked for a year at 400%, minting $1,000 of YED. Your debt is in dollars, so it never grows.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card reveal" style="border-color:rgba(77,255,176,.35)">
+        <div class="tag" style="color:var(--mint)">YEC +150%</div>
+        <h3>The moon</h3>
+        <div class="vs-bar" style="margin:16px 0"><div class="lbl">vault value <b>$10,000</b></div><div class="track"><div class="fill fill-yec" style="width:100%"></div></div></div>
+        <p>Return $1,000 of YED, unlock 10,000 YEC worth $10,000. You had dollars all year <em>and</em> kept every coin of the rally.</p>
+      </div>
+      <div class="card reveal" style="border-color:rgba(247,183,51,.35)">
+        <div class="tag" style="color:var(--gold-1)">YEC −50%</div>
+        <h3>The dip</h3>
+        <div class="vs-bar" style="margin:16px 0"><div class="lbl">vault value <b>$2,000 · 200% of debt</b></div><div class="track"><div class="fill fill-yec" style="width:20%"></div></div></div>
+        <p>Still healthy. Return $1,000 of YED whenever you're ready — there's no deadline above 110% — and wait out the recovery with all 10,000 YEC.</p>
+      </div>
+      <div class="card reveal" style="border-color:rgba(255,107,107,.35)">
+        <div class="tag" style="color:var(--danger)">YEC −80%</div>
+        <h3>The crash</h3>
+        <div class="vs-bar" style="margin:16px 0"><div class="lbl">vault value <b>$800 · 80% of debt</b></div><div class="track"><div class="fill fill-yec" style="width:8%"></div></div></div>
+        <p>Underwater. You can still redeem, or walk away: you keep the $1,000 you minted and, 30 days after unlock, a YED holder can claim the vault by burning $1,000 of YED. The worst case is that the collateral pays the debt.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SAFETY RAILS ============ -->
+<section id="rails">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">yed_getstats | jq .haltMask</span>
+      <h2>Safety rails that <span class="gold-text">fail closed.</span></h2>
+      <p class="lede">When something looks wrong, Yellowback stops <em>creating</em> dollars. It never stops minters from getting their collateral back.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>Rail</th><th>Trigger</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td>No price</td><td>Too few recent blocks carry a quote</td><td>New mints pause. Redemptions continue.</td></tr>
+          <tr><td>Divergence</td><td>The price sources disagree by more than 20%</td><td>New mints pause until they converge.</td></tr>
+          <tr><td>Global ratio</td><td>All collateral together falls below 250% of all YED</td><td>Only mints that themselves raise the ratio (backed ≥ 500%) are accepted.</td></tr>
+          <tr><td>Supply cap</td><td>YED supply reaches 15% of YEC's market cap</td><td>Only heavily backed mints (≥ 500%) go through.</td></tr>
+          <tr><td>Participation</td><td>Fewer than 60% of recent blocks come from enforcing pools</td><td>New mints pause; block enforcement continues down to 50%.</td></tr>
+          <tr><td>Sunset</td><td>A release reaches its enforcement end height (~1 year)</td><td>Old releases stop enforcing so they never split from upgraded ones.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted reveal">Figures are the first mainnet parameter set. The authoritative list is in the <a href="docs.html#parameters">documentation</a>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta-band reveal">
+      <div class="fiber" data-seed="404" data-lines="4" data-h="500" aria-hidden="true"></div>
+      <div style="position:relative">
+        <span class="eyebrow">./next</span>
+        <h2>Ready to <span class="gold-text">see the numbers?</span></h2>
+        <p class="lede">Try the calculator, or read the full documentation — every parameter, every RPC, every risk.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-gold" href="index.html#calculator">Open the calculator</a>
+          <a class="btn btn-ghost" href="docs.html">Read the docs</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="index.html"><img src="assets/img/yellowback-mark.svg" alt=""><span>Yellowback<small>YED · ON YCASH</small></span></a>
+      <p style="margin-top:14px">A decentralized dollar backed by Ycash. Open source. Not a bank, not a company, not an investment product. Nothing here is financial advice.</p>
+      <div class="hash" data-pagehash></div>
+    </div>
+    <div><h4>Learn</h4><a href="how-it-works.html">How it works</a><a href="index.html#calculator">Calculator</a><a href="faq.html">FAQ</a></div>
+    <div><h4>Docs</h4><a href="docs.html#get-started">Quick start</a><a href="docs.html#parameters">Parameters</a><a href="docs.html#rpc">RPC reference</a><a href="docs.html#risks">Risks</a></div>
+    <div><h4>Ycash</h4><a href="https://www.ycash.xyz" rel="noopener">ycash.xyz</a><a href="https://github.com/ycashfoundation" rel="noopener">Ycash on GitHub</a><a href="docs.html#components">Wallets &amp; components</a></div>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>

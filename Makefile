@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check site
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -67,3 +67,7 @@ log: ## Commits on each fork branch not in its baseline (the app repos have none
 	out="$$(git -C $$f log --oneline --no-merges "$$b..$$br")"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
 	else printf '  \033[2mno commits on %s beyond %s\033[0m\n' "$$br" "$$b"; fi; done
+
+site: ## Serve the yellowbacks.com website (website/) on http://localhost:8000 (PORT=… to change)
+	@echo "Serving website/ on http://localhost:$(or $(PORT),8000)  (Ctrl-C to stop)"
+	@python3 -m http.server $(or $(PORT),8000) -d website

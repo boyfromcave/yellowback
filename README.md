@@ -58,6 +58,7 @@ yellowback-workspace/
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo on `main` — plan docs/plans/chain-viz-plan.md
 ├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo on `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo on `main` — the constants baked into releases
+├── website/         yellowbacks.com: the static public site and user documentation (`make site`, website/README.md)
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) on v2 (miner-enforced, delivered);
