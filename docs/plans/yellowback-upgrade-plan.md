@@ -116,7 +116,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
   (no source change; mines across the activation; yellowback_stratum green); chain-viz `b4eb44b` [x] (rpcversion 5 tolerant, set/vault
-  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
+  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `ae1c69e` [x] (Rust signer builds V/I spends with 0x6d5b7a31, checked against the golden vectors; 120 Rust + 67 Flutter; devnet W2, W4, attestor cancel; release via its own gate blocked by finding (56))
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [x] `docs/mapping.md` §22: P2 rows and P4 rows (ycash-dd citations; ycash6 citations after its P4 port); contract
@@ -984,6 +984,14 @@ decides; noted for other crate users.
 `vault::TemplateRun`, which takes the ancestor hashes in its constructor (miner.cpp unchanged); (55) ycash6 splits
 `VaultState::ApplyEjections` into a loop plus `ApplyEjectionsOf(const Module&, tx, h)` as a test seam (no behaviour
 change) — back-port to ycash-dd so the two lines' `state.cpp` stay identical (assigned with the YED-half port).
+
+**Found by YEW (2026-10-06):** (56) **defect, both lines:** `yed_validaterawtransaction` (`VerifyAllInputs`,
+`src/yellowback/policy.cpp`) verifies with static flags, so every intent RELEASE is reported invalid (cf. (17));
+fix in flight (`fix-validate` on ycash-dd; ycash6 in the P4-a port). (57) A stale crate-local attest agent build
+breaks a fresh devnet `up` after P4-b (`heartbeat_blocks`); rebuild the agent. (58) YEW refuses shielded spends after
+activation rather than mis-signing them until it builds against librustzcash6 `upgrade/vault` and x402-light's
+`upgrade/vault` (open: repoint YEW's path deps on its `upgrade/vault` branch). (59) `params.attestorSetId` is
+display-order hex (`GetHex`); clients reverse it like a txid before pushing it into the V.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
