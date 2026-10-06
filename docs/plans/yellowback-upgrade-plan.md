@@ -69,7 +69,7 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
-| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [~] `up/up-pyfw` done (33 unit tests); D-1 regen pending | [ ] copy |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0); C++ replay registration with core | [ ] copy |
 | Unit tests `vault_*_tests.cpp` | [~] core-dd, cons-dd | [~] cons6 (script) |
 | Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
 
