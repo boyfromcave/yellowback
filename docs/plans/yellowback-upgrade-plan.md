@@ -60,18 +60,18 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 ### P2 primitive — both lines
 | Item | ycash-dd | ycash6 |
 |---|---|---|
-| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [x] `f71eb7ddd` | [~] `up/up-cons6` |
-| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
-| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [x] `f71eb7ddd` | [~] `up/up-cons6` |
-| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [~] `up/up-cons6` |
+| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [x] `f71eb7ddd` | [x] `91c557ecb` |
+| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [x] librustzcash6 `4867cf85` pushed (`upgrade/vault`); Cargo repointed |
+| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [x] `f71eb7ddd` | [x] `91c557ecb` |
+| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [x] `91c557ecb` |
 | `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [x] merged `ae1ab3a3c` (49 / 1432, vectors byte-identical) |
 | Module table (empty in P2) + interface | [x] `bd33dc0b9` | [x] `ae1ab3a3c` |
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [~] `up/up-int-dd` | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [~] `up/up-int-dd` | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
-| Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [~] cons6 (script) |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; rest `up/up-ftest-dd` | [ ] |
+| Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [x] 59 cases on `91c557ecb` |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; rest `up/up-ftest-dd` | [~] `vault_upgrade.py` [x] |
 
 ### P3 bridge template (Ycash side only)
 - [ ] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` (both lines)
@@ -822,6 +822,18 @@ to the static `STANDARD`/`MANDATORY` sets, so wallet signing verification (`sign
 `signrawtransaction`) must add `GetVaultScriptFlags(tip+1)`; (18) on the plain regtest harness
 `getblocktemplate` aborts at height ≥ 150 (the known founders'-reward defect), so functional tests
 activate below that or pass the Ycash upgrade arguments.
+
+**Added by the 6.20.0 plumbing (`up-cons6`, 2026-10-05):** (19) 6.20.0's regtest `-nuparams` back-fill
+(an unset upgrade takes the next-higher one's height) excludes Vault, so `-nuparams=6d5b7a31:h`
+does not also schedule NU5..NU6.2 (whose protocol versions would partition regtest); (20) the
+ZIP-221 history tree uses **V1 leaves under Vault** (6.20.0's Rust default would have sent an
+unnamed branch to V2 while ConnectBlock builds V1 with NU5 inactive); if NU5 ever activates
+alongside Vault this becomes state-dependent; (21) 6.20.0's `CreateNewBlock` does not re-check each
+transaction (it validates the template through `TestBlockValidity`), so the mempool must never
+hold a transaction invalid at tip+1: the per-block re-validation of template spends and acts is
+mandatory on that line, not an optimisation; (22) 6.20.0 has no script-execution cache; set
+signatures bypass the ECDSA cache; (23) on `upgrade/vault` the audit's frozen-set leg also exempts
+`Cargo.toml`, `Cargo.lock` and `src/rust/*` (the `librustzcash6` repoint), under the review gate.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
