@@ -53,7 +53,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | H3-a+ | H-1 `mintRequiresArmed`; params H-2 (arm 7), H-4 (15 / 5,000 bps), H-5 (class A only), H-10, H-11 (300 / 600 %), H-12 (`maxMint` $2,500) | [x] `6e1df81ad` | [x] `6cb6753b3` |
 | H3-c | H-9.3 RPC bounds, contract JSON, `rpcversion` 4 | [x] `fa6768f85` | [x] `5752fd0e3` |
 | H4 | calibration re-runs under H0-b (≈ 6 h per standard run) | [ ] **deferred (owner, 2026-10-05)**: reduced run done (`docs/reports/2026-10-harden/`); full sweeps stopped and run only once both node lines are built and green end to end (P4 + devnet done), on the existing frozen snapshot `data/local/frozen-20261004` plus the live spreads log — no data re-pulls | — |
-| H5 | wallets — rpcversion 4 + new fields: YecWallet `78ea158` [x] (108 QTest + 4 devnet cases; renew flow; client plausibility); lightwalletd `916d836`, chain-viz `4b010df` (NO_PRICE-hours counter; coalition/valve panels not built — retired), x402 `756b045`, YEW `4a93c12` [x]; YEW H5-b deadlines/plausibility `hd/h5-yew` [~] | [~] | — |
+| H5 | wallets — rpcversion 4 + new fields: YecWallet `78ea158` [x] (108 QTest + 4 devnet cases; renew flow; client plausibility); lightwalletd `916d836`, chain-viz `4b010df` (NO_PRICE-hours counter; coalition/valve panels not built — retired), x402 `756b045`, YEW `4a93c12` [x]; YEW H5-b deadlines/plausibility `acb7f1a` [x] (stale mainnet constants fixed; trust text wording changed — owner to review) | [x] | — |
 | merge | `harden/yellowback` → `upgrade/vault` (gate for P4) | [x] `4e4ae0b13` | [x] `ed0806d65` |
 Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H-9.1.
 
@@ -66,6 +66,10 @@ round trip costs 7.2 %. Contradictions with hardening values: H-4's fee arithmet
 means a 0.5 % system tolerance, not 1.6 %); `maxMint` $2,500 fails `maxMint_ok` (environment limit, as
 expected); `signalWindow` drifts 2,592 → ~3,168 (moot under the upgrade). These are recorded, not acted on:
 the parameter values are the owner's (hardening plan §8).
+P1 open defect (2026-10-06, found by `h5-yew`, both lines): `yed_listclaimable.residualZat` omits the
+`RESIDUAL_MIN_ZAT` floor that the builder's `ClaimAt` applies (ycash-dd `rpc/yellowback.cpp` EstimateClaim vs
+`txbuilder.cpp:917-919`; ycash6 `rpc/yellowback.cpp:2019,2048` vs `txbuilder.cpp:1023`) — reported residual can be
+0 < r < 100,000 zat while the builder pays 0. RPC-only; fix with the P4 port.
 P1 notes (2026-10-05, `hd-wallet`): F-1 reproduced (30/30 back-to-back mints failed on the unfixed binary, 0/30
 with the fix, both lines); F-5 adds `qa/yellowback-release-heights.sh` and a release-workflow guard; the spreads replay
 at `min_sources` 2 fails closed 0.18–1.43 % per hour (G-1 should be read from ybcal's per-block replay); `make spec-check`
