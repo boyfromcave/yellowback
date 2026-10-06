@@ -116,7 +116,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
   (no source change; mines across the activation; yellowback_stratum green); chain-viz `b4eb44b` [x] (rpcversion 5 tolerant, set/vault
-  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `ae1c69e` [x] (Rust signer builds V/I spends with 0x6d5b7a31, checked against the golden vectors; 120 Rust + 67 Flutter; devnet W2, W4, attestor cancel; release via its own gate blocked by finding (56))
+  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `bc1c2da` [x] (rpcversion 5; Pending claims with release and attestor cancel, sign-once guard; membership + heartbeat; trust text per §10; 104 offline + 4 devnet cases); YEW `ae1c69e` [x] (Rust signer builds V/I spends with 0x6d5b7a31, checked against the golden vectors; 120 Rust + 67 Flutter; devnet W2, W4, attestor cancel; release via its own gate blocked by finding (56))
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [x] `docs/mapping.md` §22: P2 rows and P4 rows (ycash-dd citations; ycash6 citations after its P4 port); contract
@@ -995,6 +995,15 @@ breaks a fresh devnet `up` after P4-b (`heartbeat_blocks`); rebuild the agent. (
 activation rather than mis-signing them until it builds against librustzcash6 `upgrade/vault` and x402-light's
 `upgrade/vault` (open: repoint YEW's path deps on its `upgrade/vault` branch). (59) `params.attestorSetId` is
 display-order hex (`GetHex`); clients reverse it like a txid before pushing it into the V.
+
+**Found by YecWallet (2026-10-06):** (60) **safety:** `vault_buildcancel` funds each call afresh, so a retried cancel
+has a new sighash and a member signing both commits a provable equivocation (ejection, frozen bond) — clients must
+sign once per (set, role, prevout); a node-side sign-once guard is in flight (`fix-validate`); (61) defect:
+`yed_listpositions` omits `intents` on CLAIMING rows (wallet-context `VaultToJSON` mirror); (62) defect:
+`yed_listtransactions` mislabels claim / claim_release and omits release / cancel rows for the claimant; (63) a crashed
+slow price window starves later mints (pMint = lowest window median) until ~64 pool blocks at the restored price —
+by design, noted for the devnet; (64) a devnet attestor went DORMANT after ~6,000 fast blocks despite heartbeats
+(S15 missed-bundle rule), bearing on D-U5.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
