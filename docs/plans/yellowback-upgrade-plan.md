@@ -136,10 +136,10 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
 
 | Repo | Agent | `ci/harden` | `ci/upgrade` | pushed + green |
 |---|---|---|---|---|
-| ycash-dd | `ci-dd` | [x] `d8e4898ba` (pushed as `harden/yellowback`) | [x] `ci/upgrade` (push after ycash6 P4) | [~] harden run in progress |
-| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [~] harden run in progress |
+| ycash-dd | `ci-dd` | [x] `d8e4898ba` (pushed as `harden/yellowback`) | [x] `ci/upgrade` (push after ycash6 P4) | [x] harden green at `b62d6bfc2` (build, unit, 4 shards, audit, python, agent) |
+| ycash6 (+ release workflow, upstream workflows scoped) | `ci-6` | [x] `e910ca612` (pushed) | [x] `ci/upgrade` `9044ec6ca` | [~] build green after C-8; functional shards running at `bfcc01c6e` |
 | librustzcash6 | `ci-6` | — | [x] `ci/upgrade` (fork test workflow; upstream scoped) | [ ] |
-| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [~] (chain-viz `harden/yellowback` 4b010df pushed as a pin) | [~] | [ ] |
+| yew, yolo, chain-viz, x402-ycash | `ci-rust` | [x] pushed | [x] `ci/upgrade` | [x] chain-viz, x402, yolo green; yew `app (macos)` lacked protoc (C-10, fixed `9f9de9c`, re-run pending) |
 | yecwallet-dd, lightwalletd-dd | `ci-misc` | [x] `7bca835`, `d1736b4` (pushed) | [x] `ci/upgrade` | [x] harden green (runs 37461538299, 37461508021) |
 | yb-calibration, workspace | `ci-misc` | [x] `936e2a3`, `43bea93` (pushed) | — | [x] harden green (runs 37461545877, 37461635708) |
 
@@ -154,7 +154,9 @@ workflow refuses a tag unless the version matches the line (6.21.x harden, 6.22.
 (C-6) yecwallet-dd never ran CI on its hardening branch (trigger was the old branch of record); (C-8) ycash6's first push run (37461531652) failed in `build`: the depends cache key hashed `depends/**`, which
 covers the built tree and the vendored crates, and the post-job save failed to hash it — fixed to depends' inputs
 + Cargo.lock/Cargo.toml (ycash6 `3b63a093d` harden, `d3a3319ef` ci/upgrade), as ycash-dd already did (reported by the
-owner); (C-9) the anonymous GitHub API (60/h per IP) is the bottleneck for reading CI — a token would lift it;
+owner); (C-9) the anonymous GitHub API (60/h per IP) was the bottleneck — resolved 2026-10-06: the owner provided a
+read-only token in the macOS keychain (service `yellowback-ci-read`), read at run time by the coordinator's watcher;
+(C-10) yew `app (macos)` built x402-ycash-light without protoc — fixed;
 (C-7) parallel local
 functional runs in one tree race on the shared `qa/cache` (harness, not a defect; CI shards are separate runners).
 
