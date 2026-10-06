@@ -111,9 +111,14 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
-- [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
+- [~] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel — ycash-dd up and armed; full walk pending
 - [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
-- [~] P6 clients on `upgrade/vault` branches: lightwalletd-dd, chain-viz (set/vault panels), x402, yolo `p6-light`; YecWallet `p6-wallet`; YEW (V/I templates, branch ID in the Rust signer) `p6-yew`
+- [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
+  GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
+  (no source change; mines across the activation; yellowback_stratum green); chain-viz `8b4d922` and x402 [~] (to
+  verify); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
+- [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
+  `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [~] `docs/mapping.md` §22 written (P2 rows); P4 rows and `make spec` copies pending
 
 ### P1, P5, P7, P8
@@ -929,6 +934,13 @@ contract JSON (cf. (39)); the JSON is edited to the generator's shape by hand un
 - **D-U5** Signing prices is not a set act (U-19), so attestors must heartbeat on chain to stay live: mainnet's
   attestor-set `livenessWindow` must be well above the agent's `heartbeat_blocks` (devnet: 1,000 vs 100; framework:
   100,000). Recommendation: `livenessWindow` 4 × `heartbeat_blocks`, set in P8 with O-13.
+
+**Found by the P6 clients (2026-10-06):** (45) the node no longer lists `yellowback` in `getexperimentalfeatures`
+(P4-a), so clients probe `yed_getinfo` directly (−32601 = no Yellowback); (46) `set_getinfo.memberlist[].wallet`
+and `vault_list[].wallet` reveal which keys the serving node's wallet holds — public proxies (lightwalletd does)
+must strip them; (47) the vault RPCs have no machine-readable contract (prose doc, decimal YEC amounts): a
+`vault-rpc-contract.json` on the node would let clients share fixtures (open); (48) yolo needs no change: a v4
+coinbase carries no branch ID and the pool uses the node's `coinbasetxn` and roots.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
