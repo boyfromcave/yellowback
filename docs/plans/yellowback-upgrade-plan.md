@@ -64,8 +64,8 @@ Retired by §7 and not done: H2 (valve), H3-b's lock-in and sunset parts, F-3, H
 | `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [~] `up/up-rz6` |
 | BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
 | `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [~] `up/up-cons-dd` | [~] `up/up-cons6` |
-| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [~] `up/up-core-dd` | [ ] port after dd |
-| Module table (empty in P2) + interface | [~] `up/up-core-dd` | [ ] |
+| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [~] `up/up-core6` |
+| Module table (empty in P2) + interface | [x] `bd33dc0b9` | [~] `up/up-core6` |
 | Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
 | Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
 | RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
@@ -798,6 +798,17 @@ can never sign. (5) Act signature counts are exact and signers distinct; extra s
 before a template's arguments are not rejected (no CLEANSTACK). (6) The epoch in which a set is
 created has basis 0: nothing unlocks under a rate limit until the next epoch. (7) setId, txids and
 prevouts are internal byte order; a prevout is the `COutPoint` serialisation.
+
+**Added by the C++ implementation (`up-core-dd`, 2026-10-05), adopted:** (8) an I-shaped output
+that is malformed (non-minimal push, out-of-range field) is invalid like a malformed V
+(`bad-txns-vault-malformed`), so I-0 cannot be bypassed by mis-encoding; (9) an act in a coinbase
+is invalid (`bad-vault-act-coinbase`: every coinbase shares a null `vin[0]`, so act signatures
+would replay) and so is an act in a transaction with no transparent input (`bad-vault-act-novin`);
+(10) every V output under a set adds its value to `lockedValue` and every V spend (any selector)
+subtracts it, floored at 0; (11) the bond index covers every unspent member bond, so spending the
+bond of an ACTIVE member marks it WITHDRAWN; (12) a second `SET_WINDDOWN` and a `SET_CREATE` of an
+existing set are invalid; a missing input coin is `bad-txns-vault-inputs-missing`. Undo records are
+not pruned (≈ 40 bytes per block).
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
