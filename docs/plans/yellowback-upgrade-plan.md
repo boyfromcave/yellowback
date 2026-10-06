@@ -90,10 +90,10 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | RPCs `set_*` / `vault_*` (§15.8) | [x] `f4b2e2dc6` (21 RPCs, `doc/vault-rpc.md`) | [x] `a56cd4e20` |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
 | Unit tests `vault_*_tests.cpp` | [x] 65 cases on `99f33ea04` | [x] 65 cases on `a56cd4e20` |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [x] `99f33ea04`: vault_upgrade, vault_rpc, vault_primitive, vault_slashing, vault_bridge all pass | [~] `vault_upgrade.py` [x]; rest `up/up-int6` |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [x] `99f33ea04`: vault_upgrade, vault_rpc, vault_primitive, vault_slashing, vault_bridge all pass | [x] `a56cd4e20`: all five vault suites + yellowback_lifecycle / attest / mint_armed pass |
 
 ### P3 bridge template (Ycash side only)
-- [~] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd [x] `99f33ea04`; ycash6 `up/up-int6`
+- [x] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd `99f33ea04`, ycash6 `a56cd4e20`
 - [ ] devnet bridge persona (mock burn feed, no Ethereum)
 - [-] anvil / local Ethereum, `wyec/` repo (P5)
 
@@ -122,6 +122,8 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - 2026-10-05: P2 complete on ycash-dd (`99f33ea04`): library, plumbing, hooks, RPCs, 65 unit cases, five
   functional suites green with yellowback_lifecycle / yellowback_attest / yellowback_mint_armed. ycash6 has library +
   plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
+- 2026-10-05: **P2 complete on both node lines** (ycash6 `a56cd4e20`: 65 vault unit cases, all five vault functional
+  suites and the Yellowback regressions green). P3's Ycash side complete on both lines. P1 node chunks complete.
 
 ## 0. Assumptions about the Foundation's primitive
 
