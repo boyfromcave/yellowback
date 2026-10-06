@@ -1089,6 +1089,15 @@ fixed. Wave 8 (2026-10-06): `up-p4b6-yed` (P4-b YED half → ycash6), `up6-mirro
 devnet walk + ycash6 transcript, D-U6 A → ycash6 upgrade), `dd-followup` (miner order, pyflakes, ApplyEjectionsOf
 back-port, REF steps).
 
+**dd-followup (2026-10-06, merged ycash-dd `6740a4160`):** (86) ycash-dd miner order now matches ycash6: per
+candidate the vault trial runs on a copy, then the YED template filter, then the ZIP-209 turnstile, and only then is
+the trial committed — closes (80) on ycash-dd and a side defect where a skipped candidate had already advanced the
+turnstile's running pool values; test `tpl_primitive_skip_leaves_no_yed_effect` (fails on the old order);
+(87) `src/vault/state.{h,cpp}` byte-identical on both lines (ApplyEjectionsOf back-port); (88) pyflakes clean
+(incl. a dangling `revive_raw` in `__all__`); (89) `yellowback_stock_node` / `yellowback_stockparity` compare a
+reference (v4.5.0) binary only below the vault activation, then continue fork-against-fork — never run yet with a
+real ycash-legacy binary (none in the workspace; open for CI).
+
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
