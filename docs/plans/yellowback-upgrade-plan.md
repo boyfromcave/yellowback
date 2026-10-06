@@ -107,7 +107,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [ ] after P4-a port |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [~] primitive half (U-25) [x] `07d626235`; YED half after the P4-a port |
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
@@ -116,7 +116,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - [~] P6 clients on `upgrade/vault` branches (not yet merged): lightwalletd-dd `ce5f40e` [x] (rpcversion 5; read-only
   GetVaultInfo/ListSets/GetSet/ListVaultOutputs; devnet incl. byte-equality gate green on wt/up-dd); yolo `af66b6e` [x]
   (no source change; mines across the activation; yellowback_stratum green); chain-viz `b4eb44b` [x] (rpcversion 5 tolerant, set/vault
-  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `p6-wallet` [~]; YEW `p6-yew` [~]
+  panels, cancel detection; 61 tests, ui-smoke 22/22 on a devnet); x402 `8daa6fb` [x] (light path signs for the next block's branch via GetChainInfo; Vault vectors; 865 TS + 418 Py + Rust; devnet on wt/up-dd); YecWallet `bc1c2da` [x] (rpcversion 5; Pending claims with release and attestor cancel, sign-once guard; membership + heartbeat; trust text per §10; 104 offline + 4 devnet cases); YEW `ae1c69e` [x] (Rust signer builds V/I spends with 0x6d5b7a31, checked against the golden vectors; 120 Rust + 67 Flutter; devnet W2, W4, attestor cancel; release via its own gate blocked by finding (56))
 - [x] `yellowback-devnet up` on ycash-dd's upgrade line, attested and `--no-attest` (first exercised by p6-light);
   `lwd-rawmint` fixed for U-23 (`7ea838c4d`). ycash6 devnet pending the P4 port.
 - [x] `docs/mapping.md` §22: P2 rows and P4 rows (ycash-dd citations; ycash6 citations after its P4 port); contract
@@ -151,6 +151,9 @@ identity. Branches `ci/harden` and `ci/upgrade` per repo; the coordinator pushes
   plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
 - 2026-10-05: **P2 complete on both node lines** (ycash6 `a56cd4e20`: 65 vault unit cases, all five vault functional
   suites and the Yellowback regressions green). P3's Ycash side complete on both lines. P1 node chunks complete.
+- 2026-10-06 (wave 7): CI/CD team `ci-dd`, `ci-6`, `ci-rust`, `ci-misc`; fixes `fix-validate` (finding 56) and
+  `yew-shielded-vault` (finding 58). Ten agents at once drove the load to 30 on 10 cores: every agent now builds
+  at `-j2` and waits while the load is above 16 (briefing "Machine load rule").
 - 2026-10-06 (wave 6, owner asked to widen parallelism): seven agents in flight — `up-yed6` (P4-a → ycash6),
   `up-p4b6-prim` (P4-b's primitive hook → ycash6, in parallel with P4-a), `devnet-dd` (full ecosystem walk on the
   upgrade + the P3 bridge persona), `docs-tooling` (contract generator for the upgrade line, mapping §22 P4 rows),
@@ -979,6 +982,40 @@ wrong branch on the block before an upgrade; clients must use `YellowbackStreame
 (asked once per tip height: the streamer is rate-limited); (53) librustzcash6 `4867cf85` marks Vault
 `has_orchard = true` and accepts V5 while `suggested_for_branch(Vault)` is V4 — permissive, Ycash's own NU5 gate
 decides; noted for other crate users.
+
+**Found by the 6.20.0 P4-b primitive port (2026-10-06):** (54) on 6.20.0 the miner's running copy is
+`vault::TemplateRun`, which takes the ancestor hashes in its constructor (miner.cpp unchanged); (55) ycash6 splits
+`VaultState::ApplyEjections` into a loop plus `ApplyEjectionsOf(const Module&, tx, h)` as a test seam (no behaviour
+change) — back-port to ycash-dd so the two lines' `state.cpp` stay identical (assigned with the YED-half port).
+
+**Found by YEW (2026-10-06):** (56) **defect, both lines:** `yed_validaterawtransaction` (`VerifyAllInputs`,
+`src/yellowback/policy.cpp`) verifies with static flags, so every intent RELEASE is reported invalid (cf. (17));
+fix in flight (`fix-validate` on ycash-dd; ycash6 in the P4-a port). (57) A stale crate-local attest agent build
+breaks a fresh devnet `up` after P4-b (`heartbeat_blocks`); rebuild the agent. (58) YEW refuses shielded spends after
+activation rather than mis-signing them until it builds against librustzcash6 `upgrade/vault` and x402-light's
+`upgrade/vault` (open: repoint YEW's path deps on its `upgrade/vault` branch). (59) `params.attestorSetId` is
+display-order hex (`GetHex`); clients reverse it like a txid before pushing it into the V.
+
+**Found by YecWallet (2026-10-06):** (60) **safety:** `vault_buildcancel` funds each call afresh, so a retried cancel
+has a new sighash and a member signing both commits a provable equivocation (ejection, frozen bond) — clients must
+sign once per (set, role, prevout); a node-side sign-once guard is in flight (`fix-validate`); (61) defect:
+`yed_listpositions` omits `intents` on CLAIMING rows (wallet-context `VaultToJSON` mirror); (62) defect:
+`yed_listtransactions` mislabels claim / claim_release and omits release / cancel rows for the claimant; (63) a crashed
+slow price window starves later mints (pMint = lowest window median) until ~64 pool blocks at the restored price —
+by design, noted for the devnet; (64) a devnet attestor went DORMANT after ~6,000 fast blocks despite heartbeats
+(S15 missed-bundle rule), bearing on D-U5.
+
+**dd-polish (2026-10-06, ycash-dd `b7c387c61`):** (65) `vault_buildcancel` builds a cancel for an intent still in
+the mempool (the V script from the spent vault coin, checked against `vaultHash`); a cancel is accepted as the
+mempool child of an unconfirmed intent and both mine in one block — no consensus change (a mempool parent already
+counts at tip+1) — closing (50) for G-11; (66) `doc/vault-rpc-contract.json` generated and checked by
+`qa/vault-rpc-contract.py` against the doc, the RPC table and client.cpp conversions; `vault_rpc_contract.py` checks
+all 21 commands and 19 error reasons live — closing (47); (67) new fuzz target `Vault` (template/act/selector
+parsers, 7 properties, 44 seeds) in the nightly and weekly loops; `DecodePayload` accepts a non-02/03 33-byte key
+that re-encodes as zeros, but `DecodeAct`'s round-trip check and `ActFieldsValid` reject the act (consensus-safe;
+Python rejects it as `bad-vault-act-key` — reason strings differ, outcomes identical); (68) retired signalling / valve /
+sunset wording removed from the devnet, the quote agent and the docs; `doc/yellowback.md`'s trust statement still
+mirrors the spec's §8.1 and changes with the generator source; the −32601 text names what is missing.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
