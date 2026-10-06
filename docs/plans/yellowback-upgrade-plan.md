@@ -108,7 +108,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [~] `up/up-p4b-dd` | [ ] after dd |
-| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c` (28 suites; full re-run on the integration tree in progress) | [~] `up/up-yed6` |
+| Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
 - [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
