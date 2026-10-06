@@ -1045,8 +1045,13 @@ yolo `ci/upgrade` (abort-on-drop guard).
 - **D-U6 (owner):** `yed_setquote` does not invalidate the node's cached `getblocktemplate` (rebuilt on a new tip, or a
   mempool change after 5 s), so a pool can mine one block on its previous quote. Same on `harden/yellowback`; not a
   regression; consistent with audit A-7. Recommendation: a one-line change on both lines (bump the template-cache key
-  in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed** — implemented on
-  `harden/yellowback` on both lines (agent `setquote`, branch `hd/setquote`), reaching `upgrade/vault` by merge.
+  in `yed_setquote`) plus a functional assertion. **Decided 2026-10-06 (owner): agreed.** Correction found while
+  implementing: the cache is a set of static locals in `getblocktemplate` (`src/rpc/mining.cpp`, both lines), so a
+  bump from the Yellowback RPC only forces a rebuild once the cached template is > 5 s old; "immediate" needs a
+  rebuild condition in `mining.cpp`, a frozen file on `harden/yellowback`. Applied per line: **harden** — the bump
+  only (new quote within ~6 s for polling pools, no frozen file); **upgrade/vault** — the immediate rebuild condition
+  (a quote-generation counter next to the tip check; the frozen rule is retired there, review gate instead) plus the
+  bump. Agent `setquote`.
 
 ### 15.6 Template rules (consensus, outside the interpreter; from activation)
 
