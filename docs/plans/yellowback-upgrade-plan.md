@@ -107,7 +107,7 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [x] `03161317c` | [~] `up/up-yed6` |
 | P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [x] `03161317c` | [~] `up/up-yed6` |
-| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e` (225 yellowback + 66 vault unit cases; 28 suites on the branch) | [ ] after P4-a port |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [x] `c025f8f5e`; on the integration tree `a903fae2f` all 28 yellowback_*/vault_* suites pass (chainviz against the P6 chain-viz build) | [ ] after P4-a port |
 | Functional suites rewritten (obsolete enforcement suites removed) | [x] `03161317c`: all 28 yellowback_*/vault_* suites pass on the integration tree (chainviz SKIPs until chain-viz speaks rpcversion 5) | [~] `up/up-yed6` |
 
 ### Devnet and clients
@@ -133,6 +133,9 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
   plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
 - 2026-10-05: **P2 complete on both node lines** (ycash6 `a56cd4e20`: 65 vault unit cases, all five vault functional
   suites and the Yellowback regressions green). P3's Ycash side complete on both lines. P1 node chunks complete.
+- 2026-10-06: **P4-a and P4-b complete on ycash-dd** (`a903fae2f`): all 28 functional suites, devnet_roles presets,
+  chain-viz against the node. P6: lightwalletd, chain-viz, x402, yolo done on `upgrade/vault` branches (unmerged);
+  YecWallet, YEW and the ycash6 P4 port in flight.
 
 ## 0. Assumptions about the Foundation's primitive
 
