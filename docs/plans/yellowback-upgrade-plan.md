@@ -1,6 +1,10 @@
 # Ycash Yellowback (YED) and Wrapped Ycash (wYEC) — one agnostic primitive, two applications, one rule module
 
-**Revision 1 (2026-10-05), a plan; nothing implemented.** Promoted from
+**Revision 2 (2026-10-05): implementation opened (P2, P3-node, P4, devnet).** Revision 1 was
+the plan as promoted; revision 2 adds the **execution status** block directly below and the
+byte-level **implementation specification, §15**, which every implementing agent builds against
+on both node lines. Where §15 had to make a choice §3–§5 left open or decide differently, it says
+so in §15.0 (decisions U-9..U-20). Promoted from
 `docs/ideation/` (its revision 3, same day) by owner decision: the Ycash Foundation is still
 ideating its lock/unlock primitive and has not written a spec, so **this plan proceeds on stated
 assumptions about the primitive (§0) and it is Yellowback's responsibility to build out what the
@@ -10,6 +14,72 @@ Foundation's text when it exists. Builds on the
 revision 1) and the delivered [v3 design](yellowback-v3-development-plan.md) ("v3", revision 4);
 both still apply where this plan does not amend them. Items are numbered **U-\*** (decisions),
 **O-\*** (owner and Foundation decisions), **A-\*** (assumptions), and phases **P0–P8**.
+
+## Execution status (authoritative; update as work lands)
+
+**Goal of this round (owner, 2026-10-05):** the primitive in `ycash-dd` and `ycash6`, functional on
+the devnet / regtest, and the Yellowback system running on it (the YED module). P1 (hardening) is
+its own plan and not part of this round; P5 (the `wyec` contract and daemon, external audit) and
+the Ethereum half of P3 are not either. The owner's instruction was to execute without questions:
+open points are recorded here and in §15.0, never blocked on.
+
+**Branches.** Integration branch `upgrade/vault` in `ycash-dd`, `ycash6` and `librustzcash6`,
+cut from each repo's `harden/yellowback` and integrated in the worktrees `wt/up-dd` and `wt/up6`
+(the main trees stay on `harden/yellowback`, so `make status` is unaffected). Each agent works in
+`wt/<name>` on `up/<name>` off `upgrade/vault`; the coordinator merges. Briefing for agents:
+`wt/BRIEFING-upgrade.md`. Client repos (YEW, yolo, x402, chain-viz, YecWallet, lightwalletd) use
+`upgrade/vault` branches off `harden/yellowback` when they need a change.
+
+Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent / branch named),
+`[ ]` not started, `[-]` deliberately out of this round.
+
+### P0 decide
+- [x] Plan promoted with §0's assumptions (revision 1)
+- [x] Implementation spec §15 written (revision 2); U-9..U-20 recorded
+- [x] AGENTS.md §9 amendments applied (P2 opened, 2026-10-05)
+- [-] Foundation's written primitive, O-9, O-12, O-13 values (theirs; §15 uses regtest values)
+
+### P2 primitive — both lines
+| Item | ycash-dd | ycash6 |
+|---|---|---|
+| `UPGRADE_VAULT`, branch ID `0x6d5b7a31`, chainparams, `-nuparams`, Equihash epoch row | [ ] | [ ] |
+| `librustzcash6` `BranchId::Vault` + `ycash6/Cargo.toml` repoint | n/a | [ ] |
+| BIP68 sequence locks + `OP_CHECKSEQUENCEVERIFY` (0xb2) from activation | [ ] | [ ] |
+| `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [ ] | [ ] |
+| `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [ ] | [ ] |
+| Module table (empty in P2) + interface | [ ] | [ ] |
+| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [ ] | [ ] |
+| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [ ] | [ ] |
+| RPCs `set_*` / `vault_*` (§15.8) | [ ] | [ ] |
+| Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [ ] | [ ] |
+| Unit tests `vault_*_tests.cpp` | [ ] | [ ] |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [ ] | [ ] |
+
+### P3 bridge template (Ycash side only)
+- [ ] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` (both lines)
+- [ ] devnet bridge persona (mock burn feed, no Ethereum)
+- [-] anvil / local Ethereum, `wyec/` repo (P5)
+
+### P4 YED module — both lines
+| Item | ycash-dd | ycash6 |
+|---|---|---|
+| P4-a enforcement machinery removed (§6), Yellowback rules consensus at `UPGRADE_VAULT`, DoS 100 | [ ] | [ ] |
+| P4-a YED vault = primitive template (`YED\0`), owner redeem, claim as APP intent, attestor cancel | [ ] | [ ] |
+| P4-a VOID → invalid; module always on at activation; golden vector regenerated, model parity | [ ] | [ ] |
+| P4-b attestor registry on the primitive signer set (`ATTESTOR_REGISTER` retired) | [ ] | [ ] |
+| Functional suites rewritten (obsolete enforcement suites removed) | [ ] | [ ] |
+
+### Devnet and clients
+- [ ] `yellowback-devnet up` on the upgrade (both lines): sets, attestor set, mint, redeem, claim, cancel
+- [ ] role regtest (`yellowback_devnet_roles.py`) on the upgrade
+- [ ] YecWallet (activation screens → upgrade status), YEW / yolo / x402 branch ID, chain-viz, lightwalletd
+- [ ] `docs/mapping.md` §22, `make spec` copies
+
+### P1, P5, P7, P8
+- [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
+
+### Log
+- 2026-10-05: revision 2; spec §15; integration branches cut; wave 1 dispatched.
 
 ## 0. Assumptions about the Foundation's primitive
 
@@ -563,3 +633,179 @@ recommendation taken), re-read under revision 3:
 - **Keeping VOID semantics under consensus.** Exists only because non-enforcing miners exist.
 - **A single price signer with a challenge window** for YED. A challenge needs a second opinion to
   exist; a quantile over nine bonded opinions is the challenge, every block.
+
+---
+
+## 15. Implementation specification (revision 2)
+
+Normative for both node lines. Byte layouts, constants and rule text below must be implemented
+**identically** in `ycash-dd` and `ycash6`; the golden vector `vault_vectors.json` (§15.9) is the
+proof. "Template input" means an input spending a V or I output (§15.3). All integers in act
+payloads are fixed-width little-endian; script numbers are minimal `CScriptNum` pushes.
+
+### 15.0 Decisions taken while specifying (U-9..U-20)
+
+| # | Decision | Why / what was given up |
+|---|---|---|
+| U-9 | Branch ID `0x6d5b7a31`, name `Vault`, enum position after the last real upgrade (`UPGRADE_NU5` on ycash-dd, `UPGRADE_NU6_2` on ycash6), before `UPGRADE_ZFUTURE` | both lines identical; activates without NU5/NU6 (Ycash never activated them) |
+| U-10 | `OP_CHECKSEQUENCEVERIFY` is **BIP112's own byte `0xb2` (`OP_NOP3`)**; the two new opcodes are `0xc0`, `0xc1` | "exactly Bitcoin's" (§3.3) wins over §3.9's "three above `OP_NOP10`"; `0xbb`–`0xbf` untouched |
+| U-11 | BIP68 applies to **every input** (disable bit clear) from activation, height-based only; time-based relative locks (bit 22) are invalid | exactly BIP68 minus the time flag; every Ycash wallet we know sets the disable bit (`0xfffffffe`/`0xffffffff`); recorded in mapping §22 |
+| U-12 | Vault and intent outputs are **bare** scriptPubKeys, not P2SH | consensus must see vault value at creation for the rate limit (§3.5) and the set's locked value; P2SH hides it until spent |
+| U-13 | `OP_CHECKSETSIG` takes a **role** (1 unlock, 2 cancel), not `k`; `k` is the set's threshold for that role, read from set state | thresholds live in the set (O-8 can move them); a script-pushed `k` could undercut them |
+| U-14 | Set signatures are 65-byte **recoverable** compact signatures over a message that binds `setId`, role, the spent **outpoint** and the ZIP-243 sighash | equivocation (§3.6) is then provable from two signatures alone |
+| U-15 | Intent **release needs no second set signature**: the intent commits the recipient script hash, and after `delay` anyone may broadcast the release paying it | the plan's release-by-set added a liveness dependency and no safety: the recipient is fixed when the set signs the unlock |
+| U-16 | At most **one template input per transaction** | no batching; every covenant rule becomes per-transaction and unambiguous |
+| U-17 | Script evaluation sees set state **as of the parent block**; acts apply **sequentially in block order** | parallel script checks need an immutable snapshot; acts need ordering for seats and removals |
+| U-18 | Set state lives in its own LevelDB (`<datadir>/vaults/`) with per-block undo and a tip marker reconciled on start (replay from blocks), not inside the coins DB | the pattern the delivered Yellowback index already proves; the coins DB is not touched. Given up: one atomic flush |
+| U-19 | Liveness counts only `SET_JOIN` (at maturity) and `SET_HEARTBEAT`; signing an unlock or cancel is not an act | no interpreter side effects; daemons heartbeat |
+| U-20 | Rate windows are fixed epochs `floor(h / rateWindow)`; the basis is the set's locked value at the epoch's start | O(1) state; up to 2× cap across an epoch boundary, stated in §10 |
+
+YED-specific (P4) choices: U-21..U-24 in §15.10.
+
+### 15.1 Upgrade and constants
+
+- `Consensus::UPGRADE_VAULT`; `NetworkUpgradeInfo` row `{0x6d5b7a31, "Vault", "Ycash vault primitive (docs/plans/yellowback-upgrade-plan.md)"}`; the per-epoch Equihash table gains the same row as the epoch before it.
+- Activation: mainnet and testnet `NO_ACTIVATION_HEIGHT` (P8 sets them); regtest `NO_ACTIVATION_HEIGHT`, set by `-nuparams=6d5b7a31:<h>`.
+- Script flags: `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY` and `SCRIPT_VERIFY_VAULT`, both added to the consensus flags for blocks at heights where `UPGRADE_VAULT` is active (and to mempool checks for tip+1).
+- Python: `VAULT_BRANCH_ID = 0x6D5B7A31` in `test_framework/util.py`.
+
+### 15.2 Script
+
+**`OP_CHECKSEQUENCEVERIFY` (0xb2)** with `SCRIPT_VERIFY_CHECKSEQUENCEVERIFY`: BIP112 exactly, except that the transaction version test reads Ycash's `nVersion` (4 ≥ 2 always passes) and a stack argument with the type flag (bit 22) set fails (`SCRIPT_ERR_UNSATISFIED_LOCKTIME`). Without the flag it is `OP_NOP3` as today.
+
+**BIP68** (consensus, `UPGRADE_VAULT` active at the block height): for each input whose `nSequence` has bit 31 clear: bit 22 set → transaction invalid (`bad-txns-vault-timelock`); otherwise the input's coin height + `(nSequence & 0xffff)` must be ≤ spending height − 1 (Bitcoin's `CalculateSequenceLocks`/`EvaluateSequenceLocks`, height part). Mempool: checked for tip+1; `ConnectTip` evicts mempool transactions that become non-final after a reorg.
+
+**`OP_CHECKSETSIG` (0xc0)** with `SCRIPT_VERIFY_VAULT` (without it: `SCRIPT_ERR_BAD_OPCODE` as today):
+1. Pop `setId` (exactly 32 bytes) and `role` (exactly one byte, 1 or 2); else `SCRIPT_ERR_SETSIG`.
+2. `k = checker.SetThreshold(setId, role)`; unknown set → `SCRIPT_ERR_SETSIG`.
+3. Pop `k` elements; each must be 65 bytes (`header || r || s`, header 31..34 = compressed recoverable, the `signmessage` format) with low S.
+4. `msg = SHA256d("YcashSetSig" (11 ASCII bytes) || setId (32) || role (1) || prevout.hash (32) || prevout.n (u32 LE) || sighash (32))`, `sighash = SignatureHash(scriptCode, txTo, nIn, SIGHASH_ALL, amount, consensusBranchId)` with `scriptCode` from the last `OP_CODESEPARATOR`, as `OP_CHECKSIG`.
+5. Each recovered key must be a **current member** (§15.4) of `setId` in the snapshot, all distinct. Any failure → `SCRIPT_ERR_SETSIG` (no "false" result). Success pushes `1`.
+6. At most one `OP_CHECKSETSIG` per script evaluation (`SCRIPT_ERR_SETSIG_COUNT`). It does not add to the legacy sigop count (counting it would reprice historical blocks); its cost is bounded by `seats ≤ 15` and rule 6.
+
+**`OP_CHECKSETDORMANT` (0xc1)** with `SCRIPT_VERIFY_VAULT`: pop `setId` (32 bytes, else `SCRIPT_ERR_SETSIG`); push `1` if `checker.IsSetReleased(setId)` (§15.4: dormant or wound down, or unknown) else `0` (empty vector).
+
+**Checker interface** (`BaseSignatureChecker`, defaults fail / `false`):
+`std::optional<int> SetThreshold(const uint256& setId, uint8_t role) const`,
+`bool CheckSetSigs(const uint256& setId, uint8_t role, const std::vector<valtype>& sigs, const CScript& scriptCode, uint32_t consensusBranchId) const`,
+`bool IsSetReleased(const uint256& setId) const`.
+The implementation (`vault::SetSigChecker`, derived from the caching checker) holds a `std::shared_ptr<const vault::SetSnapshot>` and the spending height. Set-signature checks are **not** cached in the signature cache.
+
+### 15.3 Templates
+
+`setId` is the txid of its `SET_CREATE` transaction, pushed as its 32 internal bytes. `tag` is 4 bytes. `h`/`d` are minimal script numbers. The **selector** is the last push of the input's scriptSig: exactly the one byte `0x01`..`0x04` (pushed as `OP_1`..`OP_4`).
+
+**Vault V** (bare scriptPubKey):
+```
+<tag:4> <cancelSetId:32> <delay> OP_2DROP OP_DROP
+OP_DUP OP_1 OP_EQUAL OP_IF
+    OP_DROP <setId:32> OP_1 OP_CHECKSETSIG
+OP_ELSE OP_DUP OP_2 OP_EQUAL OP_IF
+    OP_DROP <ownerHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP <ownerKey:33> OP_CHECKSIG
+OP_ELSE OP_DUP OP_3 OP_EQUAL OP_IF
+    OP_DROP <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerKey:33> OP_CHECKSIG
+OP_ELSE
+    OP_4 OP_EQUALVERIFY <appHeight> OP_CHECKLOCKTIMEVERIFY
+OP_ENDIF OP_ENDIF OP_ENDIF
+```
+scriptSigs: UNLOCK `<sig_1> … <sig_k> OP_1`; OWNER `<ownerSig> OP_2`; OWNER-RELEASED `<ownerSig> OP_3`; APP `OP_4`.
+Field ranges (a V-shaped output outside them is not a template, rule V-1 then rejects it):
+`delay` 1..65535, `ownerHeight` 1..499999999, `appHeight` 0..499999999 (0 = APP branch disabled,
+rule S-4), `ownerKey` compressed. Bridge vaults: `ownerHeight = lockHeight + BRIDGE_MAX_AGE`, `appHeight = 0`.
+
+**Intent I** (bare scriptPubKey):
+```
+<tag:4> <recipientHash:32> <vaultHash:32> OP_2DROP OP_DROP
+OP_DUP OP_1 OP_EQUAL OP_IF
+    OP_DROP <delay> OP_CHECKSEQUENCEVERIFY
+OP_ELSE OP_DUP OP_2 OP_EQUAL OP_IF
+    OP_DROP <cancelSetId:32> OP_2 OP_CHECKSETSIG
+OP_ELSE
+    OP_3 OP_EQUALVERIFY <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerKey:33> OP_CHECKSIG
+OP_ENDIF OP_ENDIF
+```
+`recipientHash = SHA256(recipient scriptPubKey)`, `vaultHash = SHA256(originating V scriptPubKey)`.
+scriptSigs: RELEASE `OP_1` (input `nSequence = delay`); CANCEL `<sig_1> … <sig_k> OP_2`; OWNER-RELEASED `<ownerSig> OP_3`.
+
+**Bond B** (P2SH, as v3's attestor bond): redeem `<locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <memberKey:33> OP_CHECKSIG`.
+
+`vault::ParseVault`/`ParseIntent` accept only the exact byte shapes above with minimal pushes.
+Standardness: V and I are new `txnouttype`s (`TX_VAULT`, `TX_VAULT_INTENT`), standard once the upgrade is active at tip+1.
+
+### 15.4 Set state
+
+Per set (key `setId`): the `SET_CREATE` parameters; `createHeight`; `windDownHeight` (0 = none);
+rate fields `lockedValue`, `epoch`, `epochBasis`, `epochUsed` (zatoshi); members.
+Per member (key `setId‖memberKey`): `bondOutpoint`, `bondValue`, `bondLocktime`, `joinHeight`,
+`lastAct`, `status ∈ {ACTIVE, REMOVED, EJECTED, WITHDRAWN}`, `bondFrozen` (bool). Plus a frozen-bond
+index `outpoint → (setId, memberKey)` and a template-output index is **not** needed (V/I parse from the coin).
+
+- **Current member at height h:** `status = ACTIVE` and `h ≥ joinHeight + maturity`.
+- **Seat count:** members with `status = ACTIVE` (mature or not) ≤ `seats`.
+- **Dormant at h:** fewer than `cancelThreshold` current members with `lastAct ≥ h − livenessWindow`.
+- **Released at h:** dormant, or `windDownHeight ≠ 0 ∧ h ≥ windDownHeight + livenessWindow`, or the set is unknown.
+- `lastAct` starts at `joinHeight + maturity`.
+- **Snapshot:** the state after the parent block, evaluated at the spending height (block height; tip+1 in the mempool).
+
+### 15.5 Acts: the `YV` OP_RETURN
+
+One output `OP_RETURN <P> [<S_1> … <S_n>]`: `P = "YV" (0x59 0x56) || version 0x01 || type u8 || body`,
+each `S_i` a 65-byte recoverable signature over `actMsg = SHA256d("YcashSetAct" (11) || P || vin[0].prevout (36))`.
+After activation: a transaction with two `YV` outputs, an unknown version/type, a malformed body,
+trailing bytes, or a failed rule is **invalid** (`bad-vault-act-*`). Before activation `YV` outputs
+are ordinary data. Policy: a `YV` OP_RETURN may be up to 1,200 bytes (other OP_RETURNs unchanged).
+Acts apply in block order against the running state (U-17); mempool validates against the tip.
+
+| Type | Body | Signatures | Rule |
+|---|---|---|---|
+| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `bondMin ≥ 1`; `admitKey` compressed; other flag bits 0. `setId = txid` |
+| 0x02 `SET_JOIN` | `setId 32, memberKey 33, bondLocktime u32, bondVout u8` (70) | `S_1` by `memberKey`; then, unless OPEN: `slashThreshold` current-member signatures if the set has ≥ `slashThreshold` current members, else one by `admitKey` | set exists (created in an earlier block), not wound down; seats free; key not ACTIVE in the set; `vout[bondVout]` = P2SH(B(memberKey, bondLocktime)), value ≥ `bondMin`; `bondLocktime ≥ h + bondLockMin`, `< 500000000` |
+| 0x03 `SET_HEARTBEAT` | `setId 32, memberKey 33` (65) | `S_1` by `memberKey` | key is a current member; `lastAct = h` |
+| 0x04 `SET_REMOVE` | `setId 32, memberKey 33, burn u8 (0/1)` (66) | `slashThreshold` distinct current members other than the target | target ACTIVE → `REMOVED`; `burn = 1` also freezes its bond (contested-cancel slash); `burn = 0` is O-6 (bond returned) |
+| 0x05 `SET_EQUIVOCATION` | `setId 32, prevout 36, roleA u8, sighashA 32, sigA 65, roleB u8, sighashB 32, sigB 65` (264) | none (anyone submits) | both signatures valid (§15.2 step 4 messages) and recover to the same key `K`; `(roleA, sighashA) ≠ (roleB, sighashB)`; `K` is a member whose bond is unspent and not frozen → `EJECTED`, bond frozen |
+| 0x06 `SET_WINDDOWN` | `setId 32` (32) | `slashThreshold` current members | `windDownHeight = h`; no further joins |
+
+Bond rules: spending a frozen bond outpoint is invalid (`bad-vault-bond-frozen`); spending the bond
+of an ACTIVE member sets `WITHDRAWN`.
+
+### 15.6 Template rules (consensus, outside the interpreter; from activation)
+
+- **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
+- **V-1** A V output's `setId` and `cancelSetId` exist (created in an earlier block). If its tag is registered (§15.7), the module's `ValidateCreate` also passes. Creation adds its value to `lockedValue(setId)`.
+- **S-2 (UNLOCK, APP covenant)** A V input spent with selector 1 or 4: every output is an I output with the V's `tag, setId, cancelSetId, delay, ownerKey` and `vaultHash = SHA256(V.spk)`, or a V output with byte-identical scriptPubKey (re-lock), or OP_RETURN, or an ordinary output; and `Σ I + Σ re-lock ≥ V.value` (the vault's value never leaves to ordinary outputs; the fee comes from other inputs).
+- **S-3 (rate)** For such a spend, `unlocked = Σ I`. Epoch roll per U-20, then `epochUsed + unlocked ≤ epochBasis × rateLimitBps / 10000` unless `rateLimitBps = 0`. `lockedValue −= V.value; += Σ re-lock`.
+- **S-4** Selector 4 with `appHeight = 0` is invalid. A V spent with selector 2 or 3 subtracts its value from `lockedValue`.
+- **I-0** An I output may only be created by a transaction satisfying S-2 (or by a cancel's re-lock, which creates a V, never an I).
+- **I-1 (RELEASE)** selector 1: the transaction has an output with `SHA256(spk) = recipientHash` and value ≥ the I value.
+- **I-2 (CANCEL)** selector 2: `h − coinHeight < delay`, and an output with `SHA256(spk) = vaultHash` and value ≥ the I value (it is a V, so V-1 applies and `lockedValue` grows again).
+- **I-3** selector 3: script only.
+- Module dispatch: for a template input or output whose tag is registered, the module's `ValidateSpend` / `ValidateCreate` runs after the primitive rules. A module can only reject.
+- Mempool: all of the above against the tip snapshot at tip+1; `ConnectTip`/`DisconnectTip` re-check mempool template spends and acts (set state, BIP68 and I-2 change with height).
+- Miner: transaction selection applies acts and S-3 against a running copy and skips a transaction that fails.
+
+### 15.7 Module table
+
+`src/vault/module.h`: `class Module { virtual std::optional<std::string> ValidateCreate(const CTransaction&, size_t vout, const VaultParams&, const ModuleContext&) const; virtual std::optional<std::string> ValidateSpend(const CTransaction&, size_t vin, const TemplateSpend&, const ModuleContext&) const; virtual std::optional<std::string> CheckBlock(const CBlock&, const CBlockIndex*, const ModuleContext&) const; }`, and `const Module* FindModule(const std::array<unsigned char,4>& tag)`. Empty in P2. P4 registers `{ 'Y','E','D',0x00 }`. `WYEC` (`{'W','Y','E','C'}`) is never registered (§4).
+
+### 15.8 RPCs (primitive; wallet-signing ones keep keys in the node)
+
+Read: `vault_getinfo` (activation height, branch ID, counts), `set_list`, `set_getinfo "setid" [height]` (params, members, current/dormant/released, rate fields), `vault_list {"tag","setid","owner"}`, `vault_decodescript "hex"`.
+Acts: `set_create {params}` → setId; `set_join "setid" bondamount bondlocktime ["memberkey"]`; `set_heartbeat "setid" ["memberkey"]`; `set_buildact "type" {params}` → funded, unsigned act hex (vin[0] fixed); `set_signact "hex" "setid"` (adds this wallet's member or admit signatures); `set_sendact "hex"` (signs inputs, broadcasts); `set_equivocation {proof}`.
+Vaults: `vault_lock {tag, setid, cancelsetid, delay, ownerheight, appheight, amount, ownerkey?}`; `vault_buildunlock "outpoint" [{"address"|"script", amount}] ` → funded unsigned hex; `set_signunlock "hex"`; `vault_buildcancel "intentoutpoint"`; `set_signcancel "hex"`; `vault_send "hex"`; `vault_release "intentoutpoint"`; `vault_ownerspend "outpoint" "address"` (selector 2 or 3 automatically); `vault_app "outpoint" [intents]` (selector 4 skeleton, for modules).
+All registered in `rpc/client.cpp` conversions; documented in `doc/vault-rpc.md`.
+
+### 15.9 Tests and vectors
+
+- `qa/rpc-tests/test_framework/vault.py`: template builders/parsers, act codec, `setSigMsg`/`actMsg`, recoverable signing (pure Python, RFC 6979, low S), `VAULT_BRANCH_ID`. It writes `src/test/data/vault_vectors.json` (templates, acts, messages, signatures from fixed keys); `src/test/vault_vectors_tests.cpp` replays it. **The file is byte-identical on both lines.**
+- Unit: `vault_template_tests`, `vault_act_tests`, `vault_state_tests` (join/maturity/dormancy/release/removal/equivocation/winddown/rate epochs/undo), `vault_script_tests` (opcodes, CSV, BIP68), all `--run_test='vault_*'`.
+- Functional (`qa/rpc-tests/`, executable, in `rpc-tests.py` and the workflow's lists): `vault_upgrade.py` (activation, branch ID in signing, CSV/BIP68 before/after, opcode bytes invalid before), `vault_primitive.py` (set lifecycle, lock, unlock → intent → release, cancel, owner after height, owner on dormancy, wind-down, rate limit, reorg/undo, restart reconciliation), `vault_slashing.py` (equivocation, remove with/without burn, frozen bond), `vault_bridge.py` (P3: both shapes).
+
+### 15.10 YED on the primitive (P4)
+
+- **U-21** The YED module is the delivered `src/yellowback/` with the §6 removals. Its block verdict (`EvaluateBlock` → `blockInvalid`) is a **consensus** rejection (`DoS(100)`, `bad-yellowback-*`) at every height where `UPGRADE_VAULT` is active, with none of today's node-local conjuncts (enforce flag, valve, IBD, catch-up, sunset). Header-note hook, rejected set, kill switch, valve, signalling, lock-in, `ENFORCE_UNTIL_HEIGHT`, abandonment and template policy go. Mempool check becomes ordinary validity.
+- **U-22** The index is **always on** where `UPGRADE_VAULT` and a YED attestor set are configured (`-yellowback` and `-experimentalfeatures` no longer gate it). Parameters: `yellowbackStartHeight` = the activation height; `attestorSetId` per network (mainnet/testnet unset; regtest `-yellowbackattestorset=<setid>`). YED is live from the first block at which both are known.
+- **U-23** A MINT's vault output is a V with `tag = YED\0`, `setId = cancelSetId = attestorSetId`, `delay = CLAIM_DELAY`, `ownerHeight = lockHeight`, `appHeight = lockHeight + GRACE`, `ownerKey` = the payload's owner. Owner redeem = selector 2 (+ REDEEM payload, RED rules as today). Claim = selector 4 into intents (claimant's debt-worth and the owner's residual, RED-4/RED-5 checked at intent creation; the REDEEM payload's burn happens there). Release after `CLAIM_DELAY` closes the vault; an attestor cancel (I-2) returns the collateral to a byte-identical vault, which the module re-indexes as the same position (ACTIVE). **The cancelled claimant's burn is not refunded** (U-24: a wrong-price claim costs its burn; supply falls, the vault's debt does not, so the system only becomes more collateralised). The v3 anyone-can-spend claim branch and CLAIM_NOTICE's role in path (b) stay only as the module reads them; `VaultScript` (P2SH) is no longer accepted for new mints after activation.
+- **P4-b** The attestor registry becomes the primitive set `attestorSetId`: a seat is a current member, its bond weight is the member's bond value, maturity/dormancy are the set's; `ATTESTOR_REGISTER` and `ATTESTOR_REVIVE` are invalid after activation; EQV-1 (two prices at one height) stays in the module and freezes the member's bond via the set's frozen-bond rule.
+- VOID: a MINT failing `MintVerdict` is an invalid transaction; `voidReason` and VOID vault records are not produced after activation.
+- Golden vector `yellowback_golden.json` regenerated once with the diff explained in its commit; `yellowback_model.py` follows (enforcement removed; block 217 becomes an invalid block, not "applied anyway").
+- Obsolete: `yellowback_enforcement.py`, `yellowback_activation.py`, `yellowback_attest_enforcement.py` and the unit cases listed by the 2026-10-05 survey (index valve/suppression cases, `act*`, `blk1/blk2`). Removed with the code they test, in the same commit.
