@@ -71,15 +71,15 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 | `OP_CHECKSETSIG` (0xc0), `OP_CHECKSETDORMANT` (0xc1), checker interface | [x] `f71eb7ddd` | [x] `91c557ecb` |
 | `src/vault/`: templates, `YV` act codec, set state, rules, rate limit, slashing, undo, DB | [x] merged `bd33dc0b9` (49 cases / 1432 assertions incl. vector replay) | [x] merged `ae1ab3a3c` (49 / 1432, vectors byte-identical) |
 | Module table (empty in P2) + interface | [x] `bd33dc0b9` | [x] `ae1ab3a3c` |
-| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [~] `up/up-int-dd` | [ ] |
-| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [~] `up/up-int-dd` | [ ] |
-| RPCs `set_*` / `vault_*` (§15.8) | [~] `up/up-int-dd` | [ ] |
+| Hooks: CheckInputs checker, ConnectBlock/DisconnectBlock, mempool, miner, init | [x] `f4b2e2dc6` | [~] `up/up-int6` |
+| Policy: templates standard, `YV` OP_RETURN up to 1,200 bytes | [x] `f4b2e2dc6` | [~] `up/up-int6` |
+| RPCs `set_*` / `vault_*` (§15.8) | [x] `f4b2e2dc6` (21 RPCs, `doc/vault-rpc.md`) | [~] `up/up-int6` |
 | Python `test_framework/vault.py` + golden vector `vault_vectors.json` (identical on both lines) | [x] merged `b97a4f994` (33 unit tests; vectors agree with C++ objects, 228/0) | [x] `ae1ab3a3c` (byte-identical) |
-| Unit tests `vault_*_tests.cpp` | [x] 59 cases on `f71eb7ddd` | [x] 59 cases on `91c557ecb` |
-| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [~] `vault_upgrade.py` [x]; `vault_primitive`/`vault_slashing`/`vault_bridge` pass on `up/up-ftest-dd` (merge pending `up-int-dd`) | [~] `vault_upgrade.py` [x] |
+| Unit tests `vault_*_tests.cpp` | [x] 65 cases on `99f33ea04` | [x] 59 cases on `91c557ecb` |
+| Functional `vault_upgrade.py`, `vault_primitive.py`, `vault_slashing.py` (CI-registered) | [x] `99f33ea04`: vault_upgrade, vault_rpc, vault_primitive, vault_slashing, vault_bridge all pass | [~] `vault_upgrade.py` [x]; rest `up/up-int6` |
 
 ### P3 bridge template (Ycash side only)
-- [~] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd passes on `up/up-ftest-dd`; ycash6 port pending
+- [~] `WYEC` lock → intent → release / cancel / recovery, both signer shapes, `vault_bridge.py` — ycash-dd [x] `99f33ea04`; ycash6 `up/up-int6`
 - [ ] devnet bridge persona (mock burn feed, no Ethereum)
 - [-] anvil / local Ethereum, `wyec/` repo (P5)
 
@@ -105,6 +105,9 @@ mints on mainnet — safe-side, and moot while F-5 leaves mainnet unset. H-5's r
 - 2026-10-05: revision 2; spec §15; integration branches `upgrade/vault` cut (ycash-dd, ycash6, librustzcash6) with
   integration worktrees `wt/up-dd`, `wt/up6`; wave 1 dispatched: `up-core-dd`, `up-cons-dd`, `up-cons6` (+`up-rz6`),
   `up-pyfw`, `hd-rules`, `hd-wallet`, `hd-cal`. Owner: include P1.
+- 2026-10-05: P2 complete on ycash-dd (`99f33ea04`): library, plumbing, hooks, RPCs, 65 unit cases, five
+  functional suites green with yellowback_lifecycle / yellowback_attest / yellowback_mint_armed. ycash6 has library +
+  plumbing (59 cases, vault_upgrade green); hooks/RPC port `up-int6` and P4-a `up-yed-dd` in flight.
 
 ## 0. Assumptions about the Foundation's primitive
 
