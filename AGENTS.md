@@ -299,7 +299,7 @@ make spec       # regenerate the spec + RPC contract copies from the plans (make
 `bootstrap` is create-only: a repository that already exists is verified against the manifest and
 left alone, nothing is fetched. So it is the right command exactly once per machine — to *update* an
 existing workspace, use `make pull`. That one is fast-forward only, everywhere: it fetches `origin`,
-advances each fork's branch of record (now `feature/yellowback-price-attest`) and its `-legacy`
+advances each fork's branch (the one `repos.yaml` records) and its `-legacy`
 baseline, and **skips** — with the
 git command to run yourself — any repo that is dirty, has diverged, or is on the wrong branch. It
 never merges, never rebases, never discards; `git reset --hard` stays something you type by hand in

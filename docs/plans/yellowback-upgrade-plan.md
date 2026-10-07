@@ -39,8 +39,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 ### P0 decide
 - [x] Plan promoted with §0's assumptions (revision 1)
 - [x] Implementation spec §15 written (revision 2); U-9..U-20 recorded
-- [ ] AGENTS.md §9 amendments: **awaiting the owner** (the session's edit of AGENTS.md was refused by its permission
-  classifier; the amendments are in force for agents through `wt/BRIEFING-upgrade.md` meanwhile)
+- [x] AGENTS.md §9 amendments: applied 2026-10-06 (owner: upgrade/vault is the line being taken; workspace `223d8a8`)
 - [-] Foundation's written primitive, O-9, O-12, O-13 values (theirs; §15 uses regtest values)
 
 ### P1 hardening (hardening plan §9 as reshaped by §7) — on `harden/yellowback`, both lines
