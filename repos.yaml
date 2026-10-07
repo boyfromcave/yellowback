@@ -150,3 +150,9 @@ yb-calibration:
   url: https://github.com/boyfromcave/yb-calibration.git
   branch: harden/yellowback   # hardening plan, cut 2026-10-05 from main
   what: yb-calibration, the calibration tool for the Yellowback parameters: derives and checks the constants baked into each Yellowback release
+
+wyec:
+  role: app
+  url: https://github.com/boyfromcave/wyec.git
+  branch: main                # net new; the Ethereum side of the vault upgrade's bridge (docs/plans/yellowback-upgrade-plan.md §4.3, P5)
+  what: wyec, Wrapped Ycash (wYEC): the ERC-7802 token and guardian-threshold bridge contracts, and the component the bridge's attestors (guardians, relayer) run against; drafts, not audited, not deployed

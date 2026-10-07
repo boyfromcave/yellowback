@@ -24,6 +24,7 @@ is listed after them, and the calibration tool that sets the release constants l
 | **Chain visualizer** | `chain-viz/` (own repo) | real-time mempool, block-sequence, fork/orphan/reorg-risk and Yellowback-health dashboard for regtest, the devnet and mainnet; shows miners and attestors what Yellowback pays them | ZMQ `hashblock`/`hashtx`, the stock read RPCs (`getblock`, `getrawmempool`, `getchaintips`, …) and the read-only `yed_*` RPCs; never a write, never `getblocktemplate` (a CI grep enforces it) | [chain-viz plan](docs/plans/chain-viz-plan.md) |
 | **x402 agent payments** | `x402-ycash/` (own repo) | x402 (HTTP-402) payments for AI agents in YEC and YED: pay-per-request, payment channels, private (shielded) payments; binding specs, the TypeScript SDK mechanism, the facilitator | stock RPCs (`gettxout`, `sendrawtransaction`, `z_*` receipts) and the read-only `yed_*` RPCs; no node change on either line | [x402 plan](docs/plans/x402-agent-payments-plan.md) |
 | **Parameter calibration** | `yb-calibration/` (own repo) | the calibration tool for the Yellowback parameters: derives and checks the constants baked into each Yellowback release | none at runtime; its output is the release constants, applied in `ycash-dd` and `ycash6` | — |
+| **Bridge contracts (wYEC)** | `wyec/` (own repo) | Wrapped Ycash on Ethereum: the ERC-7802 wYEC token and the guardian-threshold bridge contract, the Ethereum side of the vault upgrade's bridge; the component the bridge's guardians and relayer run against (drafts, not audited, not deployed) | none: its signers watch the Ycash bridge vaults through the stock and `vault_*` read RPCs; Ycash consensus never reads Ethereum (R2) | [upgrade plan](docs/plans/yellowback-upgrade-plan.md) §4.3, P5 |
 
 The node is the only place a rule lives. The wallet, the light server and the mobile app show
 and spend YED; the pool is how the rule is *enforced*, since a Yellowback block is one a pool
@@ -58,6 +59,7 @@ yellowback-workspace/
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo on `main` — plan docs/plans/chain-viz-plan.md
 ├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo on `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo on `main` — the constants baked into releases
+├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo on `main` — plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        DigiDollar's own design docs + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS — v3 (price attestation, current) on v2 (miner-enforced, delivered);
@@ -75,14 +77,14 @@ yellowback-workspace/
 ├── scripts/         bootstrap.sh, pull.sh, repos.sh (manifest reader), repo-status.sh, extract-spec.sh + extract_spec.py, check-ref-pins.sh
 ├── requirements.txt Python deps for the workspace venv (.venv, created by bootstrap)
 ├── wt/             git worktrees of the forks for parallel agents (untracked, gitignored)
-├── yellowback.code-workspace   VS Code: parent + all seventeen clones as roots, ref/ read-only
+├── yellowback.code-workspace   VS Code: parent + all eighteen clones as roots, ref/ read-only
 └── AGENTS.md        working rules  (CLAUDE.md symlinks to it)
 ```
 
 All `ref/` checkouts are `chmod -R a-w`, so "don't edit the reference" is enforced by the
 filesystem, not just documented. All work happens in the five forks (`ycash-dd/`,
-`yecwallet-dd/`, `lightwalletd-dd/`, `ycash6/`, `librustzcash6/`) and the five app repos (`yew/`,
-`yolo/`, `chain-viz/`, `x402-ycash/`, `yb-calibration/`). The `yed_*` RPC surface is the only interface between the node and its wallet and light-server clients;
+`yecwallet-dd/`, `lightwalletd-dd/`, `ycash6/`, `librustzcash6/`) and the six app repos (`yew/`,
+`yolo/`, `chain-viz/`, `x402-ycash/`, `yb-calibration/`, `wyec/`). The `yed_*` RPC surface is the only interface between the node and its wallet and light-server clients;
 lightwalletd's gRPC is the only interface the mobile wallet has; the stock mining RPCs are the
 only interface the pool has.
 
@@ -361,14 +363,14 @@ change, say which tier it lands on and why a lower tier will not do.
 
 ## Getting started
 
-The workspace repo tracks only the documents, the manifest and the scripts. The seventeen nested clones
+The workspace repo tracks only the documents, the manifest and the scripts. The eighteen nested clones
 under `ref/`, `ycash-dd/`, `yecwallet-dd/`, `lightwalletd-dd/`, `ycash6/`, `librustzcash6/`, `yew/`,
-`yolo/`, `chain-viz/`, `x402-ycash/` and `yb-calibration/` are plain git repositories (not submodules),
+`yolo/`, `chain-viz/`, `x402-ycash/`, `yb-calibration/` and `wyec/` are plain git repositories (not submodules),
 gitignored here and recreated from [repos.yaml](repos.yaml) by `make bootstrap`.
 
 **Prerequisites:** `git`, `make`, and either `uv` or `python3` (3.10+) for the workspace venv.
 Nothing else is needed to bootstrap; the C++/Qt toolchains are only needed to *build*, see below.
-The seventeen clones pull roughly 0.9 GB of git history (measured 2026-10-04; DigiByte is the
+The eighteen clones pull roughly 0.9 GB of git history (measured 2026-10-04; DigiByte is the
 largest, under a third of it), so allow a few minutes on the first run.
 
 ```bash
@@ -391,13 +393,13 @@ What `make bootstrap` does, in order:
    Foundation, or `yodl` for lightwalletd) is added as remote `upstream` (not fetched).
    `ycash6` and `librustzcash6` — the same, on `feature/yellowback` with the baselines
    `ycash6-legacy` / `librustzcash6-legacy` and miodragpop's repos as `upstream`.
-   `yew`, `yolo`, `chain-viz`, `x402-ycash` and `yb-calibration` — the app repos — are cloned on
+   `yew`, `yolo`, `chain-viz`, `x402-ycash`, `yb-calibration` and `wyec` — the app repos — are cloned on
    `main`; they have no baseline branch and no `upstream` remote (`yolo`'s Perl ancestor is `ref/yolo`).
    *2026-10-05:* every writable repo is on `harden/yellowback` (the hardening plan's branch, cut from
    the branch of record named above); `repos.yaml` records it, so `make status` expects it.
 3. `.venv` — created with `uv` if available, else `python3 -m venv`, and `requirements.txt` installed
    (the Zcash functional-test framework's Python deps, plus a `pyblake2` shim).
-4. `make status-short` — a summary of the workspace and its seventeen clones, with the `ref/` pins verified.
+4. `make status-short` — a summary of the workspace and its eighteen clones, with the `ref/` pins verified.
 
 Options, passed as `make` variables:
 
@@ -418,8 +420,8 @@ in `ycash-dd/doc/yellowback.md` (node: `./zcutil/build.sh` with the depends syst
 `yecwallet-dd/docs/yellowback.md` (wallet: Qt 6 + CMake, bundling the node binary),
 `ycash6/doc/yellowback.md` (the 6.20.0 node) and `ycash6/doc/yellowback-release.md` (the release
 workflow), `lightwalletd-dd/docs/yellowback.md` (Go), `yew/README.md` (Flutter + Rust core),
-`yolo/README.md` (`cargo build --release`), `chain-viz/README.md`, `x402-ycash/README.md` and
-`yb-calibration/README.md`.
+`yolo/README.md` (`cargo build --release`), `chain-viz/README.md`, `x402-ycash/README.md`,
+`yb-calibration/README.md` and `wyec/README.md` (`contracts/compile.js`).
 
 ## Commands
 
@@ -427,7 +429,7 @@ workflow), `lightwalletd-dd/docs/yellowback.md` (Go), `yew/README.md` (Flutter +
 make                # list targets and the current pins
 make bootstrap      # recreate every clone and the venv from repos.yaml (see above)
 make pull           # fast-forward every repo from its remote (never merges, rebases or discards; scripts/pull.sh)
-make status         # git status for the workspace and its seventeen clones: fetches origin, ahead/behind, ref/ pins verified
+make status         # git status for the workspace and its eighteen clones: fetches origin, ahead/behind, ref/ pins verified
 make status-short   # same, without the per-file listing
 make pins           # one line per repo, machine-readable
 make diff           # fork deltas: each fork's branch vs its -legacy baseline
@@ -459,6 +461,7 @@ is not on the branch `repos.yaml` records.
 | `chain-viz` | branch `main` (app repo, no baseline: a net-new read-only sidecar of the node) | — |
 | `x402-ycash` | branch `main` (app repo, no baseline: net new, the primary repo of the x402 plan) | — |
 | `yb-calibration` | branch `main` (app repo, no baseline: net new, calibrates the constants baked into Yellowback releases) | — |
+| `wyec` | branch `main` (app repo, no baseline: net new, the wYEC token and bridge contracts on Ethereum; added 2026-10-06) | — |
 
 Pins are declared once in [repos.yaml](repos.yaml) (the Makefile reads them from there) and
 mirrored in `AGENTS.md` and `docs/mapping.md`. Re-pinning means updating all three.

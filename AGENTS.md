@@ -35,6 +35,7 @@ yellowback-workspace/
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
 ├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `main` — calibrates the constants baked into Yellowback releases
+├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `main` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, revision 4;
@@ -53,11 +54,11 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines, seven component repos.** Yellowback is an overlay on the node
+**One overlay, two node lines, eight component repos.** Yellowback is an overlay on the node
 (`ycash-dd` and `ycash6`, below); around it sit the GUI wallet, lightwalletd, the mobile wallet
-(YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash) and the
-parameter calibration tool (yb-calibration), each in its own repo and each reaching the node only
-through a public interface (README.md, the components table).
+(YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
+parameter calibration tool (yb-calibration) and the wYEC bridge contracts (wyec), each in its own
+repo and each reaching the node only through a public interface (README.md, the components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
 the node build. DigiByte's `src/qt/digidollar*` is the behavioural reference for the wallet
@@ -135,6 +136,10 @@ Parameter calibration goes in `yb-calibration/` only — its own repository on `
 reference and no baseline. It derives and checks the constants each Yellowback release bakes into
 the node (both node lines): a constant changes in `ycash-dd`/`ycash6` only with the calibration
 result that justifies it, and the calibration tool never edits a node fork itself.
+The wYEC bridge contracts go in `wyec/` only — its own repository on `main`, net new, no reference
+and no baseline. It is the Ethereum side of the vault upgrade's bridge and the component the
+bridge's guardians and relayer run against; Ycash consensus never reads Ethereum (upgrade plan R2),
+so nothing in `wyec/` is ever a dependency of either node line.
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -235,7 +240,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its seventeen clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its eighteen clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the five forks vs its -legacy baseline
