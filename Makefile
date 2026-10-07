@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -43,6 +43,9 @@ spec-check: ## Fail if any generated spec/contract copy is stale vs the plan (ru
 
 spec-check-upgrade: ## Same for the upgrade/vault line's copies in wt/up-dd, wt/up6, wt/p6-wallet, wt/p6-lightwalletd-dd (EXTRACT_SPEC_*_DIR override; missing trees skipped)
 	@scripts/extract-spec.sh --check-upgrade
+
+spec-upgrade: ## Write the upgrade/vault line's copies (spec from the upgrade plan §10 + §15, contract) into the trees spec-check-upgrade checks
+	@scripts/extract-spec.sh --write-upgrade
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit

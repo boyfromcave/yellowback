@@ -8,6 +8,9 @@
 #        scripts/extract-spec.sh --check-workspace   only the copies in this repo (the workspace CI, which has no clones)
 #        scripts/extract-spec.sh --check-upgrade     the upgrade/vault line's copies in the integration worktrees
 #                                                    (`make spec-check-upgrade`; trees that do not exist are skipped)
+#        scripts/extract-spec.sh --write-upgrade     write those copies: the upgrade plan's section 10 trust statement
+#                                                    and section 15 as doc/yellowback-spec.md, and the upgrade contract
+#                                                    (`make spec-upgrade`; same EXTRACT_SPEC_*_DIR overrides and skips)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.

@@ -10,8 +10,9 @@ READS
   ycash-dd/doc/yellowback-rpc.md                     optional: the fork's RPC contract document (Phase 3+); from
                                                      Phase A0 its "Error identifiers" tables are the error table
   ycash6/doc/yellowback-rpc.md                       the same for the 6.20.0 node line (its contract is built from it)
-  docs/plans/yellowback-upgrade-plan.md              the upgrade line only (below): must have its `### 15.10` heading,
-                                                     which the contract cites as sectionUpgrade
+  docs/plans/yellowback-upgrade-plan.md              the upgrade line only (below): its section 10 trust statement and
+                                                     its section 15 are that line's spec; must have its `### 15.10`
+                                                     heading, which the contract cites as sectionUpgrade
 
 WRITES (`--write`) or COMPARES (`--check`, exit 1 when any copy is missing or stale)
   docs/spec/yellowback-spec.md                       the spec: header + body (below)
@@ -38,6 +39,19 @@ THE SPEC FILE
               match it byte for byte and the fork's check reads only up to the next `#` (P4).
   N is the highest `### Revision N` heading of the plan's §0.  The sha256 is over exactly the body
   bytes, so the fork-local check   sed '1,/^---$/d' FILE | sha256sum   reproduces it (§6.0 item 6).
+
+THE UPGRADE SPEC FILE  (the upgrade line's doc/yellowback-spec.md, both node lines; never docs/spec)
+  line 1      `Source: yellowback-upgrade-plan.md revision N; sha256: <64 hex>`, N the highest `**Revision N`
+              paragraph opening of the upgrade plan; lines 2-3 as above (the sha256 check is the same)
+  body        a `## Vault upgrade specification - …` line written by this script (the marker the upgrade-line
+              checks grep for, in place of `## v3 delta`), a blank line, a `### 8.1 Trust statement …` heading
+              written by this script, a blank line, the upgrade plan's section 10 trust statement -- the lines
+              after `**Trust statement (replaces hardening …` up to (not including) `**What is given up:**`,
+              blank edges trimmed -- one blank line, then the plan's `## 15. …` up to the next `## ` heading or
+              the end of the file (all of 15.0-15.10), blank edges trimmed, each line terminated by "\n".
+              8.1 comes first and carries no `#` line, so the forks' §8.1 / `## Trust statement` check reads
+              exactly the trust statement; doc/yellowback.md's Trust statement must match it byte for byte.
+  Nothing of the v2 or v3 plan is in it: the v2 §3 + v3 delta spec is the harden line's.
 
 THE CONTRACT JSON  (sorted keys, 2-space indent, trailing newline; identical in both forks)
   {
@@ -99,7 +113,8 @@ WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR override `ycash-dd` /
   `ycash6` / `yecwallet-dd` / `lightwalletd-dd` (absolute paths), so
   an agent working in wt/<name> can write and check the copies of its own worktree.  Unset = the main trees.
-  `--check-upgrade` (`make spec-check-upgrade`) checks the upgrade line's copies: the same variables, defaulting
+  `--check-upgrade` (`make spec-check-upgrade`) checks the upgrade line's copies (the upgrade spec above and the
+  upgrade contract), and `--write-upgrade` (`make spec-upgrade`) writes them: the same variables, defaulting
   to the integration worktrees wt/up-dd, wt/up6, wt/p6-wallet and wt/p6-lightwalletd-dd (relative to the
   workspace); a tree that does not exist, or whose node doc is not yet on the upgrade line, is skipped and
   said so.  The docs/spec copy is the harden check's, not this one's.
@@ -194,6 +209,63 @@ def spec_body(lines, lines_v3=None):
             % revision(lines_v3)
         ) + "\n".join(d3) + "\n"
     return body
+
+
+UPGRADE_SPEC_MARKER = "## Vault upgrade specification"   # the upgrade spec's first body line starts with it
+TRUST_UPGRADE_RE = r"\*\*Trust statement \(replaces hardening"   # upgrade plan section 10
+GIVEN_UP_RE = r"\*\*What is given up:\*\*"
+
+
+def revision_upgrade(lines):
+    """The upgrade plan's revision: the highest `**Revision N (...)` paragraph opening at its top."""
+    revs = [int(m.group(1)) for l in lines for m in [re.match(r"\*\*Revision (\d+)\b", l)] if m]
+    if not revs:
+        die("no '**Revision N' paragraph in %s" % os.path.relpath(PLAN_UPGRADE, ROOT))
+    return max(revs)
+
+
+def strip_blank_edges(block):
+    while block and not block[0].strip():
+        block = block[1:]
+    while block and not block[-1].strip():
+        block = block[:-1]
+    return block
+
+
+def spec_body_upgrade(lines_up):
+    """The upgrade line's spec body (see THE UPGRADE SPEC FILE above)."""
+    trust = section(lines_up, TRUST_UPGRADE_RE, GIVEN_UP_RE)[1:]
+    trust = strip_blank_edges(trust)
+    if not trust or any(l.startswith("#") for l in trust):
+        die("the upgrade plan's section 10 trust statement is empty or contains a heading")
+    start = next((i for i, l in enumerate(lines_up) if re.match(r"## 15\. ", l)), None)
+    if start is None:
+        die("heading '## 15. ' not found in the upgrade plan")
+    end = next((i for i in range(start + 1, len(lines_up)) if re.match(r"## ", lines_up[i])), len(lines_up))
+    s15 = strip_blank_edges(lines_up[start:end])
+    if not any(l.startswith("### %s " % SECTION_UPGRADE) for l in s15):
+        die("the upgrade plan's section 15 has no '### %s' heading" % SECTION_UPGRADE)
+    head = [
+        "%s - yellowback-upgrade-plan.md revision %d (its section 10 trust statement as 8.1, "
+        "then section 15 in full; the hardening and v3 plans where it is silent)" % (UPGRADE_SPEC_MARKER, revision_upgrade(lines_up)),
+        "",
+        "### 8.1 Trust statement (yellowback-upgrade-plan.md section 10; replaces hardening section 6)",
+        "",
+    ]
+    return "\n".join(head + trust + [""] + s15) + "\n"
+
+
+def spec_text_upgrade(lines_up):
+    body = spec_body_upgrade(lines_up)
+    digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    return (
+        "Source: yellowback-upgrade-plan.md revision %d; sha256: %s\n"
+        "Generated by scripts/extract-spec.sh --write-upgrade (make spec-upgrade) from "
+        "docs/plans/yellowback-upgrade-plan.md section 10 (trust statement) and section 15"
+        " - do not edit this file, edit the plan and rerun; "
+        "verify with: sed '1,/^---$/d' FILE | sha256sum\n"
+        "---\n" % (revision_upgrade(lines_up), digest)
+    ) + body
 
 
 def spec_text(lines, lines_v3=None):
@@ -536,12 +608,15 @@ def compare(path, text):
         return None
 
 
-def check_upgrade(lines, lines_v3):
-    """`--check-upgrade`: the upgrade line's copies in the integration worktrees that exist."""
+def check_upgrade(lines, lines_v3, write=False):
+    """`--check-upgrade`: the upgrade line's copies in the integration worktrees that exist;
+    `--write-upgrade` (write=True): write those same copies instead of comparing them."""
     d = {k: os.environ.get(k) or os.path.join(ROOT, v) for k, v in UPGRADE_TREES.items()}
     node, node6, wallet, lwd = (d[k] for k in UPGRADE_TREES)
     rel = lambda p: os.path.relpath(p, ROOT)
-    spec = spec_text(lines, lines_v3)
+    if not os.path.exists(PLAN_UPGRADE):
+        die("the upgrade line needs %s" % rel(PLAN_UPGRADE))
+    spec = spec_text_upgrade(read_plan(PLAN_UPGRADE))
     checks, skipped = [], []
 
     def node_line(tree):
@@ -572,6 +647,16 @@ def check_upgrade(lines, lines_v3):
         checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
                    (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
                     contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
+    if write:
+        for s in skipped:
+            print("spec-upgrade: skipped %s" % s)
+        for path, text in checks:
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(text)
+            print("wrote %s" % rel(path))
+        if not checks:
+            print("spec-upgrade: no upgrade-line tree found; nothing written")
+        return 0
     stale = []
     for path, text in checks:
         ok = compare(path, text)
@@ -580,7 +665,7 @@ def check_upgrade(lines, lines_v3):
     for s in skipped:
         print("spec-check-upgrade: skipped %s" % s)
     if stale:
-        print("spec-check-upgrade: STALE — regenerate with the same EXTRACT_SPEC_*_DIR and `scripts/extract-spec.sh`:\n  "
+        print("spec-check-upgrade: STALE — regenerate with the same EXTRACT_SPEC_*_DIR and `scripts/extract-spec.sh --write-upgrade`:\n  "
               + "\n  ".join(stale))
         return 1
     if not checks:
@@ -592,12 +677,12 @@ def check_upgrade(lines, lines_v3):
 
 def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
-    if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade"):
-        die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade]")
+    if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade", "--write-upgrade"):
+        die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade|--write-upgrade]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
-    if mode == "--check-upgrade":
-        return check_upgrade(lines, lines_v3)
+    if mode in ("--check-upgrade", "--write-upgrade"):
+        return check_upgrade(lines, lines_v3, write=mode == "--write-upgrade")
     outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
