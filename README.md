@@ -27,7 +27,8 @@ check them all.
 - **The vault upgrade**: the proposed network upgrade that adds vaults and signer sets to Ycash's
   consensus rules. It is general-purpose: it knows nothing about dollars or Ethereum.
 - **Ycash Yellowback (YED)**: lock YEC in a vault to mint YED (`1 YED = 1 US dollar`); return the
-  YED to get the YEC back. If a vault's YEC becomes worth less than the YED it backs, others can
+  YED to get the YEC back (always, even if the attestors go silent: a
+  YED vault is only ever released by burning its YED). If a vault's YEC becomes worth less than the YED it backs, others can
   claim it. The YEC/USD price comes from mining pools and from **attestors** (members of
   Yellowback's signer set who sign prices).
 - **wYEC (wrapped YEC)**: YEC represented as a token on Ethereum, backed 1:1 by YEC locked in Ycash

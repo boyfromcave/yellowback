@@ -388,7 +388,9 @@ deposit, not a stake, and the Foundation's single-relayer shape is unsafe.
 
 A set is DORMANT when fewer than `cancelThreshold` members have acted in `livenessWindow`. A
 member is DORMANT when it has not acted in that window (v3's per-attestor dormancy, S15). The
-owner branch of every vault under a DORMANT set is open (`OP_CHECKSETDORMANT`). This is R1.
+owner branch of every vault under a DORMANT set is open (`OP_CHECKSETDORMANT`). This is R1. A registered
+module may still apply its own rules to an owner-branch spend: YED's does, so a YED owner recovers
+only by burning the vault's YED (§5.1).
 
 *Tier:* consensus state already needed by §3.2, plus one opcode.
 
@@ -471,7 +473,7 @@ match to a burn, and heartbeats. Contract audit is external and on the critical 
 
 | YED thing | Primitive element |
 |---|---|
-| Vault | the vault template, tag `YED\0`, set = attestors, owner branch at `lockHeight` (CLTV) as today |
+| Vault | the vault template, tag `YED\0`, set = attestors, owner branch at `lockHeight` (CLTV) as today; both owner selectors (2 at `lockHeight`, 3 once the attestor set is released) are redemptions, so RED-1..3 apply and the minted YED is always burned, the attestors silent or not (`IsOwnerSelector`, `src/yellowback/state.cpp`) |
 | Attestor registry, bonds, maturity, dormancy, revival | a signer set (§3.2, §3.7) |
 | Attestor equivocation (two prices, one height) | **stays in the module**: it is about signed prices, not outpoints; the bond burn uses §3.6's mechanism |
 | Claim path delay and cancel | an intent output: the claimant moves the vault into an intent carrying its burn; after `CLAIM_DELAY` the claimant spends it; before, any attestor may cancel (a wrong-price claim is stopped by one honest attestor) |
@@ -1159,7 +1161,7 @@ All registered in `rpc/client.cpp` conversions; documented in `doc/vault-rpc.md`
 
 - **U-21** The YED module is the delivered `src/yellowback/` with the §6 removals. Its block verdict (`EvaluateBlock` → `blockInvalid`) is a **consensus** rejection (`DoS(100)`, `bad-yellowback-*`) at every height where `UPGRADE_VAULT` is active, with none of today's node-local conjuncts (enforce flag, valve, IBD, catch-up, sunset). Header-note hook, rejected set, kill switch, valve, signalling, lock-in, `ENFORCE_UNTIL_HEIGHT`, abandonment and template policy go. Mempool check becomes ordinary validity.
 - **U-22** The index is **always on** where `UPGRADE_VAULT` and a YED attestor set are configured (`-yellowback` and `-experimentalfeatures` no longer gate it). Parameters: `yellowbackStartHeight` = the activation height; `attestorSetId` per network (mainnet/testnet unset; regtest `-yellowbackattestorset=<setid>`). YED is live from the first block at which both are known.
-- **U-23** A MINT's vault output is a V with `tag = YED\0`, `setId = cancelSetId = attestorSetId`, `delay = CLAIM_DELAY`, `ownerHeight = lockHeight`, `appHeight = lockHeight + GRACE`, `ownerKey` = the payload's owner. Owner redeem = selector 2 (+ REDEEM payload, RED rules as today). Claim = selector 4 into intents (claimant's debt-worth and the owner's residual, RED-4/RED-5 checked at intent creation; the REDEEM payload's burn happens there). Release after `CLAIM_DELAY` closes the vault; an attestor cancel (I-2) returns the collateral to a byte-identical vault, which the module re-indexes as the same position (ACTIVE). **The cancelled claimant's burn is not refunded** (U-24: a wrong-price claim costs its burn; supply falls, the vault's debt does not, so the system only becomes more collateralised). The v3 anyone-can-spend claim branch and CLAIM_NOTICE's role in path (b) stay only as the module reads them; `VaultScript` (P2SH) is no longer accepted for new mints after activation.
+- **U-23** A MINT's vault output is a V with `tag = YED\0`, `setId = cancelSetId = attestorSetId`, `delay = CLAIM_DELAY`, `ownerHeight = lockHeight`, `appHeight = lockHeight + GRACE`, `ownerKey` = the payload's owner. Owner redeem = selector 2, or selector 3 once the attestor set is released (+ REDEEM payload, RED rules as today on both: the minted YED is burned and the pool fee paid; a released set lets the owner redeem without the attestors, never without the burn). Claim = selector 4 into intents (claimant's debt-worth and the owner's residual, RED-4/RED-5 checked at intent creation; the REDEEM payload's burn happens there). Release after `CLAIM_DELAY` closes the vault; an attestor cancel (I-2) returns the collateral to a byte-identical vault, which the module re-indexes as the same position (ACTIVE). **The cancelled claimant's burn is not refunded** (U-24: a wrong-price claim costs its burn; supply falls, the vault's debt does not, so the system only becomes more collateralised). The v3 anyone-can-spend claim branch and CLAIM_NOTICE's role in path (b) stay only as the module reads them; `VaultScript` (P2SH) is no longer accepted for new mints after activation.
 - **P4-b** The attestor registry becomes the primitive set `attestorSetId`: a seat is a current member, its bond weight is the member's bond value, maturity/dormancy are the set's; `ATTESTOR_REGISTER` and `ATTESTOR_REVIVE` are invalid after activation; EQV-1 (two prices at one height) stays in the module and freezes the member's bond via the set's frozen-bond rule.
 - VOID: a MINT failing `MintVerdict` is an invalid transaction; `voidReason` and VOID vault records are not produced after activation.
 - Golden vector `yellowback_golden.json` regenerated once with the diff explained in its commit; `yellowback_model.py` follows (enforcement removed; block 217 becomes an invalid block, not "applied anyway").
