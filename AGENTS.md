@@ -6,11 +6,17 @@ as the reference implementation — in the node (`ycashd`) **and** in the full-n
 [README.md](README.md) for the goal and the change-budget ladder; this file is the working rules.
 
 **The prime directive is minimal change to the Ycash codebase.** The Ycash team is risk-averse and
-the shielded pool's soundness rests on consensus code few people fully understand. Prefer the
-cheapest tier that works: Tier 0 (existing opcodes, wallet/RPC, observer hooks, experimental flag —
-what Ycash's own atomic-swap feature did in commit `ccddd22e4`) over a soft fork, and a soft fork
-over a coordinated network upgrade. When a design trades elegance for a smaller consensus
-footprint, take the smaller footprint and record what was given up.
+the shielded pool's soundness rests on consensus code few people fully understand. That still
+governs every change. **The tier, though, is decided: a network upgrade (Tier 3)** — the owner's
+decision (2026-10-06, `upgrade/vault`) and the Foundation's requirements: a generic,
+application-agnostic lock/unlock primitive (R3, O-1) cannot be built from existing opcodes or a
+soft fork, and its rules must be checked by every full node, not enforced by miners
+(`docs/plans/yellowback-upgrade-plan.md` §1, §10). Within that tier, prefer a script template over
+an opcode, an opcode over a transaction field, per-vault state over global state, and the
+primitive over the module. When a design trades elegance for a smaller consensus footprint, take
+the smaller footprint and record what was given up. (The cheaper-tier ladder — Tier 0 as Ycash's
+atomic-swap feature did in commit `ccddd22e4`, then a soft fork — governs the `harden/yellowback`
+fallback line only.)
 
 ## Layout
 
@@ -30,6 +36,7 @@ yellowback-workspace/
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
+│                    (the branches above are the branches of record; the line being built is `upgrade/vault` — rule 2)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
 ├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
@@ -38,14 +45,17 @@ yellowback-workspace/
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `main` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
-│   ├── plans/       THE DEVELOPMENT PLANS (v3 = yellowback-v3-development-plan.md, current, revision 4;
-│   │                v2 = the delivered miner-enforced plan v3 is a delta on; one plan per component)
+│   ├── plans/       THE DEVELOPMENT PLANS (current = yellowback-upgrade-plan.md, the vault network upgrade,
+│   │                its Execution status block is authoritative; yellowback-evidence-based-hardening-plan.md
+│   │                = harden/yellowback, the no-upgrade fallback; v3 = yellowback-v3-development-plan.md
+│   │                and v2 = the miner-enforced plan, both delivered, now history; one plan per component)
 │   │   ├── ycash6/     the 6.20.0 port's Phase 7 survey and the upstream defect report
 │   │   └── archived/   README only: the retired federation design lives at tag `archive/v1-federation`
 │   ├── audits/      the 2026-10-01 security audit of every component and its remediation checklist
 │   ├── ideation/    README only: experimental ideas live on `ideation/*` branches, never on main
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12, v2/v3 §13–§14, lightwalletd
-│                       §15, YEW §16, yolo §17, chain-viz §18, v4.5.0→6.20.0 port §19, x402 §20). READ IT FIRST.
+│                       §15, YEW §16, yolo §17, chain-viz §18, v4.5.0→6.20.0 port §19, x402 §20,
+│                       hardening §21, vault upgrade §22). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), pull.sh (`make pull`), repos.sh, repo-status.sh,
 │                    extract-spec.sh + extract_spec.py (`make spec`), check-ref-pins.sh (CI: pins vs upstream)
@@ -55,7 +65,8 @@ yellowback-workspace/
 ```
 
 **One overlay, two node lines, eight component repos.** Yellowback is an overlay on the node
-(`ycash-dd` and `ycash6`, below); around it sit the GUI wallet, lightwalletd, the mobile wallet
+(`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
+the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
 parameter calibration tool (yb-calibration) and the wYEC bridge contracts (wyec), each in its own
 repo and each reaching the node only through a public interface (README.md, the components table).
@@ -69,17 +80,23 @@ copy: DigiByte's widgets read in-process wallet models; YecWallet reads everythi
 **Two node lines, one overlay.** `ycash-dd` (v4.5.0) is the primary Yellowback node line.
 `ycash6` (ycashd 6.20.0, another Ycash developer's rebase onto the Zcash 6.x lineage) carries the
 same overlay, ported with `ycash-dd`'s delta (`make diff`) as the source and `docs/mapping.md` §19
-as the crosswalk, and it is the release line (6.21.x: tag-driven GitHub releases,
-`ycash6/doc/yellowback-release.md`; 6.21.0-rc1 is set, not yet tagged). Both lines carry the same
-mainnet parameter set (`START_HEIGHT` 3,075,000, `ENFORCE_UNTIL_HEIGHT` 3,495,480; testnet unset)
-and must stay in step: **a shared Yellowback defect or rule change is made on both lines together**,
-and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW) are tested against both.
+as the crosswalk, and it is the release line (tag-driven GitHub releases,
+`ycash6/doc/yellowback-release.md`): **6.22.x for `upgrade/vault`**, 6.21.x for the
+`harden/yellowback` fallback; the release workflow refuses a tag whose version does not match its
+line or whose heights are unset. **No activation height is set on any public network**: the old
+`START_HEIGHT` 3,075,000 / `ENFORCE_UNTIL_HEIGHT` 3,495,480 were withdrawn (hardening F-5), the
+upgrade line has neither (no sunset; `UPGRADE_VAULT`'s mainnet height and attestor set are set by
+the gate-passing release, plan P8; testnet is unreachable), and regtest/devnet activate it with
+`-nuparams=6d5b7a31:<h>`. Both lines carry the same branch ID (`0x6d5b7a31`) and parameters
+and must stay in step: **a shared Yellowback defect or rule change is made on both lines together** —
+the primitive, the module and the branch ID are one change on both —
+and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402) are tested against both.
 `ycash6` builds against `librustzcash6`: `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins every
 `zcash_*` crate to `miodragpop/librustzcash` rev `ec525fae`, which is exactly `ref/librustzcash6`.
-If a Yellowback change ever needs a librustzcash change, it goes in `librustzcash6/` and
-`ycash6/Cargo.toml` is repointed at `boyfromcave/librustzcash6`; until then `librustzcash6` is a
-zero-delta fork (it is a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is
-already an older fork).
+**On `upgrade/vault` `librustzcash6` is no longer zero-delta**: it adds `NetworkUpgrade::Vault` /
+`BranchId::Vault = 0x6d5b7a31` (`4867cf85`), and `ycash6/Cargo.toml` pins every `zcash_*` crate to
+`boyfromcave/librustzcash6` at that rev. On `harden/yellowback` it stays a zero-delta fork. (It is
+a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is already an older fork.)
 
 ## Rules
 
@@ -93,18 +110,33 @@ The file you want is under `ycash-dd/`.
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/`, on their `feature/yellowback-price-attest` branches — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/` on `feature/yellowback`.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/` — on `upgrade/vault`; the branches of record are `feature/yellowback-price-attest` and, on the 6.20.0 line, `feature/yellowback`.
 
-**Since 2026-10-05 every writable repository, the workspace included, is checked out on
-`harden/yellowback`** — the evidence-based hardening plan's branch
-(`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut from each repo's branch of record
-below and merged back into it when the plan's gates pass. `repos.yaml` records `harden/yellowback`
-for the duration; the branches of record named in this file are where the work returns.
+**`upgrade/vault` is the line being built** (owner, 2026-10-06; `docs/plans/yellowback-upgrade-plan.md`):
+the integration branch in `ycash-dd`, `ycash6`, `librustzcash6` and every client repo (YecWallet,
+lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch of `ycash-dd` and
+`ycash6`. Agents work in `wt/<name>` on `up/<name>` off `upgrade/vault`; the coordinator merges.
+**`harden/yellowback`** — the evidence-based hardening plan's branch
+(`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut 2026-10-05 from each repo's branch
+of record below — is the **no-upgrade fallback**: its fixes merge `harden/yellowback` →
+`upgrade/vault`, never the other way. Until the coordinator switches the trees, `repos.yaml` and the
+local main trees (the workspace included) still record and check out `harden/yellowback`, so
+`make status`/`make pull` track that branch, and `upgrade/vault` is integrated in the worktrees
+`wt/up-dd` and `wt/up6`. The branches of record named in this file are where the fallback work returns.
 
-The current branch in all three v4.5.0-era forks is `feature/yellowback-price-attest` — the v3 price-attestation
-work, cut from `feature/yellowback-sf`. **Yellowback is v3 (price attestation).** `feature/yellowback-sf`
+**The current design is the vault network upgrade, with Yellowback as its rule module.** v3 (price
+attestation, `feature/yellowback-price-attest` in all three v4.5.0-era forks, cut from
+`feature/yellowback-sf`) is delivered history and the base of the fallback; its price attestation
+carries over into the module. `feature/yellowback-sf`
 is the superseded v2 fork, kept only as a record: never commit to it and **never use it as a
-comparison base**. Frozen-file zero-delta checks measure against the tag `yellowback-v3-baseline`
+comparison base**.
+
+**On `upgrade/vault` the frozen-file zero-delta rule is replaced by the consensus review gate**
+(upgrade plan §7 G-9, §9): every changed line under `src/consensus/`, `src/script/`, `main.cpp` and
+`src/primitives/`, on both lines, is reviewed by two people independent of the author, with the
+four-part check (rule 4) in the PR body. The CI audit's frozen-file and line-budget legs are
+report-only there (print the delta, never fail); the `-legacy` line budgets stay as a size
+measure, not a gate. **On `harden/yellowback` the zero-delta rule stands**: frozen-file checks measure against the tag `yellowback-v3-baseline`
 (ycash-dd, = `feature/yellowback-price-attest` at `ff7f45947`; re-tagged 2026-10-02 at the security-audit merge, which carried two reviewed hook changes in `main.cpp`/`rpc/mining.cpp` — audit A-1, A-7; the previous tag commit was `9da72131e`) or, for a change in review, against
 `origin/feature/yellowback-price-attest`; line budgets against the `-legacy` baseline. The branch is
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
@@ -115,7 +147,9 @@ the entire fork delta (`make diff` shows both). `feature/digidollar` in both for
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
 only; wallet code goes in `yecwallet-dd` only; light-client server code goes in `lightwalletd-dd`
-only; the `yed_*` RPC surface is the sole interface between the node and either client (plan §4.7).
+only; the `yed_*` RPC surface — plus, on `upgrade/vault`, the vault primitive's `set_*` and
+`vault_*` RPCs (`doc/vault-rpc.md`) — is the sole interface between the node and either client
+(plan §4.7; upgrade plan §9). The bridge daemon uses only those plus stock RPCs.
 Mobile-wallet (YEW) client code goes in `yew/` only — its own repository on `main`, not a fork,
 so it has no `-legacy` baseline — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
 gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
@@ -140,6 +174,12 @@ The wYEC bridge contracts go in `wyec/` only — its own repository on `main`, n
 and no baseline. It is the Ethereum side of the vault upgrade's bridge and the component the
 bridge's guardians and relayer run against; Ycash consensus never reads Ethereum (upgrade plan R2),
 so nothing in `wyec/` is ever a dependency of either node line.
+On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash and YEW still need no
+consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
+branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
+branch, YEW signs vault spends; yolo needed no source change and is tested mining across the
+activation), `rpcversion` 5, and the vault primitive's read RPCs (lightwalletd's read-only vault
+calls, chain-viz's set/vault panels).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
 > `x/y` in the same repo at once, so a `dev/` prefix would have blocked checking out upstream
@@ -172,7 +212,10 @@ algorithm: `SIGVERSION_SPROUT/OVERWINTER/SAPLING`), and bytes 0xbb–0xbf hit
 `default: return set_error(serror, SCRIPT_ERR_BAD_OPCODE)` at
 `ref/ycash/src/script/interpreter.cpp:942`. A verbatim port compiles and is consensus-dead.
 
-See `docs/mapping.md` §2 for what to do instead.
+See `docs/mapping.md` §2 for what to do instead. On `upgrade/vault`, new opcodes are allocated
+**above `OP_NOP10`** (`OP_CHECKSETSIG` 0xc0, `OP_CHECKSETDORMANT` 0xc1; `OP_CHECKSEQUENCEVERIFY`
+takes 0xb2) and are gated on the Vault branch ID (`UPGRADE_VAULT`) — **never 0xbb–0xbf**; the
+mapping §2 row is the reason.
 
 ### 4. Before you port a symbol, do the four-part check.
 
@@ -187,7 +230,11 @@ Taproot, SegWit, BIP9, `nVersion` bit-packing, the `Coin` model, or MuSig2 — s
 `docs/mapping.md`; there is already a row for it.
 
 Then one more: **which tier does W land on, and why won't a cheaper tier do?** A consensus change
-needs that answer in writing before any code.
+needs that answer in writing before any code. On `upgrade/vault` the tier itself is answered by the
+requirements (a network upgrade, R3/O-1 — prime directive); the question becomes which rung of the
+in-tier ladder (template, opcode, transaction field; per-vault or global state; primitive or
+module) and why a lower one won't do. A consensus PR without the answer is rejected at the review
+gate (rule 2).
 
 ### 5. Update `docs/mapping.md` as you go.
 
@@ -225,7 +272,8 @@ Do not reintroduce it.
 
 Anything under `ycash-dd/src/consensus/`, `src/script/`, `src/main.cpp`, `src/pow/`, or
 `src/primitives/` changes network rules. Do not tidy, rename, or "improve" surrounding code while
-porting. Keep the fork diff minimal and reviewable.
+porting. Keep the fork diff minimal and reviewable. This stands verbatim on `upgrade/vault`: the
+upgrade adds; it never tidies.
 
 ## Useful commands
 
