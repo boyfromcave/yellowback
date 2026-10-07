@@ -41,7 +41,7 @@ spec: ## Regenerate docs/spec/yellowback-spec.md, the fork copy and both rpc-con
 spec-check: ## Fail if any generated spec/contract copy is stale vs the plan (run by `make status`)
 	@scripts/extract-spec.sh --check
 
-spec-check-upgrade: ## Same for the upgrade/vault line's copies in wt/up-dd, wt/up6, wt/p6-wallet, wt/p6-lightwalletd-dd (EXTRACT_SPEC_*_DIR override; missing trees skipped)
+spec-check-upgrade: ## Same for the upgrade/vault line's copies only, in the main trees (EXTRACT_SPEC_*_DIR override; trees not on the upgrade line skipped)
 	@scripts/extract-spec.sh --check-upgrade
 
 spec-upgrade: ## Write the upgrade/vault line's copies (spec from the upgrade plan §10 + §15, contract) into the trees spec-check-upgrade checks

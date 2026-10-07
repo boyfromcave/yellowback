@@ -169,10 +169,9 @@ Everything else, including the end-to-end walk through every component, is in
   `lightwalletd-dd/`, and so on. Clients reach the node only through its RPCs; the mobile wallet
   only through lightwalletd.
 - **Branches.** `upgrade/vault` is the line being built (the vault upgrade; the GitHub default
-  branch of both node repos). `harden/yellowback` is the fallback line that needs no network
-  upgrade. `repos.yaml`, and so `make bootstrap` and `make status`, still record
-  `harden/yellowback` until the local trees are switched; the upgrade line is worked in git
-  worktrees under `wt/` meanwhile. Each fork also has a `-legacy` branch (`ycash-legacy`,
+  branch of the node and client repos, and what `repos.yaml`, `make bootstrap` and `make status`
+  use). `harden/yellowback` is the fallback line that needs no network upgrade; the workspace
+  repo and `yb-calibration` stay on it, and `wyec` is on `main`. Each fork also has a `-legacy` branch (`ycash-legacy`,
   `ycash6-legacy`, …), the untouched upstream it is measured against with `make diff`; never
   commit to it.
 - **Consensus code is not refactored.** Under `src/consensus/`, `src/script/`, `src/main.cpp`,

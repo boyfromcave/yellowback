@@ -114,15 +114,17 @@ and update the pins recorded in this file and in `docs/mapping.md`.
 
 **`upgrade/vault` is the line being built** (owner, 2026-10-06; `docs/plans/yellowback-upgrade-plan.md`):
 the integration branch in `ycash-dd`, `ycash6`, `librustzcash6` and every client repo (YecWallet,
-lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch of `ycash-dd` and
-`ycash6`. Agents work in `wt/<name>` on `up/<name>` off `upgrade/vault`; the coordinator merges.
+lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch of all of them.
+`repos.yaml` records it and the main trees check it out (since 2026-10-06), so `make status` and
+`make pull` track it and integration happens in the main trees. Agents work in `wt/<name>` on
+`up/<name>` off `upgrade/vault`; the coordinator merges.
 **`harden/yellowback`** — the evidence-based hardening plan's branch
 (`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut 2026-10-05 from each repo's branch
 of record below — is the **no-upgrade fallback**: its fixes merge `harden/yellowback` →
-`upgrade/vault`, never the other way. Until the coordinator switches the trees, `repos.yaml` and the
-local main trees (the workspace included) still record and check out `harden/yellowback`, so
-`make status`/`make pull` track that branch, and `upgrade/vault` is integrated in the worktrees
-`wt/up-dd` and `wt/up6`. The branches of record named in this file are where the fallback work returns.
+`upgrade/vault`, never the other way; it is worked in `wt/` worktrees. The workspace repo itself
+and `yb-calibration` have no `upgrade/vault` and stay on `harden/yellowback` (their content serves
+both lines); `wyec` is on `main`. The branches of record named in this file are where the fallback
+work returns.
 
 **The current design is the vault network upgrade, with Yellowback as its rule module.** v3 (price
 attestation, `feature/yellowback-price-attest` in all three v4.5.0-era forks, cut from

@@ -115,7 +115,7 @@ WORKTREES
   an agent working in wt/<name> can write and check the copies of its own worktree.  Unset = the main trees.
   `--check-upgrade` (`make spec-check-upgrade`) checks the upgrade line's copies (the upgrade spec above and the
   upgrade contract), and `--write-upgrade` (`make spec-upgrade`) writes them: the same variables, defaulting
-  to the integration worktrees wt/up-dd, wt/up6, wt/p6-wallet and wt/p6-lightwalletd-dd (relative to the
+  to the main trees ycash-dd, ycash6, yecwallet-dd and lightwalletd-dd (relative to the
   workspace); a tree that does not exist, or whose node doc is not yet on the upgrade line, is skipped and
   said so.  The docs/spec copy is the harden check's, not this one's.
 """
@@ -592,11 +592,11 @@ def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_RE
 
 # ── main ───────────────────────────────────────────────────────────────────────────────────
 
-UPGRADE_TREES = {   # env override -> default integration worktree (relative to the workspace)
-    "EXTRACT_SPEC_NODE_DIR": "wt/up-dd",
-    "EXTRACT_SPEC_NODE6_DIR": "wt/up6",
-    "EXTRACT_SPEC_WALLET_DIR": "wt/p6-wallet",
-    "EXTRACT_SPEC_LWD_DIR": "wt/p6-lightwalletd-dd",
+UPGRADE_TREES = {   # env override -> default tree (relative to the workspace): the main trees, on upgrade/vault since 2026-10-06
+    "EXTRACT_SPEC_NODE_DIR": "ycash-dd",
+    "EXTRACT_SPEC_NODE6_DIR": "ycash6",
+    "EXTRACT_SPEC_WALLET_DIR": "yecwallet-dd",
+    "EXTRACT_SPEC_LWD_DIR": "lightwalletd-dd",
 }
 
 
@@ -683,7 +683,23 @@ def main(argv):
     lines_v3 = read_plan_v3()
     if mode in ("--check-upgrade", "--write-upgrade"):
         return check_upgrade(lines, lines_v3, write=mode == "--write-upgrade")
-    outputs = [(p, spec_text(lines, lines_v3)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
+    # Each node tree gets the spec of the line it is on (its rpc doc's rpcversion: >= 5 = the vault upgrade),
+    # as its contract copies already do; docs/spec in this repo is always the harden line's.
+    spec_h = spec_text(lines, lines_v3)
+    spec_u = None
+
+    def spec_for(path):
+        nonlocal spec_u
+        tree = os.path.dirname(os.path.dirname(path))
+        if os.path.relpath(path, ROOT).startswith("docs" + os.sep):
+            return spec_h
+        if doc_line(os.path.join(tree, "doc", "yellowback-rpc.md")) != "upgrade":
+            return spec_h
+        if spec_u is None:
+            spec_u = spec_text_upgrade(read_plan(PLAN_UPGRADE))
+        return spec_u
+
+    outputs = [(p, spec_for(p)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
     if workspace_only:
