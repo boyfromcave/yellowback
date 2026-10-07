@@ -169,6 +169,26 @@ read-only token in the macOS keychain (service `yellowback-ci-read`), read at ru
 (C-7) parallel local
 functional runs in one tree race on the shared `qa/cache` (harness, not a defect; CI shards are separate runners).
 
+**Nightly tier, first run 2026-10-07 (C-13):** six red jobs across both node lines; none a code regression. Fixed and
+pushed on both branches of both lines (ycash-dd harden `852c8f40c` / upgrade `5d4ab91dd`; ycash6 harden `b091b7e31`
+/ upgrade `33f8c69b1`): the stock-build cargo home keyed on the stock lock; stockparity ignores `getinfo.version`
+(6.21 vs 6.20 — every chain-state field agreed); the lightwalletd pin (stale pre-rpcversion-4); the fuzz target-discovery
+loop under `bash -e`; a bench budget ×10 under sanitizers (`src/test/yellowback_bench.h`); `--stock-binary` opt-in per
+script (a v4.5.0 binary refuses `-nuparams=6d5b7a31`); a real fragility in `yellowback_attest_wallet` (bond locktime
+headroom); N35 mines in chunks and prints node 3's log tail if it dies (the lockorder run lost node 3 silently — likely
+runner OOM; unreproduced). Open: (F-a) the `--enable-debug` build's `yellowback_index_tests` abort on a locked
+`recursive_mutex` destroyed at fixture teardown (pre-existing, CI never ran unit tests on that build); ycash6
+counterparts of the bench scaling, headroom assert and N35 chunking. Verification: the 03:00 UTC schedule.
+
+**Calibration studies (2026-10-07, branch `calib/bad-debt-tolerance`, not pushed):** tolerance curve to 300 %
+(`LOW-RATIOS.md`): 500 % needs a 10.5 % tolerance on last-365, 600 % 7.5 %, 725 % 5 %; class A capped at 40 d makes
+500 % pass 5 %; loss given bad debt 20–30 % of debt regardless of ratio. ZEC level-shift study (`2026-10-zec/`, one
+authorised CMC pull, 2016–26): σ rises with price on ZEC too (elasticity +0.25), so a price/cap state variable does not
+earn its place; ZEC's tails are far thinner than YEC's (p99 drawdown 3.2× vs 9.7×). Ranked risk methods: today's 42 h
+σ̂ is worst on both coins; flat beats every estimator on YEC at 30–60 d; 30-day terms save 13–19 %; **in-term claims
+(claim when collateral < θ·debt, completing after the cancel delay) halve the required ratio** — a RED-4 claim-path
+rule change and the one structural lever worth a design decision. All owner decisions pending.
+
 ### P1, P5, P7, P8
 - [-] P1 hardening (own plan) · [-] P5 wyec · [-] P7 gates · [-] P8 release
 
