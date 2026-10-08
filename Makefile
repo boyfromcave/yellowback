@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -46,6 +46,12 @@ spec-check-upgrade: ## Same for the upgrade/vault line's copies only, in the mai
 
 spec-upgrade: ## Write the upgrade/vault line's copies (spec from the upgrade plan §10 + §15, contract) into the trees spec-check-upgrade checks
 	@scripts/extract-spec.sh --write-upgrade
+
+spec-check-in-term: ## Same for the upgrade/vault-in-term line's copies (default wt/it-dd; EXTRACT_SPEC_NODE6_DIR=wt/it6 etc. add trees)
+	@scripts/extract-spec.sh --check-in-term
+
+spec-in-term: ## Write the in-term line's copies (upgrade plan §10 + §15 with the in-term plan's IT-8 and §3-§4 overlay; contract + its §4.1 delta)
+	@scripts/extract-spec.sh --write-in-term
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit

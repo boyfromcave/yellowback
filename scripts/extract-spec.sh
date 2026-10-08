@@ -11,6 +11,10 @@
 #        scripts/extract-spec.sh --write-upgrade     write those copies: the upgrade plan's section 10 trust statement
 #                                                    and section 15 as doc/yellowback-spec.md, and the upgrade contract
 #                                                    (`make spec-upgrade`; same EXTRACT_SPEC_*_DIR overrides and skips)
+#        scripts/extract-spec.sh --check-in-term     the upgrade/vault-in-term line's copies (`make spec-check-in-term`):
+#                                                    default wt/it-dd only; EXTRACT_SPEC_NODE6_DIR / _WALLET_DIR / _LWD_DIR add trees
+#        scripts/extract-spec.sh --write-in-term     write them: the upgrade spec with the in-term plan's IT-8 promise and
+#                                                    sections 3-4, the contract with its section 4.1 delta (`make spec-in-term`)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.

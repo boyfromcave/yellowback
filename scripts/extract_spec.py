@@ -109,6 +109,30 @@ TWO LINES  (upgrade plan findings (39), (44))
       "planUpgrade": "docs/plans/yellowback-upgrade-plan.md", "sectionUpgrade": "15.10".
   The doc must state rpcversion and give every command both a heading and a JSON block.
 
+THE IN-TERM LINE  (`upgrade/vault-in-term`, docs/plans/yellowback-in-term-claims-plan.md; `--write-in-term` /
+  `--check-in-term`, `make spec-in-term` / `make spec-check-in-term`)
+  The line is `interm` when the rpc doc's title states rpcversion >= 6 (EXTRACT_SPEC_LINE=interm forces it); a tree
+  on it is skipped by --check-upgrade/--write-upgrade, and the upgrade line's output is unchanged by anything here.
+  Spec   line 1 `Source: yellowback-upgrade-plan.md revision N + yellowback-in-term-claims-plan.md revision M; sha256: …`
+         (M the highest `**Revision M` paragraph opening of the in-term plan); lines 2-3 as above.  Body: the upgrade
+         spec body (above) with two changes -- its marker line names the overlay, and in the 8.1 trust statement the
+         bullet that opens `- Collateral` is replaced by `- ` + the in-term plan's IT-8 promise (the text between
+         `**"` and `"**` in the `- **IT-8` bullet, whitespace collapsed, wrapped at 100 columns with a two-space
+         continuation indent, never breaking before `%`) -- then one blank line, an `## In-term claims delta …` line
+         written by this script, a blank line and the in-term plan's lines from `## 3. ` up to (not including)
+         `## 5. ` (its parameters, rules IT-1..IT-9 and the 4.1 contract delta), blank edges trimmed.
+  Contract  the upgrade-line contract of the tree's rpc doc (above), then the in-term plan's `### 4.1` section
+         applied: `rpcversion` from its heading (the doc's title must state the same), every ```json block (named
+         by the nearest non-blank line above it, as in the rpc doc; a `#### `yed_x <args>`` heading gives args)
+         deep-merged into that command's `returns` (objects key by key, a one-element row array into its row,
+         anything else replaced; the plan wins on values); a command or field the delta names that the doc lacks
+         is an error (the doc and the plan cannot drift), as are differing args.  `source` gains
+         "planInTerm": "docs/plans/yellowback-in-term-claims-plan.md", "revisionInTerm": M, "sectionInTerm": "4.1".
+  Trees  EXTRACT_SPEC_NODE_DIR (default wt/it-dd, the ycash-dd integration worktree); EXTRACT_SPEC_NODE6_DIR,
+         EXTRACT_SPEC_WALLET_DIR and EXTRACT_SPEC_LWD_DIR only when set (no default: wt/it6 and the client in-term
+         worktrees are written only when named).  A tree that does not exist or is not on the in-term line is
+         skipped and said so.
+
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR override `ycash-dd` /
   `ycash6` / `yecwallet-dd` / `lightwalletd-dd` (absolute paths), so
@@ -131,6 +155,9 @@ PLAN_V3 = os.path.join(ROOT, "docs", "plans", "yellowback-v3-development-plan.md
 PLAN_UPGRADE = os.path.join(ROOT, "docs", "plans", "yellowback-upgrade-plan.md")
 SECTION_UPGRADE = "15.10"
 UPGRADE_RPCVERSION = 5   # the first rpcversion of the upgrade line (finding (38))
+PLAN_INTERM = os.path.join(ROOT, "docs", "plans", "yellowback-in-term-claims-plan.md")
+SECTION_INTERM = "4.1"
+INTERM_RPCVERSION = 6    # the first rpcversion of the in-term line (in-term plan IT-7)
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
 LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
@@ -524,10 +551,12 @@ def doc_line(rpcdoc_path):
     """`upgrade` or `harden`: EXTRACT_SPEC_LINE when set, else from the rpc doc's title rpcversion."""
     forced = os.environ.get("EXTRACT_SPEC_LINE")
     if forced:
-        if forced not in ("harden", "upgrade"):
-            die("EXTRACT_SPEC_LINE must be harden or upgrade, not %r" % forced)
+        if forced not in ("harden", "upgrade", "interm"):
+            die("EXTRACT_SPEC_LINE must be harden, upgrade or interm, not %r" % forced)
         return forced
     v = rpcdoc_version(rpcdoc_path)
+    if v is not None and v >= INTERM_RPCVERSION:
+        return "interm"
     return "upgrade" if v is not None and v >= UPGRADE_RPCVERSION else "harden"
 
 
@@ -561,7 +590,10 @@ def contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
 
 
 def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_REL):
-    if doc_line(rpcdoc_path) == "upgrade":
+    line = doc_line(rpcdoc_path)
+    if line == "interm":
+        return contract_text_interm(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
+    if line == "upgrade":
         return contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     ver, sec = rpc_section(lines)
     cmds = commands_from_plan(sec)
@@ -588,6 +620,248 @@ def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_RE
     }
     doc.update(cmds)
     return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+# ── the in-term line (upgrade/vault-in-term) ─────────────────────────────────────────────────
+
+INTERM_MARKER_TAIL = "with the in-term claims overlay"
+IT8_RE = r"- \*\*IT-8\b"
+
+
+def read_plan_interm():
+    if not os.path.exists(PLAN_INTERM):
+        die("the in-term line needs %s" % os.path.relpath(PLAN_INTERM, ROOT))
+    return read_plan(PLAN_INTERM)
+
+
+def revision_interm(lines_it):
+    revs = [int(m.group(1)) for l in lines_it for m in [re.match(r"\*\*Revision (\d+)\b", l)] if m]
+    if not revs:
+        die("no '**Revision N' paragraph in %s" % os.path.relpath(PLAN_INTERM, ROOT))
+    return max(revs)
+
+
+def it8_promise(lines_it):
+    """The IT-8 promise: the text between **" and "** in the `- **IT-8` bullet, whitespace collapsed."""
+    start = next((i for i, l in enumerate(lines_it) if re.match(IT8_RE, l)), None)
+    if start is None:
+        die("the in-term plan has no '- **IT-8' rule")
+    block = [lines_it[start]]
+    for l in lines_it[start + 1:]:
+        if not l.strip() or l.startswith("- ") or l.startswith("#"):
+            break
+        block.append(l)
+    m = re.search(r'\*\*"(.+?)"\*\*', " ".join(x.strip() for x in block), re.S)
+    if not m:
+        die('the in-term plan\'s IT-8 rule carries no **"..."** promise')
+    return " ".join(m.group(1).split())
+
+
+def wrap_bullet(text, width=100):
+    """`- ` + text, wrapped at `width` with a two-space continuation; a `%` never starts a line."""
+    import textwrap
+    guard = "\u0000"
+    lines = textwrap.wrap(text.replace(" %", guard + "%"), width=width, initial_indent="- ", subsequent_indent="  ",
+                          break_long_words=False, break_on_hyphens=False)
+    return [l.replace(guard, " ") for l in lines]
+
+
+def spec_body_interm(lines_up, lines_it):
+    body = spec_body_upgrade(lines_up).split("\n")
+    if body and body[-1] == "":
+        body = body[:-1]
+    if not body[0].startswith(UPGRADE_SPEC_MARKER):
+        die("the upgrade spec body does not open with its marker")
+    body[0] = "%s - yellowback-upgrade-plan.md revision %d %s (yellowback-in-term-claims-plan.md revision %d: its IT-8 " \
+              "promise replaces the section 10 trust statement's collateral paragraph, its sections 3 and 4 follow " \
+              "section 15 and amend it where they differ)" % (UPGRADE_SPEC_MARKER, revision_upgrade(lines_up),
+                                                                INTERM_MARKER_TAIL, revision_interm(lines_it))
+    body[2] = "### 8.1 Trust statement (yellowback-upgrade-plan.md section 10, its collateral paragraph replaced by " \
+              "yellowback-in-term-claims-plan.md IT-8; replaces hardening section 6)"
+    # the trust statement is body[4:] up to the first `## 15.` line (minus the blank before it)
+    end = next((i for i, l in enumerate(body) if l.startswith("## 15. ")), None)
+    if end is None:
+        die("the upgrade spec body has no section 15")
+    starts = [i for i in range(4, end) if body[i].startswith("- Collateral")]
+    if len(starts) != 1:
+        die("the upgrade plan's trust statement must have exactly one bullet opening '- Collateral' (found %d)" % len(starts))
+    a = starts[0]
+    b = next((i for i in range(a + 1, end) if body[i].startswith("- ") or not body[i].strip()), end)
+    body[a:b] = wrap_bullet(it8_promise(lines_it))
+    d = section(lines_it, r"## 3\. ", r"## 5\. ")
+    if not any(l.startswith("### %s " % SECTION_INTERM) for l in d):
+        die("the in-term plan's section 4 has no '### %s' heading" % SECTION_INTERM)
+    body += ["", "## In-term claims delta - yellowback-in-term-claims-plan.md revision %d (sections 3 and 4: parameters, "
+             "rules IT-1..IT-9, the RPC contract delta)" % revision_interm(lines_it), ""] + strip_blank_edges(d)
+    return "\n".join(body) + "\n"
+
+
+def spec_text_interm(lines_up, lines_it):
+    body = spec_body_interm(lines_up, lines_it)
+    digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    return (
+        "Source: yellowback-upgrade-plan.md revision %d + yellowback-in-term-claims-plan.md revision %d; sha256: %s\n"
+        "Generated by scripts/extract-spec.sh --write-in-term (make spec-in-term) from "
+        "docs/plans/yellowback-upgrade-plan.md sections 10 and 15 and docs/plans/yellowback-in-term-claims-plan.md"
+        " sections 3 and 4 - do not edit this file, edit the plans and rerun; "
+        "verify with: sed '1,/^---$/d' FILE | sha256sum\n"
+        "---\n" % (revision_upgrade(lines_up), revision_interm(lines_it), digest)
+    ) + body
+
+
+def interm_delta(lines_it):
+    """The in-term plan's 4.1: (rpcversion, {cmd: returns-delta}, {cmd: args})."""
+    start = next((i for i, l in enumerate(lines_it) if l.startswith("### %s " % SECTION_INTERM)), None)
+    if start is None:
+        die("the in-term plan has no '### %s' heading" % SECTION_INTERM)
+    end = next((i for i in range(start + 1, len(lines_it)) if re.match(r"(## |### )", lines_it[i])), len(lines_it))
+    sec = lines_it[start:end]
+    m = re.search(r"rpcversion`?\s*=?\s*(\d+)", sec[0])
+    if not m:
+        die("the in-term plan's %s heading does not state rpcversion" % SECTION_INTERM)
+    deltas, args = {}, {}
+    i = 1
+    while i < len(sec):
+        if sec[i].startswith("```json"):
+            j = i - 1
+            while j >= 0 and not sec[j].strip():
+                j -= 1
+            name = re.search(r"`(yed_[a-z]+)((?: [^`]*)?)`", sec[j]) if j >= 1 else None
+            k = i + 1
+            while k < len(sec) and not sec[k].startswith("```"):
+                k += 1
+            if not name:
+                die("in-term plan %s: a json block names no yed_* command" % SECTION_INTERM)
+            try:
+                deltas[name.group(1)] = json.loads("\n".join(sec[i + 1:k]))
+            except ValueError as e:
+                die("in-term plan %s: bad JSON for %s: %s" % (SECTION_INTERM, name.group(1), e))
+            if sec[j].startswith("#") and name.group(2).strip():   # a heading that states args (a bare name states none)
+                args[name.group(1)] = name.group(2).strip()
+            i = k
+        i += 1
+    if not deltas:
+        die("the in-term plan's %s has no json blocks" % SECTION_INTERM)
+    return int(m.group(1)), deltas, args
+
+
+def merge_delta(base, delta, path, missing):
+    """Deep-merge delta into base (a copy); record every path of delta that base lacks."""
+    if isinstance(delta, dict):
+        if not isinstance(base, dict):
+            missing.append(path + " (not an object in the doc)")
+            return delta
+        out = dict(base)
+        for k, v in delta.items():
+            if k not in base:
+                missing.append("%s.%s" % (path, k))
+                out[k] = v
+            else:
+                out[k] = merge_delta(base[k], v, "%s.%s" % (path, k), missing)
+        return out
+    if isinstance(delta, list) and len(delta) == 1 and isinstance(delta[0], dict):
+        if not (isinstance(base, list) and len(base) == 1 and isinstance(base[0], dict)):
+            missing.append(path + " (not a row list in the doc)")
+            return delta
+        return [merge_delta(base[0], delta[0], path + "[]", missing)]
+    return delta
+
+
+def contract_text_interm(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
+    """The in-term line: the upgrade-line contract of the doc with the in-term plan's 4.1 delta applied."""
+    lines_it = read_plan_interm()
+    ver, deltas, args = interm_delta(lines_it)
+    doc_ver = rpcdoc_version(rpcdoc_path)
+    if doc_ver != ver:
+        die("%s states rpcversion %s; the in-term plan's %s states %d" % (rpcdoc_path, doc_ver, SECTION_INTERM, ver))
+    doc = json.loads(contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel))
+    missing = []
+    for name in sorted(deltas):
+        if name not in doc:
+            missing.append(name)
+            continue
+        if name in args and args[name] != doc[name]["args"]:
+            die("%s: %s args %r, the in-term plan's %s says %r" % (rpcdoc_path, name, doc[name]["args"], SECTION_INTERM, args[name]))
+        doc[name]["returns"] = merge_delta(doc[name]["returns"], deltas[name], name, missing)
+    if missing:
+        die("%s lags the in-term plan's %s; missing: %s" % (rpcdoc_path, SECTION_INTERM, ", ".join(missing)))
+    doc["rpcversion"] = ver
+    doc["source"].update({"planInTerm": os.path.relpath(PLAN_INTERM, ROOT), "revisionInTerm": revision_interm(lines_it),
+                          "sectionInTerm": SECTION_INTERM})
+    return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+INTERM_TREES = {   # env override -> default tree (relative to the workspace), None = only when set
+    "EXTRACT_SPEC_NODE_DIR": os.path.join("wt", "it-dd"),
+    "EXTRACT_SPEC_NODE6_DIR": None,
+    "EXTRACT_SPEC_WALLET_DIR": None,
+    "EXTRACT_SPEC_LWD_DIR": None,
+}
+
+
+def check_interm(lines, lines_v3, write=False):
+    """`--check-in-term` / `--write-in-term`: the in-term line's copies in the trees named (see THE IN-TERM LINE)."""
+    d = {k: os.environ.get(k) or (os.path.join(ROOT, v) if v else None) for k, v in INTERM_TREES.items()}
+    node, node6, wallet, lwd = (d[k] for k in INTERM_TREES)
+    rel = lambda p: os.path.relpath(p, ROOT)
+    spec = spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
+    checks, skipped = [], []
+
+    def node_line(tree):
+        doc = os.path.join(tree, "doc", "yellowback-rpc.md")
+        if not os.path.isdir(tree):
+            skipped.append("%s (no such tree)" % rel(tree))
+            return None
+        if doc_line(doc) != "interm":
+            skipped.append("%s (its rpc doc is rpcversion %s, not the in-term line)" % (rel(tree), rpcdoc_version(doc)))
+            return None
+        return doc
+
+    doc = node_line(node) if node else None
+    if doc is not None:
+        text = contract_text(lines, lines_v3, doc, RPCDOC_REL)
+        checks += [(os.path.join(node, "doc", "yellowback-spec.md"), spec),
+                   (os.path.join(node, "doc", "yellowback-rpc-contract.json"), text)]
+        for tree, sub in ((wallet, ("docs", "yellowback-rpc-contract.json")),
+                          (lwd, ("testdata", "yellowback", "contract.json"))):
+            if tree is None:
+                continue
+            if os.path.isdir(tree):
+                checks.append((os.path.join(tree, *sub), text))
+            else:
+                skipped.append("%s (no such tree)" % rel(tree))
+    if node6:
+        doc6 = node_line(node6)
+        if doc6 is not None:
+            checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
+                       (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
+                        contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
+    if write:
+        for s_ in skipped:
+            print("spec-in-term: skipped %s" % s_)
+        for path, text in checks:
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(text)
+            print("wrote %s" % rel(path))
+        if not checks:
+            print("spec-in-term: no in-term tree found; nothing written")
+        return 0
+    stale = []
+    for path, text in checks:
+        ok = compare(path, text)
+        if not ok:
+            stale.append(rel(path) + (" (missing)" if ok is None else ""))
+    for s_ in skipped:
+        print("spec-check-in-term: skipped %s" % s_)
+    if stale:
+        print("spec-check-in-term: STALE — regenerate with the same EXTRACT_SPEC_*_DIR and `scripts/extract-spec.sh --write-in-term`:\n  "
+              + "\n  ".join(stale))
+        return 1
+    if not checks:
+        print("spec-check-in-term: no in-term tree found; nothing checked")
+        return 0
+    print("spec-check-in-term: %d in-term copies match (%s)" % (len(checks), ", ".join(rel(p) for p, _ in checks)))
+    return 0
 
 
 # ── main ───────────────────────────────────────────────────────────────────────────────────
@@ -677,12 +951,14 @@ def check_upgrade(lines, lines_v3, write=False):
 
 def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
-    if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade", "--write-upgrade"):
-        die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade|--write-upgrade]")
+    if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade", "--write-upgrade", "--check-in-term", "--write-in-term"):
+        die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade|--write-upgrade|--check-in-term|--write-in-term]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
     if mode in ("--check-upgrade", "--write-upgrade"):
         return check_upgrade(lines, lines_v3, write=mode == "--write-upgrade")
+    if mode in ("--check-in-term", "--write-in-term"):
+        return check_interm(lines, lines_v3, write=mode == "--write-in-term")
     # Each node tree gets the spec of the line it is on (its rpc doc's rpcversion: >= 5 = the vault upgrade),
     # as its contract copies already do; docs/spec in this repo is always the harden line's.
     spec_h = spec_text(lines, lines_v3)
@@ -693,7 +969,10 @@ def main(argv):
         tree = os.path.dirname(os.path.dirname(path))
         if os.path.relpath(path, ROOT).startswith("docs" + os.sep):
             return spec_h
-        if doc_line(os.path.join(tree, "doc", "yellowback-rpc.md")) != "upgrade":
+        line = doc_line(os.path.join(tree, "doc", "yellowback-rpc.md"))
+        if line == "interm":
+            return spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
+        if line != "upgrade":
             return spec_h
         if spec_u is None:
             spec_u = spec_text_upgrade(read_plan(PLAN_UPGRADE))

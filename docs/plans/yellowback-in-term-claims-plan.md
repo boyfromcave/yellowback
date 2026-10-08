@@ -141,6 +141,83 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   show each vault's claimable price and warn as it approaches; the calibration's expectation that 19–50 % of vaults
   are claimed in term in a year like the last is stated in the disclosure, not hidden.
 
+### 4.1 RPC contract delta (`rpcversion` 6)
+
+The in-term line's RPC contract is the upgrade line's (upgrade plan §15.10: generated from the node's
+`doc/yellowback-rpc.md`, its `### `yed_*`` headings and ```json blocks) with the deltas below, which are
+IT-7 and IT-9 as a client sees them. `make spec-in-term` (`scripts/extract-spec.sh --write-in-term`) reads
+this section the way it reads the node's document: each ```json block belongs to the `yed_*` command named in
+backticks on the nearest non-blank line above it, and the heading's text after the name is that command's
+arguments. A block is merged into the command's `returns` (objects key by key, a one-element row array into
+its row, any other value replaced); a command new on this line (`yed_estimateredeem`) is given whole. The
+generator refuses when the node's document lacks a field or command named here, gives a command other arguments
+than a heading here states, or states another `rpcversion`, so this
+section and the document cannot drift. The upgrade line's own contract (`make spec-upgrade`, `rpcversion` 5)
+is untouched by it. Removed fields: none. Changed meanings: `yed_listclaimable` lists every ACTIVE vault whose
+claim branch is open (in term too), `claimable: false` for one above θ, whose `underwaterAt` is the price at
+which it becomes claimable (the shape change behind the bump); `vault-locked` and `claim-not-yet` no longer
+refuse an in-term redeem or claim of a vault minted under IT-1.
+
+#### `yed_getinfo`
+
+```json
+{
+  "rpcversion": 6,
+  "params": {
+    "classes": [ { "earlyRedeemFeeBps": 500 } ],
+    "earlyRedeemFeeBps": [ 500, 250, 100 ],
+    "claimThresholdBps": 12500,
+    "sigmaMultMaxBps": 10000,
+    "inTermClaims": true
+  }
+}
+```
+
+#### `yed_listclaimable`
+
+```json
+[ { "claimable": true, "lockHeight": 377 } ]
+```
+
+#### `yed_redeem`
+
+```json
+{ "earlyRedeemFeeZat": 12594458450 }
+```
+
+#### `yed_claim`
+
+```json
+{ "earlyRedeemFeeZat": 0 }
+```
+
+#### `yed_listpositions`
+
+```json
+[ { "earlyRedeemFeeZat": 0 } ]
+```
+
+#### `yed_estimateredeem <vaultTxid>`
+
+```json
+{
+  "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0",
+  "status": "ACTIVE",
+  "termClass": "A",
+  "lockHeight": 377,
+  "height": 360,
+  "early": true,
+  "burnedCents": 100000,
+  "collateralZat": 251889169000,
+  "feeZat": 13224181372,
+  "earlyRedeemFeeBps": 500,
+  "earlyRedeemFeeZat": 12594458450,
+  "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+  "canRedeem": true,
+  "error": ""
+}
+```
+
 ## 5. Four-part check and tier
 
 > DigiByte liquidates DigiDollar vaults when collateral falls under the threshold at any time
