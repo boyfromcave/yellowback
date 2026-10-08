@@ -23,6 +23,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [~] `it/devnet` | [ ] |
 | T4 clients: YecWallet, YEW, lightwalletd, chain-viz (threshold warning, "claimable now", disclosure text) | [ ] | — |
 | T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [~] `calib/in-term` | — |
+| T6 CI (owner, 2026-10-07; staged, starts when T1 lands): `yellowback_interm.py` in the push-tier lists and shard weights; audit rule-tag list gains the IT-* tags; contract gate at the new rpcversion with `inTermClaims`; cross-line vector identity (so ycash6's push waits for its port); release-heights guard; actionlint/zizmor clean; push `upgrade/vault-in-term` on both lines and read the runs green | [ ] | [ ] |
 | Both lines: `vault_vectors.json`, `yellowback_golden.json`, model byte-identical; all suites green; CI green | [ ] | [ ] |
 
 ### Log
