@@ -57,15 +57,15 @@ after θ instead of the whole term. The calibration measured the required ratio 
 | D-IT-8 | Soft supply cap | **kept** |
 | D-IT-9 | Term classes | A, B, C re-enabled (hardening H-5 reversed), with term bounds per §3 |
 
-Proposed by the plan, **for the owner to confirm** (D-IT-10 confirmed in revised form; the rest applied as defaults until then):
+All proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
 
 | # | Proposal | Value and reason |
 |---|---|---|
 | D-IT-10 | Term bounds | **A 30–90 d (unchanged), B 91–180 d, C 181–365 d** — owner (2026-10-07): the first proposal (7–30 / 31–60 / 61–90 d) was "too short"; the in-term rule lets the product extend upward instead, since the ratio covers the cancel window, not the term. Regtest: A 48–96, B 97–144, C 145–240 blocks (already so) |
 | D-IT-11 | `globalRatioHaltBps` | **200 %** (today 300 %) — **confirmed by the owner 2026-10-07**. The halt sits below every class's base ratio (§1.4 invariant); classes start at 300 % |
 | D-IT-12 | `recapRatioBps` | **500 %** (today 600 %) — **confirmed by the owner 2026-10-07**: the recap floor equals class C's base; A and B fail it by construction, C meets it exactly |
-| D-IT-13 | Cancel delay (`claimDelay`) | **12 hours (576 blocks)** — coordinator's recommendation after T5 (24 h → 3.2 % bad debt on the worst year, 12 h → 2.1 %, 6 h → 1.2 %); the window is the attestors' time to cancel a wrong-price claim and the claimant's exposure, not the owner's protection (that is the threshold plus the wallet warning, and redeem during the window still saves the vault). Regtest 10 blocks. **Awaiting the owner's word**; applied as the default |
-| D-IT-14 | System ratio during a claim's cancel window | the vault is counted as it is: its debt left supply at the claim (burned), its collateral is still present until release — the accurate reading; the effect is a few vaults for hours against the whole system. Recommended as is; **awaiting the owner's word** |
+| D-IT-13 | Cancel delay (`claimDelay`) | **12 hours (576 blocks)** — coordinator's recommendation after T5 (24 h → 3.2 % bad debt on the worst year, 12 h → 2.1 %, 6 h → 1.2 %); the window is the attestors' time to cancel a wrong-price claim and the claimant's exposure, not the owner's protection (that is the threshold plus the wallet warning, and redeem during the window still saves the vault). Regtest 10 blocks. **Decided by the owner 2026-10-07: 12 hours.** |
+| D-IT-14 | System ratio during a claim's cancel window | the vault is counted as it is: its debt left supply at the claim (burned), its collateral is still present until release — the accurate reading; the effect is a few vaults for hours against the whole system. **Decided by the owner 2026-10-07: as proposed.** |
 
 ## 3. The parameter set (mainnet / testnet; regtest in brackets)
 
