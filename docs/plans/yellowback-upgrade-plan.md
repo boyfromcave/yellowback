@@ -991,11 +991,10 @@ integration-tree copies (byte-identical to the hand-edited JSON).
 
 **Owner decisions raised by P4 (open, not blocking the devnet):**
 - **D-U1** A claim to a Sapling (`ys1…`) destination is refused (`bad-address`): an intent commits a transparent
-  recipient script. Recommendation: accept; the claimant shields afterwards.
+  recipient script. **Decided (owner, 2026-10-07): accepted**; the claimant shields afterwards.
 - **D-U2** A node whose Yellowback index is unhealthy halts (`AbortNode`) instead of running unpoliced.
-  Recommendation: accept (it is what consensus requires).
-- **D-U3** A cancelled wrong-price claim forfeits its burn (U-24). Recommendation: accept (it prices a griefing
-  attempt and only over-collateralises the system).
+  **Decided (owner, 2026-10-07): accepted.**
+- **D-U3** A cancelled wrong-price claim forfeits its burn (U-24). **Decided (owner, 2026-10-07): accepted.**
 
 **Found by P4-b (`up-p4b-dd`, 2026-10-06):** (40) the YED module mirrors the set's acts from the block's own
 transactions into its `Attestors[seq]` records (one seq per join; weight = bond × age as in v3), so the Yellowback
@@ -1011,11 +1010,12 @@ contract JSON (cf. (39)); the JSON is edited to the generator's shape by hand un
 
 **Owner decisions raised by P4-b (open, not blocking the devnet):**
 - **D-U4** An attestor's price key, bond key and fee key are now **one key** (the set keys the bond by the member
-  key, and heartbeats need it online), so the bond can no longer be held cold. Recommendation: accept for this
-  round; a later act could let a member name a separate hot key (one more field in `SET_JOIN`), recorded as given up.
-- **D-U5** Signing prices is not a set act (U-19), so attestors must heartbeat on chain to stay live: mainnet's
-  attestor-set `livenessWindow` must be well above the agent's `heartbeat_blocks` (devnet: 1,000 vs 100; framework:
-  100,000). Recommendation: `livenessWindow` 4 × `heartbeat_blocks`, set in P8 with O-13.
+  key, and heartbeats need it online), so the bond can no longer be held cold. **Decided (owner, 2026-10-07): accepted
+  for this round**; a later `SET_JOIN` field may name a separate hot key — recorded as given up.
+- **D-U5** Signing prices is not a set act (U-19), so attestors must heartbeat on chain to stay live. **Decided (owner,
+  2026-10-07): mainnet attestor-set `livenessWindow` = 2 days = 2 × the agent's daily `heartbeat_blocks` (2,304 blocks)**:
+  dormancy after two missed daily heartbeats; set in P8 with O-13 (the recommendation was 4 days; the owner chose the
+  tighter window).
 
 **Found by the P6 clients (2026-10-06):** (45) the node no longer lists `yellowback` in `getexperimentalfeatures`
 (P4-a), so clients probe `yed_getinfo` directly (−32601 = no Yellowback); (46) `set_getinfo.memberlist[].wallet`
