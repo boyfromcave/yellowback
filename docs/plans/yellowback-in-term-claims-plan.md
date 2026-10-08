@@ -15,18 +15,18 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Item | ycash-dd | ycash6 |
 |---|---|---|
 | T0 plan, decisions, parameters settled (§2, §3) | [x] | [x] |
-| T1 consensus: `appHeight` = mint height; RED-4 in-term clause; CLAIMING vaults in the halt ratio | [ ] | [ ] |
-| T1 parameters: classes A/B/C re-enabled at 300/400/500 %; θ 125 %; σ multiplier pinned at 1; halt/recap/cap per §3 | [ ] | [ ] |
-| T1 Python model parity, golden vector regenerated once, SERIALISATION.md | [ ] | [ ] |
-| T1 unit tests (`in_term_*`), `yellowback_inteterm.py` functional suite, CI lists | [ ] | [ ] |
+| T1 consensus: `appHeight` = mint height; RED-4 in-term clause; CLAIMING vaults in the halt ratio | [~] `it/core` | [ ] after dd |
+| T1 parameters: classes A/B/C re-enabled at 300/400/500 %; θ 125 %; σ multiplier pinned at 1; halt/recap/cap per §3 | [~] `it/core` | [ ] |
+| T1 Python model parity, golden vector regenerated once, SERIALISATION.md | [~] `it/core` | [ ] |
+| T1 unit tests (`in_term_*`), `yellowback_interm.py` functional suite, CI lists | [~] `it/core` | [ ] |
 | T2 RPC + wallet: `yed_listclaimable` in-term, `yed_claim` in-term, `yed_getinfo` params, contract regenerated (`rpcversion` 6) | [ ] | [ ] |
-| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [ ] | [ ] |
+| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [~] `it/devnet` | [ ] |
 | T4 clients: YecWallet, YEW, lightwalletd, chain-viz (threshold warning, "claimable now", disclosure text) | [ ] | — |
-| T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [ ] | — |
+| T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [~] `calib/in-term` | — |
 | Both lines: `vault_vectors.json`, `yellowback_golden.json`, model byte-identical; all suites green; CI green | [ ] | [ ] |
 
 ### Log
-- 2026-10-07: revision 1; branches cut (ycash-dd `upgrade/vault-in-term` from `7eb414f00`, ycash6 from `158c7d1d1`); wave 1 dispatched.
+- 2026-10-07: revision 1; branches cut (ycash-dd `upgrade/vault-in-term` from `7eb414f00`, ycash6 from `158c7d1d1`); wave 1 dispatched: `it-core-dd` (T1), `it-calib` (T5), `it-devnet` (T3). T2, the ycash6 port and T4 follow T1.
 
 ## 1. What changes, in one paragraph
 
