@@ -20,7 +20,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | T1 Python model parity, golden vector regenerated once, SERIALISATION.md | [~] `it/core` | [ ] |
 | T1 unit tests (`in_term_*`), `yellowback_interm.py` functional suite, CI lists | [~] `it/core` | [ ] |
 | T2 RPC + wallet: `yed_listclaimable` in-term, `yed_claim` in-term, `yed_getinfo` params, contract regenerated (`rpcversion` 6) | [ ] | [ ] |
-| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [~] `it/devnet` | [ ] |
+| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [~] `it/devnet` done (walk + roles green on a merged it/core build); merge after T1 | [ ] |
 | T4 clients: YecWallet, YEW, lightwalletd, chain-viz (threshold warning, "claimable now", disclosure text) | [ ] | — |
 | T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [~] `calib/in-term` | — |
 | T6 CI (owner, 2026-10-07; staged, starts when T1 lands): `yellowback_interm.py` in the push-tier lists and shard weights; audit rule-tag list gains the IT-* tags; contract gate at the new rpcversion with `inTermClaims`; cross-line vector identity (so ycash6's push waits for its port); release-heights guard; actionlint/zizmor clean; push `upgrade/vault-in-term` on both lines and read the runs green | [ ] | [ ] |
@@ -58,7 +58,15 @@ after θ instead of the whole term. The calibration measured the required ratio 
 | D-IT-8 | Soft supply cap | **kept** |
 | D-IT-9 | Term classes | A, B, C re-enabled (hardening H-5 reversed), with term bounds per §3 |
 
-All proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
+Decided after T3's findings (owner, 2026-10-07):
+
+| # | Decision | Value |
+|---|---|---|
+| D-IT-15 | Owner redeem in term | **yes, absolutely**: the V template's `ownerHeight = refHeight + 1` (as `appHeight`); the owner pays the full debt and takes the collateral at any height. T3 found the owner path was still locked until `lockHeight`, so an in-term claim could close a vault its owner could not redeem |
+| D-IT-16 | Early-redeem fee (so a term still means something) | **proposed, awaiting the owner:** 100 bps (1 %) of the collateral when redeeming before `lockHeight`, paid through the existing FEE-1 / AFEE-1 split (miner of the block and the attestor set) — no new payee or accrual mechanism. Anchors: ≈ 7× the normal 15 bps redeem fee, ≈ one tenth of the cost of being claimed (the claimant's 25 % margin), so redeeming always beats being claimed. A time-decaying fee is fairer but needs a per-vault consensus computation; not for the first release. The 500 % class-C ratio, not the fee, is the real deterrent to using a long vault as a short loan |
+| D-IT-17 | Disclosure of the claim payout | mechanics unchanged; the promise says plainly that at the threshold the owner usually receives nothing back (T3: a clause-(a) claim has residual 0 because collateral is already below θ × debt) |
+
+All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
 
 | # | Proposal | Value and reason |
 |---|---|---|
@@ -84,13 +92,14 @@ All proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
 | `claimDelay` | 1,152 | **576** (12 h; D-IT-13) [10] |
 | `grace` | 34,560 | 34,560 (kept: still bounds the owner's post-term window and `claimHeight` fields) |
 | `appHeight` (template) | `lockHeight + grace` | **`refHeight + 1`** (the mint's own height: the branch is open from the first block after the mint; RED-4 governs) |
+| `ownerHeight` (template) | `lockHeight` | **`refHeight + 1`** (D-IT-15: the owner may redeem at any height) |
 
 The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" holds (200 % < 300 %); W16's
 "recap = 2 × halt" is replaced by D-IT-12 (recap = class C's base) and recorded as given up.
 
 ## 4. Rules (the delta on the upgrade plan §15.10 / v3 RED and MINT rules)
 
-- **IT-1 (template).** A MINT's V has `appHeight = refHeight + 1`. `YedVaultScript(P, owner, lock, ref)` gains
+- **IT-1 (template).** A MINT's V has `appHeight = refHeight + 1` and (D-IT-15) `ownerHeight = refHeight + 1`. `YedVaultScript(P, owner, lock, ref)` gains
   the ref argument; MINT-3's expected-script check uses it. Python `yed_vault_script` likewise. A V with
   `appHeight = lockHeight + GRACE` (pre-plan) is still a valid YED vault for spends (old vaults keep working);
   new mints with it are refused (`bad-mint-vault-script`).
@@ -114,7 +123,8 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   "align the wording with the actual mechanics of the lock"): **"Your YEC is locked for the term you choose. You can
   redeem at any time by paying back the YED you minted. If your collateral falls below 125 % of your debt at the
   attested price, anyone may close your vault by paying your debt; you then receive whatever collateral is worth
-  more than 125 % of the debt. Before that happens, your wallet will warn you, and redeeming stops it."** Wallets
+  more than 125 % of the debt — which, at the threshold, is usually nothing. Before that happens, your wallet will
+  warn you, and redeeming stops it."** (D-IT-17; an early-redeem fee, if adopted under D-IT-16, is named here too.) Wallets
   show each vault's claimable price and warn as it approaches; the calibration's expectation that 19–50 % of vaults
   are claimed in term in a year like the last is stated in the disclosure, not hidden.
 
