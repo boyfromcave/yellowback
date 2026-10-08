@@ -63,7 +63,7 @@ Decided after T3's findings (owner, 2026-10-07):
 | # | Decision | Value |
 |---|---|---|
 | D-IT-15 | Owner redeem in term | **yes, absolutely**: the V template's `ownerHeight = refHeight + 1` (as `appHeight`); the owner pays the full debt and takes the collateral at any height. T3 found the owner path was still locked until `lockHeight`, so an in-term claim could close a vault its owner could not redeem |
-| D-IT-16 | Early-redeem fee (so a term still means something) | **proposed, awaiting the owner:** 100 bps (1 %) of the collateral when redeeming before `lockHeight`, paid through the existing FEE-1 / AFEE-1 split (miner of the block and the attestor set) — no new payee or accrual mechanism. Anchors: ≈ 7× the normal 15 bps redeem fee, ≈ one tenth of the cost of being claimed (the claimant's 25 % margin), so redeeming always beats being claimed. A time-decaying fee is fairer but needs a per-vault consensus computation; not for the first release. The 500 % class-C ratio, not the fee, is the real deterrent to using a long vault as a short loan |
+| D-IT-16 | Early-redeem fee (so a term still means something, and to incentivise the longer term) | **Decided by the owner 2026-10-07: 5 % (class A, short), 2.5 % (class B, medium), 1 % (class C, long)** of the collateral when redeeming before `lockHeight` — `earlyRedeemFeeBps[class]` = 500 / 250 / 100 — paid through the existing FEE-1 / AFEE-1 split (miner of the block and the attestor set); no new payee or accrual mechanism. Note for the wallet warning: for class A the fee (15 % of the debt at a 300 % ratio) approaches the cost of being claimed (up to 25 % of the debt), so redeeming still beats being claimed but narrowly; wide for B and C. T5 re-reads the owner's decision point at these fees |
 | D-IT-17 | Disclosure of the claim payout | mechanics unchanged; the promise says plainly that at the threshold the owner usually receives nothing back (T3: a clause-(a) claim has residual 0 because collateral is already below θ × debt) |
 
 All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
@@ -93,6 +93,7 @@ All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised for
 | `grace` | 34,560 | 34,560 (kept: still bounds the owner's post-term window and `claimHeight` fields) |
 | `appHeight` (template) | `lockHeight + grace` | **`refHeight + 1`** (the mint's own height: the branch is open from the first block after the mint; RED-4 governs) |
 | `ownerHeight` (template) | `lockHeight` | **`refHeight + 1`** (D-IT-15: the owner may redeem at any height) |
+| `earlyRedeemFeeBps[0..2]` | — (new) | **500 / 250 / 100** (D-IT-16; charged on a REDEEM at height < `lockHeight`, on the collateral, via the FEE-1/AFEE-1 split) |
 
 The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" holds (200 % < 300 %); W16's
 "recap = 2 × halt" is replaced by D-IT-12 (recap = class C's base) and recorded as given up.
@@ -116,6 +117,11 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   replaced by the ratio test (it was a proxy for it).
 - **IT-6 (HALT-2).** The system ratio counts ACTIVE and CLAIMING vaults' collateral against outstanding supply;
   a claimed vault's debt leaves supply at the claim block (burn), its collateral at release (D-IT-14).
+- **IT-9 (early-redeem fee, D-IT-16).** A REDEEM at height < `lockHeight` pays `earlyRedeemFeeBps[class]` of the
+  collateral in addition to FEE-1, routed exactly as FEE-1/AFEE-1 route the normal fee (the pool payee and the
+  attestor-fee output); a REDEEM at or after `lockHeight` pays FEE-1 only. The fee is a RED rule (`bad-redeem-early-fee`
+  when the outputs do not carry it); `yed_estimateredeem`/`yed_redeem` quote it; wallets show it beside the claimable
+  price.
 - **IT-7 (wallet/RPC).** `yed_listclaimable` returns in-term rows with `claimable: true/false` and the price at
   which the vault becomes claimable; `yed_claim` works in term; `yed_getinfo.params` carries the new values and
   `inTermClaims: true`; `rpcversion` 6.
