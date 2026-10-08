@@ -15,18 +15,25 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Item | ycash-dd | ycash6 |
 |---|---|---|
 | T0 plan, decisions, parameters settled (§2, §3) | [x] | [x] |
-| T1 consensus: `appHeight` = mint height; RED-4 in-term clause; CLAIMING vaults in the halt ratio | [~] `it/core` | [ ] after dd |
-| T1 parameters: classes A/B/C re-enabled at 300/400/500 %; θ 125 %; σ multiplier pinned at 1; halt/recap/cap per §3 | [~] `it/core` | [ ] |
-| T1 Python model parity, golden vector regenerated once, SERIALISATION.md | [~] `it/core` | [ ] |
-| T1 unit tests (`in_term_*`), `yellowback_interm.py` functional suite, CI lists | [~] `it/core` | [ ] |
-| T2 RPC + wallet: `yed_listclaimable` in-term, `yed_claim` in-term, `yed_getinfo` params, contract regenerated (`rpcversion` 6) | [ ] | [ ] |
-| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [~] `it/devnet` done (walk + roles green on a merged it/core build); merge after T1 | [ ] |
+| T1 consensus: `appHeight` = mint height; RED-4 in-term clause; CLAIMING vaults in the halt ratio | [x] `it/core`, merged `0b5937725` (incl. D-IT-15 ownerHeight = refHeight + 1, IT-9 early fee `965e41ca3`) | [~] `it6/port` |
+| T1 parameters: classes A/B/C re-enabled at 300/400/500 %; θ 125 %; σ multiplier pinned at 1; halt/recap/cap per §3 | [x] `it/core`, merged `0b5937725` (regtest halt kept at 25,000) | [~] `it6/port` |
+| T1 Python model parity, golden vector regenerated once, SERIALISATION.md | [x] `it/core`, merged `0b5937725` (golden SCHEMA_VERSION 8, b848a699…) | [~] `it6/port` (byte-identical required) |
+| T1 unit tests (`in_term_*`), `yellowback_interm.py` functional suite, CI lists | [x] `it/core`, merged `0b5937725` (10 `in_term_*` cases; 27 functional suites green; rpc_contract waits on T2) | [~] `it6/port` |
+| T2 RPC + wallet: `yed_listclaimable` in-term, `yed_claim` in-term, `yed_getinfo` params, contract regenerated (`rpcversion` 6) | [~] `it/rpc` (rpcversion 6, `claimable` flag, in-term spec generator `spec-in-term`, early fee in redeem quote) | [ ] after dd |
+| T3 attest agent + devnet: liquidator persona claims in-term; `upgrade-walk` gains an in-term claim; roles regtest | [x] `it/devnet`, merged `bdfed3228`; walk's owner-redeem assertion follows D-IT-15 in T2 | [~] `it6/port` |
 | T4 clients: YecWallet, YEW, lightwalletd, chain-viz (threshold warning, "claimable now", disclosure text) | [ ] | — |
-| T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [~] `calib/in-term` | — |
+| T5 calibration: `ybcal` G3 models the in-term claim path; P(bad debt) at 300/400/500 % per class re-read | [x] `upgrade/vault-in-term` (yb-calibration) `e3ece4b`: 5 % met everywhere, 2 % on calm windows, 19–50 % claimed in term | — |
 | T6 CI (owner, 2026-10-07; staged, starts when T1 lands): `yellowback_interm.py` in the push-tier lists and shard weights; audit rule-tag list gains the IT-* tags; contract gate at the new rpcversion with `inTermClaims`; cross-line vector identity (so ycash6's push waits for its port); release-heights guard; actionlint/zizmor clean; push `upgrade/vault-in-term` on both lines and read the runs green | [ ] | [ ] |
 | Both lines: `vault_vectors.json`, `yellowback_golden.json`, model byte-identical; all suites green; CI green | [ ] | [ ] |
 
 ### Log
+- 2026-10-08: T1 done and merged into `upgrade/vault-in-term` with T3 (`bdfed3228`). Findings for the record: a
+  claim through the threshold path (a) structurally pays the owner no residual (D-IT-17's wording holds); the
+  emergency path (b) now needs an attestor-to-pool price gap above 19 % (was 4.8 %); the early-redeem fee goes wholly
+  to the pool payee because AFEE-1 gives the owner path no attestor share (and is not due under FEE-0); pre-plan
+  vaults stay spendable at the record level, MINT-3 refuses new pre-plan mints. The in-term promise cannot go into
+  the upgrade plan §10 (it would change the `upgrade/vault` spec), so the in-term line gets its own spec generator
+  (T2). T2 and the ycash6 port started.
 - 2026-10-07: T5 done (`calib/in-term` e3ece4b): plan ratios meet 5 % everywhere, 2 % on calm windows; in-term cuts P(bad) 4–9× and loss given bad to 6–8 % of debt; 19–50 % of vaults claimed in term; cancel delay is the strongest cost lever. Owner confirmed halt 200 % / recap 500 %; delay 12 h recommended.
 - 2026-10-07: revision 1; branches cut (ycash-dd `upgrade/vault-in-term` from `7eb414f00`, ycash6 from `158c7d1d1`); wave 1 dispatched: `it-core-dd` (T1), `it-calib` (T5), `it-devnet` (T3). T2, the ycash6 port and T4 follow T1.
 
