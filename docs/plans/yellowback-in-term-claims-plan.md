@@ -134,10 +134,12 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   `inTermClaims: true`; `rpcversion` 6.
 - **IT-8 (disclosure).** The product promise (upgrade plan §10, replacing its collateral paragraph; owner 2026-10-07,
   "align the wording with the actual mechanics of the lock"): **"Your YEC is locked for the term you choose. You can
-  redeem at any time by paying back the YED you minted. If your collateral falls below 125 % of your debt at the
+  redeem at any time by paying back the YED you minted; redeeming before the term ends also costs an early-redeem
+  fee of 5 %, 2.5 % or 1 % of your collateral for a short, medium or long term. If your collateral falls below
+  125 % of your debt at the
   attested price, anyone may close your vault by paying your debt; you then receive whatever collateral is worth
   more than 125 % of the debt — which, at the threshold, is usually nothing. Before that happens, your wallet will
-  warn you, and redeeming stops it."** (D-IT-17; an early-redeem fee, if adopted under D-IT-16, is named here too.) Wallets
+  warn you, and redeeming stops it."** (D-IT-17; the early-redeem fee per D-IT-16.) Wallets
   show each vault's claimable price and warn as it approaches; the calibration's expectation that 19–50 % of vaults
   are claimed in term in a year like the last is stated in the disclosure, not hidden.
 
