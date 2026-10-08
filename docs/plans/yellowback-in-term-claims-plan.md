@@ -26,6 +26,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Both lines: `vault_vectors.json`, `yellowback_golden.json`, model byte-identical; all suites green; CI green | [ ] | [ ] |
 
 ### Log
+- 2026-10-07: T5 done (`calib/in-term` e3ece4b): plan ratios meet 5 % everywhere, 2 % on calm windows; in-term cuts P(bad) 4–9× and loss given bad to 6–8 % of debt; 19–50 % of vaults claimed in term; cancel delay is the strongest cost lever. Owner confirmed halt 200 % / recap 500 %; delay 12 h recommended.
 - 2026-10-07: revision 1; branches cut (ycash-dd `upgrade/vault-in-term` from `7eb414f00`, ycash6 from `158c7d1d1`); wave 1 dispatched: `it-core-dd` (T1), `it-calib` (T5), `it-devnet` (T3). T2, the ycash6 port and T4 follow T1.
 
 ## 1. What changes, in one paragraph
@@ -61,10 +62,10 @@ Proposed by the plan, **for the owner to confirm** (D-IT-10 confirmed in revised
 | # | Proposal | Value and reason |
 |---|---|---|
 | D-IT-10 | Term bounds | **A 30–90 d (unchanged), B 91–180 d, C 181–365 d** — owner (2026-10-07): the first proposal (7–30 / 31–60 / 61–90 d) was "too short"; the in-term rule lets the product extend upward instead, since the ratio covers the cancel window, not the term. Regtest: A 48–96, B 97–144, C 145–240 blocks (already so) |
-| D-IT-11 | `globalRatioHaltBps` | **200 %** (today 300 %). The halt must sit below every class's base ratio (§1.4 invariant of the hardening plan) and classes now start at 300 % |
-| D-IT-12 | `recapRatioBps` | **500 %** (today 600 %): "only the 500 % tier recapitalises" means the recap floor equals class C's base; A and B fail it by construction, C meets it exactly |
-| D-IT-13 | Cancel delay (`claimDelay`) | **1 day (1,152 blocks) kept**; it is the window the collateral must now survive, and the calibration's 24 h scenario is this value |
-| D-IT-14 | Halt ratio includes CLAIMING vaults' collateral and debt until release | yes: a claimed vault's debt is burned at the claim, its collateral leaves at release; the system ratio uses post-claim state |
+| D-IT-11 | `globalRatioHaltBps` | **200 %** (today 300 %) — **confirmed by the owner 2026-10-07**. The halt sits below every class's base ratio (§1.4 invariant); classes start at 300 % |
+| D-IT-12 | `recapRatioBps` | **500 %** (today 600 %) — **confirmed by the owner 2026-10-07**: the recap floor equals class C's base; A and B fail it by construction, C meets it exactly |
+| D-IT-13 | Cancel delay (`claimDelay`) | **12 hours (576 blocks)** — coordinator's recommendation after T5 (24 h → 3.2 % bad debt on the worst year, 12 h → 2.1 %, 6 h → 1.2 %); the window is the attestors' time to cancel a wrong-price claim and the claimant's exposure, not the owner's protection (that is the threshold plus the wallet warning, and redeem during the window still saves the vault). Regtest 10 blocks. **Awaiting the owner's word**; applied as the default |
+| D-IT-14 | System ratio during a claim's cancel window | the vault is counted as it is: its debt left supply at the claim (burned), its collateral is still present until release — the accurate reading; the effect is a few vaults for hours against the whole system. Recommended as is; **awaiting the owner's word** |
 
 ## 3. The parameter set (mainnet / testnet; regtest in brackets)
 
@@ -79,7 +80,7 @@ Proposed by the plan, **for the owner to confirm** (D-IT-10 confirmed in revised
 | `globalRatioHaltBps` | 30,000 | **20,000** (D-IT-11) |
 | `recapRatioBps` | 60,000 | **50,000** (D-IT-12) |
 | `supplyCapBps` | 1,500 | 1,500 (kept) |
-| `claimDelay` | 1,152 | 1,152 (kept) |
+| `claimDelay` | 1,152 | **576** (12 h; D-IT-13) [10] |
 | `grace` | 34,560 | 34,560 (kept: still bounds the owner's post-term window and `claimHeight` fields) |
 | `appHeight` (template) | `lockHeight + grace` | **`refHeight + 1`** (the mint's own height: the branch is open from the first block after the mint; RED-4 governs) |
 
@@ -108,10 +109,13 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
 - **IT-7 (wallet/RPC).** `yed_listclaimable` returns in-term rows with `claimable: true/false` and the price at
   which the vault becomes claimable; `yed_claim` works in term; `yed_getinfo.params` carries the new values and
   `inTermClaims: true`; `rpcversion` 6.
-- **IT-8 (disclosure).** The trust statement (upgrade plan §10) gains: "A vault whose collateral falls below 125 %
-  of its debt at the attested price may be closed by anyone at once, by paying its debt; the owner receives any
-  collateral above 125 % of the debt. Redeem before that point to avoid it." Wallets show the claimable price
-  per vault.
+- **IT-8 (disclosure).** The product promise (upgrade plan §10, replacing its collateral paragraph; owner 2026-10-07,
+  "align the wording with the actual mechanics of the lock"): **"Your YEC is locked for the term you choose. You can
+  redeem at any time by paying back the YED you minted. If your collateral falls below 125 % of your debt at the
+  attested price, anyone may close your vault by paying your debt; you then receive whatever collateral is worth
+  more than 125 % of the debt. Before that happens, your wallet will warn you, and redeeming stops it."** Wallets
+  show each vault's claimable price and warn as it approaches; the calibration's expectation that 19–50 % of vaults
+  are claimed in term in a year like the last is stated in the disclosure, not hidden.
 
 ## 5. Four-part check and tier
 
