@@ -56,11 +56,11 @@ after θ instead of the whole term. The calibration measured the required ratio 
 | D-IT-8 | Soft supply cap | **kept** |
 | D-IT-9 | Term classes | A, B, C re-enabled (hardening H-5 reversed), with term bounds per §3 |
 
-Proposed by the plan, **for the owner to confirm** (defaults applied until then, flagged in `yed_getinfo`):
+Proposed by the plan, **for the owner to confirm** (D-IT-10 confirmed in revised form; the rest applied as defaults until then):
 
 | # | Proposal | Value and reason |
 |---|---|---|
-| D-IT-10 | Term bounds | A 7–30 d, B 31–60 d, C 61–90 d (class A today is 30–90 d; the in-term rule makes short terms cheap, and the ZEC study ranked term length a first-order lever). Regtest: A 48–96, B 97–144, C 145–240 blocks (already so) |
+| D-IT-10 | Term bounds | **A 30–90 d (unchanged), B 91–180 d, C 181–365 d** — owner (2026-10-07): the first proposal (7–30 / 31–60 / 61–90 d) was "too short"; the in-term rule lets the product extend upward instead, since the ratio covers the cancel window, not the term. Regtest: A 48–96, B 97–144, C 145–240 blocks (already so) |
 | D-IT-11 | `globalRatioHaltBps` | **200 %** (today 300 %). The halt must sit below every class's base ratio (§1.4 invariant of the hardening plan) and classes now start at 300 % |
 | D-IT-12 | `recapRatioBps` | **500 %** (today 600 %): "only the 500 % tier recapitalises" means the recap floor equals class C's base; A and B fail it by construction, C meets it exactly |
 | D-IT-13 | Cancel delay (`claimDelay`) | **1 day (1,152 blocks) kept**; it is the window the collateral must now survive, and the calibration's 24 h scenario is this value |
@@ -70,9 +70,9 @@ Proposed by the plan, **for the owner to confirm** (defaults applied until then,
 
 | Parameter | Today (upgrade line) | This plan |
 |---|---|---|
-| `classMin/Max[0]` (A) | 34,560–103,680 (30–90 d) | 8,064–34,560 (7–30 d) [48–96] |
-| `classMin/Max[1]` (B) | disabled | 34,561–69,120 (31–60 d) [97–144] |
-| `classMin/Max[2]` (C) | disabled | 69,121–103,680 (61–90 d) [145–240] |
+| `classMin/Max[0]` (A) | 34,560–103,680 (30–90 d) | 34,560–103,680 (30–90 d, unchanged) [48–96] |
+| `classMin/Max[1]` (B) | disabled | 103,681–207,360 (91–180 d) [97–144] |
+| `classMin/Max[2]` (C) | disabled | 207,361–420,480 (181–365 d) [145–240] |
 | `baseRatioBps[0..2]` | 50,000 / 40,000 / 30,000 | **30,000 / 40,000 / 50,000** |
 | `claimThresholdBps` | 11,000 | **12,500** |
 | `sigmaRefBps` / `sigmaMultMaxBps` | 10,000 / 30,000 | **0 / 10,000** (multiplier 1) |
