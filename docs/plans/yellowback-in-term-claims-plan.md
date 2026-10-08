@@ -135,7 +135,16 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
 3. Claimants need YED in reserve and depth to sell the YEC they receive; the 25 % margin is also their slippage budget. T5 cannot model claimant supply; the devnet liquidator persona demonstrates the mechanics only.
 4. W16's recap = 2 × halt rule is replaced (D-IT-12); H-10's class-A-only cap gate is replaced by the ratio test (IT-5); H-5 (classes B/C off) is reversed (D-IT-9).
 
-## 7. Sequencing
+## 7. Branches in every repo (owner, 2026-10-07)
+
+Any repository that changes for in-term claims carries that work on **`upgrade/vault-in-term`, cut from its own
+`upgrade/vault`** — the same branch name as the node lines, so the whole feature is one branch name across the
+workspace: ycash-dd and ycash6 (cut), then as each is touched: lightwalletd-dd, yecwallet-dd, yew, chain-viz,
+x402-ycash, yolo, and yb-calibration (whose in-term calibration moves from `calib/in-term` onto
+`upgrade/vault-in-term` cut from its `harden/yellowback`, since yb-calibration has no `upgrade/vault`). A repo that
+needs no change gets no branch. Agents branch `it/<name>` off `upgrade/vault-in-term` in each repo.
+
+## 8. Sequencing
 
 T1 (consensus + parameters + model + tests) on ycash-dd first, then ported to ycash6 with the vectors byte-identical;
 T2 and T3 in parallel once T1 is on the integration tree; T4 after T2's contract; T5 in parallel from T0 (ybcal
