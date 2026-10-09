@@ -213,16 +213,22 @@ comes, is a separate program that reads what `lightwalletd` already stores.
 
 ## 4. Risks and open decisions for the owner
 
-| # | Decision | Recommendation |
-|---|---|---|
-| I-1 | Custodial or non-custodial web wallet | non-custodial (§0.2) |
-| I-2 | Web shell inside `yew/` or a new repo | inside `yew/` as `web/`; one core, one CI |
-| I-3 | Step one transparent-only on the web, Sapling second | yes; mirrors YEW's own W-then-S history |
-| I-4 | Browser storage: IndexedDB trait vs sqlite-wasm | IndexedDB trait for step one; decide Sapling store with WebZjs as the reference |
-| I-5 | Deployment repo name and home | new repo `ycash-infra` (name open), `upgrade/vault` default like the other clients |
-| I-6 | Gateway: Envoy Gateway vs nginx ingress vs Istio | Envoy Gateway (Gateway API, gRPC-web native, same on kind and EKS) |
-| I-7 | Index now or after measurement | after measurement; the cache first (§3.3) |
-| I-8 | Where `lite.ycash.xyz` goes | onto this chart once the kind suite is green; S0-4 closes with it |
+**Decided by the owner on 2026-10-08** (the same day), which promoted this idea into two plans:
+`ycash-infra/docs/plans/ycash-infra-plan.md` and `yew/docs/plans/yew-web-plan.md` (branch `up/web`).
+
+| # | Decision | Recommendation | **Owner's answer** |
+|---|---|---|---|
+| I-1 | Custodial or non-custodial web wallet | non-custodial (§0.2) | **non-custodial** |
+| I-2 | Web shell inside `yew/` or a new repo | inside `yew/` as `web/`; one core, one CI | **`yew/web`, worktree off `upgrade/vault` (after in-term merges)** |
+| I-3 | Step one transparent-only on the web, Sapling second | yes; mirrors YEW's own W-then-S history | **Sapling from day one** (recommendation not taken) |
+| I-4 | Browser storage: IndexedDB trait vs sqlite-wasm | IndexedDB trait for step one; decide Sapling store with WebZjs as the reference | **sqlite-wasm over OPFS** (recommendation not taken) |
+| I-5 | Deployment repo name and home | new repo `ycash-infra` (name open), `upgrade/vault` default like the other clients | **`ycash-infra`, `upgrade/vault`** |
+| I-6 | Gateway: Envoy Gateway vs nginx ingress vs Istio | Envoy Gateway (Gateway API, gRPC-web native, same on kind and EKS) | **Envoy Gateway** |
+| I-7 | Index now or after measurement | after measurement; the cache first (§3.3) | **build the index now** (recommendation not taken) |
+| I-8 | Where `lite.ycash.xyz` goes | onto this chart once the kind suite is green; S0-4 closes with it | **not yet** |
+
+Also decided: official Docker images for both node lines, in the node repos
+(`contrib/docker/ycashd/`), built and tested locally before any push.
 
 Risks: WASM proving time on low-end laptops (mitigated by step one needing none); browser
 storage eviction (IndexedDB is a cache, the seed backup is the user's); the gRPC-web streaming
