@@ -54,6 +54,7 @@ Each component is its own git repository, cloned into this workspace.
 | **Agent payments** | `x402-ycash/` | x402 (HTTP 402) pay-per-request payments in YEC and YED for software agents | [plan](docs/plans/x402-agent-payments-plan.md) |
 | **Parameter calibration** | `yb-calibration/` | derives and checks the constants each release builds into the node | `yb-calibration/docs/PLAN.md` |
 | **Bridge contracts** | `wyec/` | the wYEC token and bridge contracts on Ethereum (drafts: not audited, not deployed) | [plan](docs/plans/yellowback-upgrade-plan.md) |
+| **Bridge attestor** | `hawkeye/` | Hawkeye, the sidecar each wYEC bridge attestor runs: turns Ycash vault locks into wYEC mints and Ethereum burns into YEC releases, and challenges what it cannot match | [plan](hawkeye/docs/hawkeye-bridge-plan.md) |
 
 ### How they fit together
 
@@ -132,7 +133,7 @@ make spec-check     # fail if a generated copy is stale
 | Light-client server | `lightwalletd-dd/docs/yellowback.md` (Go) |
 | Mobile wallet | `yew/README.md` (Flutter + Rust) |
 | Pool | `yolo/README.md` (`cargo build --release`) |
-| Others | `chain-viz/README.md`, `x402-ycash/README.md`, `yb-calibration/README.md`, `wyec/README.md` |
+| Others | `chain-viz/README.md`, `x402-ycash/README.md`, `yb-calibration/README.md`, `wyec/README.md`, `hawkeye/README.md` |
 
 ### Try it: the one-laptop test network
 
@@ -199,7 +200,7 @@ yellowback-workspace/
 ├── librustzcash6/   the Rust library ycash6 builds on     (fork of ref/librustzcash6)
 ├── yecwallet-dd/    the desktop wallet                    (fork of ref/yecwallet)
 ├── lightwalletd-dd/ the light-client server               (fork of ref/lightwalletd)
-├── yew/  yolo/  chain-viz/  x402-ycash/  yb-calibration/  wyec/   application repos
+├── yew/  yolo/  chain-viz/  x402-ycash/  yb-calibration/  wyec/  hawkeye/   application repos
 ├── docs/
 │   ├── plans/       one plan per component; README.md indexes them
 │   ├── spec/        the generated Yellowback spec and DigiByte's own design docs
@@ -241,7 +242,7 @@ re-pinning means updating all three.
 | `librustzcash6` | fork of `ref/librustzcash6`; baseline branch `librustzcash6-legacy` | `ec525fae82` |
 | `yecwallet-dd` | fork of `ref/yecwallet`; baseline branch `yecwallet-legacy` | `1eb277d` |
 | `lightwalletd-dd` | fork of `ref/lightwalletd`; baseline branch `lightwalletd-legacy` | `187a26765e` |
-| `yew`, `yolo`, `chain-viz`, `x402-ycash`, `yb-calibration`, `wyec` | application repos, no baseline | — |
+| `yew`, `yolo`, `chain-viz`, `x402-ycash`, `yb-calibration`, `wyec`, `hawkeye` | application repos, no baseline | — |
 
 ---
 

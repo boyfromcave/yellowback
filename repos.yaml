@@ -156,3 +156,9 @@ wyec:
   url: https://github.com/boyfromcave/wyec.git
   branch: main                # net new; the Ethereum side of the vault upgrade's bridge (docs/plans/yellowback-upgrade-plan.md §4.3, P5)
   what: wyec, Wrapped Ycash (wYEC): the ERC-7802 token and guardian-threshold bridge contracts, and the component the bridge's attestors (guardians, relayer) run against; drafts, not audited, not deployed
+
+hawkeye:
+  role: app
+  url: https://github.com/boyfromcave/hawkeye.git
+  branch: upgrade/vault       # the vault network upgrade line (GitHub default); net new, no baseline
+  what: hawkeye, the wYEC bridge attestor sidecar (Rust): watches Ycash vault locks tagged WYEC and Ethereum burns, attests mints, posts delayed-release intents, cancels and slashes what it cannot match; reaches ycashd only through stock + set_*/vault_* RPCs (hawkeye/docs/hawkeye-bridge-plan.md)
