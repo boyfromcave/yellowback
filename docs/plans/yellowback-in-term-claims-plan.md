@@ -27,6 +27,11 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Both lines: `vault_vectors.json`, `yellowback_golden.json`, model byte-identical; all suites green; CI green | [ ] | [ ] |
 
 ### Log
+- 2026-10-09: moved onto `upgrade/vault` (§7). ycash-dd's in-term nightly passed; ycash6's failed in two steps —
+  the plan §4 demonstration (a nightly-only suite still asserting rpcversion 5: an in-term miss) and `make check`'s
+  ycash-gtest abort (pre-existing: it fails the same on `upgrade/vault` and `harden/yellowback` since make check was
+  enabled on 10-08). The owner chose to move before the nightly fix; the fix lands on `upgrade/vault` and
+  `harden/yellowback`.
 - 2026-10-08: T1 done and merged into `upgrade/vault-in-term` with T3 (`bdfed3228`). Findings for the record: a
   claim through the threshold path (a) structurally pays the owner no residual (D-IT-17's wording holds); the
   emergency path (b) now needs an attestor-to-pool price gap above 19 % (was 4.8 %); the early-redeem fee goes wholly
@@ -246,6 +251,12 @@ workspace: ycash-dd and ycash6 (cut), then as each is touched: lightwalletd-dd, 
 x402-ycash, yolo, and yb-calibration (whose in-term calibration moves from `calib/in-term` onto
 `upgrade/vault-in-term` cut from its `harden/yellowback`, since yb-calibration has no `upgrade/vault`). A repo that
 needs no change gets no branch. Agents branch `it/<name>` off `upgrade/vault-in-term` in each repo.
+
+**2026-10-09 (owner): the in-term line became `upgrade/vault`.** After T6, `upgrade/vault` was fast-forwarded to
+`upgrade/vault-in-term` in all six repos (ycash-dd `f24a69183`, ycash6 `b3ae5284a`, lightwalletd `c8346c3`,
+yecwallet-dd `9c331d7`, chain-viz `96e0a5b`, yew `99d9f05`, then yew's regenerated vectors `6eb6712`); the previous
+tips are tagged `upgrade/vault-pre-in-term`. `upgrade/vault-in-term` stays as a record; further work is on
+`upgrade/vault`. `make spec-in-term` / `spec-check-in-term` now default to the main trees.
 
 ## 8. Sequencing
 

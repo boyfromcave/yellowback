@@ -17,6 +17,11 @@ both still apply where this plan does not amend them. Items are numbered **U-\**
 
 ## Execution status (authoritative; update as work lands)
 
+**2026-10-09:** in-term claims (`docs/plans/yellowback-in-term-claims-plan.md`) are on `upgrade/vault` in every repo
+that carries them (fast-forward from `upgrade/vault-in-term`; previous tips tagged `upgrade/vault-pre-in-term`).
+The YED module's parameters and claim rules below are superseded where that plan changes them (θ 125 % at any
+height, classes 300/400/500 %, early-redeem fee, owner redeem in term, rpcversion 6).
+
 **Goal of this round (owner, 2026-10-05):** the primitive in `ycash-dd` and `ycash6`, functional on
 the devnet / regtest, and the Yellowback system running on it (the YED module). P1 (hardening, as
 reshaped by §7) is **in** this round by owner instruction: its node chunks land first on

@@ -47,7 +47,7 @@ spec-check-upgrade: ## Same for the upgrade/vault line's copies only, in the mai
 spec-upgrade: ## Write the upgrade/vault line's copies (spec from the upgrade plan §10 + §15, contract) into the trees spec-check-upgrade checks
 	@scripts/extract-spec.sh --write-upgrade
 
-spec-check-in-term: ## Same for the upgrade/vault-in-term line's copies (default wt/it-dd; EXTRACT_SPEC_NODE6_DIR=wt/it6 etc. add trees)
+spec-check-in-term: ## The in-term line's copies (upgrade/vault since 2026-10-09; default the main trees; EXTRACT_SPEC_*_DIR override)
 	@scripts/extract-spec.sh --check-in-term
 
 spec-in-term: ## Write the in-term line's copies (upgrade plan §10 + §15 with the in-term plan's IT-8 and §3-§4 overlay; contract + its §4.1 delta)

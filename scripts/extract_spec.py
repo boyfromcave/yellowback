@@ -128,9 +128,9 @@ THE IN-TERM LINE  (`upgrade/vault-in-term`, docs/plans/yellowback-in-term-claims
          anything else replaced; the plan wins on values); a command or field the delta names that the doc lacks
          is an error (the doc and the plan cannot drift), as are differing args.  `source` gains
          "planInTerm": "docs/plans/yellowback-in-term-claims-plan.md", "revisionInTerm": M, "sectionInTerm": "4.1".
-  Trees  EXTRACT_SPEC_NODE_DIR (default wt/it-dd, the ycash-dd integration worktree); EXTRACT_SPEC_NODE6_DIR,
-         EXTRACT_SPEC_WALLET_DIR and EXTRACT_SPEC_LWD_DIR only when set (no default: wt/it6 and the client in-term
-         worktrees are written only when named).  A tree that does not exist or is not on the in-term line is
+  Trees  EXTRACT_SPEC_NODE_DIR (default ycash-dd, the main tree on upgrade/vault); EXTRACT_SPEC_NODE6_DIR,
+         EXTRACT_SPEC_WALLET_DIR and EXTRACT_SPEC_LWD_DIR (defaults ycash6, yecwallet-dd, lightwalletd-dd, the
+         main trees).  A tree that does not exist or is not on the in-term line is
          skipped and said so.
 
 WORKTREES
@@ -791,11 +791,12 @@ def contract_text_interm(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
     return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
-INTERM_TREES = {   # env override -> default tree (relative to the workspace), None = only when set
-    "EXTRACT_SPEC_NODE_DIR": os.path.join("wt", "it-dd"),
-    "EXTRACT_SPEC_NODE6_DIR": None,
-    "EXTRACT_SPEC_WALLET_DIR": None,
-    "EXTRACT_SPEC_LWD_DIR": None,
+INTERM_TREES = {   # env override -> default tree (relative to the workspace): the main trees, which carry
+    # upgrade/vault, fast-forwarded to the in-term line on 2026-10-09 (owner); a tree not on it is skipped
+    "EXTRACT_SPEC_NODE_DIR": "ycash-dd",
+    "EXTRACT_SPEC_NODE6_DIR": "ycash6",
+    "EXTRACT_SPEC_WALLET_DIR": "yecwallet-dd",
+    "EXTRACT_SPEC_LWD_DIR": "lightwalletd-dd",
 }
 
 

@@ -12,7 +12,7 @@
 #                                                    and section 15 as doc/yellowback-spec.md, and the upgrade contract
 #                                                    (`make spec-upgrade`; same EXTRACT_SPEC_*_DIR overrides and skips)
 #        scripts/extract-spec.sh --check-in-term     the upgrade/vault-in-term line's copies (`make spec-check-in-term`):
-#                                                    default wt/it-dd only; EXTRACT_SPEC_NODE6_DIR / _WALLET_DIR / _LWD_DIR add trees
+#                                                    default the four main trees (upgrade/vault, in-term since 2026-10-09); EXTRACT_SPEC_*_DIR override
 #        scripts/extract-spec.sh --write-in-term     write them: the upgrade spec with the in-term plan's IT-8 promise and
 #                                                    sections 3-4, the contract with its section 4.1 delta (`make spec-in-term`)
 #

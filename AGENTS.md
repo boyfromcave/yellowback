@@ -119,6 +119,10 @@ lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch o
 `repos.yaml` records it and the main trees check it out (since 2026-10-06), so `make status` and
 `make pull` track it and integration happens in the main trees. Agents work in `wt/<name>` on
 `up/<name>` off `upgrade/vault`; the coordinator merges.
+**In-term claims are on `upgrade/vault`** (owner, 2026-10-09): `upgrade/vault` was fast-forwarded to
+`upgrade/vault-in-term` in ycash-dd, ycash6, lightwalletd-dd, yecwallet-dd, chain-viz and yew
+(`docs/plans/yellowback-in-term-claims-plan.md`). `upgrade/vault-in-term` is kept as a record — never
+commit to it — and the tag `upgrade/vault-pre-in-term` marks each repo's `upgrade/vault` before the move.
 **`harden/yellowback`** — the evidence-based hardening plan's branch
 (`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut 2026-10-05 from each repo's branch
 of record below — is the **no-upgrade fallback**: its fixes merge `harden/yellowback` →
