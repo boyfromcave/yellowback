@@ -32,7 +32,8 @@ check them all.
   claim it. The YEC/USD price comes from mining pools and from **attestors** (members of
   Yellowback's signer set who sign prices).
 - **wYEC (wrapped YEC)**: YEC represented as a token on Ethereum, backed 1:1 by YEC locked in Ycash
-  vaults; a signer set releases the YEC when wYEC is burned. Ycash never reads Ethereum.
+  vaults; a signer set releases the YEC when wYEC is burned. Each member of that set runs
+  **Hawkeye**, which watches both chains. Ycash never reads Ethereum.
 - **Network upgrade (hard fork)**: every node must upgrade before the activation height; a node
   that does not stops following the chain.
 
@@ -66,9 +67,9 @@ Each component is its own git repository, cloned into this workspace.
                                  | RPC
      +-------------+-------------+-------------+-------------+--------------+
      |             |             |             |             |              |
- YecWallet   lightwalletd      yolo        chain-viz    x402-ycash     bridge signers
- (desktop)   (light server)    (pool)      (read-only)  (payments)     (watch Ycash vaults
-                 ^                                                      and Ethereum)
+ YecWallet   lightwalletd      yolo        chain-viz    x402-ycash     Hawkeye
+ (desktop)   (light server)    (pool)      (read-only)  (payments)     (bridge attestors,
+                 ^                                                      watch both chains)
                  | gRPC                                                       |
                 YEW (mobile)                                                  v
                                                                    wyec contracts on Ethereum
@@ -78,7 +79,7 @@ The node is the only place a rule lives: every upgraded node rejects a block tha
 whoever mined it. Every other component reaches the node only through its public interfaces (the
 node's RPCs, or lightwalletd's gRPC for the mobile wallet), so none of them needs to be trusted.
 The pool mines ordinary blocks and adds a YEC/USD price quote to each; it enforces nothing. The
-bridge's signers watch Ycash and Ethereum and act on both; Ycash itself never reads Ethereum.
+bridge's attestors each run Hawkeye, which watches Ycash and Ethereum and acts on both; Ycash itself never reads Ethereum.
 
 ---
 
