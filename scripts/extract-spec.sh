@@ -15,6 +15,10 @@
 #                                                    default the four main trees (upgrade/vault, in-term since 2026-10-09); EXTRACT_SPEC_*_DIR override
 #        scripts/extract-spec.sh --write-in-term     write them: the upgrade spec with the in-term plan's IT-8 promise and
 #                                                    sections 3-4, the contract with its section 4.1 delta (`make spec-in-term`)
+#        scripts/extract-spec.sh --check-quantum     the upgrade/quantum-vaults line's copies (`make spec-check-quantum`): the
+#                                                    trees whose rpc doc states rpcversion 7; EXTRACT_SPEC_*_DIR override
+#        scripts/extract-spec.sh --write-quantum     write them: the in-term spec, the contract with the quantum delta
+#                                                    (docs/plans/yellowback-quantum-rpc-delta.md section 4.10) (`make spec-quantum`)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.

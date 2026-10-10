@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -52,6 +52,12 @@ spec-check-in-term: ## The in-term line's copies (upgrade/vault since 2026-10-09
 
 spec-in-term: ## Write the in-term line's copies (upgrade plan §10 + §15 with the in-term plan's IT-8 and §3-§4 overlay; contract + its §4.1 delta)
 	@scripts/extract-spec.sh --write-in-term
+
+spec-check-quantum: ## The quantum line's copies (upgrade/quantum-vaults, rpcversion 7; default the main trees, EXTRACT_SPEC_*_DIR override)
+	@scripts/extract-spec.sh --check-quantum
+
+spec-quantum: ## Write the quantum line's copies (the in-term spec; the contract with docs/plans/yellowback-quantum-rpc-delta.md §4.10)
+	@scripts/extract-spec.sh --write-quantum
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit
