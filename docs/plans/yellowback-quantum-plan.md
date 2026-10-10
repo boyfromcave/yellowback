@@ -378,7 +378,12 @@ Rev 2 resolved D-Q-10 (ride `UPGRADE_VAULT`) and item 4 (bridge vaults are PQ-on
    protection, a second activation later, and `ye…` outputs on SLH-DSA keys to migrate or keep.
    Recommendation: build both now (the plan does), decide at Q8 on NIST's actual date.
 2. ~~D-Q-10, which upgrade~~ — decided rev 2: ride `UPGRADE_VAULT`.
-3. **The fee multiplier** for PQ bytes (§4.5), from yb-calibration's Q7 study.
+3. **The fee multiplier** for PQ bytes (§4.5), from yb-calibration's Q7 study (`yb-calibration` `upgrade/quantum-vaults`,
+   `docs/reports/2026-10-pq/`): **recommends m = 50 (5,000 zat/KB)** on both lines — at 1× a PQ byte pays 0.1 zat
+   against 4.08 for P2PKH, and the lines disagree (ycash6's ZIP-317 already bills ~3,333 zat/KB of PQ input; m ≥ 34
+   makes them identical). Dearest path 80,410 zat. Validation is not the constraint: a full block of SLH spends
+   verifies in 0.058 s, of Falcon spends 0.022 s, vs 0.255 s ECDSA-full (Sapling figure missing). The multiplier
+   prices honest wallets only; relay spam is bounded by `-pqrelaybytes`. Default stays 1× until the owner decides.
 4. ~~Bridge vaults~~ — decided rev 2: PQ-only like every vault; wyec untouched.
 
 ## 10. References
