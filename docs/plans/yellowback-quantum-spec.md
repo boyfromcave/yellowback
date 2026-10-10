@@ -81,9 +81,12 @@ everything, clawing back its in-channel payments: the **server's in-channel bala
 x402's P2SH channels today. Mitigation is operational: servers settle or close channels promptly. TOK-PQ's invariant (no
 EC key alone moves the YED) holds.
 
-**Q4 (YED module) as implemented (2026-10-10):** TOK-PQ is checked on **every payload assignment, before XFER-1..3,
-regardless of `yedIn`** (review A m-1: a TRANSFER with no YED input, or an over-assigned one, to a non-Falcon holder after
-the Falcon height is invalid, not burned); a port must keep this order. a TRANSFER/REDEEM payload whose token output fails `TOK-PQ` makes the
+**Q4 (YED module) as implemented (2026-10-10):** **TOK-PQ binds only token outputs that actually
+receive YED** (ruling after both Q4 reviews, superseding the first implementation that checked every payload assignment
+before XFER-1..3): a TRANSFER/REDEEM payload with no YED input, or one that XFER-1..3 burns (over-assignment), is
+unaffected by TOK-PQ (non-Yellowback / burn as before); a successful assignment of YED to a non-holder output after the
+Falcon height makes the transaction **invalid** (fund safety). Smallest footprint: TOK-PQ never reads non-YED data. A
+port must evaluate it after XFER-1..3 on the assignments that succeed. a TRANSFER/REDEEM payload whose token output fails `TOK-PQ` makes the
 transaction **invalid** rather than burning the YED (fund safety; a deliberate departure from burn semantics). After
 Falcon a holder must be scheme 2 (an SLH-DSA PQPKH is not a valid holder). `yed_getinfo.attest.payloadVersion` stays 3
 (non-MINT types) and `mintPayloadVersion` is 4. A channel output's YED is listed under the client's address and is not a
