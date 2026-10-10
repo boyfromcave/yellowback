@@ -26,6 +26,18 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
   ≈22 µs SLH, ≈7 µs Falcon); both need a miner to include non-standard outputs. Accepted: a hard per-block PQ verify
   bound would need an execution-time counter, a new consensus rule. The "≈252 SLH spends per block" bound in §5.1
   and plan §6 is wrong and is replaced by this.
+- **R-B1 (supersedes R-A1's "accepted"; both reviewers flagged it):** at most **one executed `OP_CHECKPQSIG` per
+  `EvalScript`** where `SCRIPT_VERIFY_VAULT` is set (precedent: the set-signature count), else `SCRIPT_ERR_PQ_COUNT`.
+  Every template (PQPKH, V selectors 2/3, I selector 3) executes exactly one; the cap is ≤ 3 PQ verifies per input
+  (scriptSig, scriptPubKey, redeem script). What remains is the staged-output class (a non-standard bare output
+  holding the signature, spent by a ~41 B input: 1 verify per input), the same class as legacy bare `OP_CHECKSIG`
+  outputs, whose spends Ycash has never charged; its creation costs ~9 KB of earlier block space per verify and is
+  miner-only (non-standard). Given up: PQ k-of-n in one script (a later upgrade can lift the cap).
+- **R-B2:** `AreInputsStandard`'s P2SH redeem-script check counts the PQ policy sigops toward `MAX_P2SH_SIGOPS`, so a
+  redeem script containing `OP_CHECKPQSIG` is non-standard (spec §2.3's claim now holds for every shape).
+- **R-B3:** `-pqfalcon`/`-pqfalconheight` on a non-regtest network is an `InitError`, like `-nuparams`.
+- **R-B4:** the scriptSig encoding is unique **under standard policy** (MINIMALDATA); consensus admits re-encoded pushes,
+  as for every Ycash push.
 - **R-A2 (Falcon activation):** `pqFalconActive` (bool) becomes **`pqFalconHeight`** (int, `NO_ACTIVATION_HEIGHT` on
   mainnet/testnet); `SCRIPT_VERIFY_PQ_FALCON` and `TOK-PQ` apply at `nHeight >= pqFalconHeight`; regtest
   `-pqfalconheight=<h>` (and `-pqfalcon=1` ≡ height 0). A bool would split the chain at no coordinated height and
