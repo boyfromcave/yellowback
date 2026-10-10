@@ -21,7 +21,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Phase | ycash-dd | ycash6 | clients / other |
 |---|---|---|---|
 | Q0 decide and specify (§2, §4); library spike; golden vectors from a reference implementation | `[x]` spec + `pq_vectors.json` | — | `[~]` Python framework reproduces them |
-| Q1 PQ verification library in the node (`src/crypto/pq/`), unit tests, benchmarks | `[x]` slhdsa-c 174c02e + PQClean falcon-padded-512 0586a82; ACVP/KAT green; Python framework `q/pyfw` merged | `[ ]` | — |
+| Q1 PQ verification library in the node (`src/crypto/pq/`), unit tests, benchmarks | `[x]` slhdsa-c 174c02e + PQClean falcon-padded-512 0586a82; ACVP/KAT green; Python framework `q/pyfw` merged; Falcon SHAKE no-malloc patch | `[x]` ported byte-identical (Makefile layout adapted to 6.20.0's libbitcoin_script) | — |
 | Q2 `OP_CHECKPQSIG` in the interpreter, sigop cost, activation gate — **consensus review gate** | `[~]` `q/op` | `[ ]` | — |
 | Q3 templates: `TX_PQPKH`, PQ owner variant of V and I, standardness and policy limits — **review gate** (`src/script/standard.cpp`, `src/vault/template.cpp`) | `[ ]` | `[ ]` | — |
 | Q4 YED module: MINT payload, PQ-only mints, PQ holder scripts, token index, RPC contract (`rpcversion` 7) | `[ ]` | `[ ]` | lightwalletd proto `[ ]` |
