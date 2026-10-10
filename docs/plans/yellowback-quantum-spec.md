@@ -65,17 +65,24 @@ OP_ELSE
   <refundHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP  <clientHash:32> OP_1|OP_2 OP_CHECKPQSIG
 OP_ENDIF
 ```
-bytes `63 20<h> 5n c2 69 21<pk> ac 67 <num> b1 75 20<h> 5n c2 68` (≈ 147–151 B); both client slots byte-identical
+bytes `63 20<h> 5n c2 69 21<pk> ac 67 <num> b1 75 20<h> 5n c2 68` (111 B + the refund-height push = 112–117 B); both client slots byte-identical
 (scheme and hash), `refundHeight` a minimal positive CScriptNum (1–5 bytes, < 500,000,000 = a height), server key a
 valid compressed secp256k1 key. scriptSigs: cooperative `<serverSig> <sig_1>…<sig_s> <s> <pk_1>…<pk_p> <p> OP_1`;
 refund `<sig_1>…<sig_s> <s> <pk_1>…<pk_p> <p> OP_0`. One `OP_CHECKPQSIG` executes on either path (R-B1); the 9,000-byte
 PQ scriptSig allowance covers it (SLH coop ≈ 8,013 B). `Solver` returns `TX_PQCHANNEL` with solutions
 {client CPQKeyID, server pubkey, refundHeight}; `ScriptSigArgsExpected` −1 with an exact-count check in
-`AreInputsStandard` (s+p+3 coop or s+p+3 refund incl. selector). Policy refuses a scheme-2 client before Falcon (as A-1).
+`AreInputsStandard` (cooperative s+p+4 incl. the server signature and selector; refund s+p+3). Policy refuses a scheme-2 client before Falcon (as A-1).
 **`TOK-PQ`** (after `pqFalconHeight`): an assigned YED token output must be `TX_PQPKH` scheme 2 **or `TX_PQCHANNEL` with a
 scheme-2 client**. Before Falcon, channels may use an SLH client (no token-shape rule applies). Given up: a pure PQ
 2-of-2. Security: the client's funds and the refund path need the client's PQ key; a broken server EC key only lets an
 attacker co-sign states the client already signed.
+
+**Q4 (YED module) as implemented (2026-10-10):** a TRANSFER/REDEEM payload whose token output fails `TOK-PQ` makes the
+transaction **invalid** rather than burning the YED (fund safety; a deliberate departure from burn semantics). After
+Falcon a holder must be scheme 2 (an SLH-DSA PQPKH is not a valid holder). `yed_getinfo.attest.payloadVersion` stays 3
+(non-MINT types) and `mintPayloadVersion` is 4. A channel output's YED is listed under the client's address and is not a
+wallet-spendable coin. `pqFalconHeight` is not in the hashed Params record (no schema change; differing Falcon heights
+diverge in consensus anyway). Golden state hash `17926ca6…24a1` (C++ = Python model).
 
 **Q5 (node wallet) as implemented, normative for ycash6 (2026-10-10):** A-12 derivation = HKDF-SHA256 (RFC 5869),
 IKM = the line's raw wallet seed (dd: `HDSeed::RawSeed()`, 32 B; 6: the `MnemonicSeed` raw seed), **salt empty**,
