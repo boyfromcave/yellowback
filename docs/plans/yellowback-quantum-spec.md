@@ -19,6 +19,20 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 - **C-8:** Falcon keygen seed is **48** bytes (PQClean's DRBG seed), like SLH-DSA's.
 - **C-3** (x402 YED channels in P2SH vs `TOK-PQ`) is deferred to the owner at Q8; `TOK-PQ` only binds after Falcon.
 
+**Rulings after consensus review A of `q/op` (2026-10-10):**
+- **R-A1 (verification bound):** with 0 consensus sigops, per-block PQ verification is bounded by
+  `MAX_OPS_PER_SCRIPT` × inputs (one signature re-checked ~11× via `OP_PICK`; staged in a bare output, a spend input
+  is ~41 B), **the same order as the legacy `OP_CHECKSIG` loop worst case Ycash already has** (≈20 µs/op ECDSA vs
+  ≈22 µs SLH, ≈7 µs Falcon); both need a miner to include non-standard outputs. Accepted: a hard per-block PQ verify
+  bound would need an execution-time counter, a new consensus rule. The "≈252 SLH spends per block" bound in §5.1
+  and plan §6 is wrong and is replaced by this.
+- **R-A2 (Falcon activation):** `pqFalconActive` (bool) becomes **`pqFalconHeight`** (int, `NO_ACTIVATION_HEIGHT` on
+  mainnet/testnet); `SCRIPT_VERIFY_PQ_FALCON` and `TOK-PQ` apply at `nHeight >= pqFalconHeight`; regtest
+  `-pqfalconheight=<h>` (and `-pqfalcon=1` ≡ height 0). A bool would split the chain at no coordinated height and
+  apply TOK-PQ to history on reindex.
+- Push minimality of `s`/`p`/scheme is **policy** (MINIMALDATA); consensus requires a 1-byte element. §0's
+  `PQ_SIGOP_COST` row means the policy count only. `getblocktemplate`'s per-tx `sigops` includes the PQ policy count.
+
 (The original draft header follows.)
 
 
