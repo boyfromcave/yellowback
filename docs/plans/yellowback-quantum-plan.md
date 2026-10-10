@@ -1,6 +1,6 @@
 # Yellowback post-quantum — SLH-DSA vault owners, Falcon YED holders, one opcode
 
-**Revision 2 (2026-10-10), in implementation.** A delta on the
+**Revision 3 (2026-10-10), in implementation; byte layouts frozen in [`yellowback-quantum-spec.md`](yellowback-quantum-spec.md), which wins over §4 where they differ.** A delta on the
 [upgrade plan](yellowback-upgrade-plan.md) (revision 2, §15) and the
 [in-term claims plan](yellowback-in-term-claims-plan.md), on branch **`upgrade/quantum-vaults`** in every
 repository that changes, cut from each repository's `upgrade/vault` (local only until the owner says to push). Decided in principle by the owner on
@@ -20,9 +20,9 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 
 | Phase | ycash-dd | ycash6 | clients / other |
 |---|---|---|---|
-| Q0 decide and specify (§2, §4); library spike; golden vectors from a reference implementation | `[ ]` | — | `[ ]` vectors shared |
-| Q1 PQ verification library in the node (`src/crypto/pq/`), unit tests, benchmarks | `[ ]` | `[ ]` | — |
-| Q2 `OP_CHECKPQSIG` in the interpreter, sigop cost, activation gate — **consensus review gate** | `[ ]` | `[ ]` | — |
+| Q0 decide and specify (§2, §4); library spike; golden vectors from a reference implementation | `[~]` spec frozen; library spike `q/pqlib` | — | `[ ]` vectors shared |
+| Q1 PQ verification library in the node (`src/crypto/pq/`), unit tests, benchmarks | `[~]` `q/pqlib` | `[ ]` | — |
+| Q2 `OP_CHECKPQSIG` in the interpreter, sigop cost, activation gate — **consensus review gate** | `[~]` `q/op` | `[ ]` | — |
 | Q3 templates: `TX_PQPKH`, PQ owner variant of V and I, standardness and policy limits — **review gate** (`src/script/standard.cpp`, `src/vault/template.cpp`) | `[ ]` | `[ ]` | — |
 | Q4 YED module: MINT payload, PQ-only mints, PQ holder scripts, token index, RPC contract (`rpcversion` 7) | `[ ]` | `[ ]` | lightwalletd proto `[ ]` |
 | Q5 node wallet: PQ keystore, seed derivation, signing, size-priced fees | `[ ]` | `[ ]` | — |
@@ -41,6 +41,10 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
   `upgrade/quantum-vaults` cut locally in ycash-dd, ycash6, yecwallet-dd, lightwalletd-dd, yew, chain-viz,
   x402-ycash, hawkeye (from `origin/upgrade/vault`) and yb-calibration (from `origin/main`); integration
   worktrees `wt/q-dd`, `wt/q6`. No `librustzcash6` branch (no new branch ID).
+- 2026-10-10: **revision 3**, Q0 spec frozen (`yellowback-quantum-spec.md`): scheme pushed as `OP_1`/`OP_2` so
+  `TX_PQPKH` is **35** bytes; payload version `0x04`; PQ address versions `ye` 0x56BF / `yt` 0x571E / `yr` 0x5710
+  (53 characters); **no consensus sigop count** for `OP_CHECKPQSIG`, 20 as policy; HKDF seed derivation on both
+  lines; `TOK-PQ` once Falcon is active. Agents: `q/pqlib`, `q/op`, `q/pyfw` in flight.
 
 ## 1. What changes, in one page
 
@@ -65,7 +69,7 @@ the least consensus change.
    scheme: **FN-DSA-512 (Falcon-512)**, 666-byte signatures, 897-byte public keys, verification cheaper than
    ECDSA. Its standard (FIPS 206) is not final as of 2026-10-09, so the opcode is **scheme-agnostic** and the
    scheme registry carries SLH-DSA from day one and Falcon as a reserved identifier that activates when the bytes
-   are final (§4.1, D-Q-2). A YED holder output stays 36 bytes (hash-committed); the cost moves to the spend.
+   are final (§4.1, D-Q-2). A YED holder output is 35 bytes (hash-committed); the cost moves to the spend.
 3. **One opcode, `OP_CHECKPQSIG` (0xc2), above `OP_NOP10` (D-Q-3).** It pops a scheme identifier, the key hash, the
    public key and the signature, the last two as several ≤ 520-byte pushes it reassembles, so the 520-byte element
    limit (`MAX_SCRIPT_ELEMENT_SIZE`) is **not** raised. The message is the ZIP-243 sighash `OP_CHECKSIG` already
@@ -177,7 +181,7 @@ no new sighash, no transaction field.
 
 ### 4.3 Templates (`src/script/standard.cpp`, `src/vault/template.cpp`)
 
-**PQ pay-to-key-hash, `TX_PQPKH`** (bare, 36 bytes):
+**PQ pay-to-key-hash, `TX_PQPKH`** (bare, 35 bytes; scheme pushed as `OP_1`/`OP_2`):
 ```
 <keyHash:32> <schemeId:1> OP_CHECKPQSIG
 ```
@@ -202,7 +206,7 @@ template (rule V-1 rejects it).
   (`bad-mint-owner-key`) now requires a registered scheme (and Falcon only while `pqFalconActive`); the vault
   output must equal `YedVaultScriptAt` built from that owner (D-Q-1; the template admits no other owner shape). `ATTESTOR_REGISTER` is unchanged (D-Q-5).
 - **Holder scripts.** `P2PKHKey(script)` generalises to `HolderKey(script)` returning a `CTxDestination` for the
-  25-byte P2PKH **or** the 36-byte `TX_PQPKH` shape; tokens, fees, payees and residual intents are recognised by
+  25-byte P2PKH **or** the 35-byte `TX_PQPKH` shape; tokens, fees, payees and residual intents are recognised by
   either. The in-term claimant's residual intent commits `SHA256(holderScript(owner))`. **Holder policy per
   D-Q-2:** PQ-only holders (every token output must be `TX_PQPKH`) once the Falcon scheme is active; until then
   the module accepts both shapes so YED can launch before FIPS 206 if the owner chooses (b).
@@ -317,7 +321,7 @@ hold.
   format, key encoding, pre-hash mode and keygen may change. Mitigation: the scheme is reserved, not active, until
   the bytes are final (D-Q-2); vectors regenerate; one implementation pinned for keygen.
 - **Chain growth.** Every SLH-DSA spend is ~8 KB forever; ten thousand a day is ~30 GB a year. Mitigation: SLH-DSA
-  is the rare vault-owner signature; Falcon (~1.7 KB) is the holder signature; the UTXO set does not grow (36-byte
+  is the rare vault-owner signature; Falcon (~1.7 KB) is the holder signature; the UTXO set does not grow (35-byte
   outputs). yb-calibration models the growth and the fee multiplier (Q7).
 - **No hardware wallet, no watch-only, no xpub** for PQ keys. Recorded in the wallet disclosure text.
 - **Falcon's signer side channel** on embedded targets. Mitigation: verify-only in consensus; software signers
