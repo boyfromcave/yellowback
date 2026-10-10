@@ -47,6 +47,12 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 - Push minimality of `s`/`p`/scheme is **policy** (MINIMALDATA); consensus requires a 1-byte element. §0's
   `PQ_SIGOP_COST` row means the policy count only. `getblocktemplate`'s per-tx `sigops` includes the PQ policy count.
 
+**Q5 (node wallet) as implemented, normative for ycash6 (2026-10-10):** A-12 derivation = HKDF-SHA256 (RFC 5869),
+IKM = the line's raw wallet seed (dd: `HDSeed::RawSeed()`, 32 B; 6: the `MnemonicSeed` raw seed), **salt empty**,
+info = `"Ycash PQ key"` (12 ASCII bytes) ‖ scheme u8 ‖ index u32 big-endian, L = 48 for both schemes. Vectors in
+ycash-dd `src/test/pq_wallet_tests.cpp` (HD seed 0x00..0x1f). No index lookahead. `-pqfeerate` defaults to
+`-minrelaytxfee`. `vault_lock` accepts external owners; V/I outputs are never `ISMINE_SPENDABLE`.
+
 (The original draft header follows.)
 
 
