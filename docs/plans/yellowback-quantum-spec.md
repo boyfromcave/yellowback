@@ -32,7 +32,9 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
   (scriptSig, scriptPubKey, redeem script). What remains is the staged-output class (a non-standard bare output
   holding the signature, spent by a ~41 B input: 1 verify per input), the same class as legacy bare `OP_CHECKSIG`
   outputs, whose spends Ycash has never charged; its creation costs ~9 KB of earlier block space per verify and is
-  miner-only (non-standard). Given up: PQ k-of-n in one script (a later upgrade can lift the cap).
+  miner-only (non-standard). Given up: PQ k-of-n in one script, e.g. a PQ 2-of-2 or a PQ x402 channel (a later upgrade can lift the cap).
+  Re-review A (2026-10-10): residual bound **≤ 2 PQ verifies per input** (one in a non-push-only scriptSig, one in
+  the scriptPubKey; P2SH: 1); staged outputs ≈48k verifies per 2 MB block, the legacy CHECKSIG-at-spend order.
 - **R-B2:** `AreInputsStandard`'s P2SH redeem-script check counts the PQ policy sigops toward `MAX_P2SH_SIGOPS`, so a
   redeem script containing `OP_CHECKPQSIG` is non-standard (spec §2.3's claim now holds for every shape).
 - **R-B3:** `-pqfalcon`/`-pqfalconheight` on a non-regtest network is an `InitError`, like `-nuparams`.
