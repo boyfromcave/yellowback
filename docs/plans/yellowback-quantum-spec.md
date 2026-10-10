@@ -47,6 +47,15 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 - Push minimality of `s`/`p`/scheme is **policy** (MINIMALDATA); consensus requires a 1-byte element. §0's
   `PQ_SIGOP_COST` row means the policy count only. `getblocktemplate`'s per-tx `sigops` includes the PQ policy count.
 
+**Rulings after the Q3 reviews (2026-10-10):** Q3, Q5 and Q4 merge into `upgrade/quantum-vaults` as **one unit**, gated
+on Q4's MINT-3 Falcon gate, MINT payload 0x04, regenerated `yellowback_golden.json` + Python model, and a green YED
+functional suite. **The old EC-owner V/I skeleton is `Shape::NONE`** (an ordinary output, not MALFORMED): smaller
+consensus footprint; such an output is non-standard, so only a miner can create one, and if it does the set (selector 1,
+no covenant) or, after `appHeight`, anyone (selector 4) can spend it. **A chain carrying `upgrade/vault`-era EC vaults is
+not compatible with this line** (no public network has either). **Policy refuses scheme-2 V re-locks before Falcon**, so
+a miner-created scheme-2 vault can only be unlocked without re-lock until then. The selector is outside the sighash:
+a selector-2 owner signature also satisfies selector 3 for the same transaction, as with EC.
+
 **Q5 (node wallet) as implemented, normative for ycash6 (2026-10-10):** A-12 derivation = HKDF-SHA256 (RFC 5869),
 IKM = the line's raw wallet seed (dd: `HDSeed::RawSeed()`, 32 B; 6: the `MnemonicSeed` raw seed), **salt empty**,
 info = `"Ycash PQ key"` (12 ASCII bytes) ‖ scheme u8 ‖ index u32 big-endian, L = 48 for both schemes. Vectors in
