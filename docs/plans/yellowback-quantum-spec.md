@@ -10,6 +10,15 @@ historical blocks, and D-Q-7 keeps fees and relay out of consensus). The 20-sigo
 wallet seed, byte-identical across lines (deviation from plan §4.6's BIP32 path). **F-7**: `TOK-PQ` (PQ-only YED
 token outputs once `pqFalconActive`) is a new consensus rule and goes through the review gate.
 
+**Rulings after the client survey (`yellowback-quantum-clients.md`, 2026-10-10):**
+- **F-2 superseded (C-1):** only **MINT** carries payload version **`0x04`** (its owner field changed); every other
+  type stays **`0x03`**, so client TRANSFER builders are unchanged and no v3 TRANSFER is burned. A MINT at `0x03`
+  is invalid on this line. Smallest footprint; one version byte per type.
+- **C-4:** the node wallet gains `vault_getnewowner` → `{scheme, keyhash, address}` (Q5); hawkeye's `lock` uses it.
+- **C-5:** `yed_getinfo.params.pq` carries `feeRateZatPerKB`.
+- **C-8:** Falcon keygen seed is **48** bytes (PQClean's DRBG seed), like SLH-DSA's.
+- **C-3** (x402 YED channels in P2SH vs `TOK-PQ`) is deferred to the owner at Q8; `TOK-PQ` only binds after Falcon.
+
 (The original draft header follows.)
 
 
