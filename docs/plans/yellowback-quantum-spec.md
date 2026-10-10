@@ -74,10 +74,16 @@ PQ scriptSig allowance covers it (SLH coop ≈ 8,013 B). `Solver` returns `TX_PQ
 `AreInputsStandard` (cooperative s+p+4 incl. the server signature and selector; refund s+p+3). Policy refuses a scheme-2 client before Falcon (as A-1).
 **`TOK-PQ`** (after `pqFalconHeight`): an assigned YED token output must be `TX_PQPKH` scheme 2 **or `TX_PQCHANNEL` with a
 scheme-2 client**. Before Falcon, channels may use an SLH client (no token-shape rule applies). Given up: a pure PQ
-2-of-2. Security: the client's funds and the refund path need the client's PQ key; a broken server EC key only lets an
-attacker co-sign states the client already signed.
+2-of-2. Security (corrected after review A of Q4): the client's funds and the refund path need the client's PQ key, so an
+outside attacker who breaks the server's EC key gains nothing without a client signature. But a **quantum-capable
+client** can forge the server's ECDSA signature on the cooperative path and close with a fresh state paying itself
+everything, clawing back its in-channel payments: the **server's in-channel balance is only secp256k1-secure**, as with
+x402's P2SH channels today. Mitigation is operational: servers settle or close channels promptly. TOK-PQ's invariant (no
+EC key alone moves the YED) holds.
 
-**Q4 (YED module) as implemented (2026-10-10):** a TRANSFER/REDEEM payload whose token output fails `TOK-PQ` makes the
+**Q4 (YED module) as implemented (2026-10-10):** TOK-PQ is checked on **every payload assignment, before XFER-1..3,
+regardless of `yedIn`** (review A m-1: a TRANSFER with no YED input, or an over-assigned one, to a non-Falcon holder after
+the Falcon height is invalid, not burned); a port must keep this order. a TRANSFER/REDEEM payload whose token output fails `TOK-PQ` makes the
 transaction **invalid** rather than burning the YED (fund safety; a deliberate departure from burn semantics). After
 Falcon a holder must be scheme 2 (an SLH-DSA PQPKH is not a valid holder). `yed_getinfo.attest.payloadVersion` stays 3
 (non-MINT types) and `mintPayloadVersion` is 4. A channel output's YED is listed under the client's address and is not a
