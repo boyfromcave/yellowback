@@ -23,11 +23,11 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Q0 decide and specify (§2, §4); library spike; golden vectors from a reference implementation | `[x]` spec + `pq_vectors.json` | — | `[~]` Python framework reproduces them |
 | Q1 PQ verification library in the node (`src/crypto/pq/`), unit tests, benchmarks | `[x]` slhdsa-c 174c02e + PQClean falcon-padded-512 0586a82; ACVP/KAT green; Python framework `q/pyfw` merged; Falcon SHAKE no-malloc patch | `[x]` ported byte-identical (Makefile layout adapted to 6.20.0's libbitcoin_script) | — |
 | Q2 `OP_CHECKPQSIG` in the interpreter, sigop cost, activation gate — **consensus review gate** | `[x]` `q/op` merged after reviews A+B and delta re-reviews (one PQ check per EvalScript, `pqFalconHeight`) | `[~]` port `q/op` | — |
-| Q3 templates: `TX_PQPKH`, PQ owner variant of V and I, standardness and policy limits — **review gate** (`src/script/standard.cpp`, `src/vault/template.cpp`) | `[~]` `q/tmpl` | `[ ]` | — |
+| Q3 templates: `TX_PQPKH`, PQ owner variant of V and I, standardness and policy limits — **review gate** (`src/script/standard.cpp`, `src/vault/template.cpp`) | `[~]` `q/tmpl` done, in review A+B | `[ ]` | — |
 | Q4 YED module: MINT payload, PQ-only mints, PQ holder scripts, token index, RPC contract (`rpcversion` 7) | `[~]` `q/yed` | `[ ]` | lightwalletd proto `[ ]` |
-| Q5 node wallet: PQ keystore, seed derivation, signing, size-priced fees | `[~]` `q/wallet` | `[ ]` | — |
+| Q5 node wallet: PQ keystore, seed derivation, signing, size-priced fees | `[~]` `q/wallet` done, awaiting review with Q4 | `[ ]` | — |
 | Q6 tests, devnet, walk, roles, fuzz, DoS measurement, CI, cross-line vector identity | `[ ]` | `[ ]` | — |
-| Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[ ]` each |
+| Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[~]` yb-calibration study merged; hawkeye `q/hawkeye` and YEW core `q/yew-core` started; others wait for the rpcversion-7 contract (Q4) |
 | Q8 release: gate pass, FIPS 206 check, activation decision (D-Q-10), release line version | `[ ]` | `[ ]` | — |
 
 ### Log
