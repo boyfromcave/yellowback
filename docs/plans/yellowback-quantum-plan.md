@@ -29,8 +29,17 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Q6 tests, devnet, walk, roles, fuzz, DoS measurement, CI, cross-line vector identity | `[x]` DoS measured (doc/yellowback-pq-dos.md), devnet walk + roles with Falcon, PQ sigcache, zmq race fixed, CI green | `[x]` walk + roles, CI green | — |
 | Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[x]` on each quantum branch, tested vs ycash-dd: hawkeye f0f5691→cdc95ef, YEW ca3961f+5319d9a, lightwalletd ef70570, chain-viz dfbef2b, YecWallet ee8b19f, x402 c87a987, yb-calibration 855faaa; all clients also pass against the ycash6 quantum node (2026-10-11); CI green on GitHub for all but x402 (fix in progress) |
 | Q8 release: gate pass, FIPS 206 check, activation decision (D-Q-10), release line version | `[ ]` | `[ ]` | — |
+| Fees: D-Q-23..D-Q-26 fee restructure — protocol fee in dollars at the stored `pMint`, `maxMint` $100,000, supply cap on the circulating supply, network fee in $/KB, `rpcversion` 8 (`yellowback-quantum-fees-spec.md`, delta `yellowback-quantum-fees-rpc-delta.md` rev 2) — **review gate** (module rules) | `[x]` `q/fees` @ 430002b16 (`wt/q-fees`), reviewed A+B with fix-ups (M-1, A-2..A-7, L-1, N-3, MINT-8′ lower bound) and D-Q-26; not yet merged into the integration tree | `[ ]` port pending | `[ ]` clients pending (rpcversion 8: YecWallet, YEW, lightwalletd, chain-viz, x402); yb-calibration policy constants `[~]` `q/fees` |
 
 ### Log
+
+- 2026-10-11: **fee restructure (D-Q-23..D-Q-26) done and reviewed on ycash-dd** (`q/fees` @ 430002b16, not yet merged):
+  FEE-1′/RED-3′/IT-9′ in dollars at `VaultRecord.pMint` (schema 9), MINT-6 on the circulating supply with MINT-6b,
+  RED-5′, `maxMint` $100,000, the $/KB network fee (max of windows, none under a halt; `-yellowbackmaxtxfee` 10 YEC
+  ceiling; plain PQ shares the cap), `rpcversion` 8. Workspace follow-ups: the contract delta reconciled to rev 2
+  (`--check-fees` clean on a copy of the node doc), the fees spec's §5 implementation record, mapping §22 rows,
+  yb-calibration's policy constants. Pending: the ycash6 port, the clients, and the owner item on class C and
+  MINT-6 (fees spec §5.2).
 
 - 2026-10-11: **all Q0–Q7 work merged and pushed** on both node lines and every client; GitHub CI green on every
   `upgrade/quantum-vaults` branch. Since Falcon day one: PQ signature cache (reviewed A+B), Q6 devnet (walk `pq`/`falcon`
@@ -368,6 +377,14 @@ hold.
   SHA256(pqNonce ‖ scheme ‖ sighash ‖ len-prefixed pk ‖ len-prefixed sig), stored on success only; a miner's own
   240-SLH block connects in ≈ 2 ms of verify instead of ≈ 18–23 ms. A node that never saw the transactions still
   verifies everything once, so the worst-case figures above are unchanged.
+
+- **`maxMint` $100,000 (D-Q-24): H-12's depth argument is given up on this line.** Hardening H-12 held `maxMint` at
+  $2,500 because a $100,000 vault's liquidation at θ (≈ $125,000 of YEC) exceeds the measured bid depth of YEC
+  markets, so a large claim could not be sold without moving the price against the claimant. Restoring DigiByte's
+  $100,000 reverses that argument here: a single vault may now be larger than the market can absorb at the claim
+  threshold. What bounds the exposure instead is aggregate — the 15 % supply cap on the circulating supply (D-Q-25),
+  MINT-6b's per-vault share (max(10 % of that cap, $10,000), D-Q-23a) and HALT-2 — not the per-vault depth.
+  `harden/yellowback` keeps $2,500 (fees spec §2.4, §4.3 row 16).
 
 ## 7. Branches in every repo
 
