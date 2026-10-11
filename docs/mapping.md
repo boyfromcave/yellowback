@@ -1115,6 +1115,22 @@ onto ycash6 `upgrade/vault-in-term` as branch `it6/port`; T2 `bdfed3228..dc7b79a
 | Quantum line: unit tests build `CTxOut()` with the default value -1 (ycash-dd `pq_script_tests`, `pq_fuzz_harness.h`) | 6.20.0 parses a `CTransaction` through Rust (`PrecomputedTransactionData`), which throws on a negative value | Test outputs carry a non-negative value (ycash6 `be0928aa9`, `b773f432f`) |
 | Quantum line: `OP_CHECKPQSIG` signs the ZIP-243 sighash; undefined hashtypes are consensus-valid (only `STRICTENC` refuses them) | 6.20.0 routes a v5 tx through ZIP-244, whose undefined-hashtype throw makes the check false, as for `OP_CHECKSIG` | Identical for v4 (every Ycash network today); differs only for a v5 tx on a regtest with NU5 enabled, exactly as `OP_CHECKSIG` already differs (ycash6 `pq_hashtype_matrix_real`) |
 
+**Quantum Q3/Q5/Q4 port, 2026-10-10 (ycash-dd `aa0fd3812` → ycash6 `q/q345` `1b023d1d6`)**
+
+| v4.5.0 (`ycash-dd`) | 6.20.0 (`ycash6`) | Consequence |
+|---|---|---|
+| `CPQKeyID` beside `CScriptID` in `src/script/standard.h` | `CScriptID` lives in `src/script/script.h` (`ref/ycash6` script.h:655) | `CPQKeyID` defined in `script.h` (which now includes `serialize.h`); identical bytes and ordering |
+| `CTxDestination` visitors: DestinationEncoder, CScriptVisitor, DescribeAddressVisitor, CAffectedKeysVisitor | also exhaustive `match{}` in `KeyIO::DecodePaymentAddress`, `DecodeLegacyPaymentAddress`, `CKeyStore::GetUFVKMetadataForAddress`, rpcwallet `GetSourceForDestination` | answer nullopt for a PQ key; `IsChange` (`match{CKeyID, auto}`) never sees PQ change |
+| Q5 derivation IKM = `HDSeed::RawSeed()` (32 B) | `MnemonicSeed::RawSeed()` (64 B BIP39) | same HKDF, different key material; dd's HD-seed keyhash vector does not apply on 6 |
+| PQ keys issued at the lowest index above every held key; no lookahead | `PQ_KEY_LOOKAHEAD` 20 per scheme, walletdb `pqissued`, `NotePQKeysUsed` (`1b023d1d6`) | seed-only restore re-finds PQ owner/holder/channel-client keys; ~3 s keygen per new wallet; being added to dd (`q/ddfix`) |
+| `dumpwallet` writes `pqseed=` lines | no `dumpwallet`; `z_exportwallet` writes the same format | tests and `wallet_pq_secret` use `z_exportwallet` |
+| `TransactionSignatureCreator` / `SignSignature` / `SignatureHash` without txdata | require `PrecomputedTransactionData`; checker argument order `(&tx, txdata, nIn, amount)` | `CreatePQSig` hashes with it; `SignPQOwnerSpend` uses an empty-prevout txdata (v4 only) |
+| dust `IsDust(::minRelayTxFee)` | `IsDust()` at fixed `ONE_THIRD_DUST_THRESHOLD_RATE` | `GetPQDustThreshold(txout, CFeeRate(ONE_THIRD_DUST_THRESHOLD_RATE))`; equal at the default relay fee |
+| wallet PQ fee max(DEFAULT_FEE, rate × size); YED builders `YedNetworkFee` | P-2 fee max(-yellowbackfee, ZIP-317 conventional) from a probe with stand-in signatures | size term as the third max argument; probe stand-ins sized for PQ inputs; an SLH owner redeem pays ~27,000 zat on 6 vs 1,000 on dd at the default rate |
+| z_sendmany / z_mergetoaddress spend any selected transparent UTXO | the legacy-account ZTXO selector admits PQPKH coins | `FindSpendableInputs` and `z_mergetoaddress` skip `IsPQKeyDestination` (A-15, `feca428a2`); being mirrored on dd |
+| `vault_getnewowner`, optional `yed_getnewaddress` type: client.cpp rows | server arity check (S1) | `rpcCvtTable` rows `{{},{o}}` and `{{},{s}}` |
+| quantum contract marker in `qa/yellowback-audit.sh` (`falconActive` → rpcversion 7, `--check-quantum`) | contract legs are inline workflow steps | `steps.line.outputs.quantum`; cross-line vectors against dd `upgrade/quantum-vaults` |
+
 ## 20. x402 agent payments — what other chains' x402 bindings use versus what Ycash has (`x402-ycash/`, its own repository)
 
 Added 2026-10-03 with `docs/plans/x402-agent-payments-plan.md` (revision 1; its §3 is the full

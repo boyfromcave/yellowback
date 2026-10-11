@@ -398,6 +398,12 @@ Rev 2 resolved D-Q-10 (ride `UPGRADE_VAULT`) and item 4 (bridge vaults are PQ-on
    prices honest wallets only; relay spam is bounded by `-pqrelaybytes`. Default stays 1× until the owner decides.
 4. ~~Bridge vaults~~ — decided rev 2: PQ-only like every vault; wyec untouched.
 
+5. **YEC-denominated constants at high prices** (raised by the `PRICE_MAX` review, D-Q-22). With the ceiling at
+   ≈ $4,294/YEC, constants fixed in YEC grow in dollars: `FEE_MIN` 0.5 YEC ≈ $2,147 per mint/redeem at the top (more
+   than a $100 debt), `bondMin` 20,000 YEC ≈ $86M, `residualMinZat` likewise; the MINT-5 2-YEC floor binds above
+   ≈ $150/YEC. No soundness issue (owner redeem always works); a yb-calibration item before a release that expects YEC
+   to rise that far (dollar-denominated or price-tiered constants).
+
 ## 10. References
 
 - Research (workspace-local, untracked): `research_notes/Falcon post quantum Ycash integration/` —
