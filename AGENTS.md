@@ -43,6 +43,7 @@ yellowback-workspace/
 ├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `main` — plan docs/plans/x402-agent-payments-plan.md
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `main` — calibrates the constants baked into Yellowback releases
 ├── hawkeye/         THE BRIDGE ATTESTOR (Hawkeye), its own repo, branch `upgrade/vault` — the wYEC bridge's attestor sidecar, plan hawkeye/docs/hawkeye-bridge-plan.md
+├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `main` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
@@ -65,11 +66,11 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines, nine component repos.** Yellowback is an overlay on the node
+**One overlay, two node lines, ten component repos.** Yellowback is an overlay on the node
 (`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
 the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
-parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec) and the bridge attestor (hawkeye), each in its own
+parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye) and the light-wallet backend (ycash-infra), each in its own
 repo and each reaching the node only through a public interface (README.md, the components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
@@ -185,6 +186,11 @@ The bridge attestor goes in `hawkeye/` only — its own repository on `upgrade/v
 reference and no baseline. It reaches `ycashd` only through stock RPCs and the vault primitive's
 `set_*` / `vault_*` RPCs (never `yed_*`) and Ethereum only through standard JSON-RPC, fetches the
 wyec contracts at a pinned commit, and never needs a node change (`hawkeye/AGENTS.md`).
+The light-wallet backend goes in `ycash-infra/` only — its own repository on `upgrade/vault`, net
+new, no reference and no baseline. It deploys `ycashd`, `lightwalletd-dd`, its own address index
+(`yindex`) and the `yew/web` bundle on Kubernetes; it reaches `ycashd` only through stock JSON-RPC,
+reaches `lightwalletd-dd` only by running its image, builds images from the workspace trees rather
+than copying source, and never needs a node or lightwalletd change (`ycash-infra/AGENTS.md`).
 On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash and YEW still need no
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
@@ -299,7 +305,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its nineteen clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the five forks vs its -legacy baseline

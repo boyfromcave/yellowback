@@ -162,3 +162,9 @@ hawkeye:
   url: https://github.com/boyfromcave/hawkeye.git
   branch: upgrade/vault       # the vault network upgrade line (GitHub default); net new, no baseline
   what: hawkeye, the wYEC bridge attestor sidecar (Rust): watches Ycash vault locks tagged WYEC and Ethereum burns, attests mints, posts delayed-release intents, cancels and slashes what it cannot match; reaches ycashd only through stock + set_*/vault_* RPCs (hawkeye/docs/hawkeye-bridge-plan.md)
+
+ycash-infra:
+  role: app
+  url: https://github.com/boyfromcave/ycash-infra.git
+  branch: upgrade/vault       # the vault network upgrade line; net new, no baseline (ycash-infra/docs/plans/ycash-infra-plan.md)
+  what: ycash-infra, the Ycash light-wallet backend on Kubernetes: a ycashd node pool, horizontally scaled lightwalletd-dd, the yindex address index, Redis, an Envoy Gateway and the yew/web bundle; one Helm chart, kind and EKS value sets; reaches ycashd only through stock JSON-RPC and lightwalletd-dd only by running its image
