@@ -1140,6 +1140,7 @@ onto ycash6 `upgrade/vault-in-term` as branch `it6/port`; T2 `bdfed3228..dc7b79a
 | address-index `ScriptType` `P2PQPKH = 3` | 6's enum already has `P2PK = 3` | `P2PQPKH = 4` on 6 — the on-disk type byte of each line's own index; no RPC exposes it |
 | `-mineraddress` decoded by `DecodeDestination` | decoded by `DecodePaymentAddress` | an `sq…` already failed to parse on 6; same error text as dd added |
 | unit tests use `CKey::MakeNewKey` | `CKey::TestOnlyRandomKey` | test-only substitution |
+| ZMQ: `CZMQAbstractPublishNotifier::SendMessage` is called from the `ActivateBestChain` thread (hashblock/rawblock, after dropping cs_main) and from `ThreadNotifyWallets` (hashtx/rawtx); one PUB socket is shared when topics share an endpoint (`ref/ycash` main.cpp:3916) | the same (`ref/ycash6` main.cpp:4883) | inherited Zcash race: concurrent sends interleave frames and corrupt libzmq's single-producer pipe (io-thread abort) once a subscriber is attached; fixed by a leaf `cs_zmqSend` in `SendMessage` on the quantum line (ycash-dd 613cf66ee, ycash6 64005d9ab), regression test `zmq_concurrent_test.py`; still present on `harden/yellowback` and `upgrade/vault` |
 
 ## 20. x402 agent payments — what other chains' x402 bindings use versus what Ycash has (`x402-ycash/`, its own repository)
 
