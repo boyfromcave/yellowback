@@ -32,6 +32,10 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 
 ### Log
 
+- 2026-10-11: **Falcon from day one merged on both lines** (ycash-dd 8119e2a10, ycash6 44c4f48bc; `pqFalconHeight = 0`
+  mainnet/testnet; Falcon audit F-1/F-6) after Fable reviews A+B (17/17 cross-line verdicts identical); pushed with
+  the ycash-dd follow-ups and the Q6 DoS tooling. All ten repos' quantum branches were green on GitHub before this push.
+
 - 2026-10-10: revision 1 written from the research; owner decided D-Q-1, D-Q-3..D-Q-9 in discussion; D-Q-2
   (Falcon timing) and D-Q-10 (which upgrade carries it) are the open decisions (§9).
 - 2026-10-10: **revision 2**, owner decisions before implementation: D-Q-10 **ride `UPGRADE_VAULT`**; D-Q-1
