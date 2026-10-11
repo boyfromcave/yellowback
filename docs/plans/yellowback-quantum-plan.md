@@ -94,7 +94,7 @@ the least consensus change.
 | # | Decision | Value |
 |---|---|---|
 | D-Q-1 | Vault owner keys are post-quantum | **yes, every vault (rev 2)**: SLH-DSA-SHA2-128s owners; the V/I templates have only the PQ owner slot (consensus, rule V-1), so YED and bridge vaults are both PQ-only; the MINT payload carries `ownerScheme ‖ ownerHash` |
-| D-Q-2 | YED holder keys are post-quantum; which scheme | **yes**: Falcon-512 is the target. **Build both now (rev 2)**: Falcon-512 behind `pqFalconActive` (regtest `-pqfalcon=1`, mainnet off); holders may use P2PKH or `TX_PQPKH` until Falcon is active. **Timing still pending at Q8:** (a) wait for FIPS 206 and activate together, or (b) SLH-DSA transfers first |
+| D-Q-2 | YED holder keys are post-quantum; which scheme, when | **Falcon from day one (owner, 2026-10-10, final): SLH-DSA vault owners and Falcon-512 YED holders/transfers both go live at the vault activation, before FIPS 206 is final.** `pqFalconHeight = 0` on mainnet and testnet (active with `UPGRADE_VAULT`); TOK-PQ binds from the first block, so P2PKH YED holders never exist on mainnet; wallets default to Falcon holders. **Risk accepted:** FIPS 206 may change Falcon's encodings; mitigation is the scheme-agnostic opcode — a later upgrade adds the final FN-DSA as scheme 0x03 beside 0x02, and holders migrate (vault owners are SLH-DSA, final, unaffected). Regtest keeps `-pqfalconheight` for testing both regimes |
 | D-Q-3 | One scheme-agnostic opcode | **`OP_CHECKPQSIG` = 0xc2**, chunked pushes, no change to `MAX_SCRIPT_ELEMENT_SIZE` or `MAX_SCRIPT_SIZE` |
 | D-Q-4 | Keys are hash-committed | **yes**: 32-byte `SHA256(schemeId ‖ pk)` in every scriptPubKey and in the MINT payload; the public key appears only in the spending scriptSig |
 | D-Q-5 | Attestor set and bridge guardians | **stay secp256k1** in this plan (bridge vault *owners* are PQ per D-Q-1; the guardians' and attestors' keys are not) (recoverable-signature design, set-state layout, Ethereum coupling); recorded as the next candidate after Falcon is final |
@@ -384,7 +384,7 @@ About 9–11 weeks to a releasable line if D-Q-2 is (b); (a) adds the wait for F
 
 Rev 2 resolved D-Q-10 (ride `UPGRADE_VAULT`) and item 4 (bridge vaults are PQ-only, D-Q-1). Still open:
 
-1. **D-Q-2, Falcon timing.** (a) Hold activation until FIPS 206 is final (projected late 2026 – early 2027) and
+1. ~~D-Q-2, Falcon timing~~ — **decided 2026-10-10: Falcon from day one** (§2). Original text: (a) Hold activation until FIPS 206 is final (projected late 2026 – early 2027) and
    ship SLH-DSA owners and Falcon holders together — one upgrade, PQ-only `ye…` from day one, cleanest product.
    (b) Ship SLH-DSA for both now, 8 KB YED transfers until Falcon follows as the next upgrade — earliest
    protection, a second activation later, and `ye…` outputs on SLH-DSA keys to migrate or keep.
