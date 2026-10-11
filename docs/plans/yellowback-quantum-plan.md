@@ -67,9 +67,9 @@ the least consensus change.
 2. **YED holders become post-quantum (D-Q-2).** YED is held in transparent outputs to a `ye…` address and spent
    with a scriptSig; no OP_RETURN carries a transfer. The holder key signs every transfer, so it takes the small
    scheme: **FN-DSA-512 (Falcon-512)**, 666-byte signatures, 897-byte public keys, verification cheaper than
-   ECDSA. Its standard (FIPS 206) is not final as of 2026-10-09, so the opcode is **scheme-agnostic** and the
-   scheme registry carries SLH-DSA from day one and Falcon as a reserved identifier that activates when the bytes
-   are final (§4.1, D-Q-2). A YED holder output is 35 bytes (hash-committed); the cost moves to the spend.
+   ECDSA. Its standard (FIPS 206) is not final, but the owner decided (D-Q-2, 2026-10-10) that Falcon goes live
+   **from day one** with SLH-DSA, at the vault activation (`pqFalconHeight = 0` on mainnet/testnet); the opcode is
+   **scheme-agnostic**, so a final FN-DSA that differs can be added later as scheme 0x03 (§9 item 6). A YED holder output is 35 bytes (hash-committed); the cost moves to the spend.
 3. **One opcode, `OP_CHECKPQSIG` (0xc2), above `OP_NOP10` (D-Q-3).** It pops a scheme identifier, the key hash, the
    public key and the signature, the last two as several ≤ 520-byte pushes it reassembles, so the 520-byte element
    limit (`MAX_SCRIPT_ELEMENT_SIZE`) is **not** raised. The message is the ZIP-243 sighash `OP_CHECKSIG` already
@@ -151,7 +151,7 @@ Scheme registry (`src/crypto/pq/scheme.h`), consensus:
 | `schemeId` | Scheme | pk | sig (incl. hashtype byte) | Status |
 |---|---|---|---|---|
 | `0x01` | SLH-DSA-SHA2-128s (FIPS 205) | 32 | 7,857 | active from activation |
-| `0x02` | FN-DSA-512 (FIPS 206), padded signature format | 897 | 667 | **reserved**; active per D-Q-2 (parameter `pqFalconActive`, mainnet unset until the bytes are final) |
+| `0x02` | FN-DSA-512 (FIPS 206), padded signature format | 897 | 667 | **active from the vault activation** on mainnet/testnet (D-Q-2: `pqFalconHeight = 0`; regtest `-pqfalcon`/`-pqfalconheight`) |
 | other | — | — | — | script failure `SCRIPT_ERR_PQ_SCHEME` |
 
 Sizes are **exact**: a public key or signature of any other length fails. SLH-DSA-SHA2 is chosen over SHAKE for
