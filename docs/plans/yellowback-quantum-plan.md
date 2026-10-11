@@ -404,6 +404,12 @@ Rev 2 resolved D-Q-10 (ride `UPGRADE_VAULT`) and item 4 (bridge vaults are PQ-on
    ≈ $150/YEC. No soundness issue (owner redeem always works); a yb-calibration item before a release that expects YEC
    to rise that far (dollar-denominated or price-tiered constants).
 
+6. **FIPS 206 contingency (Falcon audit §8, 2026-10-10).** If FIPS 206's final bytes differ from round-3 padded Falcon,
+   adding scheme 0x03 is sufficient for consensus (the registry is scheme-indexed and KeyHash binds the scheme byte), but
+   it must ship with: a TOK-PQ amendment (TOK-PQ hard-codes scheme 2), wallet migration to NEW keys (no key reuse across
+   schemes), and permanent retention of the 0x02 / PQClean verify code in the node and every client. Audit:
+   `docs/audits/yellowback-falcon-consensus-audit-20261010.md` (ship, no critical/high findings).
+
 ## 10. References
 
 - Research (workspace-local, untracked): `research_notes/Falcon post quantum Ycash integration/` —
