@@ -106,6 +106,16 @@ yed_decodepayload.ownerPubKey
 { "ownerAddress": "yrExamplePQOwnerAddress11111111111111111111111111111" }
 ```
 
+#### `yed_estimatecollateral`
+
+```json
+{ "requiredZatFloored": 251889169000 }
+```
+
+Note: requiredZat is MINT-5's ratio clause only; requiredZatFloored = max(requiredZat, 4 × FEE_MIN) rounded up to
+1,000 zat (null when requiredZat is null) is what a mint locks in vout[0]. The priceMicroUsd override must lie in
+[PRICE_MIN, PRICE_MAX] (RPC_INVALID_PARAMETER otherwise).
+
 #### `yed_validateaddress <address>`
 
 ```json
