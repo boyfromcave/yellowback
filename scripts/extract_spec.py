@@ -150,6 +150,10 @@ THE QUANTUM LINE  (`upgrade/quantum-vaults`, docs/plans/yellowback-quantum-spec.
          params (`obj.field` = a field of an object param) and result fields, and no `absent` name.  `source` is the
          in-term contract's, unchanged.
   Trees  as the in-term line (EXTRACT_SPEC_*_DIR, default the main trees; a tree not on the quantum line is skipped).
+         A client tree (YecWallet, lightwalletd) is on it when its contract copy's top-level `rpcversion` is >= 7: a
+         copy that states a lower one is skipped by --check-quantum and said so, as a node tree below the line is; a
+         missing or unreadable copy is checked.  --write-quantum writes every client tree named, as before (it is how a
+         client copy moves onto the line), so point EXTRACT_SPEC_WALLET_DIR / _LWD_DIR at the trees meant.
 
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR override `ycash-dd` /
@@ -834,6 +838,16 @@ OVERLAY_LINES = {   # line -> (the check/write command names, the word in messag
 }
 
 
+def copy_version(path):
+    """The top-level `rpcversion` of a generated contract copy, or None (missing, unreadable, or without one)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            v = json.load(f).get("rpcversion")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
 def check_interm(lines, lines_v3, write=False, line="interm"):
     """`--check-in-term` / `--write-in-term`: the in-term line's copies in the trees named (see THE IN-TERM LINE);
     with line="quantum", `--check-quantum` / `--write-quantum` the same for the quantum line (THE QUANTUM LINE)."""
@@ -863,10 +877,18 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
                           (lwd, ("testdata", "yellowback", "contract.json"))):
             if tree is None:
                 continue
-            if os.path.isdir(tree):
-                checks.append((os.path.join(tree, *sub), text))
-            else:
+            if not os.path.isdir(tree):
                 skipped.append("%s (no such tree)" % rel(tree))
+                continue
+            path = os.path.join(tree, *sub)
+            cver = copy_version(path) if line == "quantum" and not write else None
+            if cver is not None and cver < QUANTUM_RPCVERSION:
+                # a client tree not yet on the quantum line, skipped by the check as a node tree below it is (its
+                # own contract copy states the rpcversion it was generated for; a missing copy is still checked).
+                # The write never skips: it is how a client copy moves onto the line.
+                skipped.append("%s (its contract copy is rpcversion %d, not the %s line)" % (rel(tree), cver, word))
+                continue
+            checks.append((path, text))
     if node6:
         doc6 = node_line(node6)
         if doc6 is not None:
