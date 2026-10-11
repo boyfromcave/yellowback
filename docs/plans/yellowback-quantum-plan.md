@@ -27,7 +27,7 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Q4 YED module: MINT payload, PQ-only mints, PQ holder scripts, token index, RPC contract (`rpcversion` 7) | `[x]` merged aa0fd3812 (reviews A+B + delta re-reviews; TOK-PQ, TX_PQCHANNEL, rpcversion 7) | `[x]` port merged 1b023d1d6 (reviews A+B; cross-line 71/71 + 597/597 identical; PQ lookahead) | lightwalletd proto `[ ]` |
 | Q5 node wallet: PQ keystore, seed derivation, signing, size-priced fees | `[x]` merged aa0fd3812 (reviews A+B) | `[x]` port merged 1b023d1d6 (reviews A+B; cross-line 71/71 + 597/597 identical; PQ lookahead) | — |
 | Q6 tests, devnet, walk, roles, fuzz, DoS measurement, CI, cross-line vector identity | `[ ]` | `[ ]` | — |
-| Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[x]` on each quantum branch, tested vs ycash-dd: hawkeye f0f5691→cdc95ef, YEW ca3961f+5319d9a, lightwalletd ef70570, chain-viz dfbef2b, YecWallet ee8b19f, x402 c87a987, yb-calibration 855faaa; ycash6 runs pending |
+| Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[x]` on each quantum branch, tested vs ycash-dd: hawkeye f0f5691→cdc95ef, YEW ca3961f+5319d9a, lightwalletd ef70570, chain-viz dfbef2b, YecWallet ee8b19f, x402 c87a987, yb-calibration 855faaa; all clients also pass against the ycash6 quantum node (2026-10-11); CI green on GitHub for all but x402 (fix in progress) |
 | Q8 release: gate pass, FIPS 206 check, activation decision (D-Q-10), release line version | `[ ]` | `[ ]` | — |
 
 ### Log
