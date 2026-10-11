@@ -26,11 +26,17 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 | Q3 templates: `TX_PQPKH`, PQ owner variant of V and I, standardness and policy limits — **review gate** (`src/script/standard.cpp`, `src/vault/template.cpp`) | `[x]` merged aa0fd3812 (reviews A+B, fixes q/fix3) | `[x]` port merged 1b023d1d6 (reviews A+B; cross-line 71/71 + 597/597 identical; PQ lookahead) | — |
 | Q4 YED module: MINT payload, PQ-only mints, PQ holder scripts, token index, RPC contract (`rpcversion` 7) | `[x]` merged aa0fd3812 (reviews A+B + delta re-reviews; TOK-PQ, TX_PQCHANNEL, rpcversion 7) | `[x]` port merged 1b023d1d6 (reviews A+B; cross-line 71/71 + 597/597 identical; PQ lookahead) | lightwalletd proto `[ ]` |
 | Q5 node wallet: PQ keystore, seed derivation, signing, size-priced fees | `[x]` merged aa0fd3812 (reviews A+B) | `[x]` port merged 1b023d1d6 (reviews A+B; cross-line 71/71 + 597/597 identical; PQ lookahead) | — |
-| Q6 tests, devnet, walk, roles, fuzz, DoS measurement, CI, cross-line vector identity | `[ ]` | `[ ]` | — |
+| Q6 tests, devnet, walk, roles, fuzz, DoS measurement, CI, cross-line vector identity | `[x]` DoS measured (doc/yellowback-pq-dos.md), devnet walk + roles with Falcon, PQ sigcache, zmq race fixed, CI green | `[x]` walk + roles, CI green | — |
 | Q7 clients: YecWallet, YEW, lightwalletd, chain-viz, x402, yb-calibration | — | — | `[x]` on each quantum branch, tested vs ycash-dd: hawkeye f0f5691→cdc95ef, YEW ca3961f+5319d9a, lightwalletd ef70570, chain-viz dfbef2b, YecWallet ee8b19f, x402 c87a987, yb-calibration 855faaa; all clients also pass against the ycash6 quantum node (2026-10-11); CI green on GitHub for all but x402 (fix in progress) |
 | Q8 release: gate pass, FIPS 206 check, activation decision (D-Q-10), release line version | `[ ]` | `[ ]` | — |
 
 ### Log
+
+- 2026-10-11: **all Q0–Q7 work merged and pushed** on both node lines and every client; GitHub CI green on every
+  `upgrade/quantum-vaults` branch. Since Falcon day one: PQ signature cache (reviewed A+B), Q6 devnet (walk `pq`/`falcon`
+  steps, roles with PQ personas, Falcon signer in the Python framework), the inherited ZMQ publisher race fixed (still
+  present on `upgrade/vault`/`harden/yellowback` — owner to decide), chain-wide `sq…` addresses with the PQ address index
+  (reviewed A+B both lines) and their review follow-ups. Remaining before Q8: the owner's release decisions (§9).
 
 - 2026-10-11: **Falcon from day one merged on both lines** (ycash-dd 8119e2a10, ycash6 44c4f48bc; `pqFalconHeight = 0`
   mainnet/testnet; Falcon audit F-1/F-6) after Fable reviews A+B (17/17 cross-line verdicts identical); pushed with
