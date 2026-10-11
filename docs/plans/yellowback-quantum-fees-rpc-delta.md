@@ -68,18 +68,18 @@ yed_getinfo.params.feeBps
       },
       "earlyRedeemFeeBps": [ 500, 250, 100 ],
       "network": {
-        "priceMicroUsd": 18000,
+        "priceMicroUsd": 400000,
         "priceSource": "tip",
-        "plain": { "usdPerKBMicro": 20000, "zatPerKB": 111112 },
-        "yellowback": { "usdPerKBMicro": 50000, "zatPerKB": 277778 },
-        "floorZatPerKB": 100,
+        "plain": { "usdPerKBMicro": 20000, "zatPerKB": 5000000 },
+        "yellowback": { "usdPerKBMicro": 50000, "zatPerKB": 12500000 },
+        "floorZatPerKB": 5000,
         "flatZat": 1000,
         "maxTxFeeZat": 10000000
       }
     },
     "supplyCap": {
       "circulatingZat": 1234567800000000,
-      "priceMicroUsd": 18000,
+      "priceMicroUsd": 400000,
       "capCents": 33333330
     }
   }

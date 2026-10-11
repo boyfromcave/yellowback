@@ -322,11 +322,12 @@ fee(tx)       =  max(flatFloor, min(rateZatPerKB x size / 1000, -maxtxfee))     
   `LEGACY_DEFAULT_FEE` (`amount.h:38`) / the ZIP-317 conventional fee (`ctx.fee`) — all kept as the `max` floor; relay
   floor `DEFAULT_MIN_RELAY_TX_FEE` 100 zat/kB (`main.h:72`; `6: :75`). Cap `DEFAULT_TRANSACTION_MAXFEE` 0.1 YEC
   (`main.h:74`; `6: :77`).
-- Worked values at $0.018: plain 111,112 zat/KB, YED 277,778 zat/KB; an SLH-DSA spend (≈ 9.0 KB:
-  `PQSpendInputSize` 7,981 + 1,000) ≈ 1.0 YEC plain / 2.5 YEC YED (≈ $0.018 / $0.045); a Falcon spend (≈ 2.6 KB)
-  0.29 / 0.72 YEC. The 0.1-YEC cap binds above ≈ 36 KB (YED) / 90 KB (plain) at that price — a 6-input SLH claim
-  underpays its target but is never refused (today's rule; raise `-maxtxfee` in the devnet config). At `PRICE_MAX`
-  the rates are 466 / 1,165 zat/KB; the 1× relay floor binds only above ≈ $200/YEC (plain).
+- Worked values (corrected 2026-10-11, review B N-4: the earlier figures were 10³ too small) at $0.40/YEC: plain
+  5,000,000 zat/KB, YED 12,500,000 zat/KB; an SLH-DSA spend (≈ 9.0 KB: `PQSpendInputSize` 7,981 + 1,000) ≈ 0.45 YEC
+  plain / 1.125 YEC YED (≈ $0.18 / $0.45); a Falcon spend (≈ 2.6 KB) ≈ $0.05 / $0.13. At $0.018 the rates are
+  111,111,112 / 277,777,778 zat/KB (same dollars). At `PRICE_MAX` they are 466 / 1,165 zat/KB, so the 5,000 zat/KB
+  floor (D-Q-23a) binds above ≈ $400/YEC (plain). Owner target (D-Q-26): a PQ transaction ≈ $0.10, range $0.05–$0.50
+  (Bitcoin reference: $0.84–$1.67/kB, $0.12–$0.42 per basic transaction) — these rates meet it.
 
 ### 3.2 Where it lives
 
@@ -356,10 +357,10 @@ node-computed `zatPerKB` (§3.4) and never does price arithmetic.
     "protocol": { "bands": [ { "uptoCents": 100000, "bps": 100 }, { "uptoCents": 1000000, "bps": 50 }, { "uptoCents": null, "bps": 10 } ],
                   "floorCents": 100, "attestFeeBps": 5000, "priceSource": "pMint" },
     "earlyRedeemFeeBps": [ 500, 250, 100 ],
-    "network": { "priceMicroUsd": 18000, "priceSource": "tip" | "fallback",
-                 "plain": { "usdPerKBMicro": 20000, "zatPerKB": 111112 },
-                 "yellowback": { "usdPerKBMicro": 50000, "zatPerKB": 277778 },
-                 "floorZatPerKB": 100, "flatZat": 1000, "maxTxFeeZat": 10000000 }
+    "network": { "priceMicroUsd": 400000, "priceSource": "tip" | "fallback",
+                 "plain": { "usdPerKBMicro": 20000, "zatPerKB": 5000000 },
+                 "yellowback": { "usdPerKBMicro": 50000, "zatPerKB": 12500000 },
+                 "floorZatPerKB": 5000, "flatZat": 1000, "maxTxFeeZat": 10000000 }
   }
 }
 ```
