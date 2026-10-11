@@ -1131,6 +1131,16 @@ onto ycash6 `upgrade/vault-in-term` as branch `it6/port`; T2 `bdfed3228..dc7b79a
 | `vault_getnewowner`, optional `yed_getnewaddress` type: client.cpp rows | server arity check (S1) | `rpcCvtTable` rows `{{},{o}}` and `{{},{s}}` |
 | quantum contract marker in `qa/yellowback-audit.sh` (`falconActive` → rpcversion 7, `--check-quantum`) | contract legs are inline workflow steps | `steps.line.outputs.quantum`; cross-line vectors against dd `upgrade/quantum-vaults` |
 
+**Quantum `sq…` addresses (D-Q-20), 2026-10-11 (ycash-dd `q/sq` → ycash6 `q/sq`)**
+
+| v4.5.0 (`ycash-dd`) | 6.20.0 (`ycash6`) | Consequence |
+|---|---|---|
+| z_sendmany / z_mergetoaddress pay an `sq…` recipient | these take a `libzcash::PaymentAddress`, which has no PQ alternative (adding one touches ~39 files, ZIP-317 action counting, privacy policy) | 6 refuses `sq…` recipients by name ("use sendtoaddress or sendmany"); recorded 6.20.0 limitation |
+| seed restore `-hdseedfile=<hex seed or HDSeed= line>` (random transparent keypool not restored) | wallets have a BIP39 recovery phrase; 6.20.0 had no phrase-restore path | `-mnemonicfile=<phrase file>` on 6 (only on wallet creation; refused for an existing wallet with another seed) |
+| address-index `ScriptType` `P2PQPKH = 3` | 6's enum already has `P2PK = 3` | `P2PQPKH = 4` on 6 — the on-disk type byte of each line's own index; no RPC exposes it |
+| `-mineraddress` decoded by `DecodeDestination` | decoded by `DecodePaymentAddress` | an `sq…` already failed to parse on 6; same error text as dd added |
+| unit tests use `CKey::MakeNewKey` | `CKey::TestOnlyRandomKey` | test-only substitution |
+
 ## 20. x402 agent payments — what other chains' x402 bindings use versus what Ycash has (`x402-ycash/`, its own repository)
 
 Added 2026-10-03 with `docs/plans/x402-agent-payments-plan.md` (revision 1; its §3 is the full
