@@ -409,6 +409,13 @@ Rev 2 resolved D-Q-10 (ride `UPGRADE_VAULT`) and item 4 (bridge vaults are PQ-on
    it must ship with: a TOK-PQ amendment (TOK-PQ hard-codes scheme 2), wallet migration to NEW keys (no key reuse across
    schemes), and permanent retention of the 0x02 / PQClean verify code in the node and every client. Audit:
    `docs/audits/yellowback-falcon-consensus-audit-20261010.md` (ship, no critical/high findings).
+   **FIPS 206 status (audit F-4, checked by the coordinator 2026-10-10 via web search):** still a draft; final expected late
+   2026 – early 2027. NIST's FIPS 206 team published a new FN-DSA plan on Sept 28 seeking feedback, aiming at one signing
+   procedure specified tightly enough that two correct implementations produce the same signature (deterministic,
+   testable signing). That targets SIGNING (wallet side); consensus verification stays compatible if the final keeps
+   round-3's signature/key encodings and hash-to-point — a change to those is the scheme-0x03 case above. Post-pin PQClean
+   issues remain unverified (api.github.com not reachable by the auditor). Sources: x.com/P3b7_/status/2105296438615814333,
+   encryptionconsulting.com/education-center/fn-dsa-fips-206/.
 
 ## 10. References
 
