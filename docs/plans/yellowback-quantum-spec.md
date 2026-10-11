@@ -609,7 +609,7 @@ virtual bool CheckPQSig(uint8_t scheme, const std::vector<unsigned char>& sigWit
 ```
 `TransactionSignatureChecker` implements it: `SignatureHash(scriptCode, *txTo, nIn, sig.back(), amount, branchId,
 txdata)` → `pq::Verify`. On 6 the constructor requires `PrecomputedTransactionData` (`bitcoin-tx.cpp:488`, 6
-`interpreter.h` checker ctor). The result is not cached in the signature cache: `CachingTransactionSignatureChecker`
+`interpreter.h` checker ctor). The result is cached in the signature cache (q/pqcache, 2026-10-11: key binds scheme, sighash, pk and sig under an independent nonce; successes only): `CachingTransactionSignatureChecker`
 overrides only `VerifySignature(…CPubKey…)` (dd `sigcache.h:27`).
 
 ---

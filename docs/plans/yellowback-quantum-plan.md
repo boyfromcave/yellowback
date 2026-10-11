@@ -353,8 +353,10 @@ hold.
   default -par, **≈ 383 MB undo and ≈ 1.2 GB peak RSS per node** (the per-tx `CCoins` model loads a large creating tx;
   true of any large bare output today) — inside the envelope Ycash already admits (legacy multi-CHECKSIG staged block
   65 s; spend-only Sapling block ≈ 20 s; full Sapling z→z ≈ 11 s at ≈ 4 ms/spend). Release resource guidance should say
-  so. PQ verifications are not sig-cached (a valid PQ input is verified 2× at mempool entry, again at connect): a PQ
-  sigcache is a recommended policy follow-up (sigcache.cpp, review gate).
+  so. PQ verifications are now sig-cached (2026-10-11, reviewed A+B on both lines): an entry is
+  SHA256(pqNonce ‖ scheme ‖ sighash ‖ len-prefixed pk ‖ len-prefixed sig), stored on success only; a miner's own
+  240-SLH block connects in ≈ 2 ms of verify instead of ≈ 18–23 ms. A node that never saw the transactions still
+  verifies everything once, so the worst-case figures above are unchanged.
 
 ## 7. Branches in every repo
 
