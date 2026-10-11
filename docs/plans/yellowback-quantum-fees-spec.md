@@ -178,6 +178,12 @@ MINT-10). AFEE-1 (`:409`) moves with it, after MINT-5 (it needs the same `pMint`
 amount, AFEE-1′, MINT-10. The Python model (`yellowback_model.py:2741-2850`) mirrors the order; the golden vector's
 `"invalid"` entries keep their verdicts (137 `bad-mint-amount`, 217, 231, 251 are not fee cases).
 
+**As built (review fix-up, §5.1):** when ARMED, a **lower bound** of MINT-8′'s amount is also checked right after the
+shape/payee clauses and **before MINT-9**: `vout[feeVout].nValue >= ProtocolFeeZat(cents, xMint)`. Since
+`pMint = min(xMint, aMint) <= xMint` and `ProtocolFeeZat` is non-increasing in the price, a fee below that bound is
+below the fee at every `pMint` MINT-9 can produce, so the early refusal (`bad-mint-fee`) changes no valid verdict — it
+only stops a 1-zat fee output from buying a full bundle verification. The exact amount clause stays after MINT-5.
+
 ### 1.6 Bounds and overflow (both lines)
 
 - `ProtocolFeeUnits` ≤ 145,000,000 at `maxMint` (int64 trivially). `ProtocolFeeZat` max = 1.45×10^14 zat at
@@ -307,10 +313,14 @@ HALT-2, which is D-Q-24's stated reliance), `docs/mapping.md` §22 row, and `yb-
 ```
 targetUsdPerKB:  plain PQ      20,000 µUSD/KB ($0.02)   -pqfeeusdperkb      (0 = off: today's -pqfeerate behaviour)
                  vault/YED     50,000 µUSD/KB ($0.05)   -yellowbackfeeusdperkb (0 = off)
-price:           Snapshots[tip].pMint  (the cross-section xMint at the index tip — the lowest of the three medians, so
-                 the YEC fee errs high; undefined under HALT_NO_PRICE or with no index/startHeight — then "fallback")
-rateZatPerKB  =  price defined ? max(relayFloorPerKB x 1, ceil(targetUsdPerKB x COIN / price)) : pqFeeRate (-pqfeerate)
-fee(tx)       =  max(flatFloor, min(rateZatPerKB x size / 1000, -maxtxfee))     -- capped, never refused (today's rule)
+price:           max(pFast, pMid, pSlow) at the index tip (every window defined; review M-1, §5.1 — the draft's
+                 Snapshots[tip].pMint, the min of windows, overcharged in YEC exactly when YEC was cheapest);
+                 undefined while ANY halt bit is set at the tip, or with no index/startHeight — then "fallback"
+rateZatPerKB  =  price defined ? max(floorPerKB, ceil(targetUsdPerKB x COIN / price)) : pqFeeRate (-pqfeerate)
+floorPerKB    =  max(5,000 zat/KB, -pqfeerate)                                   (review A-7, §5.1)
+fee(tx)       =  max(flatFloor, min(rateZatPerKB x size / 1000, cap))            -- capped, never refused
+cap           =  plain non-PQ: -maxtxfee (unchanged);  PQ-input or Yellowback/vault:
+                 min(max(-maxtxfee, $2 at the price), -yellowbackmaxtxfee 10 YEC)  (D-Q-23a, review M-1, D-Q-26)
 ```
 
 - Which transactions, which rate: a transaction with a **PQ input** (today's trigger: `fPQInput`, `wallet.cpp:5947`;
@@ -339,14 +349,21 @@ fee(tx)       =  max(flatFloor, min(rateZatPerKB x size / 1000, -maxtxfee))     
   `ParseMoney`-style with 6 decimals → µUSD).
 - Consumers unchanged in shape: `wallet.cpp:5947-5949` (`PQSizeFee`), `txbuilder.cpp:49-64` (`YedSizeFee`),
   `rpc/vault.cpp:1731-1747` (`YedSizeFee`); 6: `wallet.cpp:6840-6843`, `txbuilder.cpp:850-852, :965`, `rpc/vault.cpp:1765`.
-- `-pqfeerate` keeps its meaning as the fallback rate and the 1× floor (D-Q-16 superseded only when a price exists).
+- `-pqfeerate` keeps its meaning as the fallback rate (no price) **and stays a floor with a price**: the rate is
+  never below max(5,000 zat/KB, `-pqfeerate`), so an operator who raises `-pqfeerate` still raises every PQ and
+  Yellowback rate (review A-7; D-Q-16 superseded only in that the dollar target usually binds above it). Its
+  default stays 1× the relay floor (100 zat/KB), so by default the 5,000 zat/KB term is the floor.
 
 ### 3.3 Which price, exactly
 
-Not `V.pMint` (a plain PQ spend has no vault; a redeem's `pMint` may be a year old), not `pClaim` (the max of
-windows would under-pay). `Snapshots[tip].pMint` is the same value `yed_getinfo` already reports as `pMint`
-(`rpc/yellowback.cpp:855`) so clients and the node agree; a client without an index (YEW via lightwalletd) reads the
-node-computed `zatPerKB` (§3.4) and never does price arithmetic.
+Not `V.pMint` (a plain PQ spend has no vault; a redeem's `pMint` may be a year old). **Superseded by review M-1
+(§5.1):** the draft chose `Snapshots[tip].pMint` (the min of windows, "errs high") and rejected the max of windows as
+under-paying; the implementation publishes the **highest** window median (`pClaim`-style), because a fee in dollars
+should cost the payer the target at the most favourable current price, not the most YEC in a falling market, and
+**no** price while any halt bit is set (the `-pqfeerate` fallback, bounded by the cap). The price is published
+atomically by the index (`AttestedFeePrice()`, review N-3) and reported as `params.fees.network.priceMicroUsd`; a
+client without an index (YEW via lightwalletd) reads the node-computed `zatPerKB` (§3.4) and never does price
+arithmetic.
 
 ### 3.4 RPC fields (rpcversion **8**, both lines; `rpc/yellowback.cpp:61`, `6: :61`)
 
@@ -365,6 +382,13 @@ node-computed `zatPerKB` (§3.4) and never does price arithmetic.
 }
 ```
 
+- **As built** (`q/fees` @ `430002b16`; the machine-readable form is
+  [`yellowback-quantum-fees-rpc-delta.md`](yellowback-quantum-fees-rpc-delta.md) revision 2): `network` also carries
+  `fallbackZatPerKB` (`-pqfeerate`) and `yellowback.{maxTxFeeUsdMicro, maxTxFeeCeilingZat, maxTxFeeZat}` (the cap's
+  dollar term, its `-yellowbackmaxtxfee` ceiling and the cap in force; §5.1); `params.supplyCap` is
+  `{circulatingZat, issuedBeforeStartZat, priceMicroUsd, capCents, maxVaultShareBps, vaultShareFloorCents,
+  maxVaultCents}` (D-Q-25, MINT-6b); `yed_listclaimable` rows carry `pMint`; `yed_getfeepayee` loses its
+  `collateralZat` argument and its `feeZat` field (`yed_getfeepayee <refHeight> [selectorHex]`).
 - Removed (the contract's `removed` list): `params.feeMinZat`, `params.feeBps` (`:698-699`). Kept:
   `params.feeZat` (the flat floor), `params.pq.feeRateZatPerKB` (`:749`) now **equal to `fees.network.plain.zatPerKB`**
   so rpcversion-7 clients keep working; `params.earlyRedeemFeeBps` and `classes[].earlyRedeemFeeBps` (now "of the debt").
@@ -444,9 +468,70 @@ Tests / docs: `src/test/yellowback_math_tests.cpp` (27 `FeeZat` uses, `:190-240`
 | 8 | Regtest column | Same bands, floor and `maxMint` as mainnet; delete the `feeBps 25` / `maxMint $10,000` overrides and rewrite the handful of tests that assumed them |
 | 9 | Bands on which amount | `mintedCents` (the debt) — not the burn, not the assignments, not the collateral |
 | 10 | Mint fee when ARMED needs `pMint` after MINT-9 | Split MINT-8: shape/payee before MINT-9, amount right after MINT-5 (§1.5); AFEE-1 moves with it |
-| 11 | Network-fee price | `Snapshots[tip].pMint` (min of windows); fallback to `-pqfeerate` when undefined; YED-rate for every YED-builder and `vault_*` transaction, plain rate for any other PQ-input transaction, nothing else touched |
+| 11 | Network-fee price | Draft: `Snapshots[tip].pMint` (min of windows). **As built (review M-1, §5.1): the max of the tip's window medians, none under any halt bit**; fallback to `-pqfeerate` when undefined; YED-rate for every YED-builder and `vault_*` transaction, plain rate for any other PQ-input transaction, nothing else touched |
 | 12 | rpcversion | 8 on both lines (`feeMinZat`/`feeBps` removed, `yed_estimatefee` signature changed); keep `params.pq.feeRateZatPerKB` = the effective plain rate |
 | 13 | D-Q-23 mentions `bondMin`/`residualMinZat` "to follow the same pattern" | Out of scope here (no dollar anchor exists for a bond before the set is live); leave to yb-calibration as §9 item 5 says |
 | 14 | `TxLog.feeZat`, `feePaidZat` | Unchanged semantics (the amount paid) |
 | 15 | An early fee larger than the collateral at extreme prices | Impossible for a vault that exists (K14′, §1.6); the function returns `MAX_MONEY` on overflow as today, so the verdict is `bad-redeem-early-fee`, never a wrapped number |
 | 16 | H-12 on the other branches | `harden/yellowback` keeps $2,500; the reversal is recorded for the quantum line and inherited by `upgrade/vault` only through the gate merge |
+
+---
+
+## 5. Implementation record (`ycash-dd` `q/fees` @ `430002b16`, reviewed; 2026-10-11)
+
+The dd implementation is done and has passed two independent reviews (findings M-1, A-2..A-7, L-1, N-3 and the
+MINT-8′ ordering fix-up). The changes below are the review's and the owner's (D-Q-26) on top of §1–§3; they are
+policy except §5.1's MINT-8′ lower bound, a module rule reordering. `ycash6` and the clients follow (quantum plan
+status).
+
+### 5.1 Review-driven changes
+
+- **Network-fee price = the max of the tip's window medians, none under a halt (review M-1).** §3.1/§3.3 as
+  amended: `PublishFeePrice` publishes max(pFast, pMid, pSlow) at the tip; any halt bit (`HALT_NO_PRICE`,
+  `HALT_GLOBAL_RATIO`, `HALT_DIVERGENCE`, …) publishes no price, and the wallets fall back to `-pqfeerate`. The price
+  is an `std::atomic` written by the index under `cs_main` and read lock-free (N-3).
+- **`-yellowbackmaxtxfee`, default 10 YEC (review M-1).** An absolute YEC ceiling on the Yellowback cap: cap =
+  min(max(`-maxtxfee`, `-yellowbackmaxtxfeeusd` $2 at the price), `-yellowbackmaxtxfee`), with or without a price
+  (`yellowback.maxTxFeeCeilingZat`). `YellowbackWallet::Commit` and `rpc/vault.cpp` Broadcast submit with the
+  absurd-fee check off, so both enforce this cap themselves (`YedFeeOverCap`: a Commit over it is not committed, a
+  Broadcast over it throws `absurdly-high-fee`); the broadcast flag is restored by a scope guard (A-3).
+- **`-pqfeerate` stays a floor (review A-7).** With a price the rate floor is max(5,000 zat/KB, `-pqfeerate`)
+  (`AttestedFeeFloorPerKB`); without one the rate is `-pqfeerate` itself (§3.2).
+- **Every Yellowback-builder transaction priced by size (review A-2).** `YedNetworkFee` prices a P2PKH-funded mint
+  or a claimant-funded claim by its estimated size too (`YedEstimatedSize`: PQ inputs at `PQSpendInputSize`, others
+  150 bytes, + 1,000), never below the flat fee, capped as above.
+- **The owner-path clamp (review L-1).** An owner-path vault spend whose dollar-priced network fee would take
+  everything the vault has left after the protocol fees (a small vault after a crash) is no longer refused
+  `vault-value-too-small`: the builder clamps that fee to max(flat, floorPerKB × estimated size)
+  (`YedFloorSizeFee`), so the owner is never stuck behind a policy rate.
+- **Plain PQ transfers share the Yellowback cap (owner D-Q-26).** `PQMaxTxFee()` = `YedMaxTxFee()`: the wallet caps a
+  PQ-input transaction's size fee at the Yellowback cap, not `-maxtxfee`, and `CommitTransaction` /
+  `ReacceptWalletTransactions` submit with the absurd-fee check off exactly when the transaction spends a PQ input
+  and its fee is within that cap (`PQFeeWithinCap`). `sendrawtransaction` is untouched: an outside submit keeps
+  `-maxtxfee` unless `allowhighfees`. At $0.40 a Falcon plain transfer is ≈ $0.05 (≈ 0.13 YEC), an SLH-DSA spend
+  ≈ $0.18 (≈ 0.45 YEC), both under the $2 (5 YEC) cap.
+- **MINT-8′ lower bound before MINT-9 (consensus, module rule).** §1.5 as amended: `ProtocolFeeZat(cents, xMint)`
+  checked before the bundle is verified; same verdict, no valid verdict changes. Unit test
+  `mint8_lower_bound_before_mint9`.
+
+### 5.2 Readings the implementation took (smallest reading, both lines identical)
+
+- **Supply cap (D-Q-25) values the circulating supply at `xMint(R)` with `Snapshots[R].issuedZat`.** MINT-6 and
+  MINT-6b read the reference snapshot's `issuedZat`, which is now the circulating supply at R (the snapshot below the
+  start height is seeded with `Params::issuedBeforeStart = CirculatingSupplyAt(startHeight − 1)`, the closed-form
+  subsidy sum from genesis; `Snapshot::Virtual()` keeps 0 and `ComputeSnapshot` substitutes the seed at the start,
+  review A-4), priced at the cross-section `xMint` — the price MINT-6 already used, not the bundle's `pMint`.
+  `yed_getinfo.params.supplyCap` reports the same base at the tip.
+- **MINT-6b is per vault, not per owner.** `mint-vault-share` bounds one mint's debt by max(10 % of the MINT-6 cap,
+  $10,000); an owner may hold several such vaults (owner identities are not linked on chain, and a per-owner sum
+  would need new global state). Silent when the cap is undefined, as MINT-6 is.
+- **Class C skips MINT-6 when `recapRatioBps` equals its base ratio — owner item.** MINT-6 refuses over the cap only
+  when the class's `baseRatioBps < recapRatioBps` (W20/IT-5); with the in-term set class C's base is 50,000 =
+  `recapRatioBps`, so class C mints are never refused by the aggregate cap — only MINT-6b's per-vault bound and
+  HALT-2 bound them. This is the inherited W20 design, unchanged here, but D-Q-24's $100,000 `maxMint` and D-Q-25's
+  larger cap base make it material: **the owner should confirm** that class C stays outside the aggregate cap on the
+  fee line (alternatives: apply MINT-6 to every class, or a separate, higher cap for the recapitalisation tier).
+- **The `-pqfeerate` floor wording.** "`-pqfeerate` defaults to 1× the relay floor" (D-Q-16, briefing) stands; with
+  a price it is a floor under the dollar rate together with the 5,000 zat/KB policy floor — the floor is the larger
+  of the two — and without a price it is the rate (§3.2).
+
