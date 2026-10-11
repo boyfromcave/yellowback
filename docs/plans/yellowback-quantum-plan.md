@@ -343,6 +343,15 @@ hold.
 - **Sapling is unchanged.** Shielded YEC's spend authority and proof soundness remain pre-quantum until Ycash
   adopts Zcash's PQ pool. Said plainly in every disclosure.
 
+- **Measured DoS envelope (Q6, ycash-dd `doc/yellowback-pq-dos.md`, 2026-10-10, Apple M5, -O3):** per verify ECDSA
+  19.8 µs, SLH-DSA 247 µs, Falcon 26.5 µs; full 2 MB blocks: P2PKH 0.26 s, SLH-DSA 0.06 s, Falcon 0.03 s at -par=1; the
+  R-B1 staged-output worst case (miner-only, ≈ 380 MB of earlier chain to set up) 18.2 s at -par=1 / 8 s connect at
+  default -par, **≈ 383 MB undo and ≈ 1.2 GB peak RSS per node** (the per-tx `CCoins` model loads a large creating tx;
+  true of any large bare output today) — inside the envelope Ycash already admits (legacy multi-CHECKSIG staged block
+  65 s; spend-only Sapling block ≈ 20 s; full Sapling z→z ≈ 11 s at ≈ 4 ms/spend). Release resource guidance should say
+  so. PQ verifications are not sig-cached (a valid PQ input is verified 2× at mempool entry, again at connect): a PQ
+  sigcache is a recommended policy follow-up (sigcache.cpp, review gate).
+
 ## 7. Branches in every repo
 
 `upgrade/quantum-vaults`, cut from `origin/upgrade/vault`, in: `ycash-dd`, `ycash6`, `yecwallet-dd`,

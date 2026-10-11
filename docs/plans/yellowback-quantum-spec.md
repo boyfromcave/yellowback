@@ -22,8 +22,8 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 **Rulings after consensus review A of `q/op` (2026-10-10):**
 - **R-A1 (verification bound):** with 0 consensus sigops, per-block PQ verification is bounded by
   `MAX_OPS_PER_SCRIPT` × inputs (one signature re-checked ~11× via `OP_PICK`; staged in a bare output, a spend input
-  is ~41 B), **the same order as the legacy `OP_CHECKSIG` loop worst case Ycash already has** (≈20 µs/op ECDSA vs
-  ≈22 µs SLH, ≈7 µs Falcon); both need a miner to include non-standard outputs. Accepted: a hard per-block PQ verify
+  is ~41 B), **the same order as the legacy `OP_CHECKSIG` loop worst case Ycash already has** (measured Q6, 2026-10-10: ≈20 µs/op ECDSA vs
+  ≈250 µs SLH, ≈21–27 µs Falcon — R-A1's original 22/7 µs figures were wrong); both need a miner to include non-standard outputs. Accepted: a hard per-block PQ verify
   bound would need an execution-time counter, a new consensus rule. The "≈252 SLH spends per block" bound in §5.1
   and plan §6 is wrong and is replaced by this.
 - **R-B1 (supersedes R-A1's "accepted"; both reviewers flagged it):** at most **one executed `OP_CHECKPQSIG` per
@@ -34,7 +34,7 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
   outputs, whose spends Ycash has never charged; its creation costs ~9 KB of earlier block space per verify and is
   miner-only (non-standard). Given up: PQ k-of-n in one script, e.g. a PQ 2-of-2 or a PQ x402 channel (a later upgrade can lift the cap).
   Re-review A (2026-10-10): residual bound **≤ 2 PQ verifies per input** (one in a non-push-only scriptSig, one in
-  the scriptPubKey; P2SH: 1); staged outputs ≈48k verifies per 2 MB block, the legacy CHECKSIG-at-spend order.
+  the scriptPubKey; P2SH: 1); staged outputs ≈48k verifies per 2 MB block (measured: 48,000 in 1.97 MB; 18.2 s at -par=1, 8.0 s connect at default -par; ≈ 383 MB undo and ≈ 1.2 GB peak RSS per node), the legacy CHECKSIG-at-spend order by count — by time ≈ 18× a legacy single-CHECKSIG staged block, ≈ 1.7× a full Sapling z→z block, 3.6× below the legacy multi-CHECKSIG staged block consensus already admits (ycash-dd doc/yellowback-pq-dos.md).
 - **R-B2:** `AreInputsStandard`'s P2SH redeem-script check counts the PQ policy sigops toward `MAX_P2SH_SIGOPS`, so a
   redeem script containing `OP_CHECKPQSIG` is non-standard (spec §2.3's claim now holds for every shape).
 - **R-B3:** `-pqfalcon`/`-pqfalconheight` on a non-regtest network is an `InitError`, like `-nuparams`.
