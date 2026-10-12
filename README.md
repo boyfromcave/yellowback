@@ -127,28 +127,31 @@ Earlier designs that needed no network upgrade are kept as history: see the
 
 ## How Yellowback compares with DigiDollar
 
-DigiByte's DigiDollar was the first working digital dollar on a proof-of-work UTXO chain with no
-company and no custodian, and it is where Yellowback started: the self-custodial vault, the
-term-graded collateral and the canonical tiers are DigiByte's ideas
-([acknowledgements](docs/innovation-acknowledgements.md)). Yellowback builds on them, and departs
-from them where Ycash's priorities differ: quantum resistance, an open price feed, a shorter and
-safer term, and a vault system that serves more than one application.
+DigiByte's DigiDollar proved that a self-custodial digital dollar can live on a proof-of-work UTXO
+chain with no company and no custodian. It is Yellowback's starting point: the time-locked vault,
+the term-graded collateral and the canonical tiers are DigiByte's ideas
+([acknowledgements](docs/innovation-acknowledgements.md)). Yellowback takes that design further in
+two directions. It **innovates**: a general-purpose vault system that carries bridges as well as a
+dollar, post-quantum signatures from the first block, and a price feed anyone can join. And it
+**hardens**: shorter terms, an exit at any time, open market discipline on underwater vaults, a
+supply cap, and dollar-priced fees that pay the people who keep the price honest.
 
-| | Ycash Yellowback | DigiByte DigiDollar |
+| Area | Ycash Yellowback | DigiByte DigiDollar (the starting point) |
 |---|---|---|
-| **Foundation** | A general-purpose vault system added to the chain; the dollar is one application on it | A purpose-built set of dollar rules in the node |
-| **Vault applications** | Three: Yellowback (YED), the wYEC bridge to Ethereum, the nYEC bridge to NEAR | One: DigiDollar |
-| **Quantum resistance** | Post-quantum from day one: vault owners sign with SLH-DSA, dollar holders and transfers with Falcon-512 | None: secp256k1 and Schnorr keys throughout |
-| **Cross-chain** | Wrapped YEC on Ethereum and NEAR, backed 1:1 by YEC in vaults, attested by a bonded signer set; Ycash never reads the other chain | No bridge |
-| **Price feed** | Two independent sources that must agree: mining pools quote in their blocks, and an **open** set of bonded attestors signs prices. Anyone can join by posting a bond (10,000–20,000 YEC); the largest bonds hold the seats, and a lying attestor loses its bond | A fixed list of 35 oracle keys written into the node; 7 of them must sign each price |
+| **Foundation** | A general-purpose vault system in the chain's rules; the dollar is one application on it, so new applications need no new consensus code | A dedicated set of dollar rules in the node |
+| **Applications on the vaults** | Three: Yellowback (YED), the wYEC bridge to Ethereum, the nYEC bridge to NEAR | One: DigiDollar |
+| **Quantum resistance** | Post-quantum from day one: vault owners sign with SLH-DSA, dollar holders and transfers with Falcon-512, so no vault or dollar is ever protected by a key a quantum computer could break | Classic elliptic-curve keys (secp256k1, Schnorr) |
+| **Cross-chain** | Wrapped YEC on Ethereum and NEAR, backed 1:1 by YEC in vaults and attested by a bonded signer set; Ycash's rules never depend on another chain | Single chain |
+| **Price feed** | Two independent sources that must agree, mining pools quoting in their blocks and an **open** set of bonded price attestors. Anyone can join by posting a bond (10,000–20,000 YEC); the largest bonds hold the seats, an attestor can leave at any time, and one that signs a false price loses its bond. If the two sources diverge, minting pauses | A set of 35 oracle keys configured in the node, 7 of which must sign each price |
 | **Who enforces the rules** | Every full node | Every full node |
-| **Terms** | 30 days to 1 year, in three classes; deliberately short, because Ycash is risk-averse about locking collateral against a price nobody can forecast years ahead | 30 days to 10 years, in ten tiers |
-| **Collateral** | 300 % (30–90 days), 400 % (91–180 days), 500 % (181–365 days): the longer the lock, the more margin it must carry | 500 % at 30 days down to 200 % at 10 years |
-| **Getting out early** | The owner can redeem at any time; before the term ends a fee of 5 %, 2.5 % or 1 % of the debt applies (shorter classes pay more) | No early redemption; a position must wait out its full term |
-| **An underwater vault** | Anyone can claim a vault that falls below 125 % collateral, through a pending release the signer set can cancel if it is wrong; the owner keeps the surplus | No liquidations; the protocol adjusts collateral requirements and redemption burns, and the position rides out the term |
-| **Fees** | A protocol fee in dollars, tiered by size (1 % of the debt up to $1,000, 0.5 % to $10,000, 0.1 % above; $1 minimum) at mint and at redeem, shared by the block's miner and the attestors; a network fee priced in dollars per kilobyte, capped | A miner fee in DGB (at least 0.1 DGB) |
+| **Terms** | 30 days to 1 year in three classes: deliberately short, because Ycash is risk-averse about locking collateral against a price nobody can forecast years ahead | 30 days to 10 years in ten tiers |
+| **Collateral** | 300 % (30–90 days), 400 % (91–180 days), 500 % (181–365 days): the longer the lock, the more margin it carries | 500 % at 30 days down to 200 % at 10 years |
+| **Getting out early** | The owner can redeem at any time; before the term ends a fee of 5 %, 2.5 % or 1 % of the debt applies, so the shortest commitments pay the most to break them | Redemption when the term ends |
+| **An underwater vault** | Open market discipline: anyone can claim a vault that falls below 125 % collateral, through a pending release the signer set can cancel if it is wrong, and the owner keeps the surplus | The protocol adjusts collateral requirements and redemption burns while the position rides out its term |
+| **Fees** | A protocol fee in dollars, tiered by size (1 % of the debt up to $1,000, 0.5 % to $10,000, 0.1 % above; $1 minimum) at mint and at redeem, shared between the block's miner and the attestors who signed the price; a network fee priced in dollars per kilobyte, capped | A miner fee in DGB (at least 0.1 DGB) |
 | **Mint size** | $100 to $100,000 per vault | $100 to $100,000 per mint |
-| **Supply** | Capped at 15 % of the circulating YEC supply at the attested price, and 10 % of that per vault | No published cap |
+| **Supply** | Capped at 15 % of the circulating YEC supply at the attested price, with no single vault above 10 % of the cap | Not capped in the published design |
+| **Review and testing** | Every consensus change reviewed twice, independently, on both node lines; the two lines must produce byte-identical results; an internal security audit and a Falcon consensus audit; no external audit yet | Published design documents and a test suite |
 | **Wallets and tools** | Desktop wallet, mobile wallet, light-client server, hosted backend, agent payments (x402), explorer, mining pool, calibration tool | Qt desktop wallet and RPC |
 
 ## Contributing
