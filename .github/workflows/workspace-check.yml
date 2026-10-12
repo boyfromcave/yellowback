@@ -20,7 +20,7 @@ name: workspace-check
 # before they merge.
 on:
   push:
-    branches: [ main, harden/yellowback, upgrade/vault, 'feature/**', 'ci/**' ]
+    branches: [ main, harden/yellowback, upgrade/vault, upgrade/quantum-vaults, 'feature/**', 'ci/**' ]
   pull_request:
   workflow_dispatch:
 
