@@ -37,14 +37,14 @@ yellowback-workspace/
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
 │                    (the branches above are the branches of record; the line being built is `upgrade/vault` — rule 2)
-├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `main` — plan docs/plans/yellowback-wallet-plan.md
-├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `main` — plan docs/plans/role-pool-regtest-plan.md
-├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `main` — plan docs/plans/chain-viz-plan.md
-├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `main` — plan docs/plans/x402-agent-payments-plan.md
-├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `main` — calibrates the constants baked into Yellowback releases
+├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `upgrade/vault` — plan docs/plans/yellowback-wallet-plan.md
+├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `upgrade/vault` — plan docs/plans/role-pool-regtest-plan.md
+├── chain-viz/       THE CHAIN VISUALIZER (chain-viz), its own repo, branch `upgrade/vault` — plan docs/plans/chain-viz-plan.md
+├── x402-ycash/      x402 AGENT PAYMENTS (x402-ycash), its own repo, branch `upgrade/vault` — plan docs/plans/x402-agent-payments-plan.md
+├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `upgrade/vault` — calibrates the constants baked into Yellowback releases
 ├── hawkeye/         THE BRIDGE ATTESTOR (Hawkeye), its own repo, branch `upgrade/vault` — the wYEC bridge's attestor sidecar, plan hawkeye/docs/hawkeye-bridge-plan.md
 ├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
-├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `main` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
+├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `upgrade/vault` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
 │   ├── plans/       THE DEVELOPMENT PLANS (current = yellowback-upgrade-plan.md, the vault network upgrade,
@@ -127,10 +127,11 @@ commit to it — and the tag `upgrade/vault-pre-in-term` marks each repo's `upgr
 **`harden/yellowback`** — the evidence-based hardening plan's branch
 (`docs/plans/yellowback-evidence-based-hardening-plan.md`), cut 2026-10-05 from each repo's branch
 of record below — is the **no-upgrade fallback**: its fixes merge `harden/yellowback` →
-`upgrade/vault`, never the other way; it is worked in `wt/` worktrees. The workspace repo itself
-and `yb-calibration` have no `upgrade/vault` and stay on `harden/yellowback` (their content serves
-both lines); `wyec` is on `main`. The branches of record named in this file are where the fallback
-work returns.
+`upgrade/vault`, never the other way; it is worked in `wt/` worktrees. The workspace repo itself,
+`yb-calibration` and `wyec` are on `upgrade/vault` too (GitHub default on all three since 2026-10-12;
+the workspace's and `yb-calibration`'s content serves both lines, and their `harden/yellowback`
+branches are the fallback's). **Every writable repo in this workspace checks out `upgrade/vault`.**
+The branches of record named in this file are where the fallback work returns.
 
 **The current design is the vault network upgrade, with Yellowback as its rule module.** v3 (price
 attestation, `feature/yellowback-price-attest` in all three v4.5.0-era forks, cut from
@@ -174,11 +175,11 @@ and no baseline — and it reaches the node only through stock RPCs (`gettxout`,
 `signrawtransaction` as a verifier, `z_*` receipt RPCs) and the read-only `yed_*` RPCs: no node
 change on either node line, nothing for node or pool operators to enable
 (`docs/plans/x402-agent-payments-plan.md` §4).
-Parameter calibration goes in `yb-calibration/` only — its own repository on `main`, net new, no
+Parameter calibration goes in `yb-calibration/` only — its own repository on `upgrade/vault`, net new, no
 reference and no baseline. It derives and checks the constants each Yellowback release bakes into
 the node (both node lines): a constant changes in `ycash-dd`/`ycash6` only with the calibration
 result that justifies it, and the calibration tool never edits a node fork itself.
-The wYEC bridge contracts go in `wyec/` only — its own repository on `main`, net new, no reference
+The wYEC bridge contracts go in `wyec/` only — its own repository on `upgrade/vault`, net new, no reference
 and no baseline. It is the Ethereum side of the vault upgrade's bridge and the component the
 bridge's guardians and relayer run against; Ycash consensus never reads Ethereum (upgrade plan R2),
 so nothing in `wyec/` is ever a dependency of either node line.
