@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$BRANCH" in
-            harden/yellowback|upgrade/vault|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
+            harden/yellowback|upgrade/vault|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
           clone() {  # repo branch dir sparse-dir
