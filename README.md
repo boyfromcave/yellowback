@@ -18,7 +18,7 @@ knows nothing about dollars or other chains. Applications add their own rules on
 
 ```text
   Yellowback          wYEC bridge         nYEC bridge
-  (YED, a dollar)    (to Ethereum)       (to NEAR, coming)
+  (YED, a dollar)    (to Ethereum)       (to NEAR)
         │                  │                   │
   ┌─────┴──────────────────┴───────────────────┴─────┐
   │  Post-quantum vault system                       │
@@ -44,7 +44,7 @@ knows nothing about dollars or other chains. Applications add their own rules on
 |---|---|---|
 | **Yellowback** | **Ycash Yellowback (YED)**: a dollar backed by YEC locked in vaults (`1 YED = $1`). Lock YEC to mint YED; burn the YED to get the YEC back. Undercollateralized vaults can be claimed by others. | In development |
 | **wYEC bridge** | Wrapped YEC on Ethereum, backed 1:1 by YEC in vaults. Bridge attestors run Hawkeye. Ycash never reads Ethereum. | In development; contracts are drafts, not deployed |
-| **nYEC bridge** | Wrapped YEC on NEAR, the same design as wYEC. | Coming: an exploratory Hawkeye branch, not yet merged |
+| **nYEC bridge** | Wrapped YEC on NEAR, the same design as wYEC. Hawkeye attests for both bridges. | In development; NEAR contracts not deployed |
 
 **Naming:** Yellowback is the system, YED is the unit. Say "250 YED", and "Yellowback is a dollar
 on Ycash".
