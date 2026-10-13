@@ -588,6 +588,7 @@ streamer, YEW, x402, yb-calibration.
 | G-4 coalition commitment | **reshaped** | upgrade adoption ≥ 70 % of blocks and the listed exchanges before the height |
 | G-6 valve | **retired** | |
 | G-9 frozen files | **reshaped** | the **consensus review gate**: every changed line under `src/consensus/`, `src/script/`, `main.cpp`, `src/primitives/`, both lines, reviewed by two people independent of the author, with the four-part check in the PR body |
+| CI tiers (audits 04/F-1, 07/F-11, 2026-10-12) | **added** | the lockorder and sanitizer unit legs gate PRs that touch overlay or hook files (`lockorder-pr`, `sanitizers-pr`); the full variants stay nightly; every functional run is `--fail-on-skip` (a script that prints SKIP fails CI) |
 | §6 trust statement | **rewritten** | §10 |
 | §9 work plan | H0, H1, H3-a, H3-c, H4, H5 kept; H2 and H3-b's lock-in/sunset parts dropped; H6–H8 become P6–P8 |
 
