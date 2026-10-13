@@ -1,0 +1,48 @@
+# INFO — W3-V-8, 01/N-3, 01/N-4 — ACP malleability and pinning of set-signed spends: name the in-flight variant in `vault_send`, keep the wallet's index-0 assumption explicit, pin the hashtype in the unit test, and put template-variant replacement to the owner
+
+**Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/W3-V-8-acp-pinning` off `upgrade/vault` in each: `src/rpc/vault.cpp` (`Broadcast`, `vault_buildunlock`/`BuildIntentCancel` remembered-build path), `src/test/vault_state_tests.cpp` (`set_sig_checker`), `doc/vault-rpc.md` (`vault_refee` "Pinning (review S1)" paragraph `:422-428`, `vault_send` `:464-470`), `qa/rpc-tests/vault_refee.py`. Wallet/RPC/test only. A mempool replacement policy (§3 option 3) is an owner decision; if taken, a separate PR in `src/main.cpp` ATMP (gated file).
+**Audit source.** Wave 3: `docs/audits/quantum-vault-ecosystem-wave3/01-vault-primitive-consensus.md` W3-V-8 (lines 92-94); `docs/audits/quantum-vault-ecosystem-wave3/verification/01-verification.md` W3-V-8 (line 20, "PARTIALLY, Info — … `Refee` normalises the template input to index 0 … only the remembered-build path of `vault_buildunlock` / `BuildIntentCancel` assumes index 0 … Adds a pinning angle (N-3)"), N-3 (line 169, detail lines 183-189), N-4 (line 170), §1 (lines 29-79: what the ACP digest leaves unsigned); `docs/audits/quantum-vault-ecosystem-wave3/07-node-rpc-mempool-durability-ci.md` W3-N-10 (txid malleability, documented); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row W3-V-3..V-9. Wave 4: `docs/audits/quantum-vault-ecosystem-wave4/01-node-lines-recheck-and-delta.md` §1.1 row W3-V-8 / 01/N-3 / 01/N-4 (line 67, "STILL OPEN … Its `mapNextTx` conflict lookup in `Broadcast` should share a helper with the W4-N-1 fix"), §3.5 (lines 269-273).
+**Status:** pending — re-verified at ycash-dd `da5e0fe` / ycash6 `0742e43` (2026-10-13): open on both lines; `Refee` still normalises the template input to index 0 (`:904`) and re-asserts the ACP sighash (`:915-916`), the remembered-build paths still assume index 0, `Broadcast` still throws an empty message on a mempool conflict.
+
+## 1. Finding
+
+By design (plan §15.2 step 4; the done `MEDIUM-01-V-2`) a set signature covers its own input, every output, `nLockTime`, `nExpiryHeight` and the shielded components under `SIGHASH_ALL|SIGHASH_ANYONECANPAY` (`ycash-dd/src/vault/checker.cpp:28-43`), but not the other inputs; and the selector push and any extra scriptSig push are outside every signature. Anyone can therefore re-fund a signed unlock/cancel (the feature) and, until confirmation, change its txid. The verifier re-derived that no state rule or wallet record reads an unsigned field to anyone's advantage (`docs/audits/quantum-vault-ecosystem-wave3/verification/01-verification.md` §1 table) — the only effect is **timing (01/N-3)**: a third party who broadcasts a re-funded variant first blocks the builder's own version wherever the variant arrived first, because ATMP has no replacement (`src/main.cpp:1734-1742`, "Disable replacement feature for now" → `return false`), and the variant confirms at the pinner's fee (floor: the relay minimum). For an I CANCEL this races a signed deadline (`h − coinHeight < delay`, `src/vault/state.cpp:545`). On Ycash's mostly empty blocks it clears in a block or two — Info. `doc/vault-rpc.md:422-428` already documents the pinning and the operator remedy (broadcast early, send to well-connected peers, re-fund from a confirmed coin).
+
+Two wallet details: (a) the conflict refusal at `main.cpp:1740` returns `false` without a reject reason, so `Broadcast` (`src/rpc/vault.cpp:971-975`; ycash6 `:988-992`) throws `RPC_TRANSACTION_ERROR` with an **empty** message — an operator whose cancel was pinned sees nothing useful; (b) the remembered-build path assumes the template input at index 0 (`vault_buildunlock` `:1771`, `:1776`, `:1780`; `BuildIntentCancel` `:1880`, `:1887`; ycash6 `:1792`, `:1797`, `:1801`, `:1901`, `:1908`) — true for the wallet's own builds, which is the only input there (`Refee` normalises a foreign hex to index 0 and asserts the sighash is unchanged, `:891-943`; `vault_refee` locates the template with `FindTemplateInput`, `:1984`), so cosmetic. 01/N-4: the unit ACP assertion (`src/test/vault_state_tests.cpp:1491-1498`) is parameterised on the test's own constant `SET_SIG_HASHTYPE` (`:49`) — it "passes under either hashtype"; ACP is pinned only by the re-fee tests (`set_sig_checker_refee` `:1674`, `qa/rpc-tests/vault_refee.py`) and by `vault_vectors_tests.cpp:379-406` (which recomputes the digest with `SIGHASH_ALL | SIGHASH_ANYONECANPAY` against the JSON). Both lines identical.
+
+## 2. Root cause
+
+- Intended malleability (ACP + unsigned selector); first-seen mempool policy without replacement (`main.cpp:1734-1742`).
+- `src/rpc/vault.cpp:963-979` (ycash6 `:980-996`) — `Broadcast` does not explain a mempool conflict.
+- `src/test/vault_state_tests.cpp:49`, `:1491-1498` — a self-referential assertion.
+
+## 3. Fix options considered
+
+1. **Wallet diagnostics (recommended):** when a vault spend conflicts in the mempool, find the conflicting transaction and, if it spends the same template prevout with the same set sighash, say so and return its txid — the operator's spend *is* in flight, under another txid.
+2. **Rebroadcast helper:** a `vault_send` option that, on such a conflict, waits for the variant to confirm or be evicted. Out of scope; the doc's remedy suffices.
+3. **Template-variant replacement policy (owner decision):** in ATMP, allow a transaction to replace a mempool transaction that spends the same template prevout with the **same set sighash** (identical outputs, by ACP) when it pays a strictly higher absolute fee and fee rate (BIP125 rules 3-4, no other conflicts, no descendants). Removes the low-fee pinning against a cancel's deadline; a mempool policy change in a gated file with its own DoS review. Not recommended unless pinning is observed on devnet/testnet.
+4. **Bind the fee inputs** (back to `SIGHASH_ALL`). Re-opens the builder's veto that MEDIUM-01-V-2 closed. Rejected.
+
+## 4. Recommended fix
+
+1. **`Broadcast` (`src/rpc/vault.cpp:963-979`; ycash6 `:980-996`):** before `AcceptToMemoryPool`, if any input is in `mempool.mapNextTx` (under `mempool.cs`) — through the shared helper that `LOW-W4-N-1-ycash-mempool-spent-fee-coins.md` adds for the same lookup (one definition of "spent by the mempool" in the file) — look up the conflicting transaction; if it spends the same template prevout and `SetSighash` of both (at the template index of each, `FindTemplateInput`) are equal, throw `RPC_TRANSACTION_ERROR` `vault-variant-in-mempool: a re-funded variant of this spend (same set signatures) is already in the mempool as <txid>; it pays the same outputs; wait for it to confirm, or re-fund from a confirmed coin and send after it is evicted`; otherwise `txn-mempool-conflict: input <n> (<outpoint>) is spent by <txid>`. Never an empty message.
+2. **Index-0 assumption (cosmetic):** in `vault_buildunlock` (`:1771`) and `BuildIntentCancel` (`:1880`), replace the literal `0` with the index `FindTemplateInput` returns for the memo, or `assert` it is 0 with a comment ("this wallet's own builds put the template input first; foreign hexes go through `Refee`, which normalises").
+3. **01/N-4 (unit test):** in `set_sig_checker` (`vault_state_tests.cpp:1491-1498`) add an assertion that does not depend on `SET_SIG_HASHTYPE`: compute the expected digest with the literal `0x81` (`SIGHASH_ALL | SIGHASH_ANYONECANPAY`) and check `SetSigChecker` accepts signatures over it; sign over the `SIGHASH_ALL` (`0x01`) digest and check they are **refused**; and keep the parameterised branch. The test then fails if the consensus hashtype ever changes silently.
+4. **Docs:** `doc/vault-rpc.md` "Pinning (review S1)" (`:422-428`): the new `vault-variant-in-mempool` error and what to do; `vault_send` (`:464-470`): "a vault spend's txid is not final until it confirms; track it by its template prevout (`vault_list`), not its txid" (also W3-N-10). Record option 3 in the plan's open items for the owner.
+
+## 5. Tests
+
+- **Functional `qa/rpc-tests/vault_refee.py` (both lines):** node 1 re-funds a signed cancel built by node 0 and broadcasts it first (a pinned variant); `n0.vault_send(original)` → `vault-variant-in-mempool` naming node 1's txid; after the variant confirms, the intent is cancelled (the outcome is unchanged); a non-vault conflict (spend the fee coin elsewhere first) → `txn-mempool-conflict` with the txid. Replace the existing `assert_raises_rpc('', …)` calls that relied on the empty message (check `vault_rpc.py:262` and `vault_refee.py:184` (ycash6 `:189`); `vault_rpc.py:227` is a script failure, not a conflict) with the specific reasons where they are conflicts.
+- **Unit:** the 01/N-4 assertions above (both lines) — the test that would have caught a silent hashtype regression.
+
+## 6. Acceptance criteria
+
+- `vault_send` never fails with an empty message on a mempool conflict and names the in-flight variant when there is one; the unit test pins `0x81` independently of its own constant; the doc tells operators to track template spends by prevout; option 3 is recorded for the owner.
+
+## 7. Risks and side effects
+
+- None for consensus. Option 3, if ever taken, is a relay-policy change that needs its own DoS analysis (replacement cycling) and both lines.
+
+## 8. Effort estimate and dependencies
+
+- 0.5 day code + tests, 0.25 day docs, both lines. Independent, except that the `mapNextTx` lookup shares its helper with `LOW-W4-N-1-ycash-mempool-spent-fee-coins.md` (whichever lands first adds it). Context: the done `MEDIUM-01-V-2` (ACP), `LOW-01-V-4-V-5` (selector malleability).
