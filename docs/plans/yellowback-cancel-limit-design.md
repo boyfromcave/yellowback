@@ -10,6 +10,25 @@ heads (`src/yellowback/state.cpp`, `params.cpp:110`, `module.cpp:46`).
 
 ---
 
+## Owner decisions (2026-10-13)
+
+The owner answered §6 on 2026-10-13. This design is **approved for implementation** with these choices:
+
+| # | Question | Decision |
+|---|---|---|
+| 3 | Approach | **C2, escalating co-signed cancels (CAN-2)**, not C0 "always require two" |
+| 1 | One free hold | **Accepted**: the first cancel on a vault needs one attestor; a lone seat can delay one liquidation about 12 h per vault per week |
+| 2 | Cap | **`CANCEL_SIGNERS_MAX` = 5** (regtest 3); schedule 1, 2, 3, 4, 5, 5, …; `CANCEL_QUIET` = 8,064 blocks (7 days; regtest 40) |
+| 4 | Claimant's fees | **No repayment** by cancellers (C3 rejected) |
+| 5 | Owner's residual | **Held** up to `CANCEL_QUIET`, or until the position closes (C5 / CAN-3) |
+| 6 | Penalty | **Include now: C4b**. A cancel carries the canceller's signed price statement at the claim's reference height, and EQV-1 slashes a member whose regular attestation at that height carries a different price. This ships together with C2 and C5 rather than as a phase 2. |
+| 7 | Unlock budget | **Left as is**: S-3 is unchanged and the primitive is not touched. Document R-1d and size the YED set's `rateLimitBps` with it in mind. |
+
+Scope of the change: one module change on both node lines (C2 + C5 + C4b), plus attestor-agent support for gathering
+co-signatures and price statements. It needs the consensus review gate (two reviewers), a golden regeneration under
+the 03/T-1 process, and a yb-calibration T5 re-run before the release. It depends on HIGH-03-H-1 (CAN-1) and
+MEDIUM-01-V-2 (ANYONECANPAY set signatures) having landed.
+
 ## 1. The threat
 
 **Setting (after CAN-1).** Take a YED vault `V` with debt `D` that is claimable at height `h`: RED-4 holds by
