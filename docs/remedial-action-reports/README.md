@@ -3,7 +3,7 @@
 Handoff documents for the agents and developers who implement fixes for the findings of the 2026-10-13
 quantum / vault ecosystem security audit (two waves: seven area audits, each independently re-verified). The audit reports themselves are kept out of this repository; the `docs/audits/quantum-vault-ecosystem/...` citations inside each report refer to them and are available from the audit owner. Severities are the post-verification ones.
 
-- `pending/` — not yet implemented. `done/` — implemented and merged (move the file, add the PR links).
+- `pending/` — not yet implemented. `done/` — implemented and merged on `upgrade/vault`: the file is moved, its Status line carries the UTC completion timestamp, and a closing "Completion record" lists the commits.
 - **File name:** `<SEVERITY>-<audit-id>-<repo>-<slug>.md`, severity first so a directory listing sorts by priority:
   `HIGH-03-H-1-ycash-yed-claim-cancel-refund.md`, `MEDIUM-01-V-2-ycash-set-sig-anyonecanpay.md`,
   `LOW-02-PQ-1-ycash-falcon-drbg-wipe.md`. Severity ∈ `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`. Tightly coupled
