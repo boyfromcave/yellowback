@@ -47,8 +47,9 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 - **R-A3 (transaction version; audit 04/F-2, 2026-10-13):** the vault templates, `OP_CHECKSETSIG`,
   `OP_CHECKSETDORMANT`, `OP_CHECKPQSIG` and TOK-PQ are defined for **v4** (Sapling version group, ZIP-243 sighash)
   transactions only. Under `UPGRADE_VAULT` a transaction whose `nVersionGroupId ≠ SAPLING_VERSION_GROUP_ID` is
-  invalid (`bad-vault-tx-version-group-id` on ycash6, `ContextualCheckTransaction`; ycash-dd has no v5 type and
-  already rejects every non-Sapling group once Sapling is active, `bad-sapling-tx-version-group-id`). No ZIP-244
+  invalid (`bad-vault-tx-version-group-id` on ycash6, `ContextualCheckTransaction`; ycash-dd has no v5 type — a v5
+  transaction does not deserialize — and already rejects every non-Sapling group once Sapling is active,
+  `bad-sapling-tx-version-group-id`). No ZIP-244
   message is defined for the vault opcodes; a network upgrade that brings v5 to Ycash must define it then. On
   regtest, scheduling any of NU5..NU6.2 together with Vault is an `InitError` (ycash6 builds V1 history-tree
   leaves in the Vault epoch, so no order of the two is usable). The mempool/miner rechecks and the vault RPCs'
