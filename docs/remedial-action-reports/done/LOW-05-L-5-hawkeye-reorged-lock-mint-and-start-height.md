@@ -1,6 +1,6 @@
 # LOW — 05/L-5 — A mint of a reorged-away lock is judged `Ok` (alarm only); a wrong `start_height` makes an attestor challenge and slash honest proposers
 
-Repos / branches to change: `hawkeye` (`fix/05-L-5-exposure-pause-start-height` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-5 (`:255-265`); `verification/05-verification.md` row L-5 (`:24`); `00-consolidated.md` row 05/L-1..L-5. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-L-5-exposure-pause-start-height` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-5 (`:255-265`); `verification/05-verification.md` row L-5 (`:24`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -59,3 +59,13 @@ Repos / branches to change: `hawkeye` (`fix/05-L-5-exposure-pause-start-height` 
 ## 8. Effort estimate and dependencies
 
 1.5 days. Shares `signing_paused` scope with `HIGH-05-H-2` (land after it) and the schema migration slot with `HIGH-05-H-1`.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:22Z
+- **hawkeye** `upgrade/vault` merge dc4d80f (branch `fix/bridge-wave2`, pushed): 94ab2b3, 3116e46, and the edge-table fix in 470dcaf.
+  - A matching mint or proposal on a REORGED lock gets an exposure verdict. A finalized `Minted` moves the lock to the terminal state `MINTED_UNBACKED`, with no slash. A proposal on such a lock is withdrawn by challenge, even by its own proposer.
+  - The `exposure` alarm is persisted (store V8, `exposure_acks`) and pauses the mint side on mainnet and testnet. New commands: `hawkeye exposure list` and `hawkeye exposure ack`. New status and metric: `hawkeye_exposure_unacked`.
+  - `start_height`: refused on mainnet. Elsewhere, with an empty ledger, start-up is refused if the set's oldest live bridge vault is below it, unless `--i-accept-blind-start`.
+- **Tests:** 350 passed (engine u, u2, u3 new); clippy, fmt and doc clean. §6 criteria 1–3 met.
+- **Not taken:** the `meta.ycash_start_height` marker; the report itself calls it unnecessary once the start-up check exists.

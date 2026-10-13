@@ -1,6 +1,6 @@
 # LOW — 05/L-3 — A successor bridge does not inherit `consumed`; Hawkeye's `lockId`-keyed Mint record both guards and blocks across a migration
 
-Repos / branches to change: `wyec` (`fix/05-L-3-predecessor-consumed` off `upgrade/vault`); `hawkeye` (`fix/05-L-3-mint-sign-once-per-deployment` off `upgrade/vault`, store schema; re-pin after the wyec change). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-3 (`:235-244`); `verification/05-verification.md` row L-3 (`:22`), contract re-read (`:107-114`); `00-consolidated.md` row 05/L-1..L-5. · Status: pending
+Repos / branches to change: `wyec` (`fix/05-L-3-predecessor-consumed` off `upgrade/vault`); `hawkeye` (`fix/05-L-3-mint-sign-once-per-deployment` off `upgrade/vault`, store schema; re-pin after the wyec change). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-3 (`:235-244`); `verification/05-verification.md` row L-3 (`:22`), contract re-read (`:107-114`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -87,3 +87,18 @@ The EIP-712 structs are unchanged → `eip712.json` digests unchanged; the ABI a
 ## 8. Effort estimate and dependencies
 
 wyec 1 day; Hawkeye store/engine/bindings 1.5 days; tests 1 day. **≈ 3.5 days.** Depends on `LOW-05-T-1` (pin stamp) and should share the re-pin with `HIGH-05-H-2`.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:22Z
+- **wyec** `upgrade/vault` merge dfd51cb (pushed): 28e806e.
+  - An immutable `predecessor`, and `isConsumed` recursive over the chain of bridges, checked in `mint`, `proposeMint` and also `_mint`. The `_mint` check is beyond the report: it closes a proposal-on-successor race, which a test proves.
+  - New `ConsumedView` adapter for a previous-generation predecessor.
+  - `Deploy.s.sol` gains successor deployment; design §4.6 covers the migration.
+  - Cost: about +4k gas per mint with one predecessor.
+- **hawkeye** `upgrade/vault` merge dc4d80f (pushed): 470dcaf.
+  - Mint sign-once is per deployment (store V9: key `(lock_id, chain_id, bridge)`, one `(amount, recipient)` per lock across deployments by trigger; pre-V9 rows backfilled).
+  - A lock consumed on the bridge or any predecessor, read at the finalized block, is never signed.
+  - Re-pinned to 28e806e; ABI and vector stamp regenerated.
+- **Tests:** hawkeye 350 passed (s_migration new), `forge test` 128/128, check-test-counts 104/104 and 24/24; wyec 104/104 (Successor ×5, `test_Deploy_Successor`). §6 criteria 1–4 met.
+- **Open (owner):** this constructor change goes to the external audit together with the 05/H-2 floors. Every deployment, Sepolia included, needs the new constructor argument.
