@@ -24,6 +24,11 @@ The owner answered §6 on 2026-10-13. This design is **approved for implementati
 | 6 | Penalty | **Include now: C4b**. A cancel carries the canceller's signed price statement at the claim's reference height, and EQV-1 slashes a member whose regular attestation at that height carries a different price. This ships together with C2 and C5 rather than as a phase 2. |
 | 7 | Unlock budget | **Left as is**: S-3 is unchanged and the primitive is not touched. Document R-1d and size the YED set's `rateLimitBps` with it in mind. |
 
+**Implementation (2026-10-13, lane `fix/cancel-limit`, both node lines):** as specified, with the choices recorded in the
+upgrade plan §15.10 ("The per-vault cancel limit"): one signature per co-signer is both the co-signature and the C4b
+statement; the CANCEL_COSIGN payload body is empty (the count rides the carrier, so the set signature stays sign-once);
+`IntentRecord` gains `claimRefHeight` as well as `heldBy`; every cancel, the first included, carries one statement.
+
 Scope of the change: one module change on both node lines (C2 + C5 + C4b), plus attestor-agent support for gathering
 co-signatures and price statements. It needs the consensus review gate (two reviewers), a golden regeneration under
 the 03/T-1 process, and a yb-calibration T5 re-run before the release. It depends on HIGH-03-H-1 (CAN-1) and
