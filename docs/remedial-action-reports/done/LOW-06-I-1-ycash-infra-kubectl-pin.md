@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-infra` (`fix/06-I-1-kubectl-pin` off `upgrade/vault`).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:247-250` (I-1); verification `verification/06-verification.md:26` (verdict), `:76` ("verbatim"); consolidated `00-consolidated.md` row 06/Y-2..Y-5 and R10.
-Status: pending
+Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -48,3 +48,13 @@ Every image in `charts/ycash-lightwallet/values.yaml` carries a tag (`local` on 
 ## 8. Effort estimate and dependencies
 
 - 1–2 hours. No dependencies. Option 3 (self-built arm image) as a separate follow-up if wanted.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:12Z
+- **ycash-infra** `upgrade/vault` merge 01c8b50 (branch `fix/clients`): 6644d22.
+  - `bitnami/kubectl` is pinned by its multi-arch digest `sha256:999d5eb2…52b7` (kubectl v1.37.1); `yc.image` renders `repo[:tag][@digest]`.
+  - New `scripts/lint-images.sh`, run in `make lint` and CI, fails on `latest` or any unpinned rendered image.
+  - The bump procedure is in the infra plan §1.3.
+- **Deviation:** pinned by digest only, because Bitnami publishes no versioned tag any more.
+- **Tests:** `make lint` green (helm lint kind + EKS, kubeconform 39/39); the negative cases fail as intended. Open: a kind smoke run with the merged chart.

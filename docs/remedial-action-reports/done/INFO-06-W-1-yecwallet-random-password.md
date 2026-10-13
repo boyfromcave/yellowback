@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yecwallet-dd` (`fix/06-W-1-random-password` off `upgrade/vault`).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:207-213` (W-1); verification `verification/06-verification.md:25` (verdict), `:74` (W-1 detail), `:95` (V6-N3); consolidated `00-consolidated.md` row 06/Y-2..Y-5 ("yecwallet randomPassword fix").
-Status: pending
+Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -68,3 +68,9 @@ Declare it in `src/connection.h` (next to `createZcashConf` at `:51`) so a test 
 ## 8. Effort estimate and dependencies
 
 - 1 hour. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:12Z
+- **yecwallet-dd** `upgrade/vault` merge dede7fd (branch `fix/clients`): d0f8fcd. `randomPassword()` (option 2, as recommended) returns a 24-character `QString` from `bounded(sizeof(alphanum) - 1)`: no NUL truncation and no leaked buffer. It is declared in `connection.h`.
+- **Tests:** new `tests/connection_test.cpp` (10,000 draws; length, alphabet and coverage) passed 4/4 locally; it is registered in CMake and the CI workflow. §6 met except the manual fresh-profile `ycash.conf` check, which is open.

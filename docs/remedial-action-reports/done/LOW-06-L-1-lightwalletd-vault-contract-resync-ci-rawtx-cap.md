@@ -2,7 +2,7 @@
 
 Repos / branches to change: `lightwalletd` (`fix/06-L-1-vault-contract-rawtx-cap` off `upgrade/vault`). Cross-reference only: `yew` (V6-N1's client-side alternative, not recommended).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:176-183` (L-1), `:185-191` (L-2); verification `verification/06-verification.md:23-24` (verdicts, L-1 field attribution corrected, L-2 impact sharpened), `:66-70` (detail), `:93` (V6-N1); consolidated `00-consolidated.md` rows 06/L-1, L-2, R8, R10.
-Status: pending
+Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -86,3 +86,14 @@ Separately, `ValidateRawTransaction` refuses any raw transaction over 200 kB (`m
 ## 8. Effort estimate and dependencies
 
 - ~0.5 day (fixture copy, constant, test, CI step). No consensus review. Depends on nothing; coordinate the re-copy with the node reports that change `doc/vault-rpc-contract.json` (R5 `MEDIUM-01-V-2-ycash-set-sig-anyonecanpay.md`, R7 `MEDIUM-07-F-5-ycash-sign-once-record-restore.md`) by re-running the CI step after they land.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:12Z
+- **lightwalletd-dd** `upgrade/vault` merge 9dd0f7a (branch `fix/clients`):
+  - 5f22bee: `maxRawTxBytes = 2000000`, matching the node; rate cost scales per 200 kB.
+  - 983077a: the vault fixture is re-synced from ycash-dd 055d9c2; new `scripts/sync-node-contracts.sh` (`--check`, `--github`, `--required`); CI fails, never skips, on `upgrade/*` and `harden/*`; `VaultSetMember` gains `exitheight` and `unlockheight` (the proxy was silently dropping them; regenerated with the pinned generators).
+- **Workspace:** mapping §15 row (merge 8b9d1b5).
+- **Tests:** frontend 41/41, including `TestInputValidationRawTxSize` and `TestRateLimitRawTxCost`; the other Go packages pass; the generated files reproduce.
+- **Finding:** the report was wrong that the reverse check would keep passing. `GetSet` proxies the member list, so the stale fixture had been hiding dropped fields.
+- **Follow-up:** re-run `scripts/sync-node-contracts.sh` after the set-sig and yed-cancel node lanes change `doc/vault-rpc-contract.json`.

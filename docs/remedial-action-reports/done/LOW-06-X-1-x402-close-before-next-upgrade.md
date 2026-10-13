@@ -2,7 +2,7 @@
 
 Repos / branches to change: `x402-ycash` (`fix/06-X-1-close-before-upgrade` off `upgrade/vault`).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:142-151` (X-1), `:153-157` (X-2); verification `verification/06-verification.md:21-22` (verdicts), `:62-64` (detail: refund unaffected); consolidated `00-consolidated.md` row 06/Y-2..Y-5 (x402 "close before next NU" MUST unimplemented).
-Status: pending
+Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -56,3 +56,15 @@ X-2 (Info): the CLI's Falcon YED key seed is a plaintext hex file written with m
 ## 8. Effort estimate and dependencies
 
 - 1 day (plumbing + tests), 0.25 day spec/runbook. No dependencies; the lightwalletd `upgrades` field already exists (`yellowback.proto:253`).
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:12Z
+- **x402-ycash** `upgrade/vault` merge 87b7879 (branch `fix/clients`):
+  - 5cd282f (TypeScript): each channel's close bound is lowered below the next activation height and persisted as a `#closeBy` record; close reason `upgrade`; the client picks t below the activation and refuses to open inside the margin.
+  - 2325f3e: the same in the Python mirror.
+  - 755ac68: spec and runbook, including X-2 (the Falcon key file is plaintext: `0600`, a dedicated user, an encrypted volume or tmpfs).
+- **Workspace:** mapping §20 row (merge 8b9d1b5).
+- **Tests:** npm lint and typecheck clean; `npm test` 812 plus the other workspaces pass (`upgradeClose.test.ts` 7/7); Python: ruff and mypy clean, pytest 467 passed.
+- **Finding:** the report named `GetYellowbackInfo`; the upgrade list is on `GetChainInfo`.
+- **Open:** a devnet case that opens a channel below a pending activation needs devnet support for a pending Vault height, so the §6 devnet criterion is not met yet.
