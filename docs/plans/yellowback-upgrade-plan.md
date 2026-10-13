@@ -1015,7 +1015,7 @@ template input; narrowed after the 2026-10-13 audit (07/F-1) and its review: the
 its own `SCRIPT_ERR_SETSIG`, or `SCRIPT_ERR_VERIFY` with selector 3 (the `OP_VERIFY` after `OP_CHECKSETDORMANT`),
 scores 0; everything else runs the stock checks with the stock score, so an owner's or a sibling input's bad
 signature scores 100 (`main.cpp` `FindVaultTemplateInput`, `IsVaultSetStateScriptError`, both lines;
-`qa/rpc-tests/vault_dos.py`). Cost: at DoS 0 a peer forces at most one garbage set-signature recovery; a valid
+`qa/rpc-tests/vault_dos.py`). Cost: at DoS 0 a peer forces at most two garbage set-signature recoveries (the isolated check plus one re-run under the previous epoch's branch id, which keeps the stock `old-consensus-branch-id` diagnosis, DoS 10, for set signatures over the previous branch; `VaultTemplateFailsOnSetState`); a valid
 owner spend's second PQ verification hits the signature cache; a valid set-signature spend pays `k` extra recoveries. (26) **Open, for O-9:** §4.2's "challenger-set majority
 slashes the relayer" is not expressible: `SET_REMOVE` is signed by members of the target's own
 set, and a one-seat relayer set has no other member. Today the relayer is slashable only by
