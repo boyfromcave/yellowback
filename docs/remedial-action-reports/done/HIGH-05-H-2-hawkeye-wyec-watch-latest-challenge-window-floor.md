@@ -1,6 +1,6 @@
 # HIGH — 05/H-2, 05/T-3 — Watch `MintProposed` at `latest`, enforce a mainnet `challengeWindow` floor and a non-zero `mintCap`, alarm and pause on a finality stall, and test it with pinned finality
 
-Repos / branches to change: `hawkeye` (`fix/05-H-2-watch-latest` off `upgrade/vault`), `wyec` (`fix/05-H-2-mainnet-floors` off `upgrade/vault`; a contract change here means a re-pin in Hawkeye's `eth/tools/fetch-wyec.sh`, ABI export and vector regeneration, §7). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §H-2 (`:108-137`), T-3 (`:275`); `verification/05-verification.md` §H-2 (`:81-96`), T-3 (`:27`); `00-consolidated.md` rows 05/H-2, 05/T-3 and recommendation R3. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-H-2-watch-latest` off `upgrade/vault`), `wyec` (`fix/05-H-2-mainnet-floors` off `upgrade/vault`; a contract change here means a re-pin in Hawkeye's `eth/tools/fetch-wyec.sh`, ABI export and vector regeneration, §7). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §H-2 (`:108-137`), T-3 (`:275`); `verification/05-verification.md` §H-2 (`:81-96`), T-3 (`:27`); `00-consolidated.md` rows 05/H-2, 05/T-3 and recommendation R3. · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -130,3 +130,18 @@ EIP-712 structs do not change, so every `eip712.json` digest stays byte-identica
 
 - Hawkeye scan/judging/store: 2 days. Floors + stall pause + status: 1 day. Tests (anvil epoch fixture is the fiddly part): 1.5 days. wyec contract/script/tests/doc: 0.5 day. Re-pin + ABI + vectors: 0.5 day. **Total ≈ 5.5 days.**
 - Dependencies: share the V6 migration with `HIGH-05-H-1` (one migration, land in one PR or sequence H-1 → H-2 with V6 → V7). `LOW-05-T-1` (vector stamp from the pin) should land before the re-pin so the stamp cannot go stale again. `MEDIUM-05-M-4` adds its floors to the same `check_bridge`/`startup_checks` code; land after this.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:41Z
+- **hawkeye** `upgrade/vault` merge 113d380 (branch `fix/bridge-watch`):
+  - 3f251dc: `MintProposed`/`MintChallenged` are watched at `latest`. Provisional rows are confirmed or dropped at finality; store migration V7 adds `pending_mints.provisional`.
+  - 3f251dc also adds the alarms `eth-finality-stall` and `mint-cap-unbounded`, each of which pauses mint signing on mainnet, and the mainnet floors in `check_bridge`.
+  - 3e403ea: wyec re-pinned to f50eae6; ABI and vector stamp regenerated.
+- **wyec** `upgrade/vault` merge d3d34e2:
+  - 4881782: constructor floors on chain 1 (`challengeWindow` ≥ 2 h, threshold ≥ 2, `mintCap` ≠ 0) and the deploy-script floors.
+  - b2f50e7: floor tests; design-doc finality paragraph.
+- **Tests:** engine 32/32 (o1–o5, r, r2 new), store migrations 12, hawkeye-eth anvil 7; wyec 98/98. All seven §6 criteria met on anvil.
+- **Choice:** a provisional proposal does not move the lock to PROPOSED. Moving it early made an honest challenge look like griefing once the L-4 rule was in.
+- **Open (owner):** keep the constructor floors before the external audit (P5)? P8 mainnet values via yb-calibration. The NEAR adapter has no window/cap floors yet (follow-up).
+- **Push order:** wyec before hawkeye (the pin f50eae6 must exist on GitHub).

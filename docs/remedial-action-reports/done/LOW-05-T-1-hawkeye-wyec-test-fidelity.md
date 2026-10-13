@@ -1,6 +1,6 @@
 # LOW — 05/T-1, 05/T-2, 05/T-4 — Test fidelity: the EIP-712 vector stamp follows the pin, exact `expectRevert` selectors, one copy of the contract tests, negative EIP-712 vectors
 
-Repos / branches to change: `hawkeye` (`fix/05-T-1-test-fidelity` off `upgrade/vault`: `eth/test`, `eth/tools`, `eth/vectors`, `crates/hawkeye-eth/tests`, CI); `wyec` (`fix/05-T-2-exact-reverts` off `upgrade/vault`: `test/`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` "Test fidelity" rows T-1, T-2, T-4 (`:273-276`); `verification/05-verification.md` rows T-1, T-2, T-4 (`:25-28`); `00-consolidated.md` rows 05/T-1, T-2, recommendation R8. (T-3 is in `HIGH-05-H-2`.) · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-T-1-test-fidelity` off `upgrade/vault`: `eth/test`, `eth/tools`, `eth/vectors`, `crates/hawkeye-eth/tests`, CI); `wyec` (`fix/05-T-2-exact-reverts` off `upgrade/vault`: `test/`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` "Test fidelity" rows T-1, T-2, T-4 (`:273-276`); `verification/05-verification.md` rows T-1, T-2, T-4 (`:25-28`); `00-consolidated.md` rows 05/T-1, T-2, recommendation R8. (T-3 is in `HIGH-05-H-2`.) · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -96,3 +96,11 @@ The changes *are* tests; the meta-checks: CI stamp step (§4.1), bare-`expectRev
 ## 8. Effort estimate and dependencies
 
 T-1 0.5 day; T-2 0.5 day; T-4 1.5 days. **≈ 2.5 days.** Land T-1 **before** any re-pin (`HIGH-05-H-2`, `LOW-05-L-3`).
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:41Z
+- **hawkeye** `upgrade/vault` merge 113d380 (branch `fix/bridge-watch`): d00b170 (the vector stamp is read from the pin; one copy of the contract tests via `test/Upstream.t.sol`; `check-test-counts.sh`; 7 negative EIP-712 vectors checked in Foundry and in Rust).
+- **wyec** `upgrade/vault` merge d3d34e2: 5525891 (exact revert selectors; four more bare reverts than the report listed).
+- **Tests:** hawkeye `forge test` 122/122 (98 upstream plus 24 Hawkeye); wyec 98/98; the Rust vector and eip712 suites pass. All four §6 criteria met.
+- **Choice:** `Upstream.t.sol` imports the upstream suites with no wrapper contracts, so no test runs twice.

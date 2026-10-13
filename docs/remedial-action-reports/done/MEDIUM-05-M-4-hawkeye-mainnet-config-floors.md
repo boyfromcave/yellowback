@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-4 — Mainnet floors on the policy parameters (`confirmations`, `delay`, `min_owner_age`, `takeover`, `roll_margin`, `heartbeat_blocks` vs `livenesswindow`)
 
-Repos / branches to change: `hawkeye` (`fix/05-M-4-mainnet-floors` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-4 (`:206-216`); `verification/05-verification.md` row M-4 (`:19`); `00-consolidated.md` row 05/M-4, recommendation R7. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-M-4-mainnet-floors` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-4 (`:206-216`); `verification/05-verification.md` row M-4 (`:19`); `00-consolidated.md` row 05/M-4, recommendation R7. · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -70,3 +70,12 @@ Testnet: the same table with every floor divided by 4, as warnings. Regtest: unc
 ## 8. Effort estimate and dependencies
 
 1.5 days. Lands after `HIGH-05-H-2` (shares `startup_checks`/`check_bridge` edits); referenced by `MEDIUM-05-M-3` §8.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:41Z
+- **hawkeye** `upgrade/vault` merge 113d380 (branch `fix/bridge-watch`): e1fddbb.
+  - `floors.rs`: a mainnet config below any floor is refused, naming every breach; testnet gets warnings; regtest is unconstrained.
+  - The live heartbeat check runs at startup and every 60 ticks (`heartbeat-too-slow`); a `params-drift` alarm is added.
+  - Adds `hawkeye status --params` and `config/ethereum-mainnet.example.toml`.
+- **Tests:** the floor, heartbeat and example-config tests pass; hawkeye lib 42. §6 criteria 1, 2 and 4 met. Criterion 3 (`status --params`) compiles but was not run against a live node.
