@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/main.cpp`, `src/main.h`, `src/test/DoS_tests.cpp`) and `ycash6` (same, 6.20.0 line numbers), branch `fix/07-F-6-pq-orphan-size` off `upgrade/vault` in each.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-6 (`:186-193`); `verification/07-verification.md` row F-6 (`:16`), detail (`:94-96`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T12:00Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -53,3 +53,9 @@ A transaction with two SLH-DSA inputs (~16 KB) or YEW's 250-input Falcon maximum
 ## 8. Effort estimate and dependencies
 
 ~1–2 hours per line plus the mininode functional test (~2 hours once, ported by delta). No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T12:00Z
+- **Merged:** with fix/mempool. ycash-dd 3204460cd + 9c38e3204: SLH-DSA-sized orphans park once UPGRADE_VAULT is active, up to 99,999 bytes (parity with 6.20.0's 100,000 bound; 100 × 100 KB). ycash6 already had the bound, so only tests were added. vault_pq_relay.py passes on both lines.
+- **Verification:** the same final pre-push run as 07/F-1.

@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/07-F-1-dos-carveout` off `upgrade/vault` in each: `src/main.cpp` (`AcceptToMemoryPool` hook only), `contrib/yellowback/pq-dos/pq_dos.py` (ycash-dd only — the tool does not exist in `ycash6`; run it with `BITCOIND=` pointing at the ycash6 binary), `doc/yellowback-pq-dos.md`, a functional test. Policy, not consensus — but `src/main.cpp` is in the review gate's file list, so the diff is reviewed under it.
 **Audit source.** `07-node-rpc-mempool-durability-ci.md` F-1 (High); `verification/07-verification.md` F-1 ("PARTIALLY CONFIRMED, Medium — the carve-out is real and over-broad; per-byte cost ~10× lower than reported and within the Sapling baseline"), N-3; `00-consolidated.md` row 07/F-1 (Medium, ↓ from High), remediation R6.
-**Status:** pending.
+**Status:** done — completed 2026-10-13T12:00Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -64,3 +64,11 @@ Severity Medium after verification: the per-byte CPU cost (≈ 0.11–0.16 ms/KB
 
 - Hook + unit assertion: 0.25 day; `vault_dos.py`: 0.75 day; `pq_dos.py` cases + measurement + doc: 0.5 day; ycash6 hunk + run: 0.25 day.
 - Dependencies: none. Independent of every other report; can land first.
+
+## Completion record
+
+- **Completed:** 2026-10-13T12:00Z
+- **Merged:** ycash-dd 6191e186a + 6021cb216, ycash6 7bfc1f7dc + 0b7cf5d8c, workspace ca45f85 + 57f2465 (branches fix/mempool, fix/mempool-2). Policy only (AcceptToMemoryPool): the template input is checked alone first (selected by ParseVault/ParseIntent); DoS 0 only for its own set-state failure (SETSIG, or VERIFY at selector 3); everything else keeps the stock score, so garbage owner or sibling PQ signatures score 100. A previous-branch re-run keeps the stock old-consensus-branch-id diagnosis (DoS 10). At most two garbage set-signature recoveries at DoS 0.
+- **Review gate:** two independent reviewers. REQUEST CHANGES on round 1 (the TX_PQCHANNEL bypass), then APPROVE on the revision and on both follow-ups.
+- **Verification:** final pre-push run at ycash-dd 8af82551b / ycash6 047b561ac. Builds rc 0; vault_*, DoS_tests, yellowback_* and pq_* unit tests pass; vault_dos, vault_primitive, vault_rpc, vault_refee and yellowback_upgrade pass on both lines; both audits rc 0.
+- **Open:** port ycash6's ORPHAN_TX_EXPIRE_TIME to ycash-dd (parity follow-up).
