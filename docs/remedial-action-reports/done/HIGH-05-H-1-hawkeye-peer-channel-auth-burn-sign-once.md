@@ -1,6 +1,6 @@
 # HIGH — 05/H-1, 05/N-1, 05/N-2, 05/L-1 — Authenticate the Hawkeye peer channel, gate `/unlock/sign`, add the per-burn sign-once dimension, validate reused unlock hex, gather cancels and bound cancel capacity
 
-Repos / branches to change: `hawkeye` (`fix/05-H-1-peer-channel` off `upgrade/vault`; the audited HEAD is `69fb2a8` on the quantum-vaults descendant branch — land the fix on whichever of the two is the branch Hawkeye ships from and cherry-pick to the other, the code paths are identical). No node change on either line; one optional §10 change request (CR-N5, §4.6). · Audit source: `docs/audits/quantum-vault-ecosystem/05-bridge-hawkeye-wyec.md` §H-1 (`:62-106`), §L-1 (`:218-225`); `verification/05-verification.md` §H-1 (`:37-79`), N-1 (`:118-132`), N-2 (`:134-137`), N-3 (`:139-141`); `00-consolidated.md` rows 05/H-1, 05/N-1, 05/N-2, 05/L-1 and recommendation R2. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-H-1-peer-channel` off `upgrade/vault`; the audited HEAD is `69fb2a8` on the quantum-vaults descendant branch — land the fix on whichever of the two is the branch Hawkeye ships from and cherry-pick to the other, the code paths are identical). No node change on either line; one optional §10 change request (CR-N5, §4.6). · Audit source: `docs/audits/quantum-vault-ecosystem/05-bridge-hawkeye-wyec.md` §H-1 (`:62-106`), §L-1 (`:218-225`); `verification/05-verification.md` §H-1 (`:37-79`), N-1 (`:118-132`), N-2 (`:134-137`), N-3 (`:139-141`); `00-consolidated.md` rows 05/H-1, 05/N-1, 05/N-2, 05/L-1 and recommendation R2. · Status: done — completed 2026-10-13T06:49Z (merged locally on `upgrade/vault`; not yet pushed)
 
 The four findings share one surface (`POST /unlock/sign` and what the leader does with what comes back over the peer channel) and one fix set; they land as one change so that no intermediate state leaves the endpoint authenticated but still burn-agnostic, or burn-aware but still open.
 
@@ -236,3 +236,19 @@ Hawkeye commits nothing under `ycash-dd`/`ycash6`; the row is added to `hawkeye/
 - Cancel endpoint, gathering, capacity, `split-coins`: 1.5 days.
 - Docs/plan/devnet: 0.5 day. **Total ≈ 7 days**, one engineer.
 - Dependencies: none must land first. `LOW-05-L-2` (transport/permissions) shares the `check_transport` helper — land this report first and let L-2 reuse it. `MEDIUM-05-M-3` (runbook) documents the rollout order above.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:49Z
+- **hawkeye** `upgrade/vault` merge (branch `fix/bridge-peer`, head 63f51eb):
+  - 2544480: store V6 (per-burn sign-once for unlock signatures; trigger-enforced dead marker; backfill).
+  - accc6d1: `hawkeye-core::peerauth` encoding plus a vector.
+  - 2d7fc0d: authenticated peer channel on the signing routes (headers, ±60 s, replay cache, current-member check, signed answers); `/unlock/sign` gated (refused at `unlockThreshold = 1`, leader check, `gettxout`); reused-unlock and co-signature validation; `/cancel/sign` with a deterministic cancel leader; `fee-coins-low`/`fee-coins-exhausted`; `hawkeye split-coins`.
+  - 600077b: tests, devnet, docs (plan §4.6, §5.5, HK-13).
+  - 63f51eb: merged with bridge-watch (MIGRATIONS = [V1..V7]).
+- **Tests at 63f51eb:** `HAWKEYE_REQUIRE_ANVIL=1 cargo test --workspace --locked` 342 passed; `forge test` 122/122; check-test-counts 98/98 and 24/24; clippy, fmt and doc clean. Devnet `scenario demo` on ycash-dd: PASS, with the slash vote over the signed channel (`devnet/transcripts/demo-2026-10-13-ycash-dd-v4.5.0.txt`). §6 criteria 1–7 met; the devnet ran on ycash-dd only.
+- **Open:**
+  - the devnet on ycash6, which needs a rebuilt post-quantum ycash6 binary;
+  - CR-N5 (fee from unconfirmed change), optional and owner;
+  - the mainnet rollout order for `require_auth = true`, which goes in the 05/M-3 runbook;
+  - known limit: no cancel-leader takeover at `cancelThreshold > 1` (plan §5.5; the mainnet shape uses 1).

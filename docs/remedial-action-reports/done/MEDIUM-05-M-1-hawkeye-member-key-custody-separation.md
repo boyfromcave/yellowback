@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-1 — The member key is plaintext in the node wallet and is also the bond and gas key: say so, separate the gas key, and move Ycash signing off the wallet
 
-Repos / branches to change: `hawkeye` (`fix/05-M-1-key-custody` off `upgrade/vault`); docs in `hawkeye/README.md`, `hawkeye/docs/hawkeye-bridge-plan.md` §3.5; no node change (two optional §10 change requests, §4.5). · Audit source: `05-bridge-hawkeye-wyec.md` §M-1 (`:139-161`); `verification/05-verification.md` §M-1 (`:98-105`); `00-consolidated.md` row 05/M-1 and recommendation R7. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-M-1-key-custody` off `upgrade/vault`); docs in `hawkeye/README.md`, `hawkeye/docs/hawkeye-bridge-plan.md` §3.5; no node change (two optional §10 change requests, §4.5). · Audit source: `05-bridge-hawkeye-wyec.md` §M-1 (`:139-161`); `verification/05-verification.md` §M-1 (`:98-105`); `00-consolidated.md` row 05/M-1 and recommendation R7. · Status: done — completed 2026-10-13T06:50Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -87,3 +87,17 @@ One read of `wallet.dat` therefore yields the Ycash set signature (fraudulent in
 ## 8. Effort estimate and dependencies
 
 Docs 0.5 day; gas key 1 day; self-signing 3 days + 1 day of two-line regtest verification. **Total ≈ 5.5 days.** Depends on `HIGH-05-H-1` (ledger guard) before `self` mode is recommended; `MEDIUM-05-M-3` carries the operational text. `LOW-05-L-2` (file permissions for the keystore) complements this.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:50Z
+- **hawkeye** `upgrade/vault` merge (branch `fix/bridge-peer`): 2d7fc0d, 600077b.
+  - Custody is now stated plainly: a README "Key custody" section, plan §3.5 and HK-14.
+  - Separate gas key: `[eth] sender_keystore`, `sender_password_env`, `min_sender_balance_wei`, alarm `gas-low`. Mainnet refuses to start with no sender, or with the member key as the sender.
+  - `[keys] ycash_signing = "self"`: Hawkeye produces every set and act signature itself; `enroll` imports nothing. CR-N6 is not needed.
+- **Tests:**
+  - `tests/regtest_self_signing.rs` on real nodes: ycash-dd 1/1 and ycash6 1/1 at 1310e23 (it self-signs a SET_JOIN, an unlock, a cancel and a heartbeat; the node agrees on the sighash and `dumpprivkey` of the member address is refused).
+  - 342 passed at 63f51eb.
+- **Open:**
+  - The node-doc sentence ("the bridge attestor's key is different: see hawkeye/README.md") in ycash-dd/ycash6 `doc/yellowback-attestor.md`, carried by 05/M-3.
+  - CR-N7 (a separate bond owner) is a consensus change for the owner to decide.

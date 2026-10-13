@@ -1,6 +1,6 @@
 # LOW — 05/L-2 — ycashd RPC credentials over plain `http://` to any host; no loopback/TLS rule; no file-permission checks
 
-Repos / branches to change: `hawkeye` (`fix/05-L-2-transport-and-perms` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-2 (`:228-233`); `verification/05-verification.md` row L-2 (`:21`); `00-consolidated.md` row 05/L-1..L-5. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-L-2-transport-and-perms` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-2 (`:228-233`); `verification/05-verification.md` row L-2 (`:21`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:49Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -46,3 +46,12 @@ Repos / branches to change: `hawkeye` (`fix/05-L-2-transport-and-perms` off `upg
 ## 8. Effort estimate and dependencies
 
 1 day. Shares `check_transport` with `HIGH-05-H-1` (land H-1 first, or this one first with the helper and let H-1 call it).
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:49Z
+- **hawkeye** `upgrade/vault` merge (branch `fix/bridge-peer`):
+  - accc6d1 and 2d7fc0d: `transport::credentials_safe`; `ycash.rpc_url` must be https or loopback unless `allow_insecure_rpc`, which is logged at error on mainnet; warnings for a plain-http foreign RPC.
+  - Group- or world-readable secret files are refused on mainnet unless `--insecure-file-permissions`.
+  - The ledger and its `-wal`/`-shm` files are `0600`; `hawkeye keys encrypt` writes a `0600` keystore.
+- **Tests:** config, transport, file-mode and keystore tests are in the 342 passing at 63f51eb. §6 criteria 1–3 met.
