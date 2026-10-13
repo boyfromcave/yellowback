@@ -202,7 +202,8 @@ The scriptPubKey supplies the last two; the scriptSig supplies the rest.
 3. `SHA256(schemeId ‖ pk) == keyHash`, else push false (the `OP_CHECKSIG` failure semantics, so `OP_IF` branches
    compose).
 4. The last byte of `sig` is the hashtype; `SignatureHash(scriptCode, tx, nIn, hashType, amount, consensusBranchId)`
-   is the message — ZIP-243, unchanged. Hashtype handling as `OP_CHECKSIG` (including `SCRIPT_VERIFY_STRICTENC`).
+   is the message — ZIP-243, unchanged; v4 transactions only (a v5 transaction is invalid under Vault, quantum
+   spec R-A3). Hashtype handling as `OP_CHECKSIG` (including `SCRIPT_VERIFY_STRICTENC`).
 5. Verify with the scheme's **verification** routine (integer-only for both schemes; no floating point enters
    consensus). Push true/false. `NULLFAIL` semantics as for `OP_CHECKSIG`.
 6. Counts `PQ_SIGOP_COST` sigops wherever `OP_CHECKSIG` counts one.

@@ -112,7 +112,7 @@ librustzcash6:
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
   base: librustzcash6-legacy
   base-commit: ec525fae82    # = ref/librustzcash6 pin
-  what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork)
+  what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork); ycash6 Cargo.toml pins rev eeb7740d on upgrade/vault
 
 yew:
   role: app

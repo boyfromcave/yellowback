@@ -47,6 +47,22 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
   (`IsPQFalconActive` also requires `UPGRADE_VAULT`). A bool would split the chain at no coordinated height and
   apply TOK-PQ to history on reindex. (Reconciled with the code 2026-10-12, audit 02/N-1: this line said
   `NO_ACTIVATION_HEIGHT` on mainnet/testnet, the value before D-Q-2's final ruling.)
+- **R-A3 (transaction version; audit 04/F-2; owner decision 2026-10-13, U-26):** the vault templates, `OP_CHECKSETSIG`,
+  `OP_CHECKSETDORMANT`, `OP_CHECKPQSIG` and TOK-PQ are defined for **v4** (Sapling version group, ZIP-243 sighash)
+  transactions only. Under `UPGRADE_VAULT` a transaction whose `nVersionGroupId ≠ SAPLING_VERSION_GROUP_ID` is
+  invalid. On ycash6 (`ContextualCheckTransaction`) the reason is `bad-vault-tx-version-group-id` only where NU5 is
+  also active — which no network or startable node allows — and otherwise the existing
+  `bad-sapling-tx-version-group-id`; its DoS level is "potentially relaxing" (block 100, mempool 10, 0 in IBD).
+  ycash-dd has no v5 type — a v5 transaction does not deserialize — and already rejects every non-Sapling group
+  once Sapling is active (`bad-sapling-tx-version-group-id`). No ZIP-244 message is defined for the vault opcodes;
+  a network upgrade that brings v5 to Ycash must define it then. At start-up, on every network (compiled schedule
+  and regtest `-nuparams` alike), a node refuses (`InitError`) Vault scheduled without Sapling active at or below
+  its height (both lines: a pre-Sapling transaction would spend a vault under the Sprout / ZIP-143 sighash) and,
+  on ycash6, Vault scheduled together with any of NU5..NU6.2 (ycash6 builds V1 history-tree leaves in the Vault
+  epoch, so no order of the two is usable). The mempool/miner rechecks and the vault RPCs'
+  sighash data refuse a non-v4 transaction explicitly (`non-v4 transaction (R-A3)`) rather than compute a
+  digest over placeholder coins. librustzcash6 agrees: `BranchId::Vault.has_orchard() = false`,
+  `TxVersion::V5.valid_in_branch(Vault) = false`.
 - Push minimality of `s`/`p`/scheme is **policy** (MINIMALDATA); consensus requires a 1-byte element. §0's
   `PQ_SIGOP_COST` row means the policy count only. `getblocktemplate`'s per-tx `sigops` includes the PQ policy count.
 
@@ -373,7 +389,7 @@ Failure modes:
 | add records | `pqkey`, `cpqkey`; `IsKeyType` `walletdb.cpp:948-956` | the same; `IsKeyType` `:983-993` |
 | HD seed | `HDSeed` (random), `GenerateNewSeed` `wallet.cpp:3425-3446`. **Transparent keys are NOT HD** (`GenerateNewKey` `:267-291`, `MakeNewKey`) | `MnemonicSeed` (BIP39). Transparent keys are **BIP44 HD**: `GenerateNewKey(bool)` `wallet.cpp:342-376` → `transparent::AccountKey::ForAccount` `zcash/address/transparent.cpp:71-99`; legacy account `0x7FFFFFFF` |
 | PQ derivation (plan §4.6 `m/44'/347'/account'/0x5100'/index'`) | from `HDSeed.RawSeed()` through the ZIP-32/BIP-32 transparent derivation, which dd does not have for transparent keys. See A-12 | from `MnemonicSeed.RawSeed()` through the same `transparent::AccountKey` machinery, account = the legacy account. See A-12 |
-| sighash | C++ `SignatureHash` (v4) | v4 C++, with `PrecomputedTransactionData` required by the checker and creator |
+| sighash | C++ `SignatureHash`: ZIP-243, v4 only (R-A3) | ZIP-243, v4 only (R-A3; v5 is invalid under Vault), C++, with `PrecomputedTransactionData` required by the checker and creator |
 
 ---
 
