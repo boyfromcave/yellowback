@@ -1002,7 +1002,7 @@ integration-tree copies (byte-identical to the hand-edited JSON).
 - **D-U2** A node whose Yellowback index is unhealthy halts (`AbortNode`) instead of running unpoliced.
   **Decided (owner, 2026-10-07): accepted.**
 - **D-U3** A cancelled wrong-price claim forfeits its burn (U-24). **Decided (owner, 2026-10-07): accepted.**
-  **Revised (audit 03/H-1, remedial lane 2026-10-12; for the owner's confirmation):** a cancelled claim **refunds**
+  **Revised (audit 03/H-1, remedial lane 2026-10-12; owner confirmed 2026-10-13):** a cancelled claim **refunds**
   its burn as a YED token to the holder it was burned from (CAN-1, U-24 below). The 2026-10-07 forfeit presupposed
   §3.6's contested-cancel slash, which D-Q-29 (2026-10-11) removed for the attestor set; with neither, one attestor
   seat could cancel every claim for a fee while each claimant lost debt-worth YED (03/H-1). Given up: the forfeit as a
