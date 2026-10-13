@@ -961,10 +961,11 @@ tip change must re-run the **scripts** of template spends, not only the primitiv
 membership and dormancy are read by the opcodes); (25) an `OP_CHECKSETSIG`/`OP_CHECKSETDORMANT`
 failure in the mempool is state-dependent and must not carry DoS 100 (a peer on another tip would
 be banned); both fixed in `up-int-dd`. The first fix exempted *every* script failure of a transaction with a
-template input; narrowed after the 2026-10-13 audit (07/F-1): only `SCRIPT_ERR_SETSIG`, `SCRIPT_ERR_SETSIG_COUNT`
-and an `OP_VERIFY` failure with a selector-3 template input (the `OP_VERIFY` after `OP_CHECKSETDORMANT`) score 0;
-an owner's or a sibling input's bad signature keeps the stock 100 (`main.cpp` `IsVaultSetStateFailure`, both
-lines; `qa/rpc-tests/vault_dos.py`). (26) **Open, for O-9:** §4.2's "challenger-set majority
+template input; narrowed after the 2026-10-13 audit (07/F-1) and its review: the one template input is checked alone first, and only
+its own `SCRIPT_ERR_SETSIG`, or `SCRIPT_ERR_VERIFY` with selector 3 (the `OP_VERIFY` after `OP_CHECKSETDORMANT`),
+scores 0; everything else runs the stock checks with the stock score, so an owner's or a sibling input's bad
+signature scores 100 (`main.cpp` `FindVaultTemplateInput`, `IsVaultSetStateScriptError`, both lines;
+`qa/rpc-tests/vault_dos.py`). (26) **Open, for O-9:** §4.2's "challenger-set majority
 slashes the relayer" is not expressible: `SET_REMOVE` is signed by members of the target's own
 set, and a one-seat relayer set has no other member. Today the relayer is slashable only by
 equivocation (which also makes its set dormant, so every owner recovers). A contested-cancel slash
