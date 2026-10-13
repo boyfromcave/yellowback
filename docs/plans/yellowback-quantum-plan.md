@@ -208,7 +208,8 @@ The scriptPubKey supplies the last two; the scriptSig supplies the rest.
 6. Counts `PQ_SIGOP_COST` sigops wherever `OP_CHECKSIG` counts one.
 
 Malleability: canonical chunking plus exact sizes make the scriptSig encoding unique for a given `(pk, sig)`;
-SLH-DSA signatures are deterministic in the non-hedged mode and Falcon's are randomized, so **v4 txids remain
+SLH-DSA signatures are deterministic in the non-hedged mode (the node wallet signs hedged, 16 bytes of `opt_rand`
+from the OS RNG, audit 02/PQ-3; vectors use explicit entropy) and Falcon's are randomized, so **v4 txids remain
 malleable by the signer** exactly as ECDSA's are today (no third-party malleability is introduced). No `OP_CAT`,
 no new sighash, no transaction field.
 
