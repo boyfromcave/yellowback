@@ -847,17 +847,19 @@ The implementation (`vault::SetSigChecker`, derived from the caching checker) ho
 OP_DUP OP_1 OP_EQUAL OP_IF
     OP_DROP <setId:32> OP_1 OP_CHECKSETSIG
 OP_ELSE OP_DUP OP_2 OP_EQUAL OP_IF
-    OP_DROP <ownerHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP <ownerKey:33> OP_CHECKSIG
+    OP_DROP <ownerHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP <ownerHash:32> <scheme> OP_CHECKPQSIG
 OP_ELSE OP_DUP OP_3 OP_EQUAL OP_IF
-    OP_DROP <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerKey:33> OP_CHECKSIG
+    OP_DROP <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerHash:32> <scheme> OP_CHECKPQSIG
 OP_ELSE
     OP_4 OP_EQUALVERIFY <appHeight> OP_CHECKLOCKTIMEVERIFY
 OP_ENDIF OP_ENDIF OP_ENDIF
 ```
-scriptSigs: UNLOCK `<sig_1> … <sig_k> OP_1`; OWNER `<ownerSig> OP_2`; OWNER-RELEASED `<ownerSig> OP_3`; APP `OP_4`.
+scriptSigs: UNLOCK `<sig_1> … <sig_k> OP_1`; OWNER `<pqSigs> OP_2`; OWNER-RELEASED `<pqSigs> OP_3`; APP `OP_4`,
+where `<pqSigs>` = `<sig_1>…<sig_s> <s> <pk_1>…<pk_p> <p>` (`OP_CHECKPQSIG`, quantum spec §1.5).
 Field ranges (a V-shaped output outside them is not a template, rule V-1 then rejects it):
 `delay` 1..65535, `ownerHeight` 1..499999999, `appHeight` 0..499999999 (0 = APP branch disabled,
-rule S-4), `ownerKey` compressed. Bridge vaults: `ownerHeight = lockHeight + BRIDGE_MAX_AGE`, `appHeight = 0`.
+rule S-4), `ownerHash` exactly 32 bytes and `scheme` a registered PQ scheme (`OP_1` SLH-DSA, `OP_2` FN-DSA-512;
+`pq::IsKnownScheme`), else malformed. Bridge vaults: `ownerHeight = lockHeight + BRIDGE_MAX_AGE`, `appHeight = 0`.
 
 **Intent I** (bare scriptPubKey):
 ```
@@ -867,11 +869,15 @@ OP_DUP OP_1 OP_EQUAL OP_IF
 OP_ELSE OP_DUP OP_2 OP_EQUAL OP_IF
     OP_DROP <cancelSetId:32> OP_2 OP_CHECKSETSIG
 OP_ELSE
-    OP_3 OP_EQUALVERIFY <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerKey:33> OP_CHECKSIG
+    OP_3 OP_EQUALVERIFY <setId:32> OP_CHECKSETDORMANT OP_VERIFY <ownerHash:32> <scheme> OP_CHECKPQSIG
 OP_ENDIF OP_ENDIF
 ```
 `recipientHash = SHA256(recipient scriptPubKey)`, `vaultHash = SHA256(originating V scriptPubKey)`.
-scriptSigs: RELEASE `OP_1` (input `nSequence = delay`); CANCEL `<sig_1> … <sig_k> OP_2`; OWNER-RELEASED `<ownerSig> OP_3`.
+scriptSigs: RELEASE `OP_1` (input `nSequence = delay`); CANCEL `<sig_1> … <sig_k> OP_2`; OWNER-RELEASED `<pqSigs> OP_3`.
+The owner slot is post-quantum, the only owner shape (quantum spec §1, D-Q-1; `OP_CHECKPQSIG` 0xc2): built at
+`src/vault/template.cpp:187`, `:189` (V) and `:213` (I), matched at `:113`, `:115`, `:130`, checked by `TokOwner`
+`:86-94`, byte-identical on ycash-dd and ycash6 (reconciled 2026-10-12: §15.3 showed the pre-quantum
+`<ownerKey:33> OP_CHECKSIG`).
 
 **Bond B** (P2SH, as v3's attestor bond): redeem `<locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <memberKey:33> OP_CHECKSIG`.
 
@@ -1179,7 +1185,7 @@ that starts a stock node on the upgrade; walking with the main-tree lightwalletd
 
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
 - **V-1** A V output's `setId` and `cancelSetId` exist (created in an earlier block). If its tag is registered (§15.7), the module's `ValidateCreate` also passes. Creation adds its value to `lockedValue(setId)`.
-- **S-2 (UNLOCK, APP covenant)** A V input spent with selector 1 or 4: every output is an I output with the V's `tag, setId, cancelSetId, delay, ownerKey` and `vaultHash = SHA256(V.spk)`, or a V output with byte-identical scriptPubKey (re-lock), or OP_RETURN, or an ordinary output; and `Σ I + Σ re-lock ≥ V.value` (the vault's value never leaves to ordinary outputs; the fee comes from other inputs).
+- **S-2 (UNLOCK, APP covenant)** A V input spent with selector 1 or 4: every output is an I output with the V's `tag, setId, cancelSetId, delay, owner` (scheme + hash) and `vaultHash = SHA256(V.spk)`, or a V output with byte-identical scriptPubKey (re-lock), or OP_RETURN, or an ordinary output; and `Σ I + Σ re-lock ≥ V.value` (the vault's value never leaves to ordinary outputs; the fee comes from other inputs).
 - **S-3 (rate)** For such a spend, `unlocked = Σ I`. Epoch roll per U-20, then `epochUsed + unlocked ≤ epochBasis × rateLimitBps / 10000` unless `rateLimitBps = 0`. `lockedValue −= V.value; += Σ re-lock`. A CANCEL (I-2) re-locks the value through
   V-1 (`lockedValue` grows) and does **not** reduce `epochUsed`: a cancelled unlock still consumes its epoch's rate
   budget (conservative — it can only refuse later unlocks in that epoch — and deterministic), so a set whose unlocks
@@ -1205,7 +1211,7 @@ that starts a stock node on the upgrade; walking with the main-tree lightwalletd
 
 Read: `vault_getinfo` (activation height, branch ID, counts), `set_list`, `set_getinfo "setid" [height]` (params, members, current/dormant/released, rate fields), `vault_list {"tag","setid","owner"}`, `vault_decodescript "hex"`.
 Acts: `set_create {params}` → setId; `set_join "setid" bondamount bondlocktime ["memberkey"]`; `set_heartbeat "setid" ["memberkey"]`; `set_buildact "type" {params}` → funded, unsigned act hex (vin[0] fixed); `set_signact "hex" "setid"` (adds this wallet's member or admit signatures); `set_sendact "hex"` (signs inputs, broadcasts); `set_equivocation {proof}`.
-Vaults: `vault_lock {tag, setid, cancelsetid, delay, ownerheight, appheight, amount, ownerkey?}`; `vault_buildunlock "outpoint" [{"address"|"script", amount}] ` → funded unsigned hex; `set_signunlock "hex"`; `vault_buildcancel "intentoutpoint"`; `set_signcancel "hex"`; `vault_send "hex"`; `vault_release "intentoutpoint"`; `vault_ownerspend "outpoint" "address"` (selector 2 or 3 automatically); `vault_app "outpoint" [intents]` (selector 4 skeleton, for modules).
+Vaults: `vault_lock {tag, setid, cancelsetid, delay, ownerheight, appheight, amount, owner?}` (`owner` a pqkeyid, `vault_getnewowner`); `vault_buildunlock "outpoint" [{"address"|"script", amount}] ` → funded unsigned hex; `set_signunlock "hex"`; `vault_buildcancel "intentoutpoint"`; `set_signcancel "hex"`; `vault_send "hex"`; `vault_release "intentoutpoint"`; `vault_ownerspend "outpoint" "address"` (selector 2 or 3 automatically); `vault_app "outpoint" [intents]` (selector 4 skeleton, for modules).
 All registered in `rpc/client.cpp` conversions; documented in `doc/vault-rpc.md`.
 
 ### 15.9 Tests and vectors
@@ -1218,7 +1224,7 @@ All registered in `rpc/client.cpp` conversions; documented in `doc/vault-rpc.md`
 
 - **U-21** The YED module is the delivered `src/yellowback/` with the §6 removals. Its block verdict (`EvaluateBlock` → `blockInvalid`) is a **consensus** rejection (`DoS(100)`, `bad-yellowback-*`) at every height where `UPGRADE_VAULT` is active, with none of today's node-local conjuncts (enforce flag, valve, IBD, catch-up, sunset). Header-note hook, rejected set, kill switch, valve, signalling, lock-in, `ENFORCE_UNTIL_HEIGHT`, abandonment and template policy go. Mempool check becomes ordinary validity.
 - **U-22** The index is **always on** where `UPGRADE_VAULT` and a YED attestor set are configured (`-yellowback` and `-experimentalfeatures` no longer gate it). Parameters: `yellowbackStartHeight` = the activation height; `attestorSetId` per network (mainnet/testnet unset; regtest `-yellowbackattestorset=<setid>`). YED is live from the first block at which both are known.
-- **U-23** A MINT's vault output is a V with `tag = YED\0`, `setId = cancelSetId = attestorSetId`, `delay = CLAIM_DELAY`, `ownerHeight = lockHeight`, `appHeight = lockHeight + GRACE`, `ownerKey` = the payload's owner. Owner redeem = selector 2, or selector 3 once the attestor set is released (+ REDEEM payload, RED rules as today on both: the minted YED is burned and the pool fee paid; a released set lets the owner redeem without the attestors, never without the burn). Claim = selector 4 into intents (claimant's debt-worth and the owner's residual, RED-4/RED-5 checked at intent creation; the REDEEM payload's burn happens there). Release after `CLAIM_DELAY` closes the vault; an attestor cancel (I-2) returns the collateral to a byte-identical vault, which the module re-indexes as the same position (ACTIVE). **The cancelled claimant's burn is not refunded** (U-24: a wrong-price claim costs its burn; supply falls, the vault's debt does not, so the system only becomes more collateralised). The v3 anyone-can-spend claim branch and CLAIM_NOTICE's role in path (b) stay only as the module reads them; `VaultScript` (P2SH) is no longer accepted for new mints after activation.
+- **U-23** A MINT's vault output is a V with `tag = YED\0`, `setId = cancelSetId = attestorSetId`, `delay = CLAIM_DELAY`, `ownerHeight = lockHeight`, `appHeight = lockHeight + GRACE`, `owner` = the payload's post-quantum owner (scheme + hash). Owner redeem = selector 2, or selector 3 once the attestor set is released (+ REDEEM payload, RED rules as today on both: the minted YED is burned and the pool fee paid; a released set lets the owner redeem without the attestors, never without the burn). Claim = selector 4 into intents (claimant's debt-worth and the owner's residual, RED-4/RED-5 checked at intent creation; the REDEEM payload's burn happens there). Release after `CLAIM_DELAY` closes the vault; an attestor cancel (I-2) returns the collateral to a byte-identical vault, which the module re-indexes as the same position (ACTIVE). **The cancelled claimant's burn is not refunded** (U-24: a wrong-price claim costs its burn; supply falls, the vault's debt does not, so the system only becomes more collateralised). The v3 anyone-can-spend claim branch and CLAIM_NOTICE's role in path (b) stay only as the module reads them; `VaultScript` (P2SH) is no longer accepted for new mints after activation.
 - **P4-b** The attestor registry becomes the primitive set `attestorSetId`: a seat is a current member, its bond weight is the member's bond value, maturity/dormancy are the set's; `ATTESTOR_REGISTER` and `ATTESTOR_REVIVE` are invalid after activation; EQV-1 (two prices at one height) stays in the module and freezes the member's bond via the set's frozen-bond rule.
 - VOID: a MINT failing `MintVerdict` is an invalid transaction; `voidReason` and VOID vault records are not produced after activation.
 - Golden vector `yellowback_golden.json` regenerated once with the diff explained in its commit; `yellowback_model.py` follows (enforcement removed; block 217 becomes an invalid block, not "applied anyway").
