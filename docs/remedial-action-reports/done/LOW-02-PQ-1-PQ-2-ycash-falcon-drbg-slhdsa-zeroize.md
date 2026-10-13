@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (both; `src/crypto/pq` is byte-identical across the lines and must stay so), new branch `fix/02-PQ-1-pq-stack-zeroize` off `upgrade/vault` in each.
 **Audit source:** `docs/audits/quantum-vault-ecosystem/02-post-quantum-crypto.md` §PQ-1 (`:47-67`), §PQ-2 (`:69-84`); `verification/02-verification.md` §2.1 rows PQ-1, PQ-2 (`:48-49`), §4.4 ("Residue: the vendored C's own stack frames").
-**Status:** pending.
+**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -77,3 +77,14 @@ Consensus footprint: none. `slh_dsa.c` is linked into the consensus verifier, bu
 ## 8. Effort estimate and dependencies
 
 ~1 hour code (both lines), ~1 hour README/mapping/audit-leg, one reviewer. No dependencies; independent of every other report. Lands together with or before 02/PQ-3 (same file region in `sign.cpp` is untouched here, so no conflict).
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:30Z
+- **ycash-dd** `upgrade/vault` merge b8d6fd141 (branch `fix/pq-wallet`): 3962b1957. **ycash6** merge 32b5df099: 830a6d94f.
+  - The Falcon `done:` blocks wipe `rng` and `sc`.
+  - slhdsa-c local patch P3 (`slh_wipe_var`) runs at the 4 keygen/sign returns, and the signing functions also wipe `digest`. Every changed line is marked `YCASH LOCAL PATCH P3`; `slh_verify` is untouched (the coordinator checked the hunks).
+  - The README records P3. The audit script gains wipe greps and a file-by-file `src/crypto/pq` cross-line comparison.
+  - `src/crypto/pq` is byte-identical across the lines (tree bf9e9955).
+- **Tests:** `pq_*` suites pass on both lines (ycash6: 60 cases).
+- **Open (optional):** `qa/yellowback-pq-provenance.sh` (an upstream clone `cmp`); the manual `-O2` frame-scan record.

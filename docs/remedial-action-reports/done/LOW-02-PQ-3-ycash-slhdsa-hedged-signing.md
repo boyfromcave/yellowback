@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`src/crypto/pq/sign.{cpp,h}` identical across lines), branch `fix/02-PQ-3-slhdsa-hedged` off `upgrade/vault` in each; `yellowback` workspace docs (one sentence each in the quantum plan/spec and `src/crypto/pq/README.md`).
 **Audit source:** `02-post-quantum-crypto.md` §PQ-3 (`:86-103`); `verification/02-verification.md` §2.1 row PQ-3 (`:50`), §4.5 ("SLH-DSA is deterministic by design (PQ-3)").
-**Status:** pending.
+**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -69,3 +69,11 @@ Consensus footprint: none (`sign.cpp` is wallet-only; `pq::Verify` untouched).
 ## 8. Effort estimate and dependencies
 
 ~30 minutes code + tests, ~30 minutes docs. No dependencies. Independent of 02/PQ-1/PQ-2 (different file) and 02/PQ-4.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:30Z
+- **ycash-dd** merge b8d6fd141: 809efaf59. **ycash6** merge 32b5df099: 87502ca86. **Workspace** merge f6d18c6: a9ddc71 (plan §4.2 and spec Q5 sentences). Spec copies regenerated.
+  - `pq::Sign` draws 16 bytes from `GetRandBytes` into `SignWithEntropy` and cleanses them afterwards.
+- **Tests:** `pq_round_trip_and_rejects` asserts that two signatures differ and both verify; empty entropy stays deterministic. Vectors are unchanged; golden and ACVP pass. All §6 criteria met.
+- **Follow-up:** YEW may hedge its own SLH-DSA signing independently.

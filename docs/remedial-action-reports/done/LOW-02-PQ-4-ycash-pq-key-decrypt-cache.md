@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/wallet/crypter.{h,cpp}`, tests) and `ycash6` (same files, 6.20.0 line numbers below), branch `fix/02-PQ-4-pq-key-cache` off `upgrade/vault` in each.
 **Audit source:** `02-post-quantum-crypto.md` §PQ-4 (`:105-118`); `verification/02-verification.md` §2.1 row PQ-4 (`:51`, "sharpened": every `GetPQKey` pays it), §3 N-2 (`:98-103`), keygen timings §1 (87 ms SLH-DSA, 12 ms Falcon at `-O2`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -60,3 +60,14 @@ Consensus footprint: none. Memory: ≤ (20 lookahead × 2 schemes + used keys) �
 ## 8. Effort estimate and dependencies
 
 ~2–3 hours per line including tests (ycash6 line numbers differ; logic identical). No dependencies; independent of 02/PQ-1..PQ-3.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:30Z
+- **ycash-dd** merge b8d6fd141: 60a06b892, 182cb58e0. **ycash6** merge 32b5df099: 094868d1b, cf055898d.
+  - `mapDecryptedPQKeys` is filled lazily by `GetPQKey` and cleared in `Lock()` right after `vMasterKey`; `AddCryptedPQKey` erases a stale entry.
+  - The optional Unlock reuse (step 5) is taken.
+- **Tests:**
+  - unit case `crypto_keystore_decrypt_cache`, whose decrypt counts prove a cache hit does no keygen;
+  - `vault_pq_wallet.py` on both lines: two spends of one key, the export lists every key, a locked wallet refuses, a re-unlock signs again.
+  - All §6 criteria met.

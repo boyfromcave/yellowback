@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (wallet PQ fee default: `src/init.cpp` `-pqfeerate`, `src/wallet/wallet.cpp`, `src/yellowback/txbuilder.cpp`), branch `fix/04-N-1-pq-fee-conventional` off `upgrade/vault`; `ycash6` (`doc/yellowback-release.md`, `doc/yellowback-mining.md` release/operator notes), same branch name; `yellowback` workspace `docs/mapping.md` row; client follow-ups (YEW, Hawkeye) as issues, not in this report's scope.
 **Audit source:** `verification/04-verification.md` §New findings N-1 (`:150-171`) (new by the verifier; no first-wave section); `docs/mapping.md:1058` (ZIP-401 row), `:1129` (wallet PQ fee row).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -57,3 +57,21 @@ Consensus footprint: none (wallet fee policy and documentation).
 ## 8. Effort estimate and dependencies
 
 ~2 hours dd wallet + tests, ~1 hour ycash6 docs + test case, client issues filed. No dependencies; coordinate with 06-area fee work in YEW/Hawkeye.
+
+## Completion record
+
+- **Completed:** 2026-10-13T07:30Z
+- **ycash-dd** merge b8d6fd141: e782967a7, 182cb58e0, 64af46163.
+  - `Zip317ConventionalFee` in `src/policy/policy.{h,cpp}` (ycash6's constants) is a floor in wallet `CreateTransaction`, `vault_ownerspend`, the YED builders (a pre-signing estimate) and the small-vault clamp.
+  - The `-pqfeerate` help and `doc/vault-rpc.md` describe the floor; the contract is regenerated.
+- **ycash6** merge 32b5df099:
+  - 7922d7513: release and mining operator guidance; unit case `pq_zip317_low_fee_penalty`.
+  - 5da505118: `yellowback_mempool_limits.py` §3 (a 1,000-zat SLH-DSA spend is refused at `-txunpaidactionlimit=0` and relayed at the defaults).
+- **Workspace** a9ddc71: mapping rows.
+- **Tests:** ycash-dd 114 unit cases; `yellowback_fees`, `vault_pq*` and `yellowback_pq*` functional tests pass; ycash6 mempool_limits passes. §6 met locally.
+- **Choices:**
+  - The floor is unconditional, as on ycash6; no opt-out.
+  - The report's "evicted first" functional case was replaced by a unit test of the eviction weight, because the limiter evicts at random by weight and the functional case would be flaky.
+- **Open:**
+  - YEW and Hawkeye should pay `max(their fee, the ZIP-317 conventional fee)` for PQ spends; x402 already does.
+  - Non-PQ YED transactions with many outputs on ycash-dd can still pay below the conventional fee (outside this report's scope).
