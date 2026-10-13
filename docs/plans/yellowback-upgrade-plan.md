@@ -217,6 +217,11 @@ rule change and the one structural lever worth a design decision. All owner deci
 - 2026-10-06: **P4-a and P4-b complete on ycash-dd** (`a903fae2f`): all 28 functional suites, devnet_roles presets,
   chain-viz against the node. P6: lightwalletd, chain-viz, x402, yolo done on `upgrade/vault` branches (unmerged);
   YecWallet, YEW and the ycash6 P4 port in flight.
+- 2026-10-12: spec reconciled with the code after the quantum-vault audit (01/V-11, 01/N-2, 01/N-3, 02/N-1; lane
+  `spec-maint`): §15.4 template-output index as consensus input, bond `exitHeight`, `joinCount`/`joinOrdinal`,
+  released-set non-exclusivity (owner to confirm); §15.5 self-remove, slash in the exit delay, displacement,
+  bond exit delay, `MIN_SET_MATURITY`, one unspent bond per key, corrected bond rule and item (11); §15.6 S-3
+  `epochUsed` not reduced by a cancel; quantum spec R-A2 `pqFalconHeight = 0` (D-Q-2). No code change.
 
 ## 0. Assumptions about the Foundation's primitive
 
@@ -876,15 +881,29 @@ Standardness: V and I are new `txnouttype`s (`TX_VAULT`, `TX_VAULT_INTENT`), sta
 ### 15.4 Set state
 
 Per set (key `setId`): the `SET_CREATE` parameters; `createHeight`; `windDownHeight` (0 = none);
-rate fields `lockedValue`, `epoch`, `epochBasis`, `epochUsed` (zatoshi); members.
+rate fields `lockedValue`, `epoch`, `epochBasis`, `epochUsed` (zatoshi); `joinCount` (SET_JOINs admitted,
+seats re-review 2026-10-11); members.
 Per member (key `setId‖memberKey`): `bondOutpoint`, `bondValue`, `bondLocktime`, `joinHeight`,
-`lastAct`, `status ∈ {ACTIVE, REMOVED, EJECTED, WITHDRAWN}`, `bondFrozen` (bool). Plus a frozen-bond
-index `outpoint → (setId, memberKey)` and a template-output index is **not** needed (V/I parse from the coin).
+`lastAct`, `status ∈ {ACTIVE, REMOVED, EJECTED, WITHDRAWN}`, `bondFrozen` (bool), `joinOrdinal` (the set's
+`joinCount` after this member's latest join). Plus a bond index `outpoint → (setId, memberKey, frozen,
+exitHeight)` over every unspent member bond (the frozen-bond index, extended), where `exitHeight` is 0 while its
+member is in the set and otherwise the height it left without a freeze (its own or a cosigned `SET_REMOVE` without
+burn, or a displacement); the bond is spendable from `exitHeight + maturity` (owner 2026-10-11, §15.5). Plus a
+**template-output index** `outpoint → (kind, height, value, scriptPubKey, origin)` for every V/I output created
+from activation: **consensus input** for I-2 (an intent's `coinHeight`) and for the start-up replay
+(`CoinsFromUndo` reads it when a spent coin's undo record carries no height); it also serves `vault_list`.
+(Reconciled 2026-10-12, audit 01/V-11: this paragraph said a template-output index was not needed.)
 
 - **Current member at height h:** `status = ACTIVE` and `h ≥ joinHeight + maturity`.
 - **Seat count:** members with `status = ACTIVE` (mature or not) ≤ `seats`.
 - **Dormant at h:** fewer than `cancelThreshold` current members with `lastAct ≥ h − livenessWindow`.
 - **Released at h:** dormant, or `windDownHeight ≠ 0 ∧ h ≥ windDownHeight + livenessWindow`, or the set is unknown.
+  Released **opens** the owner's selector-3 branch (V and I, `OP_CHECKSETDORMANT`); it does **not close** the set's
+  own branches: `OP_CHECKSETSIG` checks only that each signer is a current member, so current members of a dormant
+  or wound-down set may still UNLOCK (V selector 1) and CANCEL (I selector 2, by `cancelSetId`) for as long as they
+  are current. Owner and set may then race; neither branch is exclusive. (Audit 01/N-2, recorded 2026-10-12;
+  **owner to confirm** this is intended — exclusivity would be a consensus change, a dormancy/wind-down check in
+  `CheckSetSigs`, with new vectors.)
 - `lastAct` starts at `joinHeight + maturity`.
 - **Snapshot:** the state after the parent block, evaluated at the spending height (block height; tip+1 in the mempool).
 
@@ -899,15 +918,20 @@ Acts apply in block order against the running state (U-17); mempool validates ag
 
 | Type | Body | Signatures | Rule |
 |---|---|---|---|
-| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `1 ≤ bondMin ≤ MAX_MONEY`; `admitKey` compressed; other flag bits 0. `setId = txid` |
-| 0x02 `SET_JOIN` | `setId 32, memberKey 33, bondLocktime u32, bondVout u8` (70) | `S_1` by `memberKey`; then, unless OPEN: `slashThreshold` current-member signatures if the set has ≥ `slashThreshold` current members, else one by `admitKey` | set exists (created in an earlier block), not wound down; seats free; key not ACTIVE in the set; `vout[bondVout]` = P2SH(B(memberKey, bondLocktime)), value ≥ `bondMin`; `bondLocktime ≥ h + bondLockMin`, `< 500000000` |
+| 0x01 `SET_CREATE` | `seats u8, unlockThreshold u8, cancelThreshold u8, slashThreshold u8, flags u8 (bit0 OPEN), rateLimitBps u16, rateWindow u32, livenessWindow u32, bondMin i64, bondLockMin u32, maturity u32, admitKey 33` (64) | none | `1 ≤ seats ≤ 15`; thresholds in `1..seats`; `rateLimitBps ≤ 10000` (0 = no limit); `rateWindow, livenessWindow` in `1..1048576`; `1 ≤ bondMin ≤ MAX_MONEY`; `admitKey` compressed; other flag bits 0; `maturity ≥ MIN_SET_MATURITY` (D-Q-31: 16,128 on mainnet/testnet, `nVaultMinSetMaturity` on regtest), else `bad-vault-act-params`. `setId = txid` |
+| 0x02 `SET_JOIN` | `setId 32, memberKey 33, bondLocktime u32, bondVout u8` (70) | `S_1` by `memberKey`; then, unless OPEN: `slashThreshold` current-member signatures if the set has ≥ `slashThreshold` current members, else one by `admitKey` | set exists (created in an earlier block), not wound down; seats free, or the set is full and the module governing it names a member to displace (D-Q-29, `Module::Displace`: an ACTIVE member other than the joiner whose bond is unspent and unfrozen; it becomes `REMOVED` and its bond's `exitHeight = h`), else `bad-vault-act-seats`; key not ACTIVE in the set, and no previous bond of the key in the set still unspent (D-Q-31, one unspent bond per key), else `bad-vault-act-join`; `vout[bondVout]` = P2SH(B(memberKey, bondLocktime)), value ≥ `bondMin`; `bondLocktime ≥ h + bondLockMin`, `< 500000000` |
 | 0x03 `SET_HEARTBEAT` | `setId 32, memberKey 33` (65) | `S_1` by `memberKey` | key is a current member; `lastAct = h` |
-| 0x04 `SET_REMOVE` | `setId 32, memberKey 33, burn u8 (0/1)` (66) | `slashThreshold` distinct current members other than the target | target ACTIVE → `REMOVED`; `burn = 1` also freezes its bond (contested-cancel slash); `burn = 0` is O-6 (bond returned) |
+| 0x04 `SET_REMOVE` | `setId 32, memberKey 33, burn u8 (0/1)` (66) | `slashThreshold` distinct current members other than the target; or, for a voluntary exit, `S_1` by the target alone with `burn = 0` (owner 2026-10-11) | target ACTIVE → `REMOVED`; `burn = 1` also freezes its bond (contested-cancel slash); `burn = 0` is O-6 (bond returned after the exit delay: its `exitHeight = h`). A target already `REMOVED` whose bond is in its exit delay (unspent, unfrozen, `exitHeight ≠ 0`) is still slashable: `burn = 1` by `slashThreshold` others freezes that bond and it stays `REMOVED` (D-Q-31); any other non-ACTIVE target is `bad-vault-act-remove` |
 | 0x05 `SET_EQUIVOCATION` | `setId 32, prevout 36, roleA u8, sighashA 32, sigA 65, roleB u8, sighashB 32, sigB 65` (264) | none (anyone submits) | both signatures valid (§15.2 step 4 messages) and recover to the same key `K`; `(roleA, sighashA) ≠ (roleB, sighashB)`; `K` is a member whose bond is unspent and not frozen → `EJECTED`, bond frozen |
 | 0x06 `SET_WINDDOWN` | `setId 32` (32) | `slashThreshold` current members | `windDownHeight = h`; no further joins |
 
-Bond rules: spending a frozen bond outpoint is invalid (`bad-vault-bond-frozen`); spending the bond
-of an ACTIVE member sets `WITHDRAWN`.
+Bond rules: spending a frozen bond outpoint is invalid (`bad-vault-bond-frozen`); spending the bond of a
+member still in the set (`exitHeight = 0`), or before its exit delay (`h < exitHeight + maturity`), is invalid
+(`bad-vault-bond-locked`; owner 2026-10-11, the lock lives in state, not in B's script, whose CLTV also applies).
+The `WITHDRAWN` status is retained in the record format but is not reached by a valid spend: a bond with
+`exitHeight ≠ 0` belongs to a member that is no longer ACTIVE, and the one-unspent-bond rule stops the key
+rejoining while it is unspent. (Reconciled with the code 2026-10-12, audit 01/V-11: this rule said spending an
+ACTIVE member's bond sets `WITHDRAWN`, a spend the code refuses.)
 
 **Reconciled 2026-10-05 (Python ↔ C++ cross-check, `up-pyfw`):** (1) BIP68 is Bitcoin's height
 test exactly, so RELEASE (valid from `coinHeight + delay`) and CANCEL (valid while
@@ -926,8 +950,9 @@ that is malformed (non-minimal push, out-of-range field) is invalid like a malfo
 is invalid (`bad-vault-act-coinbase`: every coinbase shares a null `vin[0]`, so act signatures
 would replay) and so is an act in a transaction with no transparent input (`bad-vault-act-novin`);
 (10) every V output under a set adds its value to `lockedValue` and every V spend (any selector)
-subtracts it, floored at 0; (11) the bond index covers every unspent member bond, so spending the
-bond of an ACTIVE member marks it WITHDRAWN; (12) a second `SET_WINDDOWN` and a `SET_CREATE` of an
+subtracts it, floored at 0; (11) the bond index covers every unspent member bond (so every slash reaches
+it until it is spent); the WITHDRAWN transition this item first stated is unreachable since the bond exit
+delay (owner 2026-10-11, bond rules above); (12) a second `SET_WINDDOWN` and a `SET_CREATE` of an
 existing set are invalid; a missing input coin is `bad-txns-vault-inputs-missing`. Undo records are
 not pruned (≈ 40 bytes per block).
 
@@ -1155,7 +1180,14 @@ that starts a stock node on the upgrade; walking with the main-tree lightwalletd
 - **S-1** At most one template input per transaction. A template input's scriptSig is push-only and its selector parses (§15.3); else invalid.
 - **V-1** A V output's `setId` and `cancelSetId` exist (created in an earlier block). If its tag is registered (§15.7), the module's `ValidateCreate` also passes. Creation adds its value to `lockedValue(setId)`.
 - **S-2 (UNLOCK, APP covenant)** A V input spent with selector 1 or 4: every output is an I output with the V's `tag, setId, cancelSetId, delay, ownerKey` and `vaultHash = SHA256(V.spk)`, or a V output with byte-identical scriptPubKey (re-lock), or OP_RETURN, or an ordinary output; and `Σ I + Σ re-lock ≥ V.value` (the vault's value never leaves to ordinary outputs; the fee comes from other inputs).
-- **S-3 (rate)** For such a spend, `unlocked = Σ I`. Epoch roll per U-20, then `epochUsed + unlocked ≤ epochBasis × rateLimitBps / 10000` unless `rateLimitBps = 0`. `lockedValue −= V.value; += Σ re-lock`.
+- **S-3 (rate)** For such a spend, `unlocked = Σ I`. Epoch roll per U-20, then `epochUsed + unlocked ≤ epochBasis × rateLimitBps / 10000` unless `rateLimitBps = 0`. `lockedValue −= V.value; += Σ re-lock`. A CANCEL (I-2) re-locks the value through
+  V-1 (`lockedValue` grows) and does **not** reduce `epochUsed`: a cancelled unlock still consumes its epoch's rate
+  budget (conservative — it can only refuse later unlocks in that epoch — and deterministic), so a set whose unlocks
+  are repeatedly cancelled (YED's shape: anyone may APP-spend, a wrong-price claim stream) spends its own budget
+  without value leaving; `yb-calibration` sizes `rateLimitBps` with cancelled claims counted. (Audit 01/N-3, recorded
+  2026-10-12.) **Note for the merge — HIGH-03-H-1:** that lane changes the YED cancel path (the attestor cancel
+  refunds the claimant's burn; `cancelThreshold` pinned). As proposed it is a module change in `src/yellowback/`,
+  not a change to this primitive rule; reconcile this sentence with it when both land.
 - **S-4** Selector 4 with `appHeight = 0` is invalid. A V spent with selector 2 or 3 subtracts its value from `lockedValue`.
 - **I-0** An I output may only be created by a transaction satisfying S-2 (or by a cancel's re-lock, which creates a V, never an I).
 - **I-1 (RELEASE)** selector 1: the transaction has an output with `SHA256(spk) = recipientHash` and value ≥ the I value.
