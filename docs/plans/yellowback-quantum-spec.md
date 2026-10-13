@@ -57,7 +57,8 @@ consensus footprint; such an output is non-standard, so only a miner can create 
 no covenant) or, after `appHeight`, anyone (selector 4) can spend it. **A chain carrying `upgrade/vault`-era EC vaults is
 not compatible with this line** (no public network has either). **Policy refuses scheme-2 V re-locks before Falcon**, so
 a miner-created scheme-2 vault can only be unlocked without re-lock until then. The selector is outside the sighash:
-a selector-2 owner signature also satisfies selector 3 for the same transaction, as with EC.
+a selector-2 owner signature also satisfies selector 3 for the same transaction, as with EC — a template spend's txid
+is third-party malleable until it confirms (upgrade plan §15.3 "Malleability", audit 01/V-4).
 
 **D-Q-19 — hybrid payment-channel template `TX_PQCHANNEL` (owner, 2026-10-10).** Bare output, standard once the vault
 upgrade is active at tip+1 (P2SH is not used: R-B2 makes PQ redeem scripts non-standard):
