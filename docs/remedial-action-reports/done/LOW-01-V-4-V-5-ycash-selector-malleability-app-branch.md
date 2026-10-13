@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (policy, wallet RPC, tests, docs), branch `fix/01-V-4-template-spend-policy` off `upgrade/vault` in each; `yellowback` workspace (plan §15.3/§15.6 and quantum spec text). The optional consensus clause for V-5 rides on report `R4` (01/V-1) if that PR is taken.
 **Audit source:** `01-vault-primitive-consensus.md` §V-4 (`:104-112`), §V-5 (`:114-120`); `verification/01-verification.md` rows V-4/V-5 (`:17-18`), detail (`:112-125`).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

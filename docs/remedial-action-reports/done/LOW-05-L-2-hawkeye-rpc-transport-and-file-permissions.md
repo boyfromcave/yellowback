@@ -1,6 +1,6 @@
 # LOW — 05/L-2 — ycashd RPC credentials over plain `http://` to any host; no loopback/TLS rule; no file-permission checks
 
-Repos / branches to change: `hawkeye` (`fix/05-L-2-transport-and-perms` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-2 (`:228-233`); `verification/05-verification.md` row L-2 (`:21`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:49Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-L-2-transport-and-perms` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-2 (`:228-233`); `verification/05-verification.md` row L-2 (`:21`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:49Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/wallet/crypter.{h,cpp}`, tests) and `ycash6` (same files, 6.20.0 line numbers below), branch `fix/02-PQ-4-pq-key-cache` off `upgrade/vault` in each.
 **Audit source:** `02-post-quantum-crypto.md` §PQ-4 (`:105-118`); `verification/02-verification.md` §2.1 row PQ-4 (`:51`, "sharpened": every `GetPQKey` pays it), §3 N-2 (`:98-103`), keygen timings §1 (87 ms SLH-DSA, 12 ms Falcon at `-O2`).
-**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T07:30Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

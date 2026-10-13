@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`src/crypto/pq/sign.{cpp,h}` identical across lines), branch `fix/02-PQ-3-slhdsa-hedged` off `upgrade/vault` in each; `yellowback` workspace docs (one sentence each in the quantum plan/spec and `src/crypto/pq/README.md`).
 **Audit source:** `02-post-quantum-crypto.md` §PQ-3 (`:86-103`); `verification/02-verification.md` §2.1 row PQ-3 (`:50`), §4.5 ("SLH-DSA is deterministic by design (PQ-3)").
-**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T07:30Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

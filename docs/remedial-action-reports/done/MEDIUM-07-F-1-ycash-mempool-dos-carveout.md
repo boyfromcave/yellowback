@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/07-F-1-dos-carveout` off `upgrade/vault` in each: `src/main.cpp` (`AcceptToMemoryPool` hook only), `contrib/yellowback/pq-dos/pq_dos.py` (ycash-dd only — the tool does not exist in `ycash6`; run it with `BITCOIND=` pointing at the ycash6 binary), `doc/yellowback-pq-dos.md`, a functional test. Policy, not consensus — but `src/main.cpp` is in the review gate's file list, so the diff is reviewed under it.
 **Audit source.** `07-node-rpc-mempool-durability-ci.md` F-1 (High); `verification/07-verification.md` F-1 ("PARTIALLY CONFIRMED, Medium — the carve-out is real and over-broad; per-byte cost ~10× lower than reported and within the Sapling baseline"), N-3; `00-consolidated.md` row 07/F-1 (Medium, ↓ from High), remediation R6.
-**Status:** done — completed 2026-10-13T12:00Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T12:00Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

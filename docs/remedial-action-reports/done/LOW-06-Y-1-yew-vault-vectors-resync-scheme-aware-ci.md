@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yew` (`fix/06-Y-1-vault-vectors-resync` off `upgrade/vault`). One node change request (Y-2) for `ycash-dd` + `ycash6`, non-consensus (test data only).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:56-85` (Y-1), `:87-95` (Y-2), `:113-117` (Y-5); verification `verification/06-verification.md:16-17,20` (verdicts), `:30-50` (Y-1 reproduced and re-rated Low), `:58-60` (Y-4/Y-5); consolidated `00-consolidated.md` rows 06/Y-1 and 06/Y-2..Y-5, R8.
-Status: done — completed 2026-10-13T12:27Z (merged locally on `upgrade/vault`; not yet pushed)
+Status: done — completed 2026-10-13T12:27Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

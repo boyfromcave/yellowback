@@ -1,6 +1,6 @@
 # HIGH — 05/H-2, 05/T-3 — Watch `MintProposed` at `latest`, enforce a mainnet `challengeWindow` floor and a non-zero `mintCap`, alarm and pause on a finality stall, and test it with pinned finality
 
-Repos / branches to change: `hawkeye` (`fix/05-H-2-watch-latest` off `upgrade/vault`), `wyec` (`fix/05-H-2-mainnet-floors` off `upgrade/vault`; a contract change here means a re-pin in Hawkeye's `eth/tools/fetch-wyec.sh`, ABI export and vector regeneration, §7). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §H-2 (`:108-137`), T-3 (`:275`); `verification/05-verification.md` §H-2 (`:81-96`), T-3 (`:27`); `00-consolidated.md` rows 05/H-2, 05/T-3 and recommendation R3. · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-H-2-watch-latest` off `upgrade/vault`), `wyec` (`fix/05-H-2-mainnet-floors` off `upgrade/vault`; a contract change here means a re-pin in Hawkeye's `eth/tools/fetch-wyec.sh`, ABI export and vector regeneration, §7). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §H-2 (`:108-137`), T-3 (`:275`); `verification/05-verification.md` §H-2 (`:81-96`), T-3 (`:27`); `00-consolidated.md` rows 05/H-2, 05/T-3 and recommendation R3. · Status: done — completed 2026-10-13T06:41Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-4 — Mainnet floors on the policy parameters (`confirmations`, `delay`, `min_owner_age`, `takeover`, `roll_margin`, `heartbeat_blocks` vs `livenesswindow`)
 
-Repos / branches to change: `hawkeye` (`fix/05-M-4-mainnet-floors` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-4 (`:206-216`); `verification/05-verification.md` row M-4 (`:19`); `00-consolidated.md` row 05/M-4, recommendation R7. · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-M-4-mainnet-floors` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-4 (`:206-216`); `verification/05-verification.md` row M-4 (`:19`); `00-consolidated.md` row 05/M-4, recommendation R7. · Status: done — completed 2026-10-13T06:41Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

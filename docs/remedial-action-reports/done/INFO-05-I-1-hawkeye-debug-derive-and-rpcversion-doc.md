@@ -1,6 +1,6 @@
 # INFO — 05/I-1, 05/I-2 — `Debug` on secret-bearing config types; the workspace `CLAUDE.md` says `rpcversion 5` for Hawkeye
 
-Repos / branches to change: `hawkeye` (`fix/05-I-1-redact-debug` off `upgrade/vault`); `yellowback` workspace (`fix/05-I-2-hawkeye-rpcversion` off `upgrade/vault`: `AGENTS.md`/`CLAUDE.md`, `README.md` components table if it repeats the number). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` rows I-1, I-2 (`:50-51`); `verification/05-verification.md` rows I-1, I-2 (`:32-33`); `00-consolidated.md` "various / Info". · Status: done — completed 2026-10-13T06:11Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-I-1-redact-debug` off `upgrade/vault`); `yellowback` workspace (`fix/05-I-2-hawkeye-rpcversion` off `upgrade/vault`: `AGENTS.md`/`CLAUDE.md`, `README.md` components table if it repeats the number). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` rows I-1, I-2 (`:50-51`); `verification/05-verification.md` rows I-1, I-2 (`:32-33`); `00-consolidated.md` "various / Info". · Status: done — completed 2026-10-13T06:11Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

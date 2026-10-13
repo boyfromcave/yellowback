@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`src/yellowback/params.cpp`, `src/yellowback/index.h`, `src/init.cpp`, `src/rpc/vault.cpp`/`yellowback.cpp`, `doc/`), branch `fix/01-V-7-attestor-set-chain-param` off `upgrade/vault` in each; `yellowback` workspace (upgrade plan P8 row, `docs/mapping.md`); `contrib/yellowback/devnet` walk assertion.
 **Audit source:** `01-vault-primitive-consensus.md` §V-7 (`:133-141`); `verification/01-verification.md` row V-7 (`:20`), detail (`:132-137`); related `07-node-rpc-mempool-durability-ci.md` §F-4 (`:147-173`) and `04-cross-line-parity-activation.md` §F-7 (`:227-249`, release refusal of an unset mainnet set).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed) (P8).
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch) (P8).
 
 ## 1. Finding
 

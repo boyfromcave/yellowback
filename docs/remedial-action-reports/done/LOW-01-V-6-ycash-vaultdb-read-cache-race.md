@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/vault/db.cpp`) and `ycash6` (same file, `:74`), branch `fix/01-V-6-vaultdb-read-lock` off `upgrade/vault` in each.
 **Audit source:** `01-vault-primitive-consensus.md` §V-6 (`:122-131`); `verification/01-verification.md` row V-6 (`:19`), detail (`:127-130`).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

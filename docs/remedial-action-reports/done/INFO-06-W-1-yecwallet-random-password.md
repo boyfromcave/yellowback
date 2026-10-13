@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yecwallet-dd` (`fix/06-W-1-random-password` off `upgrade/vault`).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:207-213` (W-1); verification `verification/06-verification.md:25` (verdict), `:74` (W-1 detail), `:95` (V6-N3); consolidated `00-consolidated.md` row 06/Y-2..Y-5 ("yecwallet randomPassword fix").
-Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
+Status: done — completed 2026-10-13T07:12Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

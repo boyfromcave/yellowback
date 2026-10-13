@@ -1,6 +1,6 @@
 # LOW — 05/L-3 — A successor bridge does not inherit `consumed`; Hawkeye's `lockId`-keyed Mint record both guards and blocks across a migration
 
-Repos / branches to change: `wyec` (`fix/05-L-3-predecessor-consumed` off `upgrade/vault`); `hawkeye` (`fix/05-L-3-mint-sign-once-per-deployment` off `upgrade/vault`, store schema; re-pin after the wyec change). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-3 (`:235-244`); `verification/05-verification.md` row L-3 (`:22`), contract re-read (`:107-114`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `wyec` (`fix/05-L-3-predecessor-consumed` off `upgrade/vault`); `hawkeye` (`fix/05-L-3-mint-sign-once-per-deployment` off `upgrade/vault`, store schema; re-pin after the wyec change). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-3 (`:235-244`); `verification/05-verification.md` row L-3 (`:22`), contract re-read (`:107-114`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

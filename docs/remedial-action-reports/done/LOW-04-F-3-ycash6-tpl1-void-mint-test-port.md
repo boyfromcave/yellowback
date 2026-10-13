@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash6` (`qa/rpc-tests/yellowback_void_mint.py`, `doc/yellowback-spec.md`), branch `fix/04-F-3-tpl1-test-port` off `upgrade/vault`; `yellowback` workspace `docs/mapping.md:1111` row update.
 **Audit source:** `04-cross-line-parity-activation.md` §F-3 (`:149-163`); `verification/04-verification.md` row F-3 (`:68`), detail (`:93-96`).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

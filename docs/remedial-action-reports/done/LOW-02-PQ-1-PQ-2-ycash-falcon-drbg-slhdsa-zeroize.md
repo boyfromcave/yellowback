@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (both; `src/crypto/pq` is byte-identical across the lines and must stay so), new branch `fix/02-PQ-1-pq-stack-zeroize` off `upgrade/vault` in each.
 **Audit source:** `docs/audits/quantum-vault-ecosystem/02-post-quantum-crypto.md` §PQ-1 (`:47-67`), §PQ-2 (`:69-84`); `verification/02-verification.md` §2.1 rows PQ-1, PQ-2 (`:48-49`), §4.4 ("Residue: the vendored C's own stack frames").
-**Status:** done — completed 2026-10-13T07:30Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T07:30Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

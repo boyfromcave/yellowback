@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/main.cpp`, `src/main.h`, `src/test/DoS_tests.cpp`) and `ycash6` (same, 6.20.0 line numbers), branch `fix/07-F-6-pq-orphan-size` off `upgrade/vault` in each.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-6 (`:186-193`); `verification/07-verification.md` row F-6 (`:16`), detail (`:94-96`).
-**Status:** done — completed 2026-10-13T12:00Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T12:00Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

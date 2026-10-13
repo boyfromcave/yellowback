@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash6` (`src/main.cpp` `ContextualCheckTransaction` — consensus, review gate; `src/init.cpp` `-nuparams`; `src/vault/node.cpp` rechecks; `src/rpc/vault.cpp` `TxData`; `src/test/pq_script_tests.cpp`), branch `fix/04-F-2-v5-under-vault` off `upgrade/vault`; `ycash-dd` (a parity unit test only), same branch name; `yellowback` workspace (`docs/plans/yellowback-quantum-spec.md`, `yellowback-upgrade-plan.md` §15.1/§15.2, `yellowback-quantum-plan.md`, `docs/mapping.md` §22); `librustzcash6` follows in report `LOW-04-F-6-…`.
 **Audit source:** `04-cross-line-parity-activation.md` §F-2 (`:101-147`); `verification/04-verification.md` row F-2 (`:67`), detail (`:80-91`, the placeholder-prevout aggravation); `02-post-quantum-crypto.md` §I-4 (`:155-161`); `verification/02-verification.md` row I-4 (`:59`).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed) Post-verification severity: **Medium as a spec gap, Low as a live risk** (NU5 has no height on any network of either line).
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch) Post-verification severity: **Medium as a spec gap, Low as a live risk** (NU5 has no height on any network of either line).
 
 ## 1. Finding
 

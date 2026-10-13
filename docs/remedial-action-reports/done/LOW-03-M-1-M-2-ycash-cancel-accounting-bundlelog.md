@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/03-M-1-M-2-cancel-bundlelog` off `upgrade/vault`: `doc/yellowback-spec.md` (via the workspace plans + `make spec`), `doc/yellowback-rpc.md`, `src/test/yellowback_state_tests.cpp`, `qa/rpc-tests/test_framework/test_yellowback_model.py`; optionally `src/yellowback/state.cpp`, `qa/rpc-tests/test_framework/yellowback_model.py`, the golden. `yellowback` workspace: `docs/plans/yellowback-v3-development-plan.md` (R12, line 576), `yellowback-upgrade-plan.md` §15.10 U-24, `yellowback-in-term-claims-plan.md` D-IT-14.
 **Audit source.** `03-yellowback-module.md` M-1, M-2, T-2; `verification/03-verification.md` M-1 ("PARTIALLY, Low — decided behaviour; `supplyCents` is the circulating supply, the correct liability"), M-2 ("PARTIALLY, Low — what R12 asks for; `LIVENESS_UNHELD` closes the cheap form"), T-2 (Low); `00-consolidated.md` rows 03/M-1, 03/M-2 (both ↓ to Low).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

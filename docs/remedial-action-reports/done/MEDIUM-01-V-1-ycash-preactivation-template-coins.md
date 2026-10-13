@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/01-V-1-preactivation-template-coins` off `upgrade/vault` in each. Files: `src/vault/state.cpp` (+ `state.h`), `src/vault/node.cpp`, `src/init.cpp`, the `VaultState` construction sites (`src/main.cpp:3408`, `src/miner.cpp:386`, `src/vault/node.cpp:342`, `vault::CheckTx`), `src/test/vault_state_tests.cpp`, `qa/rpc-tests/test_framework/vault.py`, `qa/rpc-tests/vault_primitive.py` (or `vault_upgrade.py`), `doc/vault-rpc.md`; `yellowback` plan §15.4 / §15.6. Consensus change → review gate.
 **Audit source.** `01-vault-primitive-consensus.md` V-1, V-3, T-1, T-6; `verification/01-verification.md` V-1 ("CONFIRMED, Medium"), V-3, N-1 (new: pruned nodes), T-1; `07-node-rpc-mempool-durability-ci.md` F-3; `verification/07-verification.md` F-3 ("I-shaped coins only … consensus one preferred"); `00-consolidated.md` rows 01/V-1 = 07/F-3, 01/V-3..V-7, 01/N-1, remediation R4.
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

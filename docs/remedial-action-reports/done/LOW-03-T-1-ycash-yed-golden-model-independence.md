@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` and `ycash6` (`fix/03-T-1-yed-golden-independence` off `upgrade/vault` in each; both lines together). Tests, the Python model, CI legs and process only — no consensus file changes. The workspace repo for the process rule (`docs/plans/yellowback-upgrade-plan.md` §7/§9 review-gate text).
 Audit source: `docs/audits/quantum-vault-ecosystem/03-yellowback-module.md:91-101` (T-1..T-4, with the "what the tests get right" list), verification `verification/03-verification.md:19-22` (verdicts: T-1 and T-2 re-rated Low), `:51-53` (T-1 git evidence), `:55-57` (T-2 correction: "no C++ *unit* test"); consolidated `00-consolidated.md` row 03/T-1, §4 (b), R8.
-Status: done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+Status: done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

@@ -1,6 +1,6 @@
 # LOW — 05/L-4 — One guardian can veto every honest proposer for a lock; the threshold fallback is not automated
 
-Repos / branches to change: `hawkeye` (`fix/05-L-4-threshold-fallback` off `upgrade/vault`); `wyec`: no change (documented behaviour; an optional note in `wyec-contract-design.md` §4.5.2). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-4 (`:246-253`); `verification/05-verification.md` row L-4 (`:23`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:11Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-L-4-threshold-fallback` off `upgrade/vault`); `wyec`: no change (documented behaviour; an optional note in `wyec-contract-design.md` §4.5.2). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-4 (`:246-253`); `verification/05-verification.md` row L-4 (`:23`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:11Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

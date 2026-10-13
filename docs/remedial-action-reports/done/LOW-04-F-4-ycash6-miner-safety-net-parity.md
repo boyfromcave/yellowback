@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash6` (`src/vault/node.{h,cpp}` `TemplateRun`, `src/miner.cpp`), branch `fix/04-F-4-miner-recheck-parity` off `upgrade/vault`; `yellowback` workspace `docs/mapping.md` §22 row "Template validation of the miner".
 **Audit source:** `04-cross-line-parity-activation.md` §F-4 (`:165-184`); `verification/04-verification.md` row F-4 (`:69`), detail (`:98-106`) and the `TemplateRun` probe (`:45`).
-**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

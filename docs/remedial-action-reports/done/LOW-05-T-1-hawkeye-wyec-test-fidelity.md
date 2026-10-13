@@ -1,6 +1,6 @@
 # LOW — 05/T-1, 05/T-2, 05/T-4 — Test fidelity: the EIP-712 vector stamp follows the pin, exact `expectRevert` selectors, one copy of the contract tests, negative EIP-712 vectors
 
-Repos / branches to change: `hawkeye` (`fix/05-T-1-test-fidelity` off `upgrade/vault`: `eth/test`, `eth/tools`, `eth/vectors`, `crates/hawkeye-eth/tests`, CI); `wyec` (`fix/05-T-2-exact-reverts` off `upgrade/vault`: `test/`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` "Test fidelity" rows T-1, T-2, T-4 (`:273-276`); `verification/05-verification.md` rows T-1, T-2, T-4 (`:25-28`); `00-consolidated.md` rows 05/T-1, T-2, recommendation R8. (T-3 is in `HIGH-05-H-2`.) · Status: done — completed 2026-10-13T06:41Z (merged locally on `upgrade/vault`; not yet pushed)
+Repos / branches to change: `hawkeye` (`fix/05-T-1-test-fidelity` off `upgrade/vault`: `eth/test`, `eth/tools`, `eth/vectors`, `crates/hawkeye-eth/tests`, CI); `wyec` (`fix/05-T-2-exact-reverts` off `upgrade/vault`: `test/`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` "Test fidelity" rows T-1, T-2, T-4 (`:273-276`); `verification/05-verification.md` rows T-1, T-2, T-4 (`:25-28`); `00-consolidated.md` rows 05/T-1, T-2, recommendation R8. (T-3 is in `HIGH-05-H-2`.) · Status: done — completed 2026-10-13T06:41Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

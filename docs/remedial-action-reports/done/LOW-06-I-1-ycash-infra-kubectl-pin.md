@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-infra` (`fix/06-I-1-kubectl-pin` off `upgrade/vault`).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:247-250` (I-1); verification `verification/06-verification.md:26` (verdict), `:76` ("verbatim"); consolidated `00-consolidated.md` row 06/Y-2..Y-5 and R10.
-Status: done — completed 2026-10-13T07:12Z (merged locally on `upgrade/vault`; not yet pushed)
+Status: done — completed 2026-10-13T07:12Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 
