@@ -24,6 +24,21 @@ The owner answered §6 on 2026-10-13. This design is **approved for implementati
 | 6 | Penalty | **Include now: C4b**. A cancel carries the canceller's signed price statement at the claim's reference height, and EQV-1 slashes a member whose regular attestation at that height carries a different price. This ships together with C2 and C5 rather than as a phase 2. |
 | 7 | Unlock budget | **Left as is**: S-3 is unchanged and the primitive is not touched. Document R-1d and size the YED set's `rateLimitBps` with it in mind. |
 
+## Owner decisions, round 2 (2026-10-13)
+
+After the two-reviewer gate (both APPROVE the consensus soundness), the owner decided:
+
+| # | Finding | Decision |
+|---|---|---|
+| R2-1 | R-1c leak: after `CANCEL_QUIET` a held residual was released even while the position stayed claimable (both reviewers) | After `CANCEL_QUIET` a held residual is releasable only if the position is **not claimable** at the latest snapshot (`Snapshots[H−1]`) by either claim path at the snapshot prices; otherwise it waits until the position closes (redeemed, or claimed by a later release). Reads only the owner's own vault. |
+| R2-2 | Cap | `CANCEL_SIGNERS_MAX` = **4** (regtest stays 3): schedule 1, 2, 3, 4, 4, … |
+| R2-3 | Review M-2 (coordinator) | A cancel counts its **distinct valid current-member** co-signatures and needs ≥ `required`; invalid or non-current entries are ignored rather than failing the cancel; a malformed blob still fails. Wallets add spare co-signatures. |
+
+Wallet fixes with them: `yed_signcancelcosign` co-signs only confirmed claims (A-6), looks its price guard up by key
+(a rejoined member with a reused hot key), and reads one block-hash source; `yed_buildcancel` names the failing entry
+and checks `PRICE_MAX`. Documented trade-offs: the C2/C4b co-signer limitation (members whose locked price at R clears
+θ), membership from the in-block mirror, and the residual held for a campaign plus the quiet period.
+
 **Implementation (2026-10-13, lane `fix/cancel-limit`, both node lines):** as specified, with the choices recorded in the
 upgrade plan §15.10 ("The per-vault cancel limit"): one signature per co-signer is both the co-signature and the C4b
 statement; the CANCEL_COSIGN payload body is empty (the count rides the carrier, so the set signature stays sign-once);
