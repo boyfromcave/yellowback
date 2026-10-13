@@ -1,6 +1,6 @@
 # INFO — 05/I-1, 05/I-2 — `Debug` on secret-bearing config types; the workspace `CLAUDE.md` says `rpcversion 5` for Hawkeye
 
-Repos / branches to change: `hawkeye` (`fix/05-I-1-redact-debug` off `upgrade/vault`); `yellowback` workspace (`fix/05-I-2-hawkeye-rpcversion` off `upgrade/vault`: `AGENTS.md`/`CLAUDE.md`, `README.md` components table if it repeats the number). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` rows I-1, I-2 (`:50-51`); `verification/05-verification.md` rows I-1, I-2 (`:32-33`); `00-consolidated.md` "various / Info". · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-I-1-redact-debug` off `upgrade/vault`); `yellowback` workspace (`fix/05-I-2-hawkeye-rpcversion` off `upgrade/vault`: `AGENTS.md`/`CLAUDE.md`, `README.md` components table if it repeats the number). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` rows I-1, I-2 (`:50-51`); `verification/05-verification.md` rows I-1, I-2 (`:32-33`); `00-consolidated.md` "various / Info". · Status: done — completed 2026-10-13T06:11Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -43,3 +43,10 @@ None operational. `Redacted` changes the field types; the devnet/config loader c
 ## 8. Effort estimate and dependencies
 
 0.5 day. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:11Z
+- **hawkeye** `upgrade/vault` merge f693026 (branch `fix/bridge-misc`): 1494a9c (`Redacted<T>` on every secret-bearing config field; `config::tests::debug_redacts_secrets`; the `tests/redaction.rs` source guard; README now states the node requirement as `upgrade/vault`, rpcversion 8).
+- **Workspace:** `AGENTS.md` now says `rpcversion` 8, not 5, citing `YELLOWBACK_RPC_VERSION = 8` at `src/rpc/yellowback.cpp:61` on both node lines (it was stale for every client, not only Hawkeye). The README components table names no version, so it is unchanged.
+- **Tests:** 301 passed at 957a076. §6.1 and §6.2 met.

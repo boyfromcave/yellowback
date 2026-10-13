@@ -1,6 +1,6 @@
 # LOW — 05/L-4 — One guardian can veto every honest proposer for a lock; the threshold fallback is not automated
 
-Repos / branches to change: `hawkeye` (`fix/05-L-4-threshold-fallback` off `upgrade/vault`); `wyec`: no change (documented behaviour; an optional note in `wyec-contract-design.md` §4.5.2). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-4 (`:246-253`); `verification/05-verification.md` row L-4 (`:23`); `00-consolidated.md` row 05/L-1..L-5. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-L-4-threshold-fallback` off `upgrade/vault`); `wyec`: no change (documented behaviour; an optional note in `wyec-contract-design.md` §4.5.2). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-4 (`:246-253`); `verification/05-verification.md` row L-4 (`:23`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T06:11Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -48,3 +48,11 @@ Repos / branches to change: `hawkeye` (`fix/05-L-4-threshold-fallback` off `upgr
 ## 8. Effort estimate and dependencies
 
 1.5 days. Benefits from `HIGH-05-H-1` (authenticated `/slash/sign` for the griefing vote) but does not depend on it.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:11Z
+- **hawkeye** `upgrade/vault` merge f693026 (branch `fix/bridge-misc`): d60e935 (automatic threshold fallback once every proposer is barred, `[bridge] fallback_to_threshold`; GRIEFING cases against the challenger of a matching proposal, verified by peers), 957a076 (plan §2.3, §3.3, §5.3, HK-15). **wyec** merge aef923c: 2ab9b6c (design-doc note, §4.2 and §4.5.2).
+- **Tests:** 301 passed at 957a076. New: `t_all_proposers_vetoed_falls_back_to_threshold`, `t3_threshold_fallback_respects_signing_pause`, and `n_` asserting that an honest challenge opens no case. §6 criteria 1–3 met; criterion 1 is met on anvil, not on the devnet.
+- **Beyond the report:** a member with a recorded GRIEFING case for a lock is also barred from proposing for that lock. Without this, a griefer that never proposes would stay eligible and the fallback would never fire.
+- **Open:** the devnet run of the §6.1 scenario.

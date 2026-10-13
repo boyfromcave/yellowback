@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-2 — Rate-limit head-of-line blocking: an over-cap burn parks every later release forever
 
-Repos / branches to change: `hawkeye` (`fix/05-M-2-over-cap-burn` off `upgrade/vault`); `wyec` only through an optional §10 change request (CR-W5, §4.4). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-2 (`:163-180`); `verification/05-verification.md` row M-2 (`:17`); `00-consolidated.md` row 05/M-2, recommendation R7. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-M-2-over-cap-burn` off `upgrade/vault`); `wyec` only through an optional §10 change request (CR-W5, §4.4). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-2 (`:163-180`); `verification/05-verification.md` row M-2 (`:17`); `00-consolidated.md` row 05/M-2, recommendation R7. · Status: done — completed 2026-10-13T06:11Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -89,3 +89,11 @@ Plan §5.5: "an over-cap burn is parked out of the FIFO with alarm `burn-over-ca
 ## 8. Effort estimate and dependencies
 
 1.5 days including tests and docs. No dependencies; `MEDIUM-05-M-3` references the alarm.
+
+## Completion record
+
+- **Completed:** 2026-10-13T06:11Z
+- **hawkeye** `upgrade/vault` merge f693026 (branch `fix/bridge-misc`): 3b5c75e (over-cap burn parked out of the FIFO, alarm `burn-over-cap`, `burns_over_cap` status/gauge, `/burns` `reason`, `hawkeye burn` pre-check with `--allow-over-cap`), 957a076 (plan §5.5, HK-8).
+- **Tests:** 301 passed, 0 failed at 957a076 (`HAWKEYE_REQUIRE_ANVIL=1 cargo test --workspace --all-features --locked`); clippy, fmt and rustdoc clean. New: `p_over_cap_burn_does_not_block_later_burns` and the `cap_plan` unit tests. §6 criteria 1–3 met.
+- **Choice:** the cap basis is max(`epochbasis`, `lockedvalue`), so a burn that fits the next epoch is not parked.
+- **Open:** CR-W5 (a wyec `maxBurn` field) is optional and recorded in hawkeye plan §10.
