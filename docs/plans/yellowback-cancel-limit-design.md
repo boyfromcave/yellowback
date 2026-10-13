@@ -18,7 +18,7 @@ The owner answered §6 on 2026-10-13. This design is **approved for implementati
 |---|---|---|
 | 3 | Approach | **C2, escalating co-signed cancels (CAN-2)**, not C0 "always require two" |
 | 1 | One free hold | **Accepted**: the first cancel on a vault needs one attestor; a lone seat can delay one liquidation about 12 h per vault per week |
-| 2 | Cap | **`CANCEL_SIGNERS_MAX` = 5** (regtest 3); schedule 1, 2, 3, 4, 5, 5, …; `CANCEL_QUIET` = 8,064 blocks (7 days; regtest 40) |
+| 2 | Cap | **`CANCEL_SIGNERS_MAX` = 5** (regtest 3) — **superseded by round 2: 4**, schedule 1, 2, 3, 4, 4, …; `CANCEL_QUIET` = 8,064 blocks (7 days; regtest 40) |
 | 4 | Claimant's fees | **No repayment** by cancellers (C3 rejected) |
 | 5 | Owner's residual | **Held** up to `CANCEL_QUIET`, or until the position closes (C5 / CAN-3) |
 | 6 | Penalty | **Include now: C4b**. A cancel carries the canceller's signed price statement at the claim's reference height, and EQV-1 slashes a member whose regular attestation at that height carries a different price. This ships together with C2 and C5 rather than as a phase 2. |
@@ -30,9 +30,18 @@ After the two-reviewer gate (both APPROVE the consensus soundness), the owner de
 
 | # | Finding | Decision |
 |---|---|---|
-| R2-1 | R-1c leak: after `CANCEL_QUIET` a held residual was released even while the position stayed claimable (both reviewers) | After `CANCEL_QUIET` a held residual is releasable only if the position is **not claimable** at the latest snapshot (`Snapshots[H−1]`) by either claim path at the snapshot prices; otherwise it waits until the position closes (redeemed, or claimed by a later release). Reads only the owner's own vault. |
+| R2-1 | R-1c leak: after `CANCEL_QUIET` a held residual was released even while the position stayed claimable (both reviewers) | After `CANCEL_QUIET` a held residual is releasable only if **no claim in that block could pass**: for every reference height `R` a claim may cite (`[max(H − REF_WINDOW, START_HEIGHT), H − 1]`) the position is not claimable at `Snapshots[R]` under the claim's own rule, judged fail-closed — an undefined price counts as claimable; path (a) is judged at xClaim (a claim's `pClaim = max(xClaim, aClaim)` ≥ xClaim when ARMED, and a claim may carry a bundle whose aClaim is that low); path (b) counts whenever `R` is ARMED and a notice of the position persists for `R`. Otherwise it waits until the position closes (redeemed, or claimed by a later release). Reads only the owner's own vault and notice; at most `REF_WINDOW` (40) snapshot reads per release. (The first implementation read only `Snapshots[H−1]` at its price; both reviewers found the gap and it was fixed the same day.) |
 | R2-2 | Cap | `CANCEL_SIGNERS_MAX` = **4** (regtest stays 3): schedule 1, 2, 3, 4, 4, … |
 | R2-3 | Review M-2 (coordinator) | A cancel counts its **distinct valid current-member** co-signatures and needs ≥ `required`; invalid or non-current entries are ignored rather than failing the cancel; a malformed blob still fails. Wallets add spare co-signatures. |
+
+**Collusion threshold.** With the cap at 4, four colluding seats — about 27 % of the 15 — can veto one vault, or every
+vault, indefinitely (was five, a third). That is the captured-set residual priced at four bonds.
+
+**Honest owner after a wrong path-(b) claim.** A wrong path-(b) claim strips the vault to ~100 % at the claim's pClaim
+(the claimant intent's value) and moves the RED-5 residual into the owner's residual intent. When it is cancelled the
+re-created position is that stripped vault, which is claimable at most prices a claim may cite, so under R2-1 the
+honest owner's residual stays held until the position closes: the owner must redeem (repaying the debt, the refunded
+YED is the claimant's) to free it. Accepted (fail closed: the owner can always redeem).
 
 Wallet fixes with them: `yed_signcancelcosign` co-signs only confirmed claims (A-6), looks its price guard up by key
 (a rejoined member with a reused hot key), and reads one block-hash source; `yed_buildcancel` names the failing entry
@@ -277,7 +286,7 @@ single honest watcher.
 
 | Constant | Value | Why |
 |---|---|---|
-| `CANCEL_SIGNERS_MAX` | **5** [3] | Equals the honest members that must be live to stop a sustained campaign. ARM-1 already requires 7 attestors for prices to arm, so 5 leaves 2 for captured or absent seats. 5 of 15 seats (about a third) matches the protecting power a coalition already has through `aClaim` (A-3). |
+| `CANCEL_SIGNERS_MAX` | **5** [3] (**round 2: 4**; see below) | Equals the honest members that must be live to stop a sustained campaign. ARM-1 already requires 7 attestors for prices to arm, so 5 leaves 2 for captured or absent seats. 5 of 15 seats (about a third) matches the protecting power a coalition already has through `aClaim` (A-3). |
 | Schedule | 1, 2, 3, 4, 5, 5, … | Linear. A lone seat gets exactly one round, and each extra round needs one more colluder. |
 | `CANCEL_QUIET` | **8,064** (7 d) [40] | Longer than any campaign a lone seat can sustain, and shorter than the shortest term (30 d). After a genuine incident the vault returns to "one watcher" within a week. |
 | Payload | `CANCEL_COSIGN`, next free type byte, `count u8` header plus carrier signatures | Reuses W2's carrier, so no relay change. |
