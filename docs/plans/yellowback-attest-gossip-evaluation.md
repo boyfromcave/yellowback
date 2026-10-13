@@ -10,6 +10,19 @@ co-signatures reach the cancel driver within `CLAIM_DELAY` = 576 blocks (~12 h).
 
 ---
 
+## Owner decisions (2026-10-13)
+
+1. **Co-signature path: direct, members only.** Each agent delivers its cancel co-signature straight to the other
+   members over iroh QUIC connections. Non-members are refused at the handshake (`EndpointHooks::after_handshake`);
+   each member endpoint id is bound to its seat by one `signmessage` statement from the member key. The open cancel
+   gossip topic is retired once the direct path has run alongside it in a trial.
+2. **On-chain fallback: yes.** When direct delivery has not gathered `cancelsRequired` co-signatures in time, agents
+   publish their 79-byte co-signature record in a standard OP_RETURN (no node change); drivers read them from chain.
+3. **Price-attestation channel: reviewed next** with the same method, after the cancel path ships.
+4. **Relays: n0 public relays by default, with an optional project-run relay as a configured fallback** (documented
+   how to run one).
+Also: upgrade iroh-gossip when its peer-refusal fix (#155) is released, for the price channel.
+
 ## 0. Summary
 
 - **The finding is confirmed in the library source.** iroh-gossip's PlumTree forwards a message to its eager and
