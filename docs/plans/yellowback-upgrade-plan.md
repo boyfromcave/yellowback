@@ -713,7 +713,7 @@ it.
 | **P5** wyec repo | contract (external audit), daemon, devnet preset | P3 |
 | **P6** clients | YecWallet, YEW, lightwalletd, chain-viz (set and vault panels), x402 and yolo (branch ID) | P2 for the ID; P3/P4 for the surface |
 | **P7** gates | kept gates; reshaped G-4, G-9; **G-11** cancel inclusion latency on the real block sequence; **G-12** primitive drills on testnet or a public multi-operator devnet: cancel, equivocation slash, dormancy recovery, wind-down, both bridge shapes, a wrong-price claim cancelled | everything |
-| **P8** release | `ycash6` 6.22.0 and `ycash-dd` in step; activation height and the later bridge enable height (O-3) set by this release; the contract deployed with the registered set | P7 |
+| **P8** release | `ycash6` 6.22.0 and `ycash-dd` in step; activation height and the later bridge enable height (O-3) set by this release; the contract deployed with the registered set; **the YED attestor set a chain parameter on every network (01/V-7, finding (74))**: the registered set id in `params.cpp` `MainParams`/`TestParams` (the release-heights gate already refuses it unset), and a mainnet/testnet build whose network has a `UPGRADE_VAULT` height but no set refuses to start (`InitError`) instead of validating the module inertly; regtest keeps `-yellowbackattestorset` and the inert mode for primitive-only suites. Pre-P8 (landed): `vault_getinfo.attestorsetid` / `moduleactive`, the start-up log line, the devnet walk's attestor-set and stock-divergence assertions | P7 |
 
 P1 and P2 run in parallel worktrees; P2 does not touch P1's files until P1 merges. P3 and P4 are
 independent and run in parallel. P5's contract audit is external and on the critical path.
