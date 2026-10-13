@@ -1162,8 +1162,12 @@ fee coins re-locked at load), returns them byte-identical or re-funded, refuses 
 `rebuild` (07/N-2), and picks the smallest covering coin so the change output — bound by the signatures, so a
 re-funder pays it — stays small. The sign-once record lives only in `wallet.dat` (07/F-5): `set_listsigned` /
 `set_importsigned` and the wallet dump's `vaultsetsig=` lines carry it, and a wallet restored from its seed or
-that imported a member key refuses to sign (`set-sign-restored`) until the record is imported or the call passes
-`acknowledgerestore`. `vault_vectors.json` `spends[]` regenerated (byte-identical on both lines; `ownerSpends[]`
+that imported a member key (or whose imported key's `SET_JOIN` connects later, review S3) refuses to sign
+(`set-sign-restored`) a prevout it has no record for until `set_acknowledgerestore` — imports never clear it, a
+dump may be stale (review S2) — or the call passes `acknowledgerestore`. A file-copied `wallet.dat` and two
+wallets sharing a member key are not detectable: a member key lives in exactly one wallet. Anyone may re-fund, so
+a claimant can pin a cancel behind a low-fee parent (no RBF, review S1): signers broadcast cancels early, directly
+to well-connected peers and miners, and re-fund from a confirmed coin if one lingers. `vault_vectors.json` `spends[]` regenerated (byte-identical on both lines; `ownerSpends[]`
 unchanged); the client copies (Hawkeye, YEW, lightwalletd's contract fixture) re-pin. Given up: third-party txid
 malleability by fee-input replacement (as the selector case, 01/V-4), so a pre-built spend chained on a re-funded
 parent must be rebuilt.
@@ -1191,7 +1195,7 @@ parent must be rebuilt.
 
 Read: `vault_getinfo` (activation height, branch ID, counts), `set_list`, `set_getinfo "setid" [height]` (params, members, current/dormant/released, rate fields), `vault_list {"tag","setid","owner"}`, `vault_decodescript "hex"`.
 Acts: `set_create {params}` → setId; `set_join "setid" bondamount bondlocktime ["memberkey"]`; `set_heartbeat "setid" ["memberkey"]`; `set_buildact "type" {params}` → funded, unsigned act hex (vin[0] fixed); `set_signact "hex" "setid"` (adds this wallet's member or admit signatures); `set_sendact "hex"` (signs inputs, broadcasts); `set_equivocation {proof}`.
-Vaults: `vault_lock {tag, setid, cancelsetid, delay, ownerheight, appheight, amount, ownerkey?}`; `vault_buildunlock "outpoint" [{"address"|"script", amount}] (rebuild)` → funded unsigned hex, remembered in the wallet and returned byte-identical (re-funded with the same sighash when a fee input was spent; 07/N-2); `set_signunlock "hex" ({"acknowledgerestore"})`; `vault_buildcancel "intentoutpoint" (rebuild)` (as `vault_buildunlock`); `set_signcancel "hex" ({"acknowledgerestore"})`; `vault_refee "hex"` (replace the fee inputs of a set-signed spend, 01/V-2); `set_listsigned` / `set_importsigned` (the sign-once record, 07/F-5); `vault_send "hex"`; `vault_release "intentoutpoint"`; `vault_ownerspend "outpoint" "address"` (selector 2 or 3 automatically); `vault_app "outpoint" [intents]` (selector 4 skeleton, for modules).
+Vaults: `vault_lock {tag, setid, cancelsetid, delay, ownerheight, appheight, amount, ownerkey?}`; `vault_buildunlock "outpoint" [{"address"|"script", amount}] (rebuild)` → funded unsigned hex, remembered in the wallet and returned byte-identical (re-funded with the same sighash when a fee input was spent; 07/N-2); `set_signunlock "hex" ({"acknowledgerestore"})`; `vault_buildcancel "intentoutpoint" (rebuild)` (as `vault_buildunlock`); `set_signcancel "hex" ({"acknowledgerestore"})`; `vault_refee "hex"` (replace the fee inputs of a set-signed spend, 01/V-2); `set_listsigned` / `set_importsigned` / `set_acknowledgerestore` (the sign-once record and the restore marker, 07/F-5); `vault_send "hex"`; `vault_release "intentoutpoint"`; `vault_ownerspend "outpoint" "address"` (selector 2 or 3 automatically); `vault_app "outpoint" [intents]` (selector 4 skeleton, for modules).
 All registered in `rpc/client.cpp` conversions; documented in `doc/vault-rpc.md`.
 
 ### 15.9 Tests and vectors
