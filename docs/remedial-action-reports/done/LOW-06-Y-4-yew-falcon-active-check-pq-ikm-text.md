@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yew` (`fix/06-Y-4-falcon-active-check` off `upgrade/vault`). Docs only in the workspace (`docs/plans/yellowback-quantum-clients.md` cross-reference, no rule change).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:105-111` (Y-4), `:97-103` (Y-3); verification `verification/06-verification.md:18-19` (verdicts: Y-3 framing reduced to Info, Y-4 Low), `:52-56` (Y-3 detail), `:60` (Y-4), `:94` (V6-N2); consolidated `00-consolidated.md` row 06/Y-2..Y-5.
-Status: pending
+Status: done — completed 2026-10-13T12:27Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -56,3 +56,10 @@ Separately (Y-3, Info after verification), YEW derives its PQ keys with HKDF ove
 ## 8. Effort estimate and dependencies
 
 - 0.5 day core + 0.25 day app/docs. No dependencies. Independent of `LOW-06-Y-1-…` (can share the branch if convenient).
+
+## Completion record
+
+- **Completed:** 2026-10-13T12:27Z
+- **Merged and pushed:** yew upgrade/vault 1e250f8. 9ff253b: falcon_active checked against compiled PQ_FALCON_HEIGHT constants (a refused server hides YED with the reason shown; no override). Restore text: the same 24 words restore in YEW; other wallets do not reliably derive the PQ keys. 572e045: trust text paragraph 3 corrected (vault owners SLH-DSA, YED holders Falcon).
+- **Also landed with resync-a:** b4b461f, PQ spends pay at least the ZIP-317 conventional fee (the audit 04/N-1 client follow-up).
+- **Tests:** yew-core suites and flutter test pass; check-trust-text.sh ok.

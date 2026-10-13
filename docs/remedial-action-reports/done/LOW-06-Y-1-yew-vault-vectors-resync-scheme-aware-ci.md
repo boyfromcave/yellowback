@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yew` (`fix/06-Y-1-vault-vectors-resync` off `upgrade/vault`). One node change request (Y-2) for `ycash-dd` + `ycash6`, non-consensus (test data only).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:56-85` (Y-1), `:87-95` (Y-2), `:113-117` (Y-5); verification `verification/06-verification.md:16-17,20` (verdicts), `:30-50` (Y-1 reproduced and re-rated Low), `:58-60` (Y-4/Y-5); consolidated `00-consolidated.md` rows 06/Y-1 and 06/Y-2..Y-5, R8.
-Status: pending
+Status: done — completed 2026-10-13T12:27Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -76,3 +76,12 @@ The verifier rewrote the test scheme-aware in a scratch copy and ran it against 
 
 - Steps 1–3, 6: ~1 day (the test rewrite is a half-day; the verifier's scratch rewrite is a starting point). Step 4 (node side): ~0.5 day on each line plus a review that it is test-data-only. Step 5 first form: ~1 day (runner registration, workflow, issue-on-failure); the hosted form: 2–4 days, separate PR.
 - Depends on nothing. Re-pin after R5 (`MEDIUM-01-V-2-ycash-set-sig-anyonecanpay.md`) lands on both lines. Share the "fail, never skip" convention with the lightwalletd report (`LOW-06-L-1-…`).
+
+## Completion record
+
+- **Completed:** 2026-10-13T12:27Z
+- **Merged and pushed:** yew upgrade/vault 1e250f8 (branches fix/yew-vectors + fix/resync-a). Node test data: ycash-dd 93c8ea2f6 / ycash6 b3bdf929d (pq_wallet_vectors.json + generator, CI --check), merged d2cf7abde / 96b0f607b and pushed with the node lines.
+  - Vectors re-synced, with core/tests/vectors/PIN = ycash-dd 8af82551b / ycash6 047b561ac (1406969); SET_SIGHASH = 0x81 asserted.
+  - Scheme-aware owner-spend test (SLH-DSA + Falcon); scripts/check-node-vectors.sh in CI with no skip path; resync-node-vectors.sh; nightly devnet workflow (self-hosted, first form).
+- **Tests:** yew-core 161 lib + 6 vectors pass; fmt/clippy clean; check-node-vectors ok in CI mode; flutter test 77 pass.
+- **Open (owner):** register the yb-devnet self-hosted runner and trigger the nightly workflow's first run; the hosted devnet job is a follow-up.
