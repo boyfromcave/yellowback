@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` and `ycash6` (`fix/03-T-1-yed-golden-independence` off `upgrade/vault` in each; both lines together). Tests, the Python model, CI legs and process only — no consensus file changes. The workspace repo for the process rule (`docs/plans/yellowback-upgrade-plan.md` §7/§9 review-gate text).
 Audit source: `docs/audits/quantum-vault-ecosystem/03-yellowback-module.md:91-101` (T-1..T-4, with the "what the tests get right" list), verification `verification/03-verification.md:19-22` (verdicts: T-1 and T-2 re-rated Low), `:51-53` (T-1 git evidence), `:55-57` (T-2 correction: "no C++ *unit* test"); consolidated `00-consolidated.md` row 03/T-1, §4 (b), R8.
-Status: pending
+Status: done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -80,3 +80,10 @@ Both lines; the C++ unit cases and the Python changes are identical in substance
 
 - T-1 items 1–3, 5: 1 day. Item 4 (≥ 10 new rejected blocks in `build_golden`): 2 days. T-2: 1 day. T-3: 1.5 days plus the reviewer's independent time. Port to `ycash6`: 0.5 day (JSON/tests identical; fixture API shape).
 - Dependencies: none to land; **should land before R1** (`HIGH-03-H-1-ycash-yed-claim-cancel-refund.md`) so R1 regenerates the golden under the new process and flips the documented M-1 assertion.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/yed-cancel. The golden process (separate regeneration commits; the audit leg golden-separate-commit, report-only), --check-golden in CI, 17 rejected blocks, rational-arithmetic math spec (10^5 draws), one golden hash.
+- **Open (owner):** name a math-spec author and an independent reviewer for the recomputation; decide when the golden-separate-commit leg becomes blocking.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

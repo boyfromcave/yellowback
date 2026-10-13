@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`src/yellowback/params.cpp`, `src/yellowback/index.h`, `src/init.cpp`, `src/rpc/vault.cpp`/`yellowback.cpp`, `doc/`), branch `fix/01-V-7-attestor-set-chain-param` off `upgrade/vault` in each; `yellowback` workspace (upgrade plan P8 row, `docs/mapping.md`); `contrib/yellowback/devnet` walk assertion.
 **Audit source:** `01-vault-primitive-consensus.md` §V-7 (`:133-141`); `verification/01-verification.md` row V-7 (`:20`), detail (`:132-137`); related `07-node-rpc-mempool-durability-ci.md` §F-4 (`:147-173`) and `04-cross-line-parity-activation.md` §F-7 (`:227-249`, release refusal of an unset mainnet set).
-**Status:** pending (P8).
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed) (P8).
 
 ## 1. Finding
 
@@ -57,3 +57,10 @@ ycash-dd `055d9c2` (ycash6 `e866c45` identical in `src/vault`, `src/yellowback/m
 ## 8. Effort estimate and dependencies
 
 Pre-P8 work: ~1 day both lines (RPC field, walk assertion, docs). P8 part: owned by the release plan (P8), depends on the registered set (P7 gates) and on 07/F-4's walk rework (shares the assertion). Related: 03/I-3 (pin `cancelThreshold`/`unlockThreshold` in `AdoptedSet`, report R1).
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/vault-tests: vault_getinfo.attestorsetid and moduleactive, a start-up log line, devnet walk assertions, docs and the plan P8 row.
+- **Open (owner/release P8):** set the attestor set id in MainParams/TestParams, and refuse a public network with a vault height but no set. Not done: the two-node divergence functional case and a mainnet ParamsFromArgs unit test.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

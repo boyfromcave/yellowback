@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash6` (`src/vault/node.{h,cpp}` `TemplateRun`, `src/miner.cpp`), branch `fix/04-F-4-miner-recheck-parity` off `upgrade/vault`; `yellowback` workspace `docs/mapping.md` §22 row "Template validation of the miner".
 **Audit source:** `04-cross-line-parity-activation.md` §F-4 (`:165-184`); `verification/04-verification.md` row F-4 (`:69`), detail (`:98-106`) and the `TemplateRun` probe (`:45`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -61,3 +61,10 @@ Consensus footprint: none (`src/miner.cpp` and `src/vault/node.cpp` are not cons
 ## 8. Effort estimate and dependencies
 
 ~2 hours plus the functional negative. Dependency: the Falcon-reorg assertion needs 04/F-1 (report R8) so `vault_pq_reorg.py` actually runs in CI; the sequence-lock part has none.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/ycash6-v5: 518c29b83 (TemplateRun::Try rechecks PQ scripts and BIP68 per candidate) plus 238f31ffa (sigcache store, skips V/I inputs already verified). vault_pq_reorg (runs, no SKIP) and yellowback_stratum pass.
+- **Open:** the 1,000-PQ-spend timing measurement needs pq_dos ported to ycash6.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

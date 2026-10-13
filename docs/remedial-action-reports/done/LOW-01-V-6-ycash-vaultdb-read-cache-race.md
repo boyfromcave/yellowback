@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/vault/db.cpp`) and `ycash6` (same file, `:74`), branch `fix/01-V-6-vaultdb-read-lock` off `upgrade/vault` in each.
 **Audit source:** `01-vault-primitive-consensus.md` §V-6 (`:122-131`); `verification/01-verification.md` row V-6 (`:19`), detail (`:127-130`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -71,3 +71,9 @@ Consensus footprint: none (node-local caching; the value returned to a `cs_main`
 ## 8. Effort estimate and dependencies
 
 ~30 minutes per line plus review. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/vault-replay. f23bbde65 / 4e84c992d (no stale pre-commit insert), plus cbeff54a7 / 9a9027101 (a commit-generation counter that also covers cache clears and Wipe, from the review).
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

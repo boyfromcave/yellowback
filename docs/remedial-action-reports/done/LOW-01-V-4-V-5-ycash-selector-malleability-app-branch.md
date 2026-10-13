@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (policy, wallet RPC, tests, docs), branch `fix/01-V-4-template-spend-policy` off `upgrade/vault` in each; `yellowback` workspace (plan §15.3/§15.6 and quantum spec text). The optional consensus clause for V-5 rides on report `R4` (01/V-1) if that PR is taken.
 **Audit source:** `01-vault-primitive-consensus.md` §V-4 (`:104-112`), §V-5 (`:114-120`); `verification/01-verification.md` rows V-4/V-5 (`:17-18`), detail (`:112-125`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -61,3 +61,10 @@ Both lines (policy and RPC files differ only by 6.20.0 API shape).
 ## 8. Effort estimate and dependencies
 
 Policy + RPC + docs + tests: ~1 day per line (ycash6 by delta). Consensus clause: +½ day only as part of R4 (01/V-1), which must be taken first if the clause is wanted. No other dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/vault-replay. CONSENSUS V-5 clause d92872242 / 3f6ead234 (an APP branch only on a registered tag). Template-spend relay policy (IsStandardTemplateScriptSig); vault_lock refuses APP unless the module governs a set (2a4bbad82); new vault_policy.py runs with standardness enforced (-acceptnonstdtxn=0) and passes on both lines.
+- **Review gate:** two reviewers, APPROVE WITH NITS (addressed).
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/07-F-5-sign-once-restore` off `upgrade/vault` in each: `doc/vault-rpc.md` (must), `doc/yellowback-attestor.md` (must), `src/wallet/rpcdump.cpp` + `src/wallet/walletdb.{h,cpp}` + `src/rpc/vault.cpp` (optional code: export/import of the record, a restore marker, a read RPC), `qa/rpc-tests/vault_pq_wallet_restore.py`. Wallet/RPC/doc only — no consensus, no review gate leg beyond the normal review. Cross-reference: `hawkeye` R7 runbook (05/M-3) for the sidecar's own mirror.
 **Audit source.** `07-node-rpc-mempool-durability-ci.md` F-5; `verification/07-verification.md` F-5 ("CONFIRMED, Medium — `vaultsetsig` lives only in `wallet.dat`; the restore suite has no sign-once case; the doc is silent on restores"), N-2; `00-consolidated.md` row 07/F-5, remediation R7 (last sentence).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -54,3 +54,9 @@
 
 - Docs: 0.25 day. Export/import + list RPC: 0.75 day. Marker + refusal: 0.5 day. Tests: 0.75 day. ycash6 port: 0.25 day.
 - Dependencies: pairs with `MEDIUM-01-V-2-ycash-set-sig-anyonecanpay.md` (same doc paragraph; its persisted build memo is a second wallet record the dump should carry too). Hawkeye's R7 runbook (05/M-1..M-4) references this report for the node side.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/set-sig. set_listsigned / set_importsigned; dumps carry the sign-once records and build memos; a restore marker blocks set signing until set_acknowledgerestore (imports never clear it; a key imported before its JOIN sets it when the JOIN connects); docs: one member key per wallet, cancel-pinning guidance. vault_pq_wallet_restore.py covers backup, seed restore, stale dump and late join.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

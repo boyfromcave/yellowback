@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `librustzcash6` (`components/zcash_protocol/src/consensus.rs`, `zcash_primitives/src/transaction/mod.rs`, tests), branch `fix/04-F-6-vault-v5-consistency` off `upgrade/vault`; `ycash6` (`Cargo.toml` `[patch.crates-io]` revs + `Cargo.lock`), branch `fix/04-F-6-librustzcash6-pin` off `upgrade/vault`.
 **Audit source:** `04-cross-line-parity-activation.md` §F-6 (`:203-225`); `verification/04-verification.md` row F-6 (`:71`), detail (`:114-118`).
-**Status:** pending — **blocked on the 04/F-2 decision** (report `MEDIUM-04-F-2-ycash6-v5-under-vault.md`).
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed) — **blocked on the 04/F-2 decision** (report `MEDIUM-04-F-2-ycash6-v5-under-vault.md`).
 
 ## 1. Finding
 
@@ -53,3 +53,9 @@ As in §4 steps 3 and 5; plus ycash6's `vault_upgrade.py` and `yellowback_*` sui
 ## 8. Effort estimate and dependencies
 
 ~1–2 hours in librustzcash6, ~1 hour re-pin and CI cycle in ycash6. **Depends on** `MEDIUM-04-F-2-ycash6-v5-under-vault.md` (the rule decision) and should merge after it, in the same release.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** librustzcash6 c78c8ff1 (eeb7740d: Vault v4-only, has_orchard false); ycash6 Cargo pin 4089d680e. cargo test zcash_protocol 15 passed. **Push order:** librustzcash6 before ycash6.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

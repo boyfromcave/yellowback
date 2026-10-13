@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/vault/db.{h,cpp}`, `src/vault/node.cpp`, `src/main.cpp` call site, tests) and `ycash6` (same files, 6.20.0 line numbers), branch `fix/07-F-7-vault-undo-prune` off `upgrade/vault` in each; `doc/yellowback.md` / `doc/vault-rpc.md` for F-8.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-7 (`:195-202`), §F-8 (`:204-210`); `verification/07-verification.md` rows F-7 (Low), F-8 (Info) (`:17-18`), detail (`:98-101`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -58,3 +58,9 @@ Consensus footprint: none (node-local database retention).
 ## 8. Effort estimate and dependencies
 
 ~2 hours per line plus the functional case. **Dependencies:** R4 (01/V-1 + 01/N-1: `CoinsFromUndo` height-0 fallback and the `-prune` refusal) should land first, since this change routes deep reorgs through the replay path R4 repairs.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/vault-replay (ycash-dd 0810b8bd5, ycash6 f40cc2c1e): e8a944731 / 1c33da7f7 (UNDO_KEEP 4,096, erased in the block's batch), d5407960b (exact recovery bound: a >4,096-block invalidateblock needs -reindex). New vault_undo_prune.py passes on both lines.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

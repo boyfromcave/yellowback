@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/03-M-1-M-2-cancel-bundlelog` off `upgrade/vault`: `doc/yellowback-spec.md` (via the workspace plans + `make spec`), `doc/yellowback-rpc.md`, `src/test/yellowback_state_tests.cpp`, `qa/rpc-tests/test_framework/test_yellowback_model.py`; optionally `src/yellowback/state.cpp`, `qa/rpc-tests/test_framework/yellowback_model.py`, the golden. `yellowback` workspace: `docs/plans/yellowback-v3-development-plan.md` (R12, line 576), `yellowback-upgrade-plan.md` §15.10 U-24, `yellowback-in-term-claims-plan.md` D-IT-14.
 **Audit source.** `03-yellowback-module.md` M-1, M-2, T-2; `verification/03-verification.md` M-1 ("PARTIALLY, Low — decided behaviour; `supplyCents` is the circulating supply, the correct liability"), M-2 ("PARTIALLY, Low — what R12 asks for; `LIVENESS_UNHELD` closes the cheap form"), T-2 (Low); `00-consolidated.md` rows 03/M-1, 03/M-2 (both ↓ to Low).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -50,3 +50,9 @@ As §4 step 3 (unit, both lines) and, for the optional hardening, step 4 plus th
 
 - Spec + RPC doc + unit tests: 1 day. Optional hardening: +0.5 day plus the shared golden regeneration.
 - Dependencies: write the M-1 text in the form that matches the decision on `HIGH-03-H-1`; if H-1 lands, M-1's doc sentence is replaced by CAN-1's and only the T-2 tests remain from this report.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/yed-cancel. M-1 text follows CAN-1 (a cancel credits supply back); the optional M-2 hardening was taken (R12: BundleLog rows only from bundles whose transaction holds); T-2 cancel-path C++ tests; TxLog accounting for claim_cancel documented.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

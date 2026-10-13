@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash6` (`src/main.cpp` `ContextualCheckTransaction` — consensus, review gate; `src/init.cpp` `-nuparams`; `src/vault/node.cpp` rechecks; `src/rpc/vault.cpp` `TxData`; `src/test/pq_script_tests.cpp`), branch `fix/04-F-2-v5-under-vault` off `upgrade/vault`; `ycash-dd` (a parity unit test only), same branch name; `yellowback` workspace (`docs/plans/yellowback-quantum-spec.md`, `yellowback-upgrade-plan.md` §15.1/§15.2, `yellowback-quantum-plan.md`, `docs/mapping.md` §22); `librustzcash6` follows in report `LOW-04-F-6-…`.
 **Audit source:** `04-cross-line-parity-activation.md` §F-2 (`:101-147`); `verification/04-verification.md` row F-2 (`:67`), detail (`:80-91`, the placeholder-prevout aggravation); `02-post-quantum-crypto.md` §I-4 (`:155-161`); `verification/02-verification.md` row I-4 (`:59`).
-**Status:** pending. Post-verification severity: **Medium as a spec gap, Low as a live risk** (NU5 has no height on any network of either line).
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed) Post-verification severity: **Medium as a spec gap, Low as a live risk** (NU5 has no height on any network of either line).
 
 ## 1. Finding
 
@@ -79,3 +79,10 @@ ycash6 `e866c45`:
 ## 8. Effort estimate and dependencies
 
 Spec edits ~1 hour; ycash6 code + tests ~half a day; review gate adds the two-reviewer cycle (~1 day calendar). **Followed by** `LOW-04-F-6-librustzcash6-vault-v5-orchard-consistency.md` (crate consistency + ycash6 re-pin), which depends on this decision. Independent of every other report.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** ycash6 ccc6d7e50, ycash-dd (48da2863b merged), workspace 4e72e23, ycash-infra 9d19079. CONSENSUS 5a3992c5a (v5 / non-Sapling version group invalid under Vault) plus c630d44ef (DoS level potentially-relaxing). Owner decision 2026-10-13: U-26 (a), v4-only. Start-up refuses NU5..NU6.2 with Vault, and Vault without Sapling, on every network; the docker entrypoints write the full upgrade list.
+- **Review gate:** two reviewers, approved after follow-ups (the docker fix).
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

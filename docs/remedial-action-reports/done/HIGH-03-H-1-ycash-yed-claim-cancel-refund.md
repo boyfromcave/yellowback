@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6` (both on a new branch `fix/03-H-1-cancel-refund` off `upgrade/vault`; the change is confined to `src/yellowback/` — the module — plus `src/rpc/yellowbackwallet.cpp`, `src/rpc/vault.cpp` (one refusal), tests, model, golden, docs); `yellowback` workspace (plans: `yellowback-upgrade-plan.md` §3.6, §11, §15 D-U3, §15.10 U-23/U-24; `yellowback-in-term-claims-plan.md` D-IT-13; `yellowback-quantum-plan.md` D-Q-29 cross-reference; `make spec`). No change to `src/vault/`, `src/script/`, `src/consensus/`, `src/primitives/`; the one `main.cpp` hook is untouched.
 **Audit source.** `docs/audits/quantum-vault-ecosystem/03-yellowback-module.md` H-1 (Detailed findings, "H-1 — One attestor cancels any valid claim for free"), I-3; `verification/03-verification.md` H-1 re-trace steps 1–7, I-3 (raised to Low), V-1 (plan contradiction), V-2 (consensus does not record the canceller); `00-consolidated.md` row 03/H-1, remediation R1.
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -96,3 +96,12 @@ Name the rule **CAN-1** (the module's cancel rule; U-24 revised). Land on both l
 
 - Module rule + record field + RPCs: 1.5 days; unit tests (incl. 03/T-2 cases): 1 day; model + golden + functional + devnet: 1 day; plans/spec/mapping: 0.5 day; ycash6 port + cross-line run: 0.5 day; review gate: 2 reviewers.
 - Dependencies: none hard. Coordinate the golden regeneration with `LOW-03-M-1-M-2-ycash-cancel-accounting-bundlelog.md` (if its optional M-2 hardening is taken, regenerate once). Independent of `MEDIUM-01-V-2-ycash-set-sig-anyonecanpay.md` (different vector file) but the two change the cancel tooling — merge order: this report first, then V-2 (its `vault_refee` must know `yed_buildcancel`'s shape).
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** ycash-dd 04f1be987, ycash6 683eba67e, workspace caac9dd (branch fix/yed-cancel). CONSENSUS: CAN-1 refund 8dc56d361 / 6c0f8152a, thresholds pinned 321b7a67f / a22777e80, R12 hardened 96012c917 / 2327375c1. Golden regenerated in separate commits (SCHEMA_VERSION 13). yed_buildcancel refuses a claim with unconfirmed inputs.
+- **Review gate:** two independent reviewers, APPROVE; follow-ups addressed.
+- **Owner decisions 2026-10-13:** D-U3 refund confirmed. The one-seat liquidation veto is accepted for this release as a known limitation (U-24); the per-vault cancel limit (design/cancel-limit: C2 escalation cap 5, C5 residual hold, C4b penalty) follows as a separate consensus change.
+- **Open:** re-pin the x402 and yb-calibration copies of yellowback_pq_vectors.json and the golden; an armed yellowback_interm CI leg.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

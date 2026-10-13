@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` and `ycash6` (`fix/01-T-2-vault-test-fidelity` off `upgrade/vault` in each; the two lines land together). Tests, fuzz harness, devnet tooling and the Python model only — **no consensus file changes**, so no review gate; but every case is written against consensus behaviour and a reviewer must confirm each new assertion asserts the rule as specified (upgrade plan §15, quantum spec §4.2).
 Audit source: `docs/audits/quantum-vault-ecosystem/01-vault-primitive-consensus.md:185-203` (T-2..T-6); verification `verification/01-verification.md:28-32` (verdicts; T-4 re-rated Info), `:165-167`; `07-node-rpc-mempool-durability-ci.md:147-173` (F-4), verification `verification/07-verification.md:14` (verdict, Low), `:113-122`; consolidated `00-consolidated.md` rows 01/V-3..V-7 (T-* under "test-fidelity summary" (e)), 07/F-4, R8.
-Status: pending
+Status: done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -99,3 +99,10 @@ Both lines; the C++ test and Python changes are the same text modulo the 6.20.0 
 
 - T-2: 0.5 day. T-3: 1 day. T-4: 0.25 day. T-5: 2 days (grammar, invariants, corpus, replay). T-6: 0.5 day **inside R4's PR**. F-4 step 1: 0.5 day; steps 2–3: 2 days. Port to `ycash6`: +30 % each.
 - Dependencies: T-6 on R4 (`MEDIUM-01-V-1-ycash-preactivation-template-coins.md`). T-2/T-3 should land before R5 so R5's vector regeneration is checked by them; if R5 lands first, adapt the hashtype. F-4 depends on nothing (uses `db1831d`'s hook slot).
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** ycash-dd 41e70b518, ycash6 f390e3a0a (branch fix/vault-tests): T-2 SetSigChecker negatives (v4 tx; SET_SIG_HASHTYPE now ALL|ANYONECANPAY after set-sig), T-3 a real V/I through VerifyScript, T-4 scriptSig-opcode parity, T-5 VaultState fuzz target with a 60-seed corpus replayed in make check, F-4 the devnet walk's two-model witness. T-6 is in fix/vault-replay.
+- **Open:** optional F-4 step 4 (a walk node with the set but -disablewallet).
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

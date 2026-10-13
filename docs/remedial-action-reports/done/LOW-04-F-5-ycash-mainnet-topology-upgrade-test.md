@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`qa/rpc-tests/vault_upgrade.py`, `src/test/vault_script_tests.cpp`), branch `fix/04-F-5-upgrade-topology` off `upgrade/vault`. ycash6 unchanged (already tests Canopy → Vault).
 **Audit source:** `04-cross-line-parity-activation.md` §F-5 (`:186-201`); `verification/04-verification.md` row F-5 (`:70`), detail (`:108-112`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -45,3 +45,9 @@ None to code. Blocks mined under Canopy on regtest use Canopy's funding-stream r
 ## 8. Effort estimate and dependencies
 
 ~1–2 hours. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/ci-guard: 9be306bb7 (vault_upgrade.py runs Canopy below Vault, NU5 unscheduled; a Canopy-bound signature refused as old-consensus-branch-id) plus the integration fix 886927344 (restart with YCASH_UPGRADE_ARGS). Passes.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`qa/yellowback-lockorder-check.py`, `.github/workflows/yellowback-tests.yml`) and `ycash6` (same script at `:83`; its lockorder job at `yellowback-tests.yml:1433`), branch `fix/07-F-11-lockorder-vault` off `upgrade/vault` in each.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-11 (`:232-240`) and "Other fidelity notes" (`:295-298`); `verification/07-verification.md` row F-11 (`:21`, "Info; lockorder note: Low"), detail (`:110-114`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -54,3 +54,10 @@ ycash-dd `055d9c2`:
 ## 8. Effort estimate and dependencies
 
 Filter + self-test: ~1 hour both lines. PR legs: ~3 hours both lines plus one nightly dispatch cycle for triage. Required-check configuration is an owner action. No dependencies on other reports; 04/F-1 (SKIP guard, report R8) shares the workflow file — coordinate the merge order to avoid conflicts.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/ci-guard (89a29aa4d / 3d4694249): a token regex plus --selftest; new lockorder-pr and sanitizers-pr PR legs; local DEBUG_LOCKORDER triage found 0 failing reports with the new tokens on either line.
+- **Open (owner):** on ycash-dd, list the two PR legs as required checks; trigger a nightly to triage the full suite.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

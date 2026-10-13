@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` (`fix/04-F-1-pq-reorg-skip-guard` off `upgrade/vault`), `ycash6` (same branch name, same change; both lines land together). No consensus code.
 Audit source: `docs/audits/quantum-vault-ecosystem/04-cross-line-parity-activation.md:71-99` (F-1), verification `verification/04-verification.md:55` (verdict), `:68-87` (detail), `:198-202` (N-4); consolidated `00-consolidated.md` row 04/F-1 and R8.
-Status: pending
+Status: done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -90,3 +90,10 @@ Both lines, one PR each, same content adapted to each workflow's shape.
 
 - ~0.5 day per line (the two workflows differ in shape; the Python change is identical and can be a shared patch). Review: one person; no review gate (no consensus files).
 - No dependency on other reports. Land before the YEW/lightwalletd vector re-sync reports so their CI steps can follow the same "fail, never skip" convention.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** ycash-dd 75f21b794, ycash6 e6702e8f5, workspace (fix/ci-guard). rpc-tests.py --fail-on-skip on every CI invocation (the audit enforces it); the Falcon signer probe; test_rpc_tests_classify.py. With CC=/bin/false the run exits 1 locally on both lines.
+- **Open:** one deliberately failing CI run (CC=/bin/false) to record, at first push.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

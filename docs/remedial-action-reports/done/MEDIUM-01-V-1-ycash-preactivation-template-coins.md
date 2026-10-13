@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/01-V-1-preactivation-template-coins` off `upgrade/vault` in each. Files: `src/vault/state.cpp` (+ `state.h`), `src/vault/node.cpp`, `src/init.cpp`, the `VaultState` construction sites (`src/main.cpp:3408`, `src/miner.cpp:386`, `src/vault/node.cpp:342`, `vault::CheckTx`), `src/test/vault_state_tests.cpp`, `qa/rpc-tests/test_framework/vault.py`, `qa/rpc-tests/vault_primitive.py` (or `vault_upgrade.py`), `doc/vault-rpc.md`; `yellowback` plan §15.4 / §15.6. Consensus change → review gate.
 **Audit source.** `01-vault-primitive-consensus.md` V-1, V-3, T-1, T-6; `verification/01-verification.md` V-1 ("CONFIRMED, Medium"), V-3, N-1 (new: pruned nodes), T-1; `07-node-rpc-mempool-durability-ci.md` F-3; `verification/07-verification.md` F-3 ("I-shaped coins only … consensus one preferred"); `00-consolidated.md` rows 01/V-1 = 07/F-3, 01/V-3..V-7, 01/N-1, remediation R4.
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -67,3 +67,11 @@ On start-up, when the vault DB is behind the chain, `Reconcile` (`src/vault/node
 
 - Rule + replay change + `-prune` guard: 0.5 day; unit tests + model: 1 day; functional case + restarts + prune: 0.5 day; ycash6 port + cross-line run: 0.5 day; spec/mapping: 0.25 day; review gate.
 - Dependencies: none. Independent of `HIGH-03-H-1` and `MEDIUM-01-V-2`. Land early: it is the smallest consensus change in the set and closes the only network-wide availability path found.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** ycash-dd 0810b8bd5, ycash6 f40cc2c1e, workspace 8db540f (branch fix/vault-replay). CONSENSUS S-0 = 7bd9a3859 / aee5a61e6. Also: -prune refused with a vault height; replay height-0 fallback; T-6 (pre-activation restart case) in vault_primitive.py; Reconcile names the retroactive-rule cause.
+- **Review gate:** two independent reviewers, APPROVE WITH NITS; nits addressed (cbeff54a7..d3cbdfaec / 9a9027101..fb8096908).
+- **Note:** vault_primitive.py is currently red on the integrated tree because of an unrelated mempool-lane classification change (old-consensus-branch-id diagnosis); tracked under 07/F-1.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

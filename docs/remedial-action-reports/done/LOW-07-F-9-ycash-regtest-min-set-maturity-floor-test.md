@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`qa/rpc-tests/vault_primitive.py`, `vault_rpc_contract.py`, `doc/vault-rpc.md`), branch `fix/07-F-9-maturity-floor-test` off `upgrade/vault` in each. No chain-parameter change.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-9 (`:212-222`) and the "Recent test changes" row for `1a55aca` (`:278`); `verification/07-verification.md` row F-9 (`:19`), detail (`:103-108`).
-**Status:** pending.
+**Status:** done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -53,3 +53,9 @@ None (tests and one doc sentence).
 ## 8. Effort estimate and dependencies
 
 ~1 hour both lines. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** with fix/ci-guard: ef05bcacb / 7d2c7d9c8 (a below-floor SET_CREATE refused in mempool and block; set_create help states the network minimum).
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.

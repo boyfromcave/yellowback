@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-3 — Write the bridge-attestor operations runbook; fix `yellowback-attestor.md`'s contradictions
 
-Repos / branches to change: `hawkeye` (`fix/05-M-3-operations-runbook` off `upgrade/vault`: new `docs/operations.md`, README links, devnet README cross-links); `ycash-dd` and `ycash6` (`fix/05-M-3-attestor-doc` off `upgrade/vault`, **docs only**: `doc/yellowback-attestor.md`, `doc/vault-rpc.md` sign-once paragraph — the node-side F-5 fix itself is `07/F-5`'s report). · Audit source: `05-bridge-hawkeye-wyec.md` §M-3 (`:182-204`); `verification/05-verification.md` row M-3 (`:18`); `00-consolidated.md` rows 05/M-3, 07/F-5, recommendation R7. · Status: pending
+Repos / branches to change: `hawkeye` (`fix/05-M-3-operations-runbook` off `upgrade/vault`: new `docs/operations.md`, README links, devnet README cross-links); `ycash-dd` and `ycash6` (`fix/05-M-3-attestor-doc` off `upgrade/vault`, **docs only**: `doc/yellowback-attestor.md`, `doc/vault-rpc.md` sign-once paragraph — the node-side F-5 fix itself is `07/F-5`'s report). · Audit source: `05-bridge-hawkeye-wyec.md` §M-3 (`:182-204`); `verification/05-verification.md` row M-3 (`:18`); `00-consolidated.md` rows 05/M-3, 07/F-5, recommendation R7. · Status: done — completed 2026-10-13T11:21Z (merged locally on `upgrade/vault`; not yet pushed)
 
 ## 1. Finding
 
@@ -75,3 +75,10 @@ Append: "The record lives in this wallet's `wallet.dat` only. A wallet restored 
 ## 8. Effort estimate and dependencies
 
 Runbook 2 days (the person who wrote the plan should review), node-doc edits 0.5 day, `audit-ledger` + rotation scenario 1.5 days. **≈ 4 days.** Cross-references `HIGH-05-H-1` (peer rollout, fee coins), `HIGH-05-H-2` (stall alarm), `MEDIUM-05-M-1` (custody), `MEDIUM-05-M-4` (floors), `LOW-05-L-2` (modes); write the runbook against their final names, so land it last in the Medium batch or keep the alarm table in sync via the unit test above.
+
+## Completion record
+
+- **Completed:** 2026-10-13T11:21Z
+- **Merged:** hawkeye 45fbebc (docs/operations.md, audit-ledger, scenario rotation, alarm-table sync test); node docs ycash-dd 97eafdfc9 / ycash6 fc4611812 (yellowback-attestor.md is the YED price-attestor guide; vault-rpc.md sign-once paragraph). Hawkeye 353 tests pass; rotation scenario PASS on a ycash-dd devnet.
+- **Open:** review of the runbook by the plan's author; a markdown link check in CI; rotation on ycash6.
+- **Verification:** Integration run 2026-10-13 (both node lines built; full test_bitcoin dd 872/872, ycash6 923/923; qa/yellowback-audit.sh dd --mode upgrade rc 0 (18 PASS), ycash6 --report-only rc 0; functional suites pass; vault_vectors / golden / pq vectors byte-identical across lines). Logs: wt/scratch/integ/.
