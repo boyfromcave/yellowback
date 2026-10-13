@@ -219,7 +219,7 @@ rule change and the one structural lever worth a design decision. All owner deci
   YecWallet, YEW and the ycash6 P4 port in flight.
 - 2026-10-12: spec reconciled with the code after the quantum-vault audit (01/V-11, 01/N-2, 01/N-3, 02/N-1; lane
   `spec-maint`): §15.4 template-output index as consensus input, bond `exitHeight`, `joinCount`/`joinOrdinal`,
-  released-set non-exclusivity (owner to confirm); §15.5 self-remove, slash in the exit delay, displacement,
+  released-set non-exclusivity (owner: kept, 2026-10-12); §15.5 self-remove, slash in the exit delay, displacement,
   bond exit delay, `MIN_SET_MATURITY`, one unspent bond per key, corrected bond rule and item (11); §15.6 S-3
   `epochUsed` not reduced by a cancel; quantum spec R-A2 `pqFalconHeight = 0` (D-Q-2). No code change.
 
@@ -908,8 +908,10 @@ from activation: **consensus input** for I-2 (an intent's `coinHeight`) and for 
   own branches: `OP_CHECKSETSIG` checks only that each signer is a current member, so current members of a dormant
   or wound-down set may still UNLOCK (V selector 1) and CANCEL (I selector 2, by `cancelSetId`) for as long as they
   are current. Owner and set may then race; neither branch is exclusive. (Audit 01/N-2, recorded 2026-10-12;
-  **owner to confirm** this is intended — exclusivity would be a consensus change, a dormancy/wind-down check in
-  `CheckSetSigs`, with new vectors.)
+  **owner decision 2026-10-12: intended, kept non-exclusive** — a set that recovers from an outage can still finish
+  in-flight unlocks and cancels, and an unlock it signs still waits out `delay`, during which the owner's I selector 3
+  can reclaim it; exclusivity would have been a consensus change, a dormancy/wind-down check in `CheckSetSigs`, with
+  new vectors.)
 - `lastAct` starts at `joinHeight + maturity`.
 - **Snapshot:** the state after the parent block, evaluated at the spending height (block height; tip+1 in the mempool).
 

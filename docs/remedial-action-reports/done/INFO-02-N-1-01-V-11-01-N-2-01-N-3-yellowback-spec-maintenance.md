@@ -60,5 +60,6 @@ None to code. The N-2 paragraph records a behaviour the owner may want changed; 
 - **Completed:** 2026-10-13T05:51Z
 - **Workspace** `upgrade/vault`: 27ba0f5 (spec reconciled with the code: R-A2 `pqFalconHeight`, §15.4 index as consensus input, §15.5 bond/set rules, §15.6 S-3 `epochUsed`, N-2 released-set non-exclusivity, mapping §22), merged as 68b872f. A follow-up from the same sweep, 16ea8f2 (the §15 owner slot is now the post-quantum `<ownerHash> <scheme> OP_CHECKPQSIG`), merged as 62cdeb5.
 - **Node spec copies** (`make spec`): ycash-dd 749a27341, ycash6 5ea90679f (`doc/yellowback-spec.md`, byte-identical across the lines).
-- **Open (owner):** N-2, whether a released set should be exclusive to the owner, which would be a consensus change. A yb-calibration issue to size `rateLimitBps` with cancelled claims counted.
+- **Owner decision (2026-10-12):** N-2 is kept non-exclusive. The set may still unlock and cancel after release, and the owner can claw back during the delay. There is no consensus change; the spec records the ruling.
+- **Open (owner):** a yb-calibration issue to size `rateLimitBps` with cancelled claims counted.
 - **Reconcile at merge:** the S-3 note against HIGH-03-H-1's cancel refund.
