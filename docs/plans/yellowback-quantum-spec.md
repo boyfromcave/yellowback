@@ -159,7 +159,7 @@ included (`IsPushTok`, `:34-37`). After matching, `MatchVault`/`MatchIntent` dec
 
 ### 1.1 The owner slot
 
-| | Today (upgrade plan §15.3) | PQ (quantum plan §4.3) |
+| | Before Q3 (pre-quantum §15.3; §15.3 now shows the PQ slot) | PQ (quantum plan §4.3) |
 |---|---|---|
 | tokens | `<ownerKey:33> OP_CHECKSIG` (2 tokens) | `<ownerHash:32> <schemeId> OP_CHECKPQSIG` (3 tokens) |
 | bytes | `21 <33>` `ac` = **35** | `20 <32>` `51`/`52` `c2` = **35** |
