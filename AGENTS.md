@@ -96,8 +96,9 @@ and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402
 `ycash6` builds against `librustzcash6`: `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins every
 `zcash_*` crate to `miodragpop/librustzcash` rev `ec525fae`, which is exactly `ref/librustzcash6`.
 **On `upgrade/vault` `librustzcash6` is no longer zero-delta**: it adds `NetworkUpgrade::Vault` /
-`BranchId::Vault = 0x6d5b7a31` (`4867cf85`), and `ycash6/Cargo.toml` pins every `zcash_*` crate to
-`boyfromcave/librustzcash6` at that rev. On `harden/yellowback` it stays a zero-delta fork. (It is
+`BranchId::Vault = 0x6d5b7a31` (`4867cf85`; since audit 04/F-6 Vault is v4-only there too,
+`has_orchard() = false`, V5 not valid, `eeb7740d`), and `ycash6/Cargo.toml` pins every `zcash_*` crate to
+`boyfromcave/librustzcash6` at `eeb7740d`. On `harden/yellowback` it stays a zero-delta fork. (It is
 a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is already an older fork.)
 
 ## Rules
