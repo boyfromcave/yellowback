@@ -96,7 +96,11 @@ diverge in consensus anyway). Golden state hash `17926ca6…24a1` (C++ = Python 
 **Q5 (node wallet) as implemented, normative for ycash6 (2026-10-10):** A-12 derivation = HKDF-SHA256 (RFC 5869),
 IKM = the line's raw wallet seed (dd: `HDSeed::RawSeed()`, 32 B; 6: the `MnemonicSeed` raw seed), **salt empty**,
 info = `"Ycash PQ key"` (12 ASCII bytes) ‖ scheme u8 ‖ index u32 big-endian, L = 48 for both schemes. Vectors in
-ycash-dd `src/test/pq_wallet_tests.cpp` (HD seed 0x00..0x1f). No index lookahead. `-pqfeerate` defaults to
+`src/test/data/pq_wallet_vectors.json`, byte-identical on both lines (written by
+`qa/rpc-tests/test_framework/gen_pq_wallet_vectors.py`, CI `--check`; replayed by `pq_wallet_tests`; copied and
+pinned by YEW): `hdSeed` = HD seed 0x00..0x1f (dd's IKM), `mnemonic` = the BIP39 seed of the 24-word English phrase
+of entropy 0x00..0x1f, empty passphrase (6's IKM, and YEW's). (Change request of remedial LOW-06-Y-1, audit 06/Y-2:
+before, the vector was five literals in `pq_wallet_tests.cpp`.) No index lookahead. `-pqfeerate` defaults to
 `-minrelaytxfee`. `vault_lock` accepts external owners; V/I outputs are never `ISMINE_SPENDABLE`.
 
 (The original draft header follows.)
