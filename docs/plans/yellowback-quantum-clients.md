@@ -192,6 +192,17 @@ YEW builds, parses, signs and prices every vault and YED transaction in `core/`.
 
 Branch ID (`params.rs:365`, `signing_branch_id` :400-436): **no change**.
 
+**Cross-reference (2026-10-13 remedial actions LOW-06-Y-1, LOW-06-Y-4; no rule change).** The
+"YEW and node seeds differ anyway" premise of the owner-identity row holds for ycash-dd only: its
+A-12 IKM is the 32-byte HD seed, while ycash6's is the 64-byte BIP39 seed of its 24-word phrase
+(empty passphrase), which is YEW's IKM too. The node now emits both as
+`src/test/data/pq_wallet_vectors.json` (`hdSeed`, `mnemonic`; `gen_pq_wallet_vectors.py`), which YEW
+copies and replays from the phrase; YEW's trust statement and seed screens promise recovery in YEW
+only (the index ranges of the two wallets differ). YEW's vector copies are pinned per node line
+(`yew/core/tests/vectors/PIN`, `scripts/check-node-vectors.sh` in CI); the mainnet/testnet Falcon
+height is a compiled YEW constant checked against the server (`params.rs` `PQ_FALCON_HEIGHT_*`), no
+longer an override (`docs/mapping.md` §16).
+
 ### (c) Tests
 
 Existing tests:
