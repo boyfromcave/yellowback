@@ -40,10 +40,13 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
 - **R-B3:** `-pqfalcon`/`-pqfalconheight` on a non-regtest network is an `InitError`, like `-nuparams`.
 - **R-B4:** the scriptSig encoding is unique **under standard policy** (MINIMALDATA); consensus admits re-encoded pushes,
   as for every Ycash push.
-- **R-A2 (Falcon activation):** `pqFalconActive` (bool) becomes **`pqFalconHeight`** (int, `NO_ACTIVATION_HEIGHT` on
-  mainnet/testnet); `SCRIPT_VERIFY_PQ_FALCON` and `TOK-PQ` apply at `nHeight >= pqFalconHeight`; regtest
-  `-pqfalconheight=<h>` (and `-pqfalcon=1` ≡ height 0). A bool would split the chain at no coordinated height and
-  apply TOK-PQ to history on reindex.
+- **R-A2 (Falcon activation):** `pqFalconActive` (bool) becomes **`pqFalconHeight`** (int): **0 on mainnet and
+  testnet — Falcon and TOK-PQ are live from the vault activation block (D-Q-2, owner 2026-10-10, final)**;
+  `NO_ACTIVATION_HEIGHT` is the default, which regtest keeps; regtest `-pqfalconheight=<h>` (and `-pqfalcon=1` ≡
+  height 0). `SCRIPT_VERIFY_PQ_FALCON` and `TOK-PQ` apply at `nHeight >= pqFalconHeight` within the Vault epoch
+  (`IsPQFalconActive` also requires `UPGRADE_VAULT`). A bool would split the chain at no coordinated height and
+  apply TOK-PQ to history on reindex. (Reconciled with the code 2026-10-12, audit 02/N-1: this line said
+  `NO_ACTIVATION_HEIGHT` on mainnet/testnet, the value before D-Q-2's final ruling.)
 - Push minimality of `s`/`p`/scheme is **policy** (MINIMALDATA); consensus requires a 1-byte element. §0's
   `PQ_SIGOP_COST` row means the policy count only. `getblocktemplate`'s per-tx `sigops` includes the PQ policy count.
 
