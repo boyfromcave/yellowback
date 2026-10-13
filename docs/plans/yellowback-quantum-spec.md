@@ -44,15 +44,19 @@ token outputs once `pqFalconActive`) is a new consensus rule and goes through th
   mainnet/testnet); `SCRIPT_VERIFY_PQ_FALCON` and `TOK-PQ` apply at `nHeight >= pqFalconHeight`; regtest
   `-pqfalconheight=<h>` (and `-pqfalcon=1` ≡ height 0). A bool would split the chain at no coordinated height and
   apply TOK-PQ to history on reindex.
-- **R-A3 (transaction version; audit 04/F-2, 2026-10-13):** the vault templates, `OP_CHECKSETSIG`,
+- **R-A3 (transaction version; audit 04/F-2; owner decision 2026-10-13, U-26):** the vault templates, `OP_CHECKSETSIG`,
   `OP_CHECKSETDORMANT`, `OP_CHECKPQSIG` and TOK-PQ are defined for **v4** (Sapling version group, ZIP-243 sighash)
   transactions only. Under `UPGRADE_VAULT` a transaction whose `nVersionGroupId ≠ SAPLING_VERSION_GROUP_ID` is
-  invalid (`bad-vault-tx-version-group-id` on ycash6, `ContextualCheckTransaction`; ycash-dd has no v5 type — a v5
-  transaction does not deserialize — and already rejects every non-Sapling group once Sapling is active,
-  `bad-sapling-tx-version-group-id`). No ZIP-244
-  message is defined for the vault opcodes; a network upgrade that brings v5 to Ycash must define it then. On
-  regtest, scheduling any of NU5..NU6.2 together with Vault is an `InitError` (ycash6 builds V1 history-tree
-  leaves in the Vault epoch, so no order of the two is usable). The mempool/miner rechecks and the vault RPCs'
+  invalid. On ycash6 (`ContextualCheckTransaction`) the reason is `bad-vault-tx-version-group-id` only where NU5 is
+  also active — which no network or startable node allows — and otherwise the existing
+  `bad-sapling-tx-version-group-id`; its DoS level is "potentially relaxing" (block 100, mempool 10, 0 in IBD).
+  ycash-dd has no v5 type — a v5 transaction does not deserialize — and already rejects every non-Sapling group
+  once Sapling is active (`bad-sapling-tx-version-group-id`). No ZIP-244 message is defined for the vault opcodes;
+  a network upgrade that brings v5 to Ycash must define it then. At start-up, on every network (compiled schedule
+  and regtest `-nuparams` alike), a node refuses (`InitError`) Vault scheduled without Sapling active at or below
+  its height (both lines: a pre-Sapling transaction would spend a vault under the Sprout / ZIP-143 sighash) and,
+  on ycash6, Vault scheduled together with any of NU5..NU6.2 (ycash6 builds V1 history-tree leaves in the Vault
+  epoch, so no order of the two is usable). The mempool/miner rechecks and the vault RPCs'
   sighash data refuse a non-v4 transaction explicitly (`non-v4 transaction (R-A3)`) rather than compute a
   digest over placeholder coins. librustzcash6 agrees: `BranchId::Vault.has_orchard() = false`,
   `TxVersion::V5.valid_in_branch(Vault) = false`.
