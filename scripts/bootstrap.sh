@@ -68,7 +68,11 @@ bootstrap_reference() {
   fi
   say "  cloning $path from $url"
   run git -c advice.detachedHead=false clone --quiet "$url" "$dir"
-  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "${tag:+tags/$tag}${tag:-$commit}"
+  # When a tag is set use tags/<tag>; otherwise detach at the pinned commit.
+  # (Do not concatenate ${tag:+...}${tag:-...}: with tag set that yields tags/XvX.)
+  local ref
+  if [ -n "$tag" ]; then ref="tags/$tag"; else ref="$commit"; fi
+  run git -C "$dir" -c advice.detachedHead=false checkout --quiet --detach "$ref"
   if [ "$DRY" -eq 0 ] && [ -n "$tag" ]; then
     head_is "$dir" "$commit" || die "$path: tag $tag resolves to $(git -C "$dir" rev-parse --short HEAD), manifest says $commit — the tag moved upstream; do not proceed without updating the pin deliberately"
   fi
