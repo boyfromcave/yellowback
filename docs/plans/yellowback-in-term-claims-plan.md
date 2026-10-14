@@ -121,7 +121,7 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   CLAIM_NOTICE / `pEmerg` path (b) stays as today and is also available in term;
   (c) if `H > L + GRACE`: as today (the post-term rule is unchanged; it is now the rare case).
   There is no "claim only after the term" clause left anywhere.
-- **IT-3 (RED-5).** Unchanged: claimant intent ≤ `ClaimantMaxZat(debt, θ, pClaim)`, residual intent to the owner.
+- **IT-3 (RED-5).** When a residual is due, the claimant intent is the lower-index intent and carries at least `collateral − residualZat`; the residual intent is the higher-index one and pays `PQPKH(owner)` at least `residualZat` (RED-5a). The claimant may still pay the owner. Path (a) caps at `pClaim` with `CLAIM_THRESHOLD_BPS`. Path (b) caps at `pEmerg` (RED-5b). Revised (W3-Y-5, 2026-10-14, audit recommendation A1, pending owner confirmation on the PR): this reverses v3 R1, which sized path (b) at `pClaim`. Path (b) is reachable only above a 1.19× `pClaim`/`pEmerg` spread; below that the vault is already underwater at `pClaim` and takes path (a), whose residual is 0 (NEW-2). The colludes-low row is defended by the cancel brake (CAN-2, already shipped).
 - **IT-4 (MINT-5).** `MinRatioBps(base, sigmaMult)` with `sigmaMult = 1` ⇒ required ratio = `baseRatioBps[class]`.
   The σ sampling code stays; `sigmaRefBps = 0` short-circuits it to 10,000 (the registry's convention).
 - **IT-5 (MINT-4/6 recap gate).** Under HALT_GLOBAL_RATIO, and above the soft cap, a mint is accepted iff
