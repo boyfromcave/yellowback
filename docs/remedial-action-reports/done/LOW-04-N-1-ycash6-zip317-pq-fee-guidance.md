@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (wallet PQ fee default: `src/init.cpp` `-pqfeerate`, `src/wallet/wallet.cpp`, `src/yellowback/txbuilder.cpp`), branch `fix/04-N-1-pq-fee-conventional` off `upgrade/vault`; `ycash6` (`doc/yellowback-release.md`, `doc/yellowback-mining.md` release/operator notes), same branch name; `yellowback` workspace `docs/mapping.md` row; client follow-ups (YEW, Hawkeye) as issues, not in this report's scope.
 **Audit source:** `verification/04-verification.md` §New findings N-1 (`:150-171`) (new by the verifier; no first-wave section); `docs/mapping.md:1058` (ZIP-401 row), `:1129` (wallet PQ fee row).
-**Status:** done — completed 2026-10-13T07:30Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T07:30Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

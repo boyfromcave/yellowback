@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`src/vault/db.{h,cpp}`, `src/vault/node.cpp`, `src/main.cpp` call site, tests) and `ycash6` (same files, 6.20.0 line numbers), branch `fix/07-F-7-vault-undo-prune` off `upgrade/vault` in each; `doc/yellowback.md` / `doc/vault-rpc.md` for F-8.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-7 (`:195-202`), §F-8 (`:204-210`); `verification/07-verification.md` rows F-7 (Low), F-8 (Info) (`:17-18`), detail (`:98-101`).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

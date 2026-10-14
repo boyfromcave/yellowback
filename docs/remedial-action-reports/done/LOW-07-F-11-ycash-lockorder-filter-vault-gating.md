@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`qa/yellowback-lockorder-check.py`, `.github/workflows/yellowback-tests.yml`) and `ycash6` (same script at `:83`; its lockorder job at `yellowback-tests.yml:1433`), branch `fix/07-F-11-lockorder-vault` off `upgrade/vault` in each.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-11 (`:232-240`) and "Other fidelity notes" (`:295-298`); `verification/07-verification.md` row F-11 (`:21`, "Info; lockorder note: Low"), detail (`:110-114`).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

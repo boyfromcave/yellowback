@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-2 — Rate-limit head-of-line blocking: an over-cap burn parks every later release forever
 
-Repos / branches to change: `hawkeye` (`fix/05-M-2-over-cap-burn` off `upgrade/vault`); `wyec` only through an optional §10 change request (CR-W5, §4.4). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-2 (`:163-180`); `verification/05-verification.md` row M-2 (`:17`); `00-consolidated.md` row 05/M-2, recommendation R7. · Status: done — completed 2026-10-13T06:11Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Repos / branches to change: `hawkeye` (`fix/05-M-2-over-cap-burn` off `upgrade/vault`); `wyec` only through an optional §10 change request (CR-W5, §4.4). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §M-2 (`:163-180`); `verification/05-verification.md` row M-2 (`:17`); `00-consolidated.md` row 05/M-2, recommendation R7. · Status: done — completed 2026-10-13T06:11Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

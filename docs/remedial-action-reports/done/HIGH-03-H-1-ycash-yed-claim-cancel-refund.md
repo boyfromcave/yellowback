@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6` (both on a new branch `fix/03-H-1-cancel-refund` off `upgrade/vault`; the change is confined to `src/yellowback/` — the module — plus `src/rpc/yellowbackwallet.cpp`, `src/rpc/vault.cpp` (one refusal), tests, model, golden, docs); `yellowback` workspace (plans: `yellowback-upgrade-plan.md` §3.6, §11, §15 D-U3, §15.10 U-23/U-24; `yellowback-in-term-claims-plan.md` D-IT-13; `yellowback-quantum-plan.md` D-Q-29 cross-reference; `make spec`). No change to `src/vault/`, `src/script/`, `src/consensus/`, `src/primitives/`; the one `main.cpp` hook is untouched.
 **Audit source.** `docs/audits/quantum-vault-ecosystem/03-yellowback-module.md` H-1 (Detailed findings, "H-1 — One attestor cancels any valid claim for free"), I-3; `verification/03-verification.md` H-1 re-trace steps 1–7, I-3 (raised to Low), V-1 (plan contradiction), V-2 (consensus does not record the canceller); `00-consolidated.md` row 03/H-1, remediation R1.
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

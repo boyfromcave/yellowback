@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` (`qa/rpc-tests/vault_upgrade.py`, `src/test/vault_script_tests.cpp`), branch `fix/04-F-5-upgrade-topology` off `upgrade/vault`. ycash6 unchanged (already tests Canopy → Vault).
 **Audit source:** `04-cross-line-parity-activation.md` §F-5 (`:186-201`); `verification/04-verification.md` row F-5 (`:70`), detail (`:108-112`).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

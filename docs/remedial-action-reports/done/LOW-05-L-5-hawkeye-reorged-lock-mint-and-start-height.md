@@ -1,6 +1,6 @@
 # LOW — 05/L-5 — A mint of a reorged-away lock is judged `Ok` (alarm only); a wrong `start_height` makes an attestor challenge and slash honest proposers
 
-Repos / branches to change: `hawkeye` (`fix/05-L-5-exposure-pause-start-height` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-5 (`:255-265`); `verification/05-verification.md` row L-5 (`:24`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Repos / branches to change: `hawkeye` (`fix/05-L-5-exposure-pause-start-height` off `upgrade/vault`). No node change. · Audit source: `05-bridge-hawkeye-wyec.md` §L-5 (`:255-265`); `verification/05-verification.md` row L-5 (`:24`); `00-consolidated.md` row 05/L-1..L-5. · Status: done — completed 2026-10-13T07:22Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

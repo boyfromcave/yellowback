@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/01-V-2-set-sig-anyonecanpay` off `upgrade/vault` in each: `src/vault/checker.{cpp,h}`, `src/rpc/vault.cpp`, `qa/rpc-tests/test_framework/{vault.py,gen_vault_vectors.py,VAULT_VECTORS.md}`, `src/test/data/vault_vectors.json`, `src/test/{vault_vectors_tests.cpp,vault_state_tests.cpp}`, `qa/rpc-tests/vault_primitive.py`, `doc/vault-rpc.md`, `doc/vault-rpc-contract.json`; `yellowback` plan §15.2 (checker interface) and §15.3/§15.5 (60), (70). Downstream copies: `hawkeye/crates/hawkeye-core/tests/data/vault_vectors.json` + `hawkeye-core/src/attribution.rs`; `yew/core/tests/vectors/vault_vectors.json` (already stale, 06/Y-1 — re-copy under R8). Consensus change (the opcode's checker) → review gate.
 **Audit source.** `01-vault-primitive-consensus.md` V-2, T-2; `verification/01-verification.md` V-2 ("PARTIALLY CONFIRMED, Medium — a cancel veto by the builder; fix check: ANYONECANPAY is sound"); `07-node-rpc-mempool-durability-ci.md` F-2; `verification/07-verification.md` F-2 ("the proposed RPC-level self-funded unlock is consensus-illegal"), N-1 (correction), N-2 (`vault_buildunlock` not idempotent); `00-consolidated.md` rows 01/V-2 = 07/F-2, remediation R5.
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

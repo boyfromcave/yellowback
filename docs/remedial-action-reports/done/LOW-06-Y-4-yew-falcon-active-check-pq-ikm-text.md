@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yew` (`fix/06-Y-4-falcon-active-check` off `upgrade/vault`). Docs only in the workspace (`docs/plans/yellowback-quantum-clients.md` cross-reference, no rule change).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:105-111` (Y-4), `:97-103` (Y-3); verification `verification/06-verification.md:18-19` (verdicts: Y-3 framing reduced to Info, Y-4 Low), `:52-56` (Y-3 detail), `:60` (Y-4), `:94` (V6-N2); consolidated `00-consolidated.md` row 06/Y-2..Y-5.
-Status: done — completed 2026-10-13T12:27Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Status: done — completed 2026-10-13T12:27Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

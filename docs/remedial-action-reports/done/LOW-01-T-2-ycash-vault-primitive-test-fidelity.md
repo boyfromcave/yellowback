@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` and `ycash6` (`fix/01-T-2-vault-test-fidelity` off `upgrade/vault` in each; the two lines land together). Tests, fuzz harness, devnet tooling and the Python model only — **no consensus file changes**, so no review gate; but every case is written against consensus behaviour and a reviewer must confirm each new assertion asserts the rule as specified (upgrade plan §15, quantum spec §4.2).
 Audit source: `docs/audits/quantum-vault-ecosystem/01-vault-primitive-consensus.md:185-203` (T-2..T-6); verification `verification/01-verification.md:28-32` (verdicts; T-4 re-rated Info), `:165-167`; `07-node-rpc-mempool-durability-ci.md:147-173` (F-4), verification `verification/07-verification.md:14` (verdict, Low), `:113-122`; consolidated `00-consolidated.md` rows 01/V-3..V-7 (T-* under "test-fidelity summary" (e)), 07/F-4, R8.
-Status: done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Status: done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

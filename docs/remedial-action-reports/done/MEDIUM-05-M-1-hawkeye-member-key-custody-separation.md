@@ -1,6 +1,6 @@
 # MEDIUM — 05/M-1 — The member key is plaintext in the node wallet and is also the bond and gas key: say so, separate the gas key, and move Ycash signing off the wallet
 
-Repos / branches to change: `hawkeye` (`fix/05-M-1-key-custody` off `upgrade/vault`); docs in `hawkeye/README.md`, `hawkeye/docs/hawkeye-bridge-plan.md` §3.5; no node change (two optional §10 change requests, §4.5). · Audit source: `05-bridge-hawkeye-wyec.md` §M-1 (`:139-161`); `verification/05-verification.md` §M-1 (`:98-105`); `00-consolidated.md` row 05/M-1 and recommendation R7. · Status: done — completed 2026-10-13T06:50Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Repos / branches to change: `hawkeye` (`fix/05-M-1-key-custody` off `upgrade/vault`); docs in `hawkeye/README.md`, `hawkeye/docs/hawkeye-bridge-plan.md` §3.5; no node change (two optional §10 change requests, §4.5). · Audit source: `05-bridge-hawkeye-wyec.md` §M-1 (`:139-161`); `verification/05-verification.md` §M-1 (`:98-105`); `00-consolidated.md` row 05/M-1 and recommendation R7. · Status: done — completed 2026-10-13T06:50Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

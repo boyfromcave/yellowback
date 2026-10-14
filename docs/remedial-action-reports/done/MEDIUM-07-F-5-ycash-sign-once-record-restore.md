@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/07-F-5-sign-once-restore` off `upgrade/vault` in each: `doc/vault-rpc.md` (must), `doc/yellowback-attestor.md` (must), `src/wallet/rpcdump.cpp` + `src/wallet/walletdb.{h,cpp}` + `src/rpc/vault.cpp` (optional code: export/import of the record, a restore marker, a read RPC), `qa/rpc-tests/vault_pq_wallet_restore.py`. Wallet/RPC/doc only — no consensus, no review gate leg beyond the normal review. Cross-reference: `hawkeye` R7 runbook (05/M-3) for the sidecar's own mirror.
 **Audit source.** `07-node-rpc-mempool-durability-ci.md` F-5; `verification/07-verification.md` F-5 ("CONFIRMED, Medium — `vaultsetsig` lives only in `wallet.dat`; the restore suite has no sign-once case; the doc is silent on restores"), N-2; `00-consolidated.md` row 07/F-5, remediation R7 (last sentence).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

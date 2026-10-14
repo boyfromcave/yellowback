@@ -2,7 +2,7 @@
 
 Repos / branches to change: `ycash-dd` (`fix/04-F-1-pq-reorg-skip-guard` off `upgrade/vault`), `ycash6` (same branch name, same change; both lines land together). No consensus code.
 Audit source: `docs/audits/quantum-vault-ecosystem/04-cross-line-parity-activation.md:71-99` (F-1), verification `verification/04-verification.md:55` (verdict), `:68-87` (detail), `:198-202` (N-4); consolidated `00-consolidated.md` row 04/F-1 and R8.
-Status: done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Status: done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

@@ -2,7 +2,7 @@
 
 Repos / branches to change: `lightwalletd` (`fix/06-L-1-vault-contract-rawtx-cap` off `upgrade/vault`). Cross-reference only: `yew` (V6-N1's client-side alternative, not recommended).
 Audit source: `docs/audits/quantum-vault-ecosystem/06-clients-wallets-infra.md:176-183` (L-1), `:185-191` (L-2); verification `verification/06-verification.md:23-24` (verdicts, L-1 field attribution corrected, L-2 impact sharpened), `:66-70` (detail), `:93` (V6-N1); consolidated `00-consolidated.md` rows 06/L-1, L-2, R8, R10.
-Status: done — completed 2026-10-13T07:12Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+Status: done — completed 2026-10-13T07:12Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

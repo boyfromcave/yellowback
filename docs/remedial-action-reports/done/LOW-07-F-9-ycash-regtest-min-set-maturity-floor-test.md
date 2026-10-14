@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `ycash-dd` and `ycash6` (`qa/rpc-tests/vault_primitive.py`, `vault_rpc_contract.py`, `doc/vault-rpc.md`), branch `fix/07-F-9-maturity-floor-test` off `upgrade/vault` in each. No chain-parameter change.
 **Audit source:** `07-node-rpc-mempool-durability-ci.md` §F-9 (`:212-222`) and the "Recent test changes" row for `1a55aca` (`:278`); `verification/07-verification.md` row F-9 (`:19`), detail (`:103-108`).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch)
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch)
 
 ## 1. Finding
 

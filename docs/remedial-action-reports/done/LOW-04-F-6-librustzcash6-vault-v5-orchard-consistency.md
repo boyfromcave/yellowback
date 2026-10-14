@@ -2,7 +2,7 @@
 
 **Repos / branches to change:** `librustzcash6` (`components/zcash_protocol/src/consensus.rs`, `zcash_primitives/src/transaction/mod.rs`, tests), branch `fix/04-F-6-vault-v5-consistency` off `upgrade/vault`; `ycash6` (`Cargo.toml` `[patch.crates-io]` revs + `Cargo.lock`), branch `fix/04-F-6-librustzcash6-pin` off `upgrade/vault`.
 **Audit source:** `04-cross-line-parity-activation.md` §F-6 (`:203-225`); `verification/04-verification.md` row F-6 (`:71`), detail (`:114-118`).
-**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13; nightly tier pending the owner's dispatch) — **blocked on the 04/F-2 decision** (report `MEDIUM-04-F-2-ycash6-v5-under-vault.md`).
+**Status:** done — completed 2026-10-13T11:21Z (merged and pushed on `upgrade/vault`; push-tier CI green in every repo 2026-10-13, re-confirmed 2026-10-14 at ycash-dd 3fe3492b6 and ycash6 1ebfee622; nightly tier pending the owner's dispatch) — **blocked on the 04/F-2 decision** (report `MEDIUM-04-F-2-ycash6-v5-under-vault.md`).
 
 ## 1. Finding
 
