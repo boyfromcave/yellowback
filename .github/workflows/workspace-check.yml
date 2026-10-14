@@ -7,9 +7,10 @@
 #   check          this repository alone (no clones), as before, plus the link check.
 #   spec-copies    `make spec-check` across repositories: the four component repos whose copies the
 #                  plan generates (ycash-dd, ycash6, yecwallet-dd, lightwalletd) are cloned shallow
-#                  and sparse at the branch matching this one (main -> their branches of record,
-#                  harden/yellowback -> harden/yellowback) and compared. Skipped, with a notice, while
-#                  one of them does not have that branch on GitHub yet.
+#                  and sparse at the branch matching this one (upgrade/vault -> upgrade/vault,
+#                  harden/yellowback -> harden/yellowback, main -> their branches of record) and
+#                  compared. Skipped, with a notice, while one of them does not have that branch
+#                  on GitHub yet.
 #   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
 #                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
 #                  node doc is not on the upgrade line yet, and says so.
@@ -78,7 +79,8 @@ jobs:
         run: |
           set -euo pipefail
           case "$BRANCH" in
-            harden/yellowback|upgrade/vault|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
+            upgrade/vault)                         v4=upgrade/vault; v6=upgrade/vault ;;
+            harden/yellowback|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
           clone() {  # repo branch dir sparse-dir
