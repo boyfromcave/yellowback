@@ -10,7 +10,9 @@
 #                  and sparse at the branch matching this one (upgrade/vault -> upgrade/vault,
 #                  harden/yellowback -> harden/yellowback, main -> their branches of record) and
 #                  compared. Skipped, with a notice, while one of them does not have that branch
-#                  on GitHub yet.
+#                  on GitHub yet. The RED-5 docs pull request compares the two node copies on
+#                  cursor/w3-03-new-1-residual-0df7 while that branch exists; every other ref
+#                  keeps the line branch.
 #   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
 #                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
 #                  node doc is not on the upgrade line yet, and says so.
@@ -76,6 +78,7 @@ jobs:
         id: clone
         env:
           BRANCH: ${{ github.base_ref || github.ref_name }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
           case "$BRANCH" in
@@ -83,6 +86,20 @@ jobs:
             harden/yellowback|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
+          # This plan change's node copies are on the residual branch until those PRs merge
+          # onto the line. The condition matches no other head, and a missing branch falls
+          # back to the line branch above.
+          node_ref() {
+            local repo="$1" fallback="$2" alt="cursor/w3-03-new-1-residual-0df7"
+            if [ "${HEAD_REF:-}" = "cursor/w3-03-new-1-residual-docs-0df7" ] \
+               && git ls-remote --exit-code --heads "https://github.com/$repo.git" "$alt" >/dev/null; then
+              echo "$alt"
+            else
+              echo "$fallback"
+            fi
+          }
+          v4_node=$(node_ref "$REPO_YCASH_DD" "$v4")
+          v6_node=$(node_ref "$REPO_YCASH6" "$v6")
           clone() {  # repo branch dir sparse-dir
             if ! git ls-remote --exit-code --heads "https://github.com/$1.git" "$2" >/dev/null; then
               echo "::notice::$1 has no branch $2 on GitHub yet; cross-repo spec-check skipped"
@@ -92,8 +109,8 @@ jobs:
             git -C "$3" sparse-checkout set "$4"
             echo "$1@$2 = $(git -C "$3" rev-parse HEAD)"
           }
-          clone "$REPO_YCASH_DD"        "$v4" "$RUNNER_TEMP/ycash-dd"        doc
-          clone "$REPO_YCASH6"          "$v6" "$RUNNER_TEMP/ycash6"          doc
+          clone "$REPO_YCASH_DD"        "$v4_node" "$RUNNER_TEMP/ycash-dd"        doc
+          clone "$REPO_YCASH6"          "$v6_node" "$RUNNER_TEMP/ycash6"          doc
           clone "$REPO_YECWALLET_DD"    "$v4" "$RUNNER_TEMP/yecwallet-dd"    docs
           clone "$REPO_LIGHTWALLETD_DD" "$v4" "$RUNNER_TEMP/lightwalletd-dd" testdata
           echo "ok=true" >> "$GITHUB_OUTPUT"
