@@ -634,7 +634,7 @@ values of `C`. `attestFeeZat = feeZat(collateralZat) · ATTEST_FEE_BPS / 10⁴`.
 **Residual.** `marginBps = CLAIM_THRESHOLD_BPS` when RED-4 holds by clause (a), `10⁴` when it
 holds by clause (b) only (R1: a claim the pools do not confirm is a forced early liquidation and
 pays *exactly* the debt at the adverse price — no margin, so a captured attestor set has nothing
-to collect). `claimantMaxZat = ⌈mintedCents · marginBps · COIN / pClaim⌉` (units: `cents/100`
+to collect). Revised (W3-Y-5, 2026-10-14, audit recommendation A1 pending owner confirmation on the PR): path (b) caps at `pEmerg`; the colludes-low row is defended by the cancel brake (CAN-2, already shipped). `claimantMaxZat = ⌈mintedCents · marginBps · COIN / pClaim⌉` on path (a) and `⌈mintedCents · marginBps · COIN / pEmerg⌉` on path (b) (units: `cents/100`
 dollars × `bps/10⁴` ÷ `pClaim/10⁶` $/YEC × `COIN` — the powers of ten cancel to this form, R5;
 check: $100 at 110 % and 18,333 µUSD ⇒ `10⁴ · 11,000 · 10⁸ / 18,333 ≈ 6.0·10¹¹` zat = 6,000 YEC,
 v2's worked example), `arith_uint256`, `> MAX_MONEY` ⇒ residual 0;
@@ -1497,7 +1497,7 @@ v2's paragraph "price honesty rests on the honest-majority-hashpower assumption"
 | Threat | Outcome in v3 | Mitigation |
 |---|---|---|
 | Attestor set colludes high | mints unaffected (`min`); normal claims held shut for at most the 110 %→105 % gap | the emergency tier fires from the pools' `xClaim` (RED-4b) |
-| Attestor set colludes low | mints over-collateralized; emergency notices on healthy vaults | a clause-(b) claim pays exactly the debt at `pClaim = max` — the 10 % margin exists only when the pools agree (R1) — and returns the rest; two steps an hour apart; the owner is warned |
+| Attestor set colludes low | mints over-collateralized; emergency notices on healthy vaults | a clause-(b) claim pays exactly the debt at `pClaim = max` — the 10 % margin exists only when the pools agree (R1) — and returns the rest; two steps an hour apart; the owner is warned. Revised (W3-Y-5, 2026-10-14, audit recommendation A1 pending owner confirmation on the PR): path (b) caps at `pEmerg`; the colludes-low row is defended by the cancel brake (CAN-2, already shipped) |
 | Pools and attestors both captured in one direction | price moves | the chain's standing majority assumption plus a bonded, aged, visible set; §7.5 overlap disclosure |
 | Aggregator correlation | several attestors move together | source-tier flag; venue-median guidance; PIN-1/2 catch a frozen aggregator |
 | Pinned pool quotes | claims held shut | PIN-1 excludes frozen keys from medians and `E(R)` when attestors moved |
@@ -1577,7 +1577,7 @@ The proposal was updated in place on 2026-09-13 to match this plan on four point
 | Selection "the FEE-W draw repeated" (§8.4) | written out with per-round seeds (W9) | determinism needs the exact procedure |
 | `yed_signattestation` not mentioned (§13) | added; the agent never holds a key | the hot key stays in the node's wallet, as the quote agent never holds one |
 | Bundle committed by `bundleHash16` in the payload (§8.1) | committed by the carrier's redeem script; per-transaction carriers, one confirmation before the main transaction (W7, R2) | a scriptSig-only commitment let any relay node void a mint and lock its collateral |
-| Emergency claims pay the 110 % cap (§10.3) | a clause-(b) claim pays exactly the debt at `pClaim` (R1) | otherwise a captured attestor set collects the margin from every vault |
+| Emergency claims pay the 110 % cap (§10.3) | a clause-(b) claim pays exactly the debt at `pClaim` (R1). Revised (W3-Y-5, 2026-10-14, audit recommendation A1 pending owner confirmation on the PR): path (b) caps at `pEmerg`; the colludes-low row is defended by the cancel brake (CAN-2, already shipped) | otherwise a captured attestor set collects the margin from every vault |
 | `ATTEST_MAX_AGE = REF_WINDOW` (§15) | 20 blocks (R4) | at most two signed prices per attestor per bundle window |
 | Residual formula with `10⁴` (§10.3) | without (R5) | unit error; v2's worked example |
 | Verified-bundle cache filled "from mempool acceptance" (§8.2) | filled by MP-1, the template filter and `ConnectBlock` (W8) | MP-1 never sees mints (V3) |

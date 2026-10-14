@@ -98,6 +98,7 @@ means 2.1 % worst-year bad debt and 24 h means 3.2 %. An unbounded veto removes 
   it being re-locked together with the claimant intent. The owner has taken `R` out of a vault that should
   have been liquidated. A second round yields about 0, because the reopened vault is at or below 100 %, so
   this extraction is one-shot per vault. It does combine with R-1a.
+  Cross-reference (RED-5b, W3-Y-5, 2026-10-14, audit recommendation A1, pending owner confirmation on the node PR): path (b) is sized at `pEmerg`, not `pClaim`. The `collateral − D/pClaim` sentence above is the pre-RED-5b reading. MEDIUM-W3-Y-3 owns the rest of this file.
 - **R-1d, rate budget (side effect).** S-3 never reduces `epochUsed` on a cancel. If the YED attestor set
   carries a non-zero `rateLimitBps`, a claim-and-cancel stream also spends the set-wide unlock budget, which
   can refuse **other** vaults' claims in that epoch. Any limit on cancels shrinks this effect too.
