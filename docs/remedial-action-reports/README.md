@@ -82,3 +82,11 @@ Recommended landing order (dependencies are repeated inside each report):
 | [INFO-02-N-1-01-V-11-01-N-2-01-N-3-yellowback-spec-maintenance.md](done/INFO-02-N-1-01-V-11-01-N-2-01-N-3-yellowback-spec-maintenance.md) | INFO — 02/N-1, 01/V-11, 01/N-2, 01/N-3 — Spec maintenance: `pqFalconHeight` ruling (R-A2), §15.4/§15.5 drift from the code, released-set branch non-exclusivity, `epochUsed` not refunded on cancel |
 | [INFO-05-I-1-hawkeye-debug-derive-and-rpcversion-doc.md](done/INFO-05-I-1-hawkeye-debug-derive-and-rpcversion-doc.md) | INFO — 05/I-1, 05/I-2 — `Debug` on secret-bearing config types; the workspace `CLAUDE.md` says `rpcversion 5` for Hawkeye |
 | [INFO-06-W-1-yecwallet-random-password.md](done/INFO-06-W-1-yecwallet-random-password.md) | INFO — 06/W-1, 06/V6-N3 — `randomPassword()` can emit a NUL-truncated RPC password and leaks its buffer |
+
+## Follow-up audit (waves 3 and 4)
+
+The pending set is on `audit/quantum-vault-ecosystem-wave4` (`docs/remedial-action-reports/pending/`). A report moves here, into `done/`, once its fix has merged on `upgrade/vault`.
+
+| Report | Title |
+|---|---|
+| [HIGH-W3-Y-2-ycash-yed-cancel-limit-escalation-c4b.md](done/HIGH-W3-Y-2-ycash-yed-cancel-limit-escalation-c4b.md) | HIGH — W3-Y-2 (+ the CAN-2 parts of W3-Y-3) — Unbounded one-seat cancel veto: CAN-2 escalating co-signed cancels and C4b, merged 2026-10-13 (round 2: cap 4, claimable-position residual hold) |
