@@ -1,6 +1,6 @@
 # Yellowback per-vault cancel limit: design for owner approval
 
-**Revision 1, 2026-10-13. Design only, with no code.** This is a follow-up to CAN-1 (audit 03/H-1, lane `yed-cancel`:
+**Revision 2, 2026-10-14 (audit MEDIUM-W3-Y-3 corrections: C5, R-1c, R-1d, A-8, co-signer membership, C4b, quiet counter, NEW-2); Revision 1, 2026-10-13. Design only, with no code.** This is a follow-up to CAN-1 (audit 03/H-1, lane `yed-cancel`:
 ycash-dd `fix/yed-cancel` @ `9683a0411`, ycash6 `fix/yed-cancel`, and the remedial report
 `docs/remedial-action-reports/pending/HIGH-03-H-1-ycash-yed-claim-cancel-refund.md`). The owner decided on
 2026-10-13 to ship CAN-1 now and to design a per-vault cancel limit as a separate consensus change, which this
@@ -20,9 +20,9 @@ The owner answered §6 on 2026-10-13. This design is **approved for implementati
 | 1 | One free hold | **Accepted**: the first cancel on a vault needs one attestor; a lone seat can delay one liquidation about 12 h per vault per week |
 | 2 | Cap | **`CANCEL_SIGNERS_MAX` = 5** (regtest 3) — **superseded by round 2: 4**, schedule 1, 2, 3, 4, 4, …; `CANCEL_QUIET` = 8,064 blocks (7 days; regtest 40) |
 | 4 | Claimant's fees | **No repayment** by cancellers (C3 rejected) |
-| 5 | Owner's residual | **Held** up to `CANCEL_QUIET`, or until the position closes (C5 / CAN-3) |
+| 5 | Owner's residual | **Held** (C5 / CAN-3). The approved text said "up to `CANCEL_QUIET`"; round 2 (R2-1) replaced that: the held residual is releasable after `CANCEL_QUIET` only if no claim could pass, else it waits until the position closes. The owner should re-confirm "held until the position closes". |
 | 6 | Penalty | **Include now: C4b**. A cancel carries the canceller's signed price statement at the claim's reference height, and EQV-1 slashes a member whose regular attestation at that height carries a different price. This ships together with C2 and C5 rather than as a phase 2. |
-| 7 | Unlock budget | **Left as is**: S-3 is unchanged and the primitive is not touched. Document R-1d and size the YED set's `rateLimitBps` with it in mind. |
+| 7 | Unlock budget | **Left as is**: S-3 is unchanged and the primitive is not touched. Document R-1d and size the YED set's `rateLimitBps` with it in mind. **Open (audit W3-Y-3):** nothing enforces a value; the audit recommends pinning `rateLimitBps` = 0 in the module's attestor-set adoption (a consensus clause on both lines), which revises this decision from "size it" to "pin it". Awaiting the owner. |
 
 ## Owner decisions, round 2 (2026-10-13)
 
@@ -91,17 +91,17 @@ means 2.1 % worst-year bad debt and 24 h means 3.2 %. An unbounded veto removes 
   liquidations matter most.
 - **R-1c, path (b) residual extraction (U-24 "given up" (iv)).** An owner with a seat claims its own vault by
   path (b). The claim carries no margin (`marginBps` = 10⁴), so the owner's residual intent holds about
-  `collateral − D/pClaim`, which is roughly 5 % of `D` and more when `pClaim > pEmerg`. The owner then cancels
+  `collateral − D/pClaim`. Path (b) is reachable only when `pClaim/pEmerg > 1.25/1.05 = 1.1905`, and the residual is then at least 20 % of the collateral at `pClaim` sizing (20.6 % in the $100,000 / 300,000 YEC / 0.42 / 0.349 example, a $16,905 shortfall at `pEmerg`), under 5 % of `D` only at `pEmerg` sizing. The earlier "roughly 5 % of `D`" understated it. The owner then cancels
   the claimant intent. The burn comes back (CAN-1), the vault reopens holding only the claimant intent's value
   (about 100 % at `pClaim`), and the residual intent can still be released to the owner after 576 blocks: the
   residual cannot be cancelled (`INTENT_CANCEL_RESIDUAL`), and S-1 (one template input per transaction) stops
   it being re-locked together with the claimant intent. The owner has taken `R` out of a vault that should
-  have been liquidated. A second round yields about 0, because the reopened vault is at or below 100 %, so
-  this extraction is one-shot per vault. It does combine with R-1a.
+  have been liquidated. It combines with R-1a.
   Cross-reference (RED-5b, W3-Y-5, 2026-10-14, audit recommendation A1, pending owner confirmation on the node PR): path (b) is sized at `pEmerg`, not `pClaim`. The `collateral − D/pClaim` sentence above is the pre-RED-5b reading. MEDIUM-W3-Y-3 owns the rest of this file.
 - **R-1d, rate budget (side effect).** S-3 never reduces `epochUsed` on a cancel. If the YED attestor set
   carries a non-zero `rateLimitBps`, a claim-and-cancel stream also spends the set-wide unlock budget, which
-  can refuse **other** vaults' claims in that epoch. Any limit on cancels shrinks this effect too.
+  can refuse **other** vaults' claims in that epoch (`bad-txns-vault-rate`, exactly when liquidations matter). Any limit on cancels shrinks this effect too. Status (audit W3-Y-3): `AdoptedSet` does not yet pin `rateLimitBps`; the recommended pin to 0 is an owner decision (decision 7).
+- **NEW-2, path (b) never pays an outsider.** A third-party path-(b) claimant burns `D` plus FEE-1′ and may take at most `D·COIN/pClaim` zat: worth `D` at `pClaim` and at most 0.84·`D` at `pEmerg`. At `pClaim` sizing path (b) is therefore a self-claim/extraction path only, including in the "attestors collude high" row it was designed for (v3 plan). Sizing at `pEmerg` (W3-Y-5) restores the incentive and moves the "collude low" defence onto the cancel brake.
 
 **What the brake is for, and what any design must keep.** A **wrong-price claim** is one that is consensus-valid
 (RED-4 holds at the claim's `pClaim` or `pEmerg`) at a price that is false because the inputs were
@@ -151,7 +151,7 @@ changes the state-hash preimage.
   OP_RETURN header and its signatures in the scriptSig carrier, as v3 bundles ride today (W2,
   `bundleCarrier = SCRIPTSIG`). The payload holds at least `required` 65-byte recoverable signatures over
   `SHA256d("YedCancelCosign" ‖ attestorSetId ‖ claimantIntentOutpoint)`. The recovered keys must be distinct
-  **current members** of `attestorSetId` in the block's set snapshot (the snapshot `OP_CHECKSETSIG` reads).
+  **current members** of `attestorSetId`, judged by the module's in-block mirror at the transaction: a member who joined earlier in the same block does not count, and one evicted, exited or ejected earlier in the same block does not count. This is at least as strict as the interpreter's parent snapshot, so the module can only refuse more. The counter (`cancelCount`, `lastCancelHeight`) is per position (vault), carried by every re-creation, and never keyed per member.
   Otherwise the verdict is `intent-cancel-cosign`. Extra valid signatures are allowed. The interpreter's own
   single set signature still binds the transaction, and the co-signer count is independent of it, so the
   primary signer simply adds its own co-signature. On success the cancel sets
@@ -207,15 +207,17 @@ Two ways to build the proof:
 ### C5. Companion rule, holding the path-(b) residual (CAN-3, needed with any of C0–C4)
 
 - **Rule:** a residual intent whose claimant intent was **cancelled** may be released (I-1) only once the
-  re-created position is closed (REDEEMED, or CLAIMED by a later release), or once `CANCEL_QUIET` blocks have
-  passed since the cancel and the position is not CLAIMING. Otherwise the verdict is
-  `intent-residual-held`. A residual whose claimant was released keeps today's rule.
+  re-created position is closed (REDEEMED, or CLAIMED by a later release). Round 2 (R2-1) allows an earlier
+  release after `CANCEL_QUIET` only if no claim in that block could pass; the audit's reading is that the
+  bare "`CANCEL_QUIET` has passed" escape was wrong, because a re-created vault at or below 100 % at `pClaim`
+  attracts no claimant (nobody burns `D` for at most `D`), so "a later honest claim liquidates it" does not
+  hold. Otherwise the verdict is `intent-residual-held`. A residual whose claimant was released keeps today's rule.
 - **State:** one field appended to `IntentRecord`. The cancel writes the re-created position's outpoint
   into the residual's record (`heldBy`), so the release check is a single lookup.
-- **Effect on R-1c:** the extracted residual is not liquid while the owner's seat holds the vault alive. Under
-  C2 a later honest claim liquidates the vault within one round unless the owner has a second seat. An
-  honest owner whose vault was wrongly claimed waits at most `CANCEL_QUIET` for the residual, or redeems to
-  free it.
+- **Effect on R-1c:** the extracted residual is not liquid while the position stays open. The R-1c
+  magnitudes above (at least 20 % of the collateral at `pClaim` sizing) are why the hold must not lapse on a
+  timer alone; RED-5a/5b record the corrected sizing. An honest owner whose vault was wrongly claimed redeems
+  to free the residual.
 
 Re-locking the residual into the vault, which would be the clean fix, is impossible without a primitive
 change: S-1 allows one template input per transaction, and a second V output would be a second position.
@@ -228,7 +230,7 @@ change: S-1 allows one template input per transaction, and a second V output wou
 | C1 budget | 2 vault fields | small | 1 | **fails after N** | N rounds per window |
 | **C2 escalate** | 2 vault fields | payload + rule | 1 | ≤ 5 per round, never exhausted | 1 round per quiet period; 5 seats block |
 | C3 fee refund | 0 (or 1) | 1 output check | honest pays F | honest pays F per round | priced, not bounded |
-| C4b statement slash | 0 | payload + EQV-1 side | 1 | 1 | deterred if it attests honestly |
+| C4b statement slash | 0 | payload + EQV-1 side | 1 | 1 | deterrent only; not counted toward the bound |
 | C5 residual hold | 1 intent field | 1 rule | — | — | closes R-1c |
 
 ## 3. Attacks
@@ -272,8 +274,9 @@ change: S-1 allows one template input per transaction, and a second V output wou
     mint. C3 would read it from `feePaidZat`; C2 does not depend on it.
   - **Early redeem:** after a cancel the owner may redeem with IT-9's early fee. A cancel that buys an owner
     12 h to repay is acceptable, because the debt is burned. Neither C2 nor C5 blocks redeem, and C5 lets
-    the residual go once the position closes. No path lets an owner avoid the early-redeem fee through a
-    self-claim plus cancel: the claim's burn is refunded, but the claim's FEE-1′ is not.
+    the residual go once the position closes. A plain self-claim (no cancel) of a claimable vault avoids
+    IT-9′; accepted (W3-Y-7). The claim-plus-cancel variant does not: the burn is refunded but FEE-1′ is not,
+    and CAN-3 holds any residual.
 
 ## 4. Recommendation
 
@@ -321,7 +324,7 @@ claim.
 - (ii) Five colluding seats still block indefinitely. This is the stated captured-set residual.
 - (iii) Honest attestors need a co-signature gossip path and must be live within 12 h for repeat
   wrong-price rounds.
-- (iv) An honest owner's residual after a wrong-price claim can be held up to 7 days.
+- (iv) An honest owner's residual after a wrong-price claim is held until the position closes (R2-1), not just up to 7 days.
 - (v) Claimants still lose the YEC fee of a cancelled round. That loss is bounded by the schedule rather than
   refunded.
 
