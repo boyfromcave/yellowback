@@ -79,6 +79,9 @@ jobs:
           set -euo pipefail
           case "$BRANCH" in
             harden/yellowback|upgrade/vault|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
+            # The audit branch's committed copies are the upgrade line's. spec-upgrade already
+            # checks those; spec-copies must clone the same heads or it diffs the retired feature branches.
+            audit/*)                               v4=upgrade/vault; v6=upgrade/vault ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
           clone() {  # repo branch dir sparse-dir
