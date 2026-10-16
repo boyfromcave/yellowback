@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/W3-07-NEW-1-salvage-sign-once` off `upgrade/vault` in each: `src/wallet/walletdb.cpp` (`IsKeyType`), `src/wallet/wallet.cpp` (`CWallet::Verify`, the load path that already logs the restore warning), `src/wallet/wallet.h` (a salvage flag), `doc/vault-rpc.md` (sign-once section), `doc/yellowback-attestor.md` ("Member-key hosts"), `qa/rpc-tests/vault_pq_wallet_restore.py`. Wallet only — no consensus file.
 **Audit source.** Wave 3: `docs/audits/quantum-vault-ecosystem-wave3/verification/07-verification.md` NEW-1 (lines 226-249, "Medium — the fork's own `-salvagewallet` wipes the sign-once guard without a marker") and W3-N-9 (lines 192-200, "CONFIRMED, and wider than stated"); `docs/audits/quantum-vault-ecosystem-wave3/07-node-rpc-mempool-durability-ci.md` W3-N-9 (lines 220-234, the stock-binary half, handled in `LOW-W3-N-9-ycash-stock-binary-salvage.md`); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row 07/NEW-1 and remediation priority 3 ("add vault records to `IsKeyType` or set the restore marker after salvage"). Wave 4: `docs/audits/quantum-vault-ecosystem-wave4/01-node-lines-recheck-and-delta.md` §1.5 row 07/NEW-1 (line 124, "STILL OPEN", Δ-free).
-**Status:** pending — re-verified at ycash-dd `da5e0fe` / ycash6 `0742e43` (2026-10-13): open on both lines; `src/wallet/` unchanged since wave 3, so every source citation below stands.
+**Status:** done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending — re-verified at ycash-dd `da5e0fe` / ycash6 `0742e43` (2026-10-13): open on both lines; `src/wallet/` unchanged since wave 3, so every source citation below stands.
 
 ## 1. Finding
 
@@ -52,3 +52,9 @@ Secondary losses: `vaultbuild` — remembered builds forgotten, so `vault_buildu
 
 - Code: 0.5 day. Tests: 0.75 day. Docs + ycash6: 0.25 day.
 - Dependencies: builds on the done `MEDIUM-07-F-5` (marker, `set_importsigned`, `set_acknowledgerestore`). Include `vaultfeein` if `MEDIUM-W3-N-1-07-NEW-2` lands first. `LOW-W3-N-9-ycash-stock-binary-salvage.md` follows this report.
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** ycash-dd `#91` `ed828e7b2`, ycash6 `#8` `e8a32936c`. `-salvagewallet` keeps `pqissued` and the vault sign-once records (`IsSalvagedType`, used only in `Recover`) and writes the restore marker after any salvage. `LoadWallet` classification is unchanged.
+- **Not closed by this landing:** the functional salvage test and the `doc/yellowback-attestor.md` sentence were not added. `LOW-W3-N-9` (stock-binary salvage) stays pending.

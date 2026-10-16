@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yecwallet-dd` only (`fix/W4-C-1-yed-cancel` off `upgrade/vault`). No node change: both node lines already serve `yed_buildcancel` (CAN-1). Coordinates with the node's cancel-limit work `HIGH-W3-Y-2-ycash-yed-cancel-limit-escalation-c4b.md` (§8).
 Audit source: wave 4 `docs/audits/quantum-vault-ecosystem-wave4/04-clients-wyec-recheck.md:66` (STATUS row: recorded as W4-C-1), `:110` and `:113` (NEW findings rows W4-C-1, W4-C-4), `:115-151` (W4-C-1 evidence, impact, fix), `:203-209` (W4-C-4), `:286` (test fidelity: no vault-contract copy); `docs/audits/quantum-vault-ecosystem-wave4/00-consolidated.md:44` (W4-C-1 Medium, confirmed by the coordinator), `:49` (W4-C-4 Info), `:65` (priority 4). First observed by the writer of `HIGH-W3-Y-2-…` (§7 "Clients", not an audit ID at the time). Background: CAN-1, `done/HIGH-03-H-1-ycash-yed-claim-cancel-refund.md`.
-Status: pending — verified at yecwallet-dd `c830233`, node `ycash-dd` `da5e0fe` and `ycash6` `0742e43` (2026-10-13)
+Status: done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending — verified at yecwallet-dd `c830233`, node `ycash-dd` `da5e0fe` and `ycash6` `0742e43` (2026-10-13)
 
 ## 1. Finding
 
@@ -105,3 +105,9 @@ The cost falls on a safety function. Within the claim delay, an attestor using t
 - **Relation to `HIGH-W3-Y-2-ycash-yed-cancel-limit-escalation-c4b.md`** (YED cancel limit, CAN-2). That report's §7 assigns the YecWallet cancel flow to its own client PR: `yed_buildcancel` with `entries[]`, `yed_signcancelstatement`, entry gathering, and the `cancelsRequired` display. Land **this** report first, so the GUI works on today's rules. `HIGH-W3-Y-2`'s client PR then extends the same `cancelClaim` function and reuses this report's refund check, `BuildCancel` constants and contract pin. It must not re-fix the `vault_buildcancel` call or the refund text: both are done here. (Both reports now cite the node refusal at `src/rpc/vault.cpp:1840-1841` on `da5e0fe`, ycash6 `:1861-1862`; `:1809` was the audited commit.) If the node's CAN-2 change lands first, this PR must include the entries from the start.
 - `INFO-W3-C-6-W3-C-9-yecwallet-signed-cancel-record-rpc-password.md` (the `set_listsigned` check in the same function) lands after this one, or in the same PR.
 - `LOW-W3-C-3-W3-C-4-W4-C-2-W4-C-3-yew-x402-lightwalletd-node-file-pins.md` defines the pinned-fixture shape (lightwalletd step 13) that step 5 reuses. Either can land first.
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** yecwallet-dd `#2` (the "not refunded" wording) and `#3` `5c92903` (Cancel builds with `yed_buildcancel` and CAN-2 co-signatures).
+- **Not closed by this landing:** W4-C-4, the pinned `vault-rpc-contract.json` check.
