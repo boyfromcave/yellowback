@@ -2,7 +2,7 @@
 
 Repos / branches to change: `yew` only (`fix/W3-C-1-token-value-fee-bound` off `upgrade/vault`). No node, lightwalletd or consensus change. The lightwalletd half of the same story is `LOW-W3-C-2-lightwalletd-high-fee-resubmit-bound.md`, which is independent.
 Audit source: wave 3 `docs/audits/quantum-vault-ecosystem-wave3/06-clients-wallets-infra.md:43` (summary row), `:60-108` (W3-C-1); verification `docs/audits/quantum-vault-ecosystem-wave3/verification/06-verification.md:15` (verdict: Medium, down from High), `:32-162` (end-to-end re-trace, consensus refusal once the module is live, where the loss is real), `:296-305` (N-1), `:307-311` (N-2), `:317-323` (N-4), `:325-363` (scratch tests 1 and 2); consolidated `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md:30-31` (rows W3-C-1, 06/N-1), `:53` (N-2, N-4), `:91-93` (priority 2). Wave 4 `docs/audits/quantum-vault-ecosystem-wave4/04-clients-wyec-recheck.md:47-51` (W3-C-1, 06/N-1, N-2, N-4 all STILL OPEN), `:68-91` (the YEW "resync-a fee helpers" do not touch W3-C-1), `:251-271` (fresh look: redeem/claim account real values; N-2 also accepts an **empty** reply); `docs/audits/quantum-vault-ecosystem-wave4/00-consolidated.md:27`.
-Status: pending — re-verified at yew `9231787` (`git diff 1e250f8 9231787 -- core` is empty; the one new commit regenerates a comment in `app/lib/src/rust/api.dart`) and node `ycash-dd` `da5e0fe` (2026-10-13)
+Status: done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending — re-verified at yew `9231787` (`git diff 1e250f8 9231787 -- core` is empty; the one new commit regenerates a comment in `app/lib/src/rust/api.dart`) and node `ycash-dd` `da5e0fe` (2026-10-13)
 
 ## 1. Finding
 
@@ -134,3 +134,9 @@ All in `yew/core` unless noted. Land the steps as separate commits in this order
 
 - Steps 1–4 (gate, store, ingestion, builder): ~2 days including the per-builder tests. Step 5 (N-1): ~0.5 day. Step 6 (N-2): ~1 day including the two API actions and the app wiring. Steps 7–8: ~0.5 day. Total ~4 days, one reviewer familiar with `gate.rs`.
 - Depends on nothing. Independent of `LOW-W3-C-2` (lightwalletd) and of the node's W3 reports. The P8-checklist line is owned by `MEDIUM-W3-P-1-04-NEW-1-…` §4 E.
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** yew `#2` `ffad477`. A server-listed coin is a token only at exactly `TOKEN_VALUE`; any other value is `Held` and is not spent. The transfer builder refuses a non-standard YED input. `yed_balances` uses saturating addition.
+- **Not closed by this landing:** gate fee equality across every builder, a compiled `yed_available` rule (06/N-1), and refusing an empty `SendTransaction` reply (06/N-2).

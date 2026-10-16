@@ -1,6 +1,6 @@
 # LOW — W3-B-6 — The peer-auth replay cache is written before the membership check and is unbounded
 
-Repos / branches to change: `hawkeye` (`fix/W3-B-6-replay-cache` off `upgrade/vault`: `crates/hawkeye/src/peer_auth.rs`, `tests/engine.rs`). No wyec change. No node change. No change to the signed request format or its vectors (plan §4.6 unchanged). · Audit source: `docs/audits/quantum-vault-ecosystem-wave3/05-bridge-hawkeye-wyec.md` §W3-B-6 (`:174-184`); `docs/audits/quantum-vault-ecosystem-wave3/verification/05-verification.md` §W3-B-6 (`:198-205`, Low bordering Info); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row "W3-B-4..13, 05/N-1..N-4"; `docs/audits/quantum-vault-ecosystem-wave4/02-hawkeye-recheck-and-delta.md` status row W3-B-6 (`:55`, **STILL OPEN**, lines moved; three new routes behind the same layer) and stale-report note (`:81-83`); `docs/audits/quantum-vault-ecosystem-wave4/verification/02-verification.md` status row (`:42`, confirmed: `peer_auth.rs:305` `admit_once` before `:309` membership). Related: verifier N-4 (in-memory cache across a restart), tracked in `INFO-W3-B-12-B-13-05-N-4-bridge-contract-notes-test-fidelity.md` and implemented on this branch (same function). · Re-verified at hawkeye `f4436df` / wyec `dfd51cb` (2026-10-13). · Status: pending
+Repos / branches to change: `hawkeye` (`fix/W3-B-6-replay-cache` off `upgrade/vault`: `crates/hawkeye/src/peer_auth.rs`, `tests/engine.rs`). No wyec change. No node change. No change to the signed request format or its vectors (plan §4.6 unchanged). · Audit source: `docs/audits/quantum-vault-ecosystem-wave3/05-bridge-hawkeye-wyec.md` §W3-B-6 (`:174-184`); `docs/audits/quantum-vault-ecosystem-wave3/verification/05-verification.md` §W3-B-6 (`:198-205`, Low bordering Info); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row "W3-B-4..13, 05/N-1..N-4"; `docs/audits/quantum-vault-ecosystem-wave4/02-hawkeye-recheck-and-delta.md` status row W3-B-6 (`:55`, **STILL OPEN**, lines moved; three new routes behind the same layer) and stale-report note (`:81-83`); `docs/audits/quantum-vault-ecosystem-wave4/verification/02-verification.md` status row (`:42`, confirmed: `peer_auth.rs:305` `admit_once` before `:309` membership). Related: verifier N-4 (in-memory cache across a restart), tracked in `INFO-W3-B-12-B-13-05-N-4-bridge-contract-notes-test-fidelity.md` and implemented on this branch (same function). · Re-verified at hawkeye `f4436df` / wyec `dfd51cb` (2026-10-13). · Status: done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending
 
 ## 1. Finding
 
@@ -70,3 +70,9 @@ struct ReplayCache {
 ## 8. Effort estimate and dependencies
 
 0.5–1 day. No dependencies; implements verifier N-4 on the same branch (the INFO report records it as done by this one).
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** hawkeye `#15` `c6a824d`. The replay nonce is recorded only after the signature verifies and the key is a current member. Each member is capped at 4,096 live entries (`429` past that).
+- **Not closed by this landing:** a 503 before the first member snapshot, the `started_at` restart floor, and O(1) expiry buckets.

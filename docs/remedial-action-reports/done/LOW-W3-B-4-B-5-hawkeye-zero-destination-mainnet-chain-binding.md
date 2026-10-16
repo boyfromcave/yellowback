@@ -1,6 +1,6 @@
 # LOW — W3-B-4, W3-B-5 — The lock policy accepts the zero destination address; a Ycash-mainnet config is not bound to Ethereum chain id 1
 
-Repos / branches to change: `hawkeye` (`fix/W3-B-4-B-5-input-binding` off `upgrade/vault`: `hawkeye-core/src/lock.rs`, `engine/mint.rs`, `config.rs`, `foreign/ethereum.rs`, tests). No wyec change. No node change. · Audit source: `docs/audits/quantum-vault-ecosystem-wave3/05-bridge-hawkeye-wyec.md` §W3-B-4 (`:144-158`), §W3-B-5 (`:160-172`); `docs/audits/quantum-vault-ecosystem-wave3/verification/05-verification.md` §W3-B-4 (`:180-187`), §W3-B-5 (`:189-196`); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row "W3-B-4..13, 05/N-1..N-4"; `docs/audits/quantum-vault-ecosystem-wave4/02-hawkeye-recheck-and-delta.md` status rows W3-B-4 (`:53`) and W3-B-5 (`:54`), both **STILL OPEN** (`lock.rs`, `policy.rs`, `config.rs`, `mint.rs`, `foreign/ethereum.rs`, `hawkeye-eth` byte-unchanged since `b0f085f`); `docs/audits/quantum-vault-ecosystem-wave4/verification/02-verification.md` status row (`:42`, confirmed: `config.rs:719-723` mainnet → `MAINNET`). · Re-verified at hawkeye `f4436df` / wyec `dfd51cb` (2026-10-13): every line cited below is unchanged except `cli.rs` (moved). · Status: pending
+Repos / branches to change: `hawkeye` (`fix/W3-B-4-B-5-input-binding` off `upgrade/vault`: `hawkeye-core/src/lock.rs`, `engine/mint.rs`, `config.rs`, `foreign/ethereum.rs`, tests). No wyec change. No node change. · Audit source: `docs/audits/quantum-vault-ecosystem-wave3/05-bridge-hawkeye-wyec.md` §W3-B-4 (`:144-158`), §W3-B-5 (`:160-172`); `docs/audits/quantum-vault-ecosystem-wave3/verification/05-verification.md` §W3-B-4 (`:180-187`), §W3-B-5 (`:189-196`); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row "W3-B-4..13, 05/N-1..N-4"; `docs/audits/quantum-vault-ecosystem-wave4/02-hawkeye-recheck-and-delta.md` status rows W3-B-4 (`:53`) and W3-B-5 (`:54`), both **STILL OPEN** (`lock.rs`, `policy.rs`, `config.rs`, `mint.rs`, `foreign/ethereum.rs`, `hawkeye-eth` byte-unchanged since `b0f085f`); `docs/audits/quantum-vault-ecosystem-wave4/verification/02-verification.md` status row (`:42`, confirmed: `config.rs:719-723` mainnet → `MAINNET`). · Re-verified at hawkeye `f4436df` / wyec `dfd51cb` (2026-10-13): every line cited below is unchanged except `cli.rs` (moved). · Status: done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending
 
 Two independent, small input-binding checks in the same repository and the same review; grouped so they land as one PR. Either may be split off without affecting the other.
 
@@ -86,3 +86,9 @@ Plan §4.1 rule 3: no text change (already normative); add "(enforced by `parse_
 ## 8. Effort estimate and dependencies
 
 0.5 day including tests. No dependencies.
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** hawkeye `#16` `d033591`. A zero-address lock is policy-rejected. Config load refuses mainnet over a non-1 chain and a non-mainnet config over chain 1 when an `[eth]` deployment is present.
+- **Not closed by this landing:** the `engine/mint.rs` guard for already-signed zero-recipient locks, the anvil tests, and the plan §4.1 / operations §8 rows.

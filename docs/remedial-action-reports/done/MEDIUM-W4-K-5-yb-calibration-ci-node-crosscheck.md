@@ -3,7 +3,7 @@
 **Repos / branches to change.** `yb-calibration` only, new branch `fix/W4-K-5-ci-node-crosscheck` off `upgrade/vault`: `.github/workflows/ci.yml` (new job), `src/ybcal/model/{cli.py,parity.py,vendor.py}`, `src/ybcal/studies/fees_option_d.py` (`ReleaseConstants` gains the node commits it was built against), new `tests/node/test_release_constants_vs_node.py`, `tests/model/test_vendor.py`, `tests/model/test_worked_examples.py`, `tests/conftest.py` (a "required clone" mode), `Makefile` (`make ci-node`). No change in `ycash-dd`/`ycash6` (they are fetched read-only by CI).
 **Audit source.** `docs/audits/quantum-vault-ecosystem-wave4/03-yb-calibration.md:225-233` (W4-K-5, fix), `:286-304` (test-fidelity table: self-referential vendor check, clone tests skipped in CI, tautological delegated parity, `test_release_constants_are_the_recommendation_as_built` never reads the node, `test_supply_rows_and_rule_cap` asserts the retired rule, `params check` = v3 consistency, vacuous lock-readiness); `docs/audits/quantum-vault-ecosystem-wave4/verification/03-verification.md:25` (confirmed, Medium), `:153-160` (CI's only ycash6 mention is a comment; the drift pin is a deliberate tripwire but keeps CI green; the golden chain pins the vulnerable claim → cancel → release as valid); `00-consolidated.md:43`, `:55`, remediation priority 3 (`:63-64`).
 **Verified at** yb-calibration `97d5279` / ycash6 `0742e43` / ycash-dd `da5e0fe` (2026-10-13).
-**Status:** pending
+**Status:** done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending
 
 ## 1. Finding
 
@@ -68,3 +68,9 @@ Note the owner's CI rule (2026-10-05, `ci.yml:5-8`): no calibration runs in CI. 
 
 - 1.5–2 days (job, conftest option, constants test, delegated-kernel cases).
 - Independent of the node reports. Works best after `MEDIUM-W4-K-1-yb-calibration-v3-registry-repin-lock-guard.md` part 2 (the extractor can then read the release line); before it, the constants test parses only the `RELEASE_CONSTANTS` fields, which the current extractor subset must be extended to read (struct-array fee bands, `N * COIN`). Pairs with `LOW-W4-K-4-K-6-K-7-K-8-yb-calibration-seat-revenue-fee-kernel-deps-devnet-fetch.md` (lock file for the job's environment) and `INFO-W4-K-9-yb-calibration-float-fee-study-ds-store-shallow-clone.md` (full-history checkout).
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** yb-calibration `#3` `a3e2a7e`. CI has a `node` job that checks out ycash6 read-only and runs `ybcal verify` plus the non-devnet pytest suite against it. The job fails if a clone-gated test skips.
+- **Not closed by this landing:** a recorded `RELEASE_NODE_COMMITS` pin (the job follows the moving `upgrade/vault` head), the constants-versus-`params.cpp` test, and independent delegated-kernel cases.

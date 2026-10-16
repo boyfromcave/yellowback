@@ -2,7 +2,7 @@
 
 **Repos / branches to change.** `ycash-dd` and `ycash6`, branch `fix/W3-N-3-validate-before-sign` off `upgrade/vault` in each: `src/rpc/vault.cpp` (`SignSetInPlace`, `set_signunlock`, `set_signcancel`, a new `set_checksign`), `src/rpc/client.cpp`, `doc/vault-rpc.md` (`:320-366`, `:392-398`, error table), `doc/vault-rpc-contract.json`, `qa/rpc-tests/{vault_rpc.py,vault_refee.py,vault_rpc_contract.py}`. Wallet/RPC only; `vault::CheckTx` is called, not changed. Client check: Hawkeye (`crates/hawkeye-ycash/src/client.rs` `set_signunlock`/`set_signcancel` error mapping; its mock `crates/hawkeye-ycash/src/mock.rs`), YecWallet cancel button (`src/yellowbacktab.cpp:1943`, `:2123`).
 **Audit source.** Wave 3: `docs/audits/quantum-vault-ecosystem-wave3/07-node-rpc-mempool-durability-ci.md` W3-N-3 (lines 105-133) and W3-N-14(b) (lines 278-286); `docs/audits/quantum-vault-ecosystem-wave3/verification/07-verification.md` W3-N-3 (lines 84-107, "CONFIRMED, Medium — … the fix (validate with CheckTx + a script dry-run before writing) is right. A `set_forgetsigned` is risky and should stay out") and W3-N-14 (lines 220-224); `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md` row W3-N-3, remediation priority 3. Wave 4: `docs/audits/quantum-vault-ecosystem-wave4/01-node-lines-recheck-and-delta.md` §1.5 rows W3-N-3 (line 114, "STILL OPEN, unchanged") and W3-N-14 (line 123), §3.5 (lines 269-273: refee-utxo writes and reads no set-sign record).
-**Status:** pending — re-verified at ycash-dd `da5e0fe` / ycash6 `0742e43` (2026-10-13): open and unchanged on both lines (`SignSetInPlace` byte-identical to the wave-3 code; only its line numbers moved, +32 on ycash-dd).
+**Status:** done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending — re-verified at ycash-dd `da5e0fe` / ycash6 `0742e43` (2026-10-13): open and unchanged on both lines (`SignSetInPlace` byte-identical to the wave-3 code; only its line numbers moved, +32 on ycash-dd).
 
 ## 1. Finding
 
@@ -64,3 +64,9 @@ Griefing path (verifier, exact): a builder — or a buggy client — hands membe
 
 - Validation helper + ordering + N-14(b): 0.75 day. `set_checksign`: 0.5 day. Tests: 1 day. ycash6 + docs + contract: 0.5 day.
 - Dependencies: none hard. Coordinate with `LOW-W3-N-5-ycash-sign-once-branch-bound-doc.md` (same doc section) and, if both touch `vault_refee.py`, with `LOW-W4-N-5-ycash-refee-utxo-test-fidelity.md` and `MEDIUM-W3-07-NEW-1` (the record it protects). Builds on the done `MEDIUM-07-F-5` (restore marker, `set_listsigned`).
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** ycash-dd `#88` `49a0700a1`, ycash6 `#5` `bd9394c89`. `set_signunlock` and `set_signcancel` run `vault::CheckTx` before anything is recorded or signed, and an existing signature must be from a distinct current member. `bad-txns-vault-rate` is still allowed through.
+- **Not closed by this landing:** a `set_checksign` RPC, `warnings` / `scripterror` fields, an `nExpiryHeight` refusal, and a functional regression test.

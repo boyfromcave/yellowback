@@ -2,7 +2,7 @@
 
 Repos / branches to change: `lightwalletd` (`fix/W3-C-2-high-fee-resubmit-bound` off `upgrade/vault`). No node change. Cross-reference only: `yew` (`MEDIUM-W3-C-1-yew-token-value-fee-bound-yed-activation.md`, the wallet-side fix that owns the fee decision).
 Audit source: wave 3 `docs/audits/quantum-vault-ecosystem-wave3/06-clients-wallets-infra.md:44` (summary), `:219-240` (W3-C-2); verification `docs/audits/quantum-vault-ecosystem-wave3/verification/06-verification.md:16` (verdict: Low, down from Medium), `:164-191` (detail and the two impact corrections); consolidated `docs/audits/quantum-vault-ecosystem-wave3/00-consolidated.md:44`. Wave 4 `docs/audits/quantum-vault-ecosystem-wave4/04-clients-wyec-recheck.md:52` (STILL OPEN: `frontend/` unchanged, `service.go:332-337`, `sendfee.go:45`), `:213-228` (the `f89ce24` delta is fixtures only). Wave 4's lightwalletd Info item, W4-C-3 (the contract-fixture check follows a moving node branch), is a node-file pin issue and is handled with the other client pins in `LOW-W3-C-3-W3-C-4-W4-C-2-W4-C-3-yew-x402-lightwalletd-node-file-pins.md`, not here.
-Status: pending — re-verified at lightwalletd `f89ce24` (the only commit since `0d29cf4` re-syncs `testdata/vault/`; `frontend/` and `common/` are unchanged, every line below re-grepped) and node `ycash-dd` `da5e0fe` (2026-10-13)
+Status: done — completed 2026-10-16 (merged on `upgrade/vault`; see the completion record). Previously pending — re-verified at lightwalletd `f89ce24` (the only commit since `0d29cf4` re-syncs `testdata/vault/`; `frontend/` and `common/` are unchanged, every line below re-grepped) and node `ycash-dd` `da5e0fe` (2026-10-13)
 
 ## 1. Finding
 
@@ -99,3 +99,9 @@ The verifier narrowed the impact. The module check follows the absurd-fee check 
 
 - ~1 day (rule, metering, flag, tests, docs). No consensus review.
 - Depends on nothing. Complements `MEDIUM-W3-C-1-yew-token-value-fee-bound-yed-activation.md`, which closes the user-facing loss in the wallet; the two land in either order.
+
+## Completion record
+
+- **Completed:** 2026-10-15
+- **Merged:** lightwalletd `#1` `df9a11b`. The `allowhighfees` resubmission compares the fee with `yed_getinfo`'s `maxTxFeeZat`. `maxFeeInputs` is 250.
+- **Not closed by this landing:** the size bound, per-peer metering of the `gettxout` loop, and a `--yellowback-high-fee-resubmit` flag.

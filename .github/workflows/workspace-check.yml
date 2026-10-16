@@ -81,6 +81,20 @@ jobs:
             harden/yellowback|upgrade/vault|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
+          # The audit branch's generator matches the copies at the 2026-10-13 re-verification
+          # commits (README), not the moving upgrade/vault heads. Those heads were regenerated
+          # from later plans, so a branch clone reports yellowback-spec.md stale.
+          pin_for() {
+            case "$BRANCH" in
+              audit/*)
+                case "$1" in
+                  "$REPO_YCASH_DD")        echo da5e0fee63dee64a36055693febc9e5c1b403c6b ;;
+                  "$REPO_YCASH6")          echo 0742e43025c706eac9008ee723a957ce95e0689a ;;
+                  "$REPO_YECWALLET_DD")    echo c830233ecdede9c14ad306043e233f5542b885b5 ;;
+                  "$REPO_LIGHTWALLETD_DD") echo f89ce24068100983cd4d3febb7ad4169931db630 ;;
+                esac ;;
+            esac
+          }
           clone() {  # repo branch dir sparse-dir
             if ! git ls-remote --exit-code --heads "https://github.com/$1.git" "$2" >/dev/null; then
               echo "::notice::$1 has no branch $2 on GitHub yet; cross-repo spec-check skipped"
@@ -88,6 +102,11 @@ jobs:
             fi
             git clone -q --depth 1 --filter=blob:none --sparse --branch "$2" "https://github.com/$1.git" "$3"
             git -C "$3" sparse-checkout set "$4"
+            pin=$(pin_for "$1")
+            if [ -n "$pin" ]; then
+              git -C "$3" fetch -q --depth 1 origin "$pin"
+              git -C "$3" checkout -q "$pin"
+            fi
             echo "$1@$2 = $(git -C "$3" rev-parse HEAD)"
           }
           clone "$REPO_YCASH_DD"        "$v4" "$RUNNER_TEMP/ycash-dd"        doc
