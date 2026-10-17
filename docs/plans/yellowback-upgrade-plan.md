@@ -716,7 +716,17 @@ it.
 | **P5** wyec repo | contract (external audit), daemon, devnet preset | P3 |
 | **P6** clients | YecWallet, YEW, lightwalletd, chain-viz (set and vault panels), x402 and yolo (branch ID) | P2 for the ID; P3/P4 for the surface |
 | **P7** gates | kept gates; reshaped G-4, G-9; **G-11** cancel inclusion latency on the real block sequence; **G-12** primitive drills on testnet or a public multi-operator devnet: cancel, equivocation slash, dormancy recovery, wind-down, both bridge shapes, a wrong-price claim cancelled | everything |
-| **P8** release | `ycash6` 6.22.0 and `ycash-dd` in step; activation height and the later bridge enable height (O-3) set by this release; the contract deployed with the registered set; **the YED attestor set a chain parameter on every network (01/V-7, finding (74))**: the registered set id in `params.cpp` `MainParams`/`TestParams` (the release-heights gate already refuses it unset), and a mainnet/testnet build whose network has a `UPGRADE_VAULT` height but no set refuses to start (`InitError`) instead of validating the module inertly; regtest keeps `-yellowbackattestorset` and the inert mode for primitive-only suites. Pre-P8 (landed): `vault_getinfo.attestorsetid` / `moduleactive`, the start-up log line, the devnet walk's attestor-set and stock-divergence assertions | P7 |
+| **P8** release | `ycash6` 6.22.0 and `ycash-dd` in step; activation height and the later bridge enable height (O-3) set by this release; the contract deployed with the registered set; **the YED attestor set a chain parameter on every network (01/V-7, finding (74))**: the registered set id in `params.cpp` `MainParams`/`TestParams` (the release-heights gate already refuses it unset), and a mainnet/testnet build whose network has a `UPGRADE_VAULT` height but no set refuses to start (`InitError`) instead of validating the module inertly; regtest keeps `-yellowbackattestorset` and the inert mode for primitive-only suites. Pre-P8 (landed): `vault_getinfo.attestorsetid` / `moduleactive`, the start-up log line, the devnet walk's attestor-set and stock-divergence assertions. **Checklist (W3-P-1, W3-Y-3):** tag ycash-dd `vault-params/v6.22.N` first and require both release guards green before the ycash6 `v6.22.N` tag; create the YED set with `ratelimitbps` 0 or it is not adopted; set YEW's compiled `vault_activation_height()` and `attestor_set_id()` in the same release. Part D is deferred: do not bump `PROTOCOL_VERSION` on `upgrade/vault`; R3–R5 refuse the tag until the table below is applied. | P7 |
+
+**P8 protocol-version deferral (audit W3-P-1 part D; owner: not landed on `upgrade/vault`).** `qa/yellowback-release-heights.sh` enforces R3–R5 at the tag. `MIN_PEER_PROTO_VERSION` stays at the live floor.
+
+| Constant | Today dd / ycash6 | Required at release | Why |
+|---|---|---|---|
+| `vUpgrades[UPGRADE_VAULT].nProtocolVersion`, main/test/regtest | 270013 / 270013 | **V** > 270013, the same on both lines and all three networks | The epoch gate disconnects peers below V once Vault is the current epoch |
+| `PROTOCOL_VERSION` | 270013 / 270013 | **≥ V**, the same on both lines | An upgraded node advertising less than V is disconnected by the other upgraded line |
+| `MIN_PEER_PROTO_VERSION` | 170002 / 270013 | **270013 on both** (align dd); never V | A floor at V would refuse every stock peer before activation |
+| `MIN_TESTNET_PEER_PROTO_VERSION` | n/a / 270013 | unchanged | ycash6-only stock constant |
+| `CINV_WTX_VERSION` (ycash6) | `0x7FFFFFFF` | unchanged | It stays the sentinel |
 
 P1 and P2 run in parallel worktrees; P2 does not touch P1's files until P1 merges. P3 and P4 are
 independent and run in parallel. P5's contract audit is external and on the critical path.
@@ -1251,7 +1261,7 @@ parent must be rebuilt.
   V-1 (`lockedValue` grows) and does **not** reduce `epochUsed`: a cancelled unlock still consumes its epoch's rate
   budget (conservative — it can only refuse later unlocks in that epoch — and deterministic), so a set whose unlocks
   are repeatedly cancelled (YED's shape: anyone may APP-spend, a wrong-price claim stream) spends its own budget
-  without value leaving; `yb-calibration` sizes `rateLimitBps` with cancelled claims counted. (Audit 01/N-3, recorded
+  without value leaving. The YED attestor set is adopted only with `rateLimitBps` = 0 (W3-Y-3); the bridge set keeps the conservative S-3. (Audit 01/N-3, recorded
   2026-10-12.) **Note for the merge — HIGH-03-H-1:** that lane changes the YED cancel path (the attestor cancel
   refunds the claimant's burn; `cancelThreshold` pinned). As proposed it is a module change in `src/yellowback/`,
   not a change to this primitive rule; reconcile this sentence with it when both land.
