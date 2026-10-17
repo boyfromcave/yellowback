@@ -10,9 +10,10 @@
 #                  and sparse at the branch matching this one (upgrade/vault -> upgrade/vault,
 #                  harden/yellowback -> harden/yellowback, main -> their branches of record) and
 #                  compared. Skipped, with a notice, while one of them does not have that branch
-#                  on GitHub yet. The RED-5 docs pull request compares the two node copies on
-#                  cursor/w3-03-new-1-residual-0df7 while that branch exists; every other ref
-#                  keeps the line branch.
+#                  on GitHub yet. A pull request whose head branch exists on a node repo compares
+#                  that repo's copy (the plan and the copy move together). The RED-5 docs pull
+#                  request still compares cursor/w3-03-new-1-residual-0df7. Otherwise the line
+#                  branch is used.
 #   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
 #                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
 #                  node doc is not on the upgrade line yet, and says so.
@@ -86,14 +87,17 @@ jobs:
             harden/yellowback|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
-          # This plan change's node copies are on the residual branch until those PRs merge
-          # onto the line. The condition matches no other head, and a missing branch falls
-          # back to the line branch above.
+          # A plan change's node copies live on the same head branch until those pull
+          # requests merge. A missing branch falls back to the line branch above. The RED-5
+          # docs branch used a different name on the node repos.
           node_ref() {
             local repo="$1" fallback="$2" alt="cursor/w3-03-new-1-residual-0df7"
             if [ "${HEAD_REF:-}" = "cursor/w3-03-new-1-residual-docs-0df7" ] \
                && git ls-remote --exit-code --heads "https://github.com/$repo.git" "$alt" >/dev/null; then
               echo "$alt"
+            elif [ -n "${HEAD_REF:-}" ] \
+               && git ls-remote --exit-code --heads "https://github.com/$repo.git" "$HEAD_REF" >/dev/null; then
+              echo "$HEAD_REF"
             else
               echo "$fallback"
             fi
