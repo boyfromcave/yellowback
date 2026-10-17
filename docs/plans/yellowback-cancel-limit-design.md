@@ -96,11 +96,12 @@ means 2.1 % worst-year bad debt and 24 h means 3.2 %. An unbounded veto removes 
   (about 100 % at `pClaim`), and the residual intent can still be released to the owner after 576 blocks: the
   residual cannot be cancelled (`INTENT_CANCEL_RESIDUAL`), and S-1 (one template input per transaction) stops
   it being re-locked together with the claimant intent. The owner has taken `R` out of a vault that should
-  have been liquidated. It combines with R-1a.
+  have been liquidated. It combines with R-1a. NEW-1 (role by first match) raises that residual to 100 % of
+  the collateral.
   Cross-reference (RED-5b, W3-Y-5, 2026-10-14, audit recommendation A1, pending owner confirmation on the node PR): path (b) is sized at `pEmerg`, not `pClaim`. The `collateral − D/pClaim` sentence above is the pre-RED-5b reading. MEDIUM-W3-Y-3 owns the rest of this file.
 - **R-1d, rate budget (side effect).** S-3 never reduces `epochUsed` on a cancel. If the YED attestor set
   carries a non-zero `rateLimitBps`, a claim-and-cancel stream also spends the set-wide unlock budget, which
-  can refuse **other** vaults' claims in that epoch (`bad-txns-vault-rate`, exactly when liquidations matter). Any limit on cancels shrinks this effect too. Status (audit W3-Y-3): `AdoptedSet` does not yet pin `rateLimitBps`; the recommended pin to 0 is an owner decision (decision 7).
+  can refuse **other** vaults' claims in that epoch (`bad-txns-vault-rate`, exactly when liquidations matter). Any limit on cancels shrinks this effect too. Status (audit W3-Y-3): `AdoptedSet` and the SET_CREATE mirror now refuse a YED set whose `rateLimitBps` is not 0 (ycash-dd #97, ycash6 #18). Owner decision 7 above is still open: this document does not record a re-confirmation.
 - **NEW-2, path (b) never pays an outsider.** A third-party path-(b) claimant burns `D` plus FEE-1′ and may take at most `D·COIN/pClaim` zat: worth `D` at `pClaim` and at most 0.84·`D` at `pEmerg`. At `pClaim` sizing path (b) is therefore a self-claim/extraction path only, including in the "attestors collude high" row it was designed for (v3 plan). Sizing at `pEmerg` (W3-Y-5) restores the incentive and moves the "collude low" defence onto the cancel brake.
 
 **What the brake is for, and what any design must keep.** A **wrong-price claim** is one that is consensus-valid
@@ -206,18 +207,20 @@ Two ways to build the proof:
 
 ### C5. Companion rule, holding the path-(b) residual (CAN-3, needed with any of C0–C4)
 
-- **Rule:** a residual intent whose claimant intent was **cancelled** may be released (I-1) only once the
-  re-created position is closed (REDEEMED, or CLAIMED by a later release). Round 2 (R2-1) allows an earlier
-  release after `CANCEL_QUIET` only if no claim in that block could pass; the audit's reading is that the
-  bare "`CANCEL_QUIET` has passed" escape was wrong, because a re-created vault at or below 100 % at `pClaim`
-  attracts no claimant (nobody burns `D` for at most `D`), so "a later honest claim liquidates it" does not
-  hold. Otherwise the verdict is `intent-residual-held`. A residual whose claimant was released keeps today's rule.
+- **Rule (W3-Y-3 item i):** a residual intent whose claimant intent was **cancelled** is held until the
+  re-created position is closed (REDEEMED or CLAIMED). The `CANCEL_QUIET` escape is not part of this rule:
+  a re-created vault at or below 100 % at `pClaim` attracts no claimant (nobody burns `D` for at most `D`),
+  so "a later honest claim liquidates it" does not hold. Otherwise the verdict is `intent-residual-held`.
+  A residual whose claimant was released keeps today's rule. Owner decision row 5 has not re-confirmed
+  replacing the shipped round-2 (R2-1) quiet escape; until it does, that row stays open and the node
+  implements R2-1.
 - **State:** one field appended to `IntentRecord`. The cancel writes the re-created position's outpoint
   into the residual's record (`heldBy`), so the release check is a single lookup.
 - **Effect on R-1c:** the extracted residual is not liquid while the position stays open. The R-1c
-  magnitudes above (at least 20 % of the collateral at `pClaim` sizing) are why the hold must not lapse on a
-  timer alone; RED-5a/5b record the corrected sizing. An honest owner whose vault was wrongly claimed redeems
-  to free the residual.
+  magnitudes above (at least 20 % of the collateral at `pClaim` sizing; under 5 % of `D` at `pEmerg` sizing;
+  NEW-1 raises the first-match role to 100 % of the collateral) are why the hold must not lapse on a
+  timer alone; RED-5a/5b (W3-Y-1, HIGH-W3-03-NEW-1) record the corrected sizing. An honest owner whose
+  vault was wrongly claimed redeems to free the residual.
 
 Re-locking the residual into the vault, which would be the clean fix, is impossible without a primitive
 change: S-1 allows one template input per transaction, and a second V output would be a second position.
@@ -281,7 +284,8 @@ change: S-1 allows one template input per transaction, and a second V output wou
 ## 4. Recommendation
 
 Adopt **C2 (CAN-2, escalating co-signed cancels) + C5 (CAN-3, residual held)** as one module change on both
-lines. Keep **C4b** as an optional phase 2 if the owner wants a slashing deterrent; it shares C2's payload
+lines. The quiet-reset counter is per position (vault), carried by every re-creation, and never keyed per
+member (W3-Y-3 item 6). Keep **C4b** as an optional phase 2 if the owner wants a slashing deterrent; it shares C2's payload
 plumbing. Reject C1 because the brake can be exhausted, C3 because it charges the honest brake, and C4a
 because its proof is circular. C0 remains the fallback if the owner prefers zero new state over keeping a
 single honest watcher.
@@ -325,6 +329,7 @@ claim.
 - (iii) Honest attestors need a co-signature gossip path and must be live within 12 h for repeat
   wrong-price rounds.
 - (iv) An honest owner's residual after a wrong-price claim is held until the position closes (R2-1), not just up to 7 days.
+- **C4b:** deterrent only; not counted toward the bound (W3-Y-3 item 5).
 - (v) Claimants still lose the YEC fee of a cancelled round. That loss is bounded by the schedule rather than
   refunded.
 
