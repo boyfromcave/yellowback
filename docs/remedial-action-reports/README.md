@@ -85,7 +85,7 @@ Recommended landing order (dependencies are repeated inside each report):
 
 ## Follow-up audit (waves 3 and 4)
 
-The still-open set is on `audit/quantum-vault-ecosystem-wave4` (`docs/remedial-action-reports/pending/`, 48 reports). A report moves here, into `done/`, once its fix has merged on `upgrade/vault`. Fourteen follow-up reports are in `done/` below; a partial landing stays pending on the audit branch.
+The still-open set is on `audit/quantum-vault-ecosystem-wave4` (`docs/remedial-action-reports/pending/`, 48 reports). A report moves here, into `done/`, once its fix has merged on `upgrade/vault`. Fifteen follow-up reports are in `done/` below; a partial landing stays pending on the audit branch.
 
 | Report | Title |
 |---|---|
@@ -96,6 +96,7 @@ The still-open set is on `audit/quantum-vault-ecosystem-wave4` (`docs/remedial-a
 | [MEDIUM-W3-B-2-05-N-2-hawkeye-slash-sign-honours-auto-slash.md](done/MEDIUM-W3-B-2-05-N-2-hawkeye-slash-sign-honours-auto-slash.md) | MEDIUM — W3-B-2, 05/N-2 — `POST /slash/sign` votes without the operator when `auto_slash = false`; there is no command to vote on one reviewed case |
 | [MEDIUM-W3-B-3-wyec-hawkeye-rogue-guardian-proposal-spam.md](done/MEDIUM-W3-B-3-wyec-hawkeye-rogue-guardian-proposal-spam.md) | MEDIUM — W3-B-3 — A rogue guardian can open unlimited optimistic proposals on fresh `lockId`s; every one costs the watchers a challenge, and a burst can outrun them |
 | [MEDIUM-W3-C-1-yew-token-value-fee-bound-yed-activation.md](done/MEDIUM-W3-C-1-yew-token-value-fee-bound-yed-activation.md) | MEDIUM — W3-C-1, 06/N-1 (+ 06/N-2 Low, 06/N-4 Info) — A server-listed "token" can burn a YEC coin as fee: check token values, account inputs at their real value, bound the fee in the gate's local layer, and stop treating YED as available on the server's word |
+| [MEDIUM-W3-N-1-07-NEW-2-ycash-vault-send-signs-only-own-builds.md](done/MEDIUM-W3-N-1-07-NEW-2-ycash-vault-send-signs-only-own-builds.md) | MEDIUM — W3-N-1 (+ 07/NEW-2) — `vault_send` / `set_sendact` sign only coins this wallet's builders chose, require a template input, and preview with `dryrun`. Merged 2026-10-17; the functional shards passed on both node lines |
 | [MEDIUM-W3-N-3-ycash-set-sign-validate-before-record.md](done/MEDIUM-W3-N-3-ycash-set-sign-validate-before-record.md) | MEDIUM — W3-N-3 (+ W3-N-14(b)) — `set_signunlock` / `set_signcancel` write the sign-once record before validating the build: validate with `vault::CheckTx` (S-2 / I-2) first, add a write-nothing inspect path, and do NOT add a record delete |
 | [MEDIUM-W4-C-1-W4-C-4-yecwallet-yed-cancel-claim-vault-contract.md](done/MEDIUM-W4-C-1-W4-C-4-yecwallet-yed-cancel-claim-vault-contract.md) | MEDIUM — W4-C-1 (+ W4-C-4 Info) — YecWallet's "Cancel claim" calls `vault_buildcancel`, which the node refuses for every YED intent, and tells the attestor the burn "is NOT refunded": build with `yed_buildcancel`, correct the CAN-1 refund text everywhere, and give YecWallet a pinned vault-RPC contract check |
 | [MEDIUM-W4-K-5-yb-calibration-ci-node-crosscheck.md](done/MEDIUM-W4-K-5-yb-calibration-ci-node-crosscheck.md) | MEDIUM — W4-K-5 — yb-calibration's CI never reaches the node: clone-backed tests skip, delegated-kernel parity is tautological, the release-constants test never reads `params.cpp`, and the drift test pins the v3 drift as passing |
