@@ -1,0 +1,46 @@
+name: codeql
+
+# CodeQL (SECURITY-CI.md) over the workspace's own code: the Python scripts (scripts/*.py,
+# contrib/semgrep/*.py) and the GitHub Actions workflows. The shell scripts have no CodeQL extractor
+# (Semgrep covers them). No build: both languages are extracted from source (build-mode: none).
+# Results go to Security -> Code scanning (category codeql-<language>); pre-existing alerts never fail
+# a PR, only the code-scanning check GitHub derives from new alerts does.
+on:
+  push:
+    branches: [upgrade/vault]
+  pull_request:
+  schedule:
+    - cron: '29 4 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    # Code scanning uploads need a token that can write security events, which a fork PR's lacks.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          category: codeql-${{ matrix.language }}

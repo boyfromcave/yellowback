@@ -1,0 +1,29 @@
+# Dependabot: security updates only, one grouped PR per ecosystem (SECURITY-CI.md). Version updates
+# are suppressed (open-pull-requests-limit: 0 applies to them only; security updates are not limited).
+# Not listed: contrib/semgrep/requirements.txt, the Semgrep toolchain copied byte-for-byte from
+# ycash-dd (contrib/semgrep/README.md) — it is bumped there and re-copied; OSV-Scanner reports it here.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 14
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directories: ["/", "/contrib/secops"]
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    cooldown:
+      default-days: 14
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]

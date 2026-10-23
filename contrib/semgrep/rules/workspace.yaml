@@ -1,0 +1,56 @@
+# Workspace-specific Semgrep rules, scanned beside the pinned rule packs (contrib/semgrep/README.md).
+# metadata.bucket pins a rule's bucket; without it the bucket follows severity/impact/confidence.
+# Test inputs: contrib/semgrep/rules/workspace.sh (semgrep --test --metrics=off contrib/semgrep/rules; SECURITY-CI.md).
+rules:
+  - id: yellowback.scripts.pipe-to-shell
+    languages: [generic]
+    paths:
+      include: ["/scripts/**", "/utils/**", "/Makefile", "*.sh", "/.github/workflows/**"]
+    pattern-regex: '\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(ba|z|da)?sh\b'
+    message: >-
+      A download piped straight into a shell. The workspace installs nothing unverified: fetch to a file,
+      check it against a recorded sha256 (or a pinned commit), then run it.
+    severity: ERROR
+    metadata:
+      category: security
+      bucket: high
+      cwe: ["CWE-494: Download of Code Without Integrity Check"]
+
+  - id: yellowback.scripts.clone-without-manifest
+    languages: [generic]
+    paths:
+      include: ["/scripts/**", "/utils/**", "/Makefile"]
+    pattern-regex: '\bgit\b[^\n]*\bclone\b[^\n]*\b(https?://|git@|ssh://)'
+    message: >-
+      A workspace script clones a literal URL. Every repository, its URL and its pin come from
+      repos.yaml (scripts/repos.sh), so the pin checks in bootstrap.sh / pull.sh / check-ref-pins.sh
+      cover it; read the URL from the manifest instead.
+    severity: WARNING
+    metadata:
+      category: security
+      impact: MEDIUM
+      likelihood: LOW
+      confidence: HIGH
+      cwe: ["CWE-829: Inclusion of Functionality from Untrusted Control Sphere"]
+
+  - id: yellowback.scripts.pinned-clone-unverified
+    languages: [generic]
+    paths:
+      include: ["/scripts/**", "/utils/**"]
+    # Generic, not bash: Semgrep's bash parser gives up on the case patterns these scripts use.
+    # The match is a whole shell function that runs `git ... clone` (role `app` excepted: those
+    # repositories track a branch and carry no commit pin by design, repos.yaml "Roles").
+    patterns:
+      - pattern-regex: '(?ms)^(?!bootstrap_app\(\))[A-Za-z_][A-Za-z0-9_]*\(\)\s*\{\n(?:(?!^\}).)*?\bgit\b[^\n]*\bclone\b(?:(?!^\}).)*?^\}'
+      # ... unless, after the clone and before the function ends, it checks HEAD (head_is) or the
+      # baseline (git rev-parse) against the manifest pin.
+      - pattern-not-regex: '(?s)\bclone\b(?:(?!\n\}).)*?\b(head_is|rev-parse)\b'
+    message: >-
+      A function in a workspace script clones a repository and never checks the result against the commit
+      pinned in repos.yaml. Verify HEAD (head_is) or the baseline (git rev-parse) against the manifest
+      commit and stop on a mismatch, as bootstrap_reference and bootstrap_fork do.
+    severity: ERROR
+    metadata:
+      category: security
+      bucket: high
+      cwe: ["CWE-494: Download of Code Without Integrity Check"]

@@ -1,0 +1,10 @@
+# Paths Semgrep never scans (contrib/semgrep/README.md). Semgrep scans git-tracked files only; this file
+# replaces its built-in ignore list. The nested component clones (ref/, ycash-dd/, ...) are gitignored,
+# so they are never scanned from here: each repository scans itself.
+# The scanner's own rules, test inputs and ledgers.
+contrib/semgrep/
+# Generated copies of the spec (make spec), checked byte-for-byte against the plan by workspace-check.
+docs/spec/
+# Local caches.
+.venv/
+semgrep-out/

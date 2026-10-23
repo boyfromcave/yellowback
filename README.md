@@ -165,3 +165,5 @@ Read [AGENTS.md](AGENTS.md) before changing anything. The short version:
   independent reviews.
 - **Porting from DigiByte?** Read [docs/mapping.md](docs/mapping.md) first: DigiByte and Ycash
   are very different codebases.
+- **Security CI.** Every repository runs Semgrep, CodeQL, zizmor, gitleaks and OSV-Scanner; see
+  [SECURITY-CI.md](SECURITY-CI.md) for the gates and how to accept a finding.

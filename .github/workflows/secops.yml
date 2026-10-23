@@ -1,0 +1,146 @@
+name: secops
+
+# The security legs beside Semgrep and CodeQL (SECURITY-CI.md), one job each. All of them report to
+# Security -> Code scanning (SARIF, category = the tool) and the run summary; none opens a PR or issue.
+#
+#   zizmor        every workflow and dependabot.yml, default persona, online audits with the run token.
+#                 Fails on any finding.
+#   gitleaks      pull_request: the PR's own commits, fails on a new leak. Otherwise (push, nightly,
+#                 dispatch): the full history of every fetched ref. Accepted hits: .gitleaksignore.
+#   osv-scanner   every lockfile in the repository (the hash-locked tool requirements under contrib/,
+#                 requirements.txt). Fails on a known vulnerability not accepted in osv-scanner.toml.
+#
+# Tools are installed at the versions of the shared pin list, each checked against a recorded sha256
+# (release binaries) or pip --require-hashes (PyPI). The nested component clones are gitignored and
+# are never scanned from here: each component repository runs its own copy of these legs.
+on:
+  push:
+    branches: [upgrade/vault]
+  pull_request:
+  schedule:
+    - cron: '43 3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: secops-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  OSV_SCANNER_VERSION: 2.6.0
+  OSV_SCANNER_SHA256: ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108
+  # Uploads need security-events: write, which a fork PR's token lacks; the scans still gate.
+  UPLOAD: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with: { python-version: '3.12' }
+      - name: Install zizmor (hash-locked)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/zizmor"
+          "$RUNNER_TEMP/zizmor/bin/pip" install --quiet --disable-pip-version-check --require-hashes \
+            -r contrib/secops/zizmor-requirements.txt
+          echo "$RUNNER_TEMP/zizmor/bin" >> "$GITHUB_PATH"
+      - name: zizmor (SARIF for code scanning)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --no-exit-codes --format sarif . > zizmor.sarif
+      - uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: ${{ !cancelled() && env.UPLOAD == 'true' }}
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
+      - name: zizmor (gate)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --format github .
+
+  gitleaks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0  # full history; a PR scan needs its base too
+          persist-credentials: false
+      - name: Install gitleaks ${{ env.GITLEAKS_VERSION }} (sha256-checked)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSLo gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Scan
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          args=(git --redact --no-banner --report-format sarif --report-path gitleaks.sarif)
+          if [ "$EVENT" = pull_request ]; then
+            echo "Scanning the PR's commits ${PR_BASE:0:12}..${PR_HEAD:0:12}" | tee -a "$GITHUB_STEP_SUMMARY"
+            args+=(--log-opts="${PR_BASE}..${PR_HEAD}")
+          else
+            echo "Scanning the full history ($(git rev-list --all --count) commits)" | tee -a "$GITHUB_STEP_SUMMARY"
+            args+=(--log-opts=--all)
+          fi
+          rc=0
+          gitleaks "${args[@]}" . || rc=$?
+          if [ "$rc" -eq 0 ]; then echo "gitleaks: no leaks found" >> "$GITHUB_STEP_SUMMARY"
+          else echo "gitleaks: leaks found (exit $rc); see the code scanning alerts (category gitleaks)" >> "$GITHUB_STEP_SUMMARY"; fi
+          exit "$rc"
+      - uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: ${{ !cancelled() && env.UPLOAD == 'true' && hashFiles('gitleaks.sarif') != '' }}
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+
+  osv-scanner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install osv-scanner ${{ env.OSV_SCANNER_VERSION }} (sha256-checked)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSLo osv-scanner \
+            "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum -c -
+          chmod +x osv-scanner
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Scan
+        run: |
+          rc=0
+          osv-scanner scan source --recursive --config osv-scanner.toml --format sarif --output-file osv.sarif . || rc=$?
+          osv-scanner scan source --recursive --config osv-scanner.toml --format markdown . >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$rc"
+      - uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        if: ${{ !cancelled() && env.UPLOAD == 'true' && hashFiles('osv.sarif') != '' }}
+        with:
+          sarif_file: osv.sarif
+          category: osv-scanner
