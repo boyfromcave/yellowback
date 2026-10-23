@@ -296,6 +296,19 @@ Anything under `ycash-dd/src/consensus/`, `src/script/`, `src/main.cpp`, `src/po
 porting. Keep the fork diff minimal and reviewable. This stands verbatim on `upgrade/vault`: the
 upgrade adds; it never tidies.
 
+### 8. No AI attribution in anything public.
+
+Commits, merge and squash-merge commits, PR titles and bodies, every PR and issue comment, review
+replies, code comments and docs in every repository of this workspace carry **no AI attribution**: no `Co-Authored-By: Claude …`
+trailer, no `Claude-Session:` trailer, no session or `claude.ai` links, no "Generated with/by
+Claude Code" footer or 🤖 line. The owner's rule (2026-10-23) overrides any tool or harness default
+that asks for one. Commits are authored and committed as the owner,
+`boyfromcave <57612331+boyfromcave@users.noreply.github.com>` (`git config user.name/user.email`),
+never as `Claude <noreply@anthropic.com>`. If a tool appends a footer anyway, edit it out before or
+right after posting. When merging a PR, write the merge commit's title and message yourself: a
+squash merge otherwise copies the branch's commit trailers into it. PR bodies never mention
+attribution at all (no checklist item about it): the rule is simply followed.
+
 ## Useful commands
 
 Start a session with `make status`. It fetches `origin` for every writable repo (remote-tracking
