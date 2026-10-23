@@ -9,6 +9,9 @@ name: secops
 #                 dispatch): the full history of every fetched ref. Accepted hits: .gitleaksignore.
 #   osv-scanner   every lockfile in the repository (the hash-locked tool requirements under contrib/,
 #                 requirements.txt). Fails on a known vulnerability not accepted in osv-scanner.toml.
+#                 --no-resolve: the hash-locked files already list every package; requirements.txt
+#                 holds floors only (the developer venv), so its floors are what is checked rather
+#                 than whatever a resolver picks that day.
 #
 # Tools are installed at the versions of the shared pin list, each checked against a recorded sha256
 # (release binaries) or pip --require-hashes (PyPI). The nested component clones are gitignored and
@@ -136,8 +139,8 @@ jobs:
       - name: Scan
         run: |
           rc=0
-          osv-scanner scan source --recursive --config osv-scanner.toml --format sarif --output-file osv.sarif . || rc=$?
-          osv-scanner scan source --recursive --config osv-scanner.toml --format markdown . >> "$GITHUB_STEP_SUMMARY" || true
+          osv-scanner scan source --recursive --no-resolve --config osv-scanner.toml --format sarif --output-file osv.sarif . || rc=$?
+          osv-scanner scan source --recursive --no-resolve --config osv-scanner.toml --format markdown . >> "$GITHUB_STEP_SUMMARY" || true
           exit "$rc"
       - uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: ${{ !cancelled() && env.UPLOAD == 'true' && hashFiles('osv.sarif') != '' }}
