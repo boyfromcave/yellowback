@@ -46,7 +46,9 @@ yellowback-workspace/
 ├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `upgrade/vault` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
-│   ├── spec/        DigiDollar upstream spec + the generated Yellowback spec (`make spec`)
+│   ├── spec/        yellowback-risk-profile.md (READ FIRST: the collateral model as the upgrade/vault node
+│   │                enforces it, vs DigiDollar), the DigiDollar upstream docs, and the generated v3/harden
+│   │                spec (`make spec`; the upgrade/vault spec is generated into the node trees, `make spec-in-term`)
 │   ├── plans/       THE DEVELOPMENT PLANS (current = yellowback-upgrade-plan.md, the vault network upgrade,
 │   │                its Execution status block is authoritative; yellowback-evidence-based-hardening-plan.md
 │   │                = harden/yellowback, the no-upgrade fallback; v3 = yellowback-v3-development-plan.md

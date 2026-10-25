@@ -23,7 +23,7 @@ $0.05/KB = 12,500,000 zat/KB, the Yellowback cap min(max(`-maxtxfee` 0.1 YEC, $2
 500,000,000 zat; a circulating supply of 12,345,678 YEC is worth $4,938,271.20, its 15 % cap 74,074,068
 cents and MINT-6b's per-vault bound max(10 %, $10,000) = 7,407,406 cents; the $1 floor is 250,000,000 zat
 at $0.40 (`yed_estimatefee`'s sample). The vault rows keep the document's sample vault, minted at $1.985
-(`pMint` 1985000, 2,518.89 YEC for $1,000 at 500 %) and claimable at $0.40: its $10 protocol fee is
+(`pMint` 1985000, 2,518.89 YEC for $1,000 at 500 %; the sample predates D-IT-4, under which class A's base is 300 %) and claimable at $0.40: its $10 protocol fee is
 503,778,338 zat and its in-term early fee (5 % of the debt) 2,518,891,688 zat.
 
 ### 4.11 RPC contract delta (`rpcversion` 8)
