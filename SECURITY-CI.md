@@ -64,6 +64,7 @@ Most component repositories also run a fourth workflow, `code-scanning.yml`: on 
 alerts that ledger lists (one reviewed entry per tool, rule and path glob, with a reason) and exports
 the open ones, so a dismissal is recorded in the repository's history rather than only in the web UI.
 In those repositories that ledger, not a hand dismissal, is how a CodeQL or other code-scanning alert
-is accepted. As of 2026-10-24 it is on `upgrade/vault` in ycash-dd, ycash6, librustzcash6,
-yecwallet-dd, lightwalletd-dd, yew, yolo, chain-viz, x402-ycash, yb-calibration and hawkeye; wyec has
-no such workflow yet, and this repository has none (it dismisses in code scanning, table above).
+is accepted. As of 2026-10-25 it is on `upgrade/vault` in every component repository: ycash-dd,
+ycash6, librustzcash6, yecwallet-dd, lightwalletd-dd, yew, yolo, chain-viz, x402-ycash, yb-calibration,
+hawkeye and wyec (wyec's ledger starts empty). This repository has none (it dismisses in code scanning,
+table above).
