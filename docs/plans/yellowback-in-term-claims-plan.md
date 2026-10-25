@@ -75,7 +75,7 @@ Decided after T3's findings (owner, 2026-10-07):
 | # | Decision | Value |
 |---|---|---|
 | D-IT-15 | Owner redeem in term | **yes, absolutely**: the V template's `ownerHeight = refHeight + 1` (as `appHeight`); the owner pays the full debt and takes the collateral at any height. T3 found the owner path was still locked until `lockHeight`, so an in-term claim could close a vault its owner could not redeem |
-| D-IT-16 | Early-redeem fee (so a term still means something, and to incentivise the longer term) | **Decided by the owner 2026-10-07: 5 % (class A, short), 2.5 % (class B, medium), 1 % (class C, long)** of the collateral when redeeming before `lockHeight` — `earlyRedeemFeeBps[class]` = 500 / 250 / 100 — paid through the existing FEE-1 / AFEE-1 split (miner of the block and the attestor set); no new payee or accrual mechanism. Note for the wallet warning: for class A the fee (15 % of the debt at a 300 % ratio) approaches the cost of being claimed (up to 25 % of the debt), so redeeming still beats being claimed but narrowly; wide for B and C. T5 re-reads the owner's decision point at these fees |
+| D-IT-16 | Early-redeem fee (so a term still means something, and to incentivise the longer term) | **Decided by the owner 2026-10-07: 5 % (class A, short), 2.5 % (class B, medium), 1 % (class C, long)** of the debt at the vault's mint price when redeeming before `lockHeight` (IT-9′, D-Q-23: the fee base is the debt at `pMint`; the first form of this decision named the collateral) — `earlyRedeemFeeBps[class]` = 500 / 250 / 100 — paid into the same pool-payee output as FEE-1′ (the owner path carries no attestor share, AFEE-1′); no new payee or accrual mechanism. Note for the wallet warning: on the debt the class A fee is 5 % of the debt against a claim's cost of up to 25 % of the debt, so redeeming beats being claimed by a wide margin in every class (in the first form, 5 % of the collateral was 15 % of the debt at a 300 % ratio, and the class A margin was narrow). T5 re-reads the owner's decision point at these fees |
 | D-IT-17 | Disclosure of the claim payout | mechanics unchanged; the promise says plainly that at the threshold the owner usually receives nothing back (T3: a clause-(a) claim has residual 0 because collateral is already below θ × debt) |
 
 All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised form):
@@ -105,7 +105,7 @@ All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised for
 | `grace` | 34,560 | 34,560 (kept: still bounds the owner's post-term window and `claimHeight` fields) |
 | `appHeight` (template) | `lockHeight + grace` | **`refHeight + 1`** (the mint's own height: the branch is open from the first block after the mint; RED-4 governs) |
 | `ownerHeight` (template) | `lockHeight` | **`refHeight + 1`** (D-IT-15: the owner may redeem at any height) |
-| `earlyRedeemFeeBps[0..2]` | — (new) | **500 / 250 / 100** (D-IT-16; charged on a REDEEM at height < `lockHeight`, on the collateral, via the FEE-1/AFEE-1 split) |
+| `earlyRedeemFeeBps[0..2]` | — (new) | **500 / 250 / 100** (D-IT-16, IT-9′; charged on a REDEEM at height < `lockHeight`, on the debt at the vault's mint price `pMint`, into the pool-payee output beside FEE-1′; no attestor share) |
 
 The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" holds (200 % < 300 %); W16's
 "recap = 2 × halt" is replaced by D-IT-12 (recap = class C's base) and recorded as given up.
@@ -130,17 +130,19 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
 - **IT-6 (HALT-2).** The system ratio counts ACTIVE and CLAIMING vaults' collateral against outstanding supply;
   a claimed vault's debt leaves supply at the claim block (burn), its collateral at release (D-IT-14).
 - **IT-9 (early-redeem fee, D-IT-16).** A REDEEM at height < `lockHeight` pays `earlyRedeemFeeBps[class]` of the
-  collateral in addition to FEE-1, routed exactly as FEE-1/AFEE-1 route the normal fee (the pool payee and the
-  attestor-fee output); a REDEEM at or after `lockHeight` pays FEE-1 only. The fee is a RED rule (`bad-redeem-early-fee`
+  debt at the vault's mint price `pMint` (IT-9′, D-Q-23: `ceil(mintedCents × bps × COIN / pMint)` zat) in addition to
+  FEE-1′, into the same pool-payee output; the owner path carries no attestor share (AFEE-1′); a REDEEM at or after
+  `lockHeight` pays FEE-1′ only. The fee is a RED rule (`bad-redeem-early-fee`
   when the outputs do not carry it); `yed_estimateredeem`/`yed_redeem` quote it; wallets show it beside the claimable
   price.
 - **IT-7 (wallet/RPC).** `yed_listclaimable` returns in-term rows with `claimable: true/false` and the price at
   which the vault becomes claimable; `yed_claim` works in term; `yed_getinfo.params` carries the new values and
-  `inTermClaims: true`; `rpcversion` 6.
+  `inTermClaims: true`; `rpcversion` 6 (at this revision; 7 after the post-quantum owners and 8 after the fee rules,
+  `docs/plans/yellowback-quantum-fees-rpc-delta.md`, is the current contract).
 - **IT-8 (disclosure).** The product promise (upgrade plan §10, replacing its collateral paragraph; owner 2026-10-07,
   "align the wording with the actual mechanics of the lock"): **"Your YEC is locked for the term you choose. You can
   redeem at any time by paying back the YED you minted; redeeming before the term ends also costs an early-redeem
-  fee of 5 %, 2.5 % or 1 % of your collateral for a short, medium or long term. If your collateral falls below
+  fee of 5 %, 2.5 % or 1 % of your debt for a short, medium or long term. If your collateral falls below
   125 % of your debt at the
   attested price, anyone may close your vault by paying your debt; you then receive whatever collateral is worth
   more than 125 % of the debt — which, at the threshold, is usually nothing. Before that happens, your wallet will
@@ -148,7 +150,7 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
   show each vault's claimable price and warn as it approaches; the calibration's expectation that 19–50 % of vaults
   are claimed in term in a year like the last is stated in the disclosure, not hidden.
 
-### 4.1 RPC contract delta (`rpcversion` 6)
+### 4.1 RPC contract delta (`rpcversion` 6; the current contract is 8, see IT-7)
 
 The in-term line's RPC contract is the upgrade line's (upgrade plan §15.10: generated from the node's
 `doc/yellowback-rpc.md`, its `### `yed_*`` headings and ```json blocks) with the deltas below, which are
@@ -227,8 +229,11 @@ refuse an in-term redeem or claim of a vault minted under IT-1.
 
 ## 5. Four-part check and tier
 
-> DigiByte liquidates DigiDollar vaults when collateral falls under the threshold at any time
-> (`ref/digibyte/src/digidollar/`, the liquidation path), using its own oracle inside consensus. Ycash's
+> DigiByte does **not** liquidate a DigiDollar vault in term: both of its redemption paths, the normal one
+> and the ERR path, sit behind `OP_CHECKLOCKTIMEVERIFY` at the lock height (`ref/digibyte/src/digidollar/scripts.cpp`,
+> "both require timelock expiry"), and an underwater position rides out its term while the protocol raises
+> the ratio for new mints (DCA) and the burn for late redeemers (ERR), using its own oracle inside consensus.
+> (Correction 2026-10-25: this check first credited DigiByte with an any-time liquidation path; it has none.) Ycash's
 > delivered design opened the claim only after the term because, under miner enforcement, an any-time claim
 > was anyone-can-spend at the base layer (v2 §3.4). On `upgrade/vault` every rule is consensus and the claim is
 > a primitive intent with an attestor cancel, so the restriction no longer buys safety; the adaptation is to open
@@ -239,7 +244,7 @@ refuse an in-term redeem or claim of a vault minted under IT-1.
 ## 6. What is given up / risks
 
 1. The product promise "locked for the term" becomes "locked for the term unless it falls below 125 %"; disclosed (IT-8).
-2. The attestor set's cancel power is also, in term, a 24-hour window in which the price keeps falling; D-IT-13 keeps it at one day and T5 re-reads the bad-debt probability with it.
+2. The attestor set's cancel power is also, in term, a 12-hour window (D-IT-13, 576 blocks; the first draft said one day) in which the price keeps falling and T5 re-reads the bad-debt probability with it.
 3. Claimants need YED in reserve and depth to sell the YEC they receive; the 25 % margin is also their slippage budget. T5 cannot model claimant supply; the devnet liquidator persona demonstrates the mechanics only.
 4. W16's recap = 2 × halt rule is replaced (D-IT-12); H-10's class-A-only cap gate is replaced by the ratio test (IT-5); H-5 (classes B/C off) is reversed (D-IT-9).
 

@@ -8,7 +8,9 @@ from them and why.
 
 Line citations are to the pinned reference trees: `ref/digibyte` @ **v9.26.5** (`05b50e229d`) and
 `ref/ycash` @ **v4.5.0** (`624c12814`). Run `make status` before trusting them. The normative
-protocol is [`spec/yellowback-spec.md`](spec/yellowback-spec.md); the design rationale is
+protocol of the line being built (`upgrade/vault`) is the node tree's generated `doc/yellowback-spec.md`, read
+with [`spec/yellowback-risk-profile.md`](spec/yellowback-risk-profile.md); [`spec/yellowback-spec.md`](spec/yellowback-spec.md)
+is the v3 / `harden/yellowback` fallback's; the v2 design rationale is
 [`why-miner-enforced.md`](why-miner-enforced.md); the mechanism-level crosswalk between the two
 codebases is [`mapping.md`](mapping.md).
 
@@ -45,13 +47,16 @@ in some form, even where the mechanism underneath it had to be rebuilt.
   — "the gold never leaves your vault" — is the framing Yellowback inherited wholesale.
   (`ref/digibyte/src/digidollar/txbuilder.cpp`, `validation.cpp`)
 
-- **Term-graded over-collateralization.** Longer locks earn lower collateral requirements, because
-  a longer lock absorbs more volatility. DigiByte's ten canonical lock tiers (30 days at 500 %
-  down to 10 years at 200 %) and its published analysis of when each tier goes underwater
-  (`spec/upstream-digibyte/4_tier_collateral.md`) is the direct ancestor of Yellowback's three
-  term classes: A, 30–90 days at 500 %; B, 90–365 days at 400 %; C, 1–5 years at 300 %
-  (plan §3.1). We chose fewer, wider classes; the *idea* that the ratio is a function of the term
-  is DigiByte's.
+- **Term-graded over-collateralization.** The ratio is a function of the lock term. DigiByte's ten
+  canonical lock tiers (30 days at 500 % down to 10 years at 200 %) and its published analysis of
+  when each tier goes underwater (`spec/upstream-digibyte/4_tier_collateral.md`) are the direct
+  ancestor of Yellowback's three term classes, and v3 inherited the direction too (A, 30–90 days at
+  500 %; B, 90–365 days at 400 %; C, 1–5 years at 300 %). **On `upgrade/vault` the direction is
+  reversed**: A 30–90 days at 300 %, B 91–180 days at 400 %, C 181–365 days at 500 %, because the
+  Ycash lead Yellowback architect's review of DigiDollar's risk profile against YEC's price history found that a longer lock
+  is more uncertainty, not less, and that the buffer belongs on the longest exposure
+  ([`spec/yellowback-risk-profile.md`](spec/yellowback-risk-profile.md), in-term plan D-IT-4). The
+  *idea* that the ratio is a function of the term is DigiByte's; the sign of that function is ours.
 
 - **Canonical tiers instead of free-form terms.** Mint payloads must declare a tier, and
   validation accepts only the canonical window for the declared tier. This closes a whole family of
@@ -62,8 +67,8 @@ in some form, even where the mechanism underneath it had to be rebuilt.
   Adjustment (`src/consensus/dca.cpp`), Emergency Redemption Ratio (`src/consensus/err.cpp`) and
   volatility controls (`src/consensus/volatility.cpp`) protect the peg by raising requirements as
   system health degrades — and ERR notably takes its correction as extra token burn rather than as
-  a haircut on the user's collateral. Yellowback's volatility multiplier, global-ratio halt,
-  divergence halt and supply cap (plan §3.7) are in that tradition: bounded, integer, automatic,
+  a haircut on the user's collateral. Yellowback's global-ratio halt, divergence halt and
+  supply cap (plan §3.7; its volatility multiplier too, pinned at 1 on `upgrade/vault`, D-IT-5) are in that tradition: bounded, integer, automatic,
   and never a keeper-run auction that can cascade.
 
 - **Integer-only economics.** Every ratio, price and threshold in DigiDollar's protection systems
@@ -89,8 +94,8 @@ in some form, even where the mechanism underneath it had to be rebuilt.
 - **Minimums, maximums and dust discipline.** Minimum mint, maximum mint, minimum output, and the
   token-as-dust-output-plus-`OP_RETURN`-payload representation
   (`ref/digibyte/src/digidollar/txbuilder.cpp:407-418`) are DigiByte's, and Yellowback's are the
-  same shape with parameters scaled to Ycash's much smaller liquidity ($100 / $10,000 rather than
-  $100 / $100,000).
+  same shape with parameters scaled to Ycash's much smaller liquidity ($100 / $10,000 at first; on
+  `upgrade/vault` the range is $100 / $100,000 on both, the v3 launch guard having been lifted by D-Q-24).
 
 - **Graceful degradation in block assembly.** DigiDollar strips failing token transactions from the
   template rather than letting them block a block (`src/node/miner.cpp:707-744`). Yellowback's
@@ -142,7 +147,16 @@ and the price is whatever the committee signs, so manipulation costs the price o
 people. A standing institution with keys, rotation and ceremonies also has to exist and be
 maintained for as long as one vault is open. For Ycash, that is the wrong trade at any efficiency.
 
-**Decentralization: the enforcer is hashpower, and it is permissionless.** Yellowback's answer is
+**Status of the two paragraphs below (2026-10-25).** They describe the v2 / v3 miner-enforced design
+(`feature/yellowback-price-attest`, today the `harden/yellowback` fallback), and they are kept as the record of
+that choice. On `upgrade/vault`, the line being built, Yellowback is a rule module on a network upgrade
+(branch ID `0x6d5b7a31`, the opcodes `OP_CHECKSETSIG`, `OP_CHECKSETDORMANT` and `OP_CHECKPQSIG`, checked by every
+full node; upgrade plan §1, §10): there is no pool enforcement, no signalling, no sunset, no valve and no kill
+switch, the price is attested by an open bonded set beside the pools' quotes, and a dollar-priced protocol fee
+of the debt (1 % / 0.5 % / 0.1 %, $1 floor; FEE-1′) replaces the enforcement fee. The acknowledgement of
+DigiByte's choices stands; the footprint comparison is history.
+
+**Decentralization: the enforcer is hashpower, and it is permissionless** *(v2 / v3).* Yellowback's answer is
 that on a proof-of-work chain, the only party who can refuse a transaction without a consensus
 change is the miner. So the one rule Ycash script cannot express — *release this collateral only if
 the matching YED is burned* — is handed to mining pools. Pools running the Yellowback module
@@ -157,7 +171,7 @@ majority of quote-tagged blocks over hours to days rather than the corruption of
 named operators. Nobody holds a key to anyone's collateral but the minter. Nobody sits between a
 minter and their redemption. The price comes from hashpower, not from a committee.
 
-**Risk aversion: the smallest footprint that works, in writing.** DigiDollar took the consensus
+**Risk aversion: the smallest footprint that works, in writing** *(v2 / v3).* DigiDollar took the consensus
 route DigiByte's codebase made cheap: new opcodes, a reserved `OP_CHECKPRICE`, new consensus
 modules, BIP9 activation, a new address type. Yellowback deliberately took the opposite path. It
 adds **no opcode, no branch ID, no network upgrade, and no release the Ycash team must ship**. The
@@ -181,12 +195,14 @@ principle — a conservative team is owed the liabilities, not just the features
 
 **Deliberate divergences, briefly.** Alongside the above: no oracle daemon, no MuSig2, no Schnorr
 (absent from Ycash entirely); three term classes rather than ten tiers; a permissionless
-claim path where YED holders take collateral from abandoned underwater vaults by burning YED after
-a 30-day grace at a slow-window price, with no keeper, auction or custodian (plan §3.8);
+claim path where YED holders take collateral from underwater vaults by burning YED, on `upgrade/vault` at
+any height at which the vault is under water at 125 % of its debt at the attested claim price, with a
+12-hour attestor cancel and no keeper, auction or custodian (in-term plan IT-2; v2/v3: after a 30-day
+grace at a slow-window price, plan §3.8);
 mint/redeem caps scaled to Ycash's liquidity; a single-clause abandonment predicate so every
-release answers alike (L10, L12); an enforcement sunset and parameter-set versioning so no two
-releases can ever both enforce at one height (L8, K10); an explicit kill switch and work valve
-(V13, L7); and a wallet that reaches all of it over JSON-RPC — YecWallet is a separate Qt
+release answers alike (L10, L12); parameter-set versioning so no two releases can ever both
+enforce at one height (K10; the v2/v3 enforcement sunset, kill switch and work valve, L8, V13, L7, are retired
+on `upgrade/vault`); and a wallet that reaches all of it over JSON-RPC — YecWallet is a separate Qt
 application driving `ycashd`, so DigiByte's in-process `src/qt/digidollar*` widgets are a
 behavioural reference and never source ([`mapping.md`](mapping.md) §12).
 

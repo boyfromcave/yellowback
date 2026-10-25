@@ -154,6 +154,10 @@ supply cap, and dollar-priced fees that pay the people who keep the price honest
 | **Review and testing** | Every consensus change reviewed twice, independently, on both node lines; the two lines must produce byte-identical results; an internal security audit and a Falcon consensus audit; no external audit yet | Published design documents and a test suite |
 | **Wallets and tools** | Desktop wallet, mobile wallet, light-client server, hosted backend, agent payments (x402), explorer, mining pool, calibration tool | Qt desktop wallet and RPC |
 
+The collateral rows are the result of a deliberate review, against YEC's own price history, of the risk
+profile of the collateral model Yellowback inherited from DigiDollar: what was found, what was changed and what it costs is written up, cited
+to the node source, in [docs/spec/yellowback-risk-profile.md](docs/spec/yellowback-risk-profile.md).
+
 ## Contributing
 
 Read [AGENTS.md](AGENTS.md) before changing anything. The short version:
