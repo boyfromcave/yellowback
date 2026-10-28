@@ -75,7 +75,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - **Confirmed on a cluster by the owner's `make kind-up` (2026-10-28):** a fresh regtest chain, images rebuilt from `upgrade/vault` (ycash6 `1c10c93cc`, lightwalletd-dd `a1d141e`, rpcversion 8).
   - Passing: `make kind-smoke` and YEW's web smoke.
   - Clean: every pod's logs scanned for read-only and permission errors. The only hit was a stale pre-#5 `web:local` image.
-- [~] Kind defects K-1..K-6 fixed on ycash-infra#10 (`92b3742`..`8be1eec`, plus `f81b3ac`: `kind-personas up` waits for the node's RPC after a reset).
+- [x] Kind defects K-1..K-6 fixed on ycash-infra#10, merged 2026-10-28 as `d673148` (`92b3742`..`8be1eec`, `f81b3ac` for `kind-personas up` waiting for the node's RPC after a reset, and `2e6bf16` for K-6).
   - **Owner's re-test on kind (2026-10-28): K-1..K-5 confirmed.**
     - K-1: stale images caught, and the allow-list override works.
     - K-2: every workload rolled out, none failing.
@@ -83,7 +83,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
     - K-4: `kind-reset-chain` no longer hangs on the faucet.
     - K-5: after the node pod was deleted, the miner resumed by itself (410 → 416 in 30 s).
   - The personas armed: 3 seated, minting allowed.
-  - **K-6 partly fixed:** `ycash-yindex` still restarted once at the chain reset; `yindex-ingest` did not. Cause pending from the owner's `logs --previous`.
+  - **K-6 confirmed after the follow-up fix.** The server and the ingester raced to create the schema on a fresh database (SQLSTATE 23505). The schema is now applied under a Postgres advisory lock, and a regression test fails on the old code. On the owner's re-test, both yindex pods showed 0 restarts on a fresh chain.
 - [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
 
 ### N3-a prefix harvest (`ycash-infra`)
@@ -95,21 +95,21 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Output: 7,823,558 raw bytes (1,630 B per block) packed to 7,120,271 bytes gzipped, a 9 % saving. Hash chain from genesis verified; 12 checkpoints matched (Zebra source + Ycash compiled); re-verified outside the container.
   - `SHA256SUMS`: `de642d6c…` for the chunk, `31a66dc2…` for `manifest.json`.
   - Run 2 (40763603501) had failed in the export: Zebra 7.0.0 starts RPC only after its peer set is up (`zebrad/src/commands/start.rs:388-395`, `:512-514`), so a restart with no network never served RPC. `3801e77` fixed it by exporting from the running, syncing zebrad.
-- [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here. The smoke rate projects about 0.85 GB raw before transactions and an export of under 10 minutes. Blocked: `workflow_dispatch` needs the workflow on `upgrade/vault` (PR not yet opened, waiting on the owner)
+- [~] Full harvest 0..510,247: dispatched on `upgrade/vault` 2026-10-28 22:54 (run 40783490314); size and duration to be recorded here. The smoke rate projects about 0.85 GB raw before transactions, and an export of under 10 minutes.
 - [ ] Byte-identical second run (reproducibility proven)
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
 
 ### N3-b prefix import checks (`ycash-infra`)
 - [x] Framing and import scripts (`bundles/prefix/import/`, ycash-infra `c0fc439`): raw stream to `-loadblock` records with the network magic; manifest, hash-chain and checkpoint-height checks; 22 + 6 tests green against a stand-in node. No real ycashd yet: the sandbox cannot fetch the `node-bin` artifacts
-- [~] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
-- [ ] Import with checkpoints green on both lines (smoke range)
+- [x] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
+- [x] Import green on both lines, **both modes**, smoke range 0..4,799: runs 40783701751 and 40783689294, 2026-10-28, after ycash-infra#10 merged (`d673148`). All four legs and the compare passed on ycash6 `1c10c93cc` and ycash-dd `1bbcf26bc` binaries, in about 1 minute per leg. The node pins move to ycash6 `727c613` / ycash-dd `559d04e` once ycash6's CI on `727c613` is green
 - [ ] Import with checkpoints green on both lines (full prefix)
 - [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
 
 ### N3-c testnet chart scaffold (`ycash-infra`)
 - [x] `charts/ycash-testnet` (ycash-infra `0fd0f0a`): seed StatefulSet (ycash6, 3), cross-line verifier (ycash-dd, 1), prefix-restore init container (off by default; refuses an unpinned or mismatched bundle); no keys (T-9 pending). Render-only until N1: today's testnet parameters are the unreachable old testnet
 - [x] `values-testnet.yaml` for `charts/ycash-lightwallet` (overlay on `values-eks.yaml`; hostnames are T-3 placeholders)
-- [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally. In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
+- [x] Lint, kubeconform and image-pin checks green in CI on ycash-infra#10. Every check passed on `c2b905a`, CodeQL and Semgrep code scanning included, after fixing the PR's 6 test-file alerts.
 - [x] Security hardening and scans (`d851da3`..`8ac3c81`): the testnet chart gets #5's pod and container hardening. Checkov now scans the testnet renders, and its gate keys rendered resources. Run locally, the testnet work adds **0 new findings** to Checkov (44 base / 44 head), Semgrep, zizmor, actionlint, gitleaks, shellcheck and CodeQL (python, actions). Not yet run in a pod
 - [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
 
