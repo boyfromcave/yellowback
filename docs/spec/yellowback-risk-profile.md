@@ -59,7 +59,9 @@ least the recapitalisation ratio (500 %), which by construction is class C alone
 ## 2. What DigiDollar does, for comparison
 
 From the upstream documents copied under `upstream-digibyte/` at DigiByte v9.26.5 (the repo map's
-`DigiDollar::ConsensusParams`, `REPO_MAP_DIGIDOLLAR.md`; the explainer's collateral table):
+`DigiDollar::ConsensusParams`, `REPO_MAP_DIGIDOLLAR.md`; the explainer's collateral table), with
+the Thaw Day changes of DigiByte v9.26.6 noted where they apply (mainnet block 24,490,000; cited by
+commit, `../mapping.md` §23):
 
 - **Ten canonical tiers whose ratio falls with the term:** 1,000 % at one hour, 500 % at 30 days,
   400 % at 90 days, 350 % at 180 days, 300 % at one year, 275 % at two, 250 % at three, 225 % at
@@ -73,8 +75,15 @@ From the upstream documents copied under `upstream-digibyte/` at DigiByte v9.26.
   (`4_tier_collateral.md`).
 - **The response to stress is on future mints and on late redeemers:** Dynamic Collateral
   Adjustment raises the ratio for new mints by 25–100 % as system health falls through 150 %,
-  120 % and 110 %; below 100 % system health the ERR path makes a redeemer burn more DigiDollar to
-  recover full collateral.
+  120 % and 110 %; below 100 % system health **all new mints are halted** (`src/consensus/err.cpp:65-69`,
+  `src/digidollar/validation.cpp:2703-2707`, `minting-blocked-during-err`) and the ERR path makes a
+  redeemer burn more DigiDollar to recover full collateral. A mint without a valid block price is
+  refused (`validation.cpp:1145-1149`). From Thaw Day (v9.26.6, `2c1f09a0d8`) health is measured
+  against the original principal of the open vaults, kept in a consensus chainstate record
+  (`src/consensus/digidollar_state.h`), instead of circulating supply; if that record is
+  unavailable both mints and normal redemptions are refused. From the same height a mint whose
+  price is 20 % or more from the median of up to 15 ancestor prices 1 to 6 hours back is invalid,
+  replacing the wall-clock volatility freeze.
 - **No supply cap** in the published design (`REPO_MAP_DIGIDOLLAR.md:27`).
 
 ## 3. The assessment, and the four changes it produced
@@ -107,13 +116,15 @@ From these, the Ycash lead Yellowback architect decided (2026-10-07, in-term pla
 |---|---|---|---|
 | 1 | **Liquidation at any height.** Anyone may claim an under-water vault (θ = 125 %) in term, in grace or after; the attestor set can cancel a wrong-price claim within 12 hours; the owner keeps whatever is worth more than θ × debt | D-IT-1, D-IT-2, D-IT-3, D-IT-13 | finding 2: the dominant risk lever. DigiDollar cannot do this at all |
 | 2 | **More collateral for a longer term, not less.** A 300 %, B 400 %, C 500 % ("greater uncertainty with a longer term"); the inherited 500/400/300 schedule is reversed | D-IT-4 | a longer term is a longer time for the attested price and the market to drift; DigiDollar's discount for long locks puts its thinnest buffer on its longest exposure |
-| 3 | **Shorter terms.** 30 days to one year in three classes, against DigiDollar's 30 days to ten years | D-IT-10 | Ycash does not lock collateral against a price nobody can forecast years ahead; the in-term rule lets the product extend later |
+| 3 | **Shorter terms.** 30 days to one year in three classes, against DigiDollar's one hour to ten years (its one-hour tier, at 1,000 %, is labelled for testing and onboarding but is valid on mainnet; its first ordinary tier is 30 days) | D-IT-10 | Ycash does not lock collateral against a price nobody can forecast years ahead; the in-term rule lets the product extend later |
 | 4 | **The owner can always get out.** Redeem at any height, paying an early-redeem fee of 5 % / 2.5 % / 1 % of the debt for the short / medium / long class | D-IT-15, D-IT-16 | a wallet warning plus a redeem beats being claimed; the fee is cheapest for the best-collateralised class to make the longer term attractive |
 
 Kept from the earlier Yellowback designs and absent from DigiDollar: the **supply cap** (15 % of
-market cap, v2, kept by D-IT-8), the **global-ratio halt** (v2 HALT-2, lowered to 200 % and recapitalised
-by the 500 % tier only, D-IT-6, D-IT-7, D-IT-11, D-IT-12), and minting that **requires an armed price
-attestation** (`mintRequiresArmed`, hardening H-1).
+market cap, v2, kept by D-IT-8); the **global-ratio halt at 200 %** with a recapitalising tier (v2
+HALT-2, lowered to 200 % and recapitalised by the 500 % tier only, D-IT-6, D-IT-7, D-IT-11, D-IT-12;
+DigiDollar halts all new mints only below 100 % system health); and minting that **requires an armed
+price attestation** from two agreeing sources (`mintRequiresArmed`, hardening H-1; DigiDollar requires
+one valid 7-of-35 bundle and, from Thaw Day, a price within 20 % of its recent ancestor median).
 
 ## 4. Why this is the safer model, in one paragraph
 
@@ -136,7 +147,8 @@ not a long exposure; in DigiDollar it is the whole exposure.
   volatility rises; the sampling code is kept so that lever can return without a schema change.
 - **Owners near the threshold usually receive nothing back** from a claim; the promise says so
   (IT-8), and the wallet warns before it happens.
-- **The long tiers' liquidity** is bounded at one year; DigiDollar offers ten.
+- **The long tiers' liquidity** is bounded at one year; DigiDollar's tiers run from one hour to ten
+  years.
 
 ## 6. For anyone new to Yellowback
 
