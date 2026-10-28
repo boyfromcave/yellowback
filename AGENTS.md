@@ -24,6 +24,7 @@ fallback line only.)
 yellowback-workspace/
 ├── ref/
 │   ├── digibyte/    READ-ONLY. DigiByte, pinned to tag v9.26.5 (05b50e229d)
+│   │                (upstream v9.26.7 d7265fb05e exists, with Thaw Day: docs/mapping.md §23, the addendum and re-pin plan)
 │   ├── ycash/       READ-ONLY. Ycash node, pinned to tag v4.5.0 (624c12814)
 │   ├── yecwallet/   READ-ONLY. YecWallet GUI (Qt 6, bundles ycashd), pinned to tag v4.5.0 (1eb277d)
 │   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
