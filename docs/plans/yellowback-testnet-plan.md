@@ -27,6 +27,74 @@ serves is already written down elsewhere: the hardening plan's G-10, the upgrade
 v3 A7, lightwalletd L4, the YEW W5 testnet run and the x402 X-11 note. This plan delivers the
 network those gates are read on. It does not restate the gates.
 
+## In plain words: what this plan does and why
+
+**What is a testnet?** Ycash's main network ("mainnet") carries real money. Before a big
+change goes live there, it should run for weeks on a public practice network ("testnet")
+where the coins are worthless. There, anyone can try it, break it and report problems at no
+cost. Yellowback, the Ycash dollar (YED), is that kind of change. Ycash's old testnet stopped
+running years ago, so this plan builds a new one.
+
+**How the new testnet is built.** Ycash started life as a copy of Zcash in 2019. Its history
+up to the moment it split off is Zcash's history. We build the testnet the same way:
+1. Copy Zcash's public testnet history up to the split point, block 510,247.
+2. Start a fresh Ycash testnet from there.
+
+This makes the practice network look like the real one, including the old history every
+node has to handle.
+
+**Why there is a "bootstrap bundle".** A new node normally downloads and checks every block
+since the beginning, which takes hours. A bundle is a ready-made download of that history,
+so a node can start in minutes. A download is only safe if you can check it. Each bundle
+therefore comes with fingerprints (checksums and signatures), and the node software compares
+it with values built into the program itself.
+
+**What is being automated.** Copying Zcash's history (the "harvest") runs as a public GitHub
+Actions job in the `ycash-infra` repository. Anyone can run it again and get exactly the same
+files, down to the last byte. That makes the bundle easy to audit: you rerun the job and
+compare one checksum file.
+
+**Release candidates.** Before a new version of the node software is final, it goes out as a
+"release candidate" (rc). Automated checks run it together with all the other Yellowback
+programs. Then it runs on the testnet for a while, and only after that is it published.
+
+## Execution status (authoritative; kept by the coordinator from agent reports)
+
+Started 2026-10-28 (owner: begin with ycash-infra and the testnet harvest). Node baselines
+for this round: `ycash6` `upgrade/vault` at `1c10c93cc` (ycash6#63 merged) and `ycash-dd`
+`upgrade/vault` at `1bbcf26bc` (ycash-dd#141 merged; `yellowback tests` run 40754261395
+green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
+
+### N0 decide
+- [x] T-1: re-fork from Zcash testnet (the owner's suggestion, revision 2)
+- [x] Bundle production and hosting live in `ycash-infra`; node repos pin what they accept (revision 2, owner)
+- [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
+
+### N3-a prefix harvest (`ycash-infra`)
+- [ ] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`)
+- [ ] Harvest scripts: export from Zebra, verify (hash chain, Zebra source checkpoints, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`
+- [ ] Unit tests on real Zcash testnet block vectors
+- [ ] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push, green on GitHub
+- [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
+- [ ] Byte-identical second run (reproducibility proven)
+- [ ] `testnet-prefix-v1` release published, with provenance and signatures
+
+### N3-b prefix import checks (`ycash-infra`)
+- [ ] Framing and import scripts (raw stream to `blk` records with the network magic; `-loadblock`; manifest hash checks)
+- [ ] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} with node binaries from their CI artifacts
+- [ ] Import with checkpoints green on both lines (smoke range)
+- [ ] Import with checkpoints green on both lines (full prefix)
+- [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
+
+### N3-c testnet chart scaffold (`ycash-infra`)
+- [ ] `charts/ycash-testnet`: seed StatefulSet (ycash6), cross-line verifier (ycash-dd), prefix-restore init container; no keys (T-9 pending)
+- [ ] `values-testnet.yaml` for `charts/ycash-lightwallet`
+- [ ] Lint, kubeconform and image-pin checks green in CI
+- [ ] `ycash-infra` plan gains the testnet phase rows
+
+### Not started this round
+N1 (node parameters), N2 (devnet `--network`, ceremony, `ycash-bootstrap`), N4 (release CI), N5–N8.
+
 **Branch timing.** On 2026-10-28 `upgrade/vault` in `ycash-dd` and `ycash6` has an open PR
 each: the rewind fix, [boyfromcave/ycash-dd#141](https://github.com/boyfromcave/ycash-dd/pull/141)
 and [boyfromcave/ycash6#63](https://github.com/boyfromcave/ycash6/pull/63), with CI running.
