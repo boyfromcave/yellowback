@@ -75,13 +75,15 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - **Confirmed on a cluster by the owner's `make kind-up` (2026-10-28):** a fresh regtest chain, images rebuilt from `upgrade/vault` (ycash6 `1c10c93cc`, lightwalletd-dd `a1d141e`, rpcversion 8).
   - Passing: `make kind-smoke` and YEW's web smoke.
   - Clean: every pod's logs scanned for read-only and permission errors. The only hit was a stale pre-#5 `web:local` image.
-- [~] Kind defects K-1..K-6 fixed on ycash-infra#10 (`92b3742`..`8be1eec`). Lint and the Checkov gate are green (0 new); nothing has run on a cluster yet. **The owner's re-test on kind is the open item.**
-  - K-1: images carry a Dockerfile-hash label, and `make image-check` refuses a stale `:local` image unless `ALLOW_STALE_IMAGES` is set.
-  - K-2: `kind-check-release.sh` runs the rollout checks and fails on a crash-looping pod.
-  - K-3: the A-3 burst is sized from the live replicas and sent in parallel.
-  - K-4: the faucet is scaled down and back up.
-  - K-5: a 30 s client timeout on the miner's and the Jobs' `ycash-cli` loops.
-  - K-6: yindex waits for Postgres.
+- [~] Kind defects K-1..K-6 fixed on ycash-infra#10 (`92b3742`..`8be1eec`, plus `f81b3ac`: `kind-personas up` waits for the node's RPC after a reset).
+  - **Owner's re-test on kind (2026-10-28): K-1..K-5 confirmed.**
+    - K-1: stale images caught, and the allow-list override works.
+    - K-2: every workload rolled out, none failing.
+    - K-3: A-3 answered 39, limited 41.
+    - K-4: `kind-reset-chain` no longer hangs on the faucet.
+    - K-5: after the node pod was deleted, the miner resumed by itself (410 → 416 in 30 s).
+  - The personas armed: 3 seated, minting allowed.
+  - **K-6 partly fixed:** `ycash-yindex` still restarted once at the chain reset; `yindex-ingest` did not. Cause pending from the owner's `logs --previous`.
 - [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
 
 ### N3-a prefix harvest (`ycash-infra`)
