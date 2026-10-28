@@ -101,15 +101,17 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Checks: hash chain verified from genesis; **1,277 checkpoints matched** (Zebra's source checkpoints plus Ycash's compiled ones); re-verified outside the container.
   - `SHA256SUMS`: `manifest.json` `7026607b…`, the first chunk `41317fa2…`, the last chunk `d3377353…`.
   - Zebra's state is cached (3.7 GB) for reruns.
-- [~] Byte-identical second run: dispatched 2026-10-28 ~23:35
-- [ ] `testnet-prefix-v1` release published, with provenance and signatures
+- [x] **Byte-identical second run** (run 40787936355): all 12 files in `SHA256SUMS` are identical to run 40783490314. Run 2 resumed from run 1's cached Zebra state; the export, verify and pack are fully repeated. The publish run syncs cold, which gives a third, independent reproduction
+- [~] `testnet-prefix-v1` release: publish run dispatched 2026-10-29 ~00:00 (cold sync, provenance attestations)
 
 ### N3-b prefix import checks (`ycash-infra`)
 - [x] Framing and import scripts (`bundles/prefix/import/`, ycash-infra `c0fc439`): raw stream to `-loadblock` records with the network magic; manifest, hash-chain and checkpoint-height checks; 22 + 6 tests green against a stand-in node. No real ycashd yet: the sandbox cannot fetch the `node-bin` artifacts
 - [x] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
 - [x] Import green on both lines, **both modes**, smoke range 0..4,799: runs 40783701751 and 40783689294, 2026-10-28, after ycash-infra#10 merged (`d673148`). All four legs and the compare passed on ycash6 `1c10c93cc` and ycash-dd `1bbcf26bc` binaries, in about 1 minute per leg. The node pins move to ycash6 `727c613` / ycash-dd `559d04e` once ycash6's CI on `727c613` is green
-- [ ] Import with checkpoints green on both lines (full prefix)
-- [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
+- [~] Import of the **full prefix** (run 40787221990, pins ycash6 `1c10c93cc` / ycash-dd `1bbcf26bc`):
+  - ycash6 with checkpoints: green, 21.7 min.
+  - ycash-dd with checkpoints: still running at 23:58.
+- [x] Import with `-checkpoints=0` (full verification) green on both lines, full prefix: ycash6 in 24.7 min, ycash-dd in 25.9 min (run 40787221990)
 
 ### N3-c testnet chart scaffold (`ycash-infra`)
 - [x] `charts/ycash-testnet` (ycash-infra `0fd0f0a`): seed StatefulSet (ycash6, 3), cross-line verifier (ycash-dd, 1), prefix-restore init container (off by default; refuses an unpinned or mismatched bundle); no keys (T-9 pending). Render-only until N1: today's testnet parameters are the unreachable old testnet
