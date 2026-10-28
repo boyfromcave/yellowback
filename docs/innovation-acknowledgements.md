@@ -7,7 +7,8 @@ DigiDollar innovations we learned from, and states — just as plainly — where
 from them and why.
 
 Line citations are to the pinned reference trees: `ref/digibyte` @ **v9.26.5** (`05b50e229d`) and
-`ref/ycash` @ **v4.5.0** (`624c12814`). Run `make status` before trusting them. The normative
+`ref/ycash` @ **v4.5.0** (`624c12814`). Run `make status` before trusting them. DigiByte's later
+v9.26.6 / v9.26.7 changes (Thaw Day) are cited by commit, not line ([`mapping.md`](mapping.md) §23). The normative
 protocol of the line being built (`upgrade/vault`) is the node tree's generated `doc/yellowback-spec.md`, read
 with [`spec/yellowback-risk-profile.md`](spec/yellowback-risk-profile.md); [`spec/yellowback-spec.md`](spec/yellowback-spec.md)
 is the v3 / `harden/yellowback` fallback's; the v2 design rationale is
@@ -48,7 +49,8 @@ in some form, even where the mechanism underneath it had to be rebuilt.
   (`ref/digibyte/src/digidollar/txbuilder.cpp`, `validation.cpp`)
 
 - **Term-graded over-collateralization.** The ratio is a function of the lock term. DigiByte's ten
-  canonical lock tiers (30 days at 500 % down to 10 years at 200 %) and its published analysis of
+  canonical lock tiers (1 hour at 1,000 %, a testing and onboarding tier valid on mainnet; then
+  30 days at 500 % down to 10 years at 200 %) and its published analysis of
   when each tier goes underwater (`spec/upstream-digibyte/4_tier_collateral.md`) are the direct
   ancestor of Yellowback's three term classes, and v3 inherited the direction too (A, 30–90 days at
   500 %; B, 90–365 days at 400 %; C, 1–5 years at 300 %). **On `upgrade/vault` the direction is
@@ -69,7 +71,10 @@ in some form, even where the mechanism underneath it had to be rebuilt.
   system health degrades — and ERR notably takes its correction as extra token burn rather than as
   a haircut on the user's collateral. Yellowback's global-ratio halt, divergence halt and
   supply cap (plan §3.7; its volatility multiplier too, pinned at 1 on `upgrade/vault`, D-IT-5) are in that tradition: bounded, integer, automatic,
-  and never a keeper-run auction that can cascade.
+  and never a keeper-run auction that can cascade. DigiByte's Thaw Day (v9.26.6, `2c1f09a0d8`)
+  then replaced the wall-clock volatility freezes with a chain-derived, mint-only price reference and
+  moved health into consensus state: the same move Yellowback's chain-pure σ (V17) and overlay
+  index made, arrived at independently.
 
 - **Integer-only economics.** Every ratio, price and threshold in DigiDollar's protection systems
   is computed in integer arithmetic (`__int128` where needed) precisely because a stablecoin's
@@ -79,7 +84,9 @@ in some form, even where the mechanism underneath it had to be rebuilt.
 
 - **Network-wide health as a first-class, queryable object.** DigiDollar tracks total collateral,
   total supply, per-tier and aggregate collateralization, and exposes them
-  (`src/digidollar/health.cpp`, `src/index/digidollarstatsindex.*`). Yellowback's rebuildable
+  (`src/digidollar/health.cpp`, `src/index/digidollarstatsindex.*`); from Thaw Day the open vaults'
+  principal is held in a consensus chainstate record (`src/consensus/digidollar_state.h`) and the
+  stats index is optional for consensus. Yellowback's rebuildable
   overlay index and `yed_getinfo` / `yed_getvault` / `yed_listminers` surface exist because
   DigiByte demonstrated that a stablecoin without a visible balance sheet is unauditable.
 
@@ -173,7 +180,8 @@ minter and their redemption. The price comes from hashpower, not from a committe
 
 **Risk aversion: the smallest footprint that works, in writing** *(v2 / v3).* DigiDollar took the consensus
 route DigiByte's codebase made cheap: new opcodes, a reserved `OP_CHECKPRICE`, new consensus
-modules, BIP9 activation, a new address type. Yellowback deliberately took the opposite path. It
+modules, BIP9 activation, a new address type. (Its next DigiDollar rule change, Thaw Day in v9.26.6,
+was a height-gated flag day with no signalling, the same mechanism a Ycash network upgrade uses.) Yellowback deliberately took the opposite path. It
 adds **no opcode, no branch ID, no network upgrade, and no release the Ycash team must ship**. The
 enforcement rule is about 50 lines inside the `ConnectBlock` window of the patched node plus the
 miner, all inert without `-yellowback`, with zero lines in `consensus/`, `script/`, `primitives/`
