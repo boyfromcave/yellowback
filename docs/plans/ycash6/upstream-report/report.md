@@ -119,6 +119,12 @@ Listed roughly by operational impact.
   ```
   This keeps the interrupted-sync benefit and restores the upstream re-evaluation of failed blocks
   and their `BLOCK_FAILED_CHILD` descendants. `rewind_index.py` is the regression test.
+- **Applied (2026-10-28, both Yellowback node lines):** the refinement as suggested, plus one line in
+  `LoadBlockIndexDB` that marks each descendant of a failed entry `BLOCK_FAILED_CHILD`. Without it the
+  refinement erases the failed entry but keeps an unmarked child (a header received before the
+  parent failed, or an off-chain block whose `BLOCK_FAILED_CHILD` from `FindMostWorkChain` was never
+  written), whose `pprev` then dangles; `CheckBlockIndex` fails `nNodes == forward.size()`. The
+  v4.5.0 line (`ycash-dd`) takes `1770fce16` with both. `vault_activation_restart.py` covers it.
 
 ### 3.3 NU6 / NU6.1 / NU6.2 regtest protocol versions exceed `PROTOCOL_VERSION`
 
