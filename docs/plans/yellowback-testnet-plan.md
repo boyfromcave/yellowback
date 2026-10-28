@@ -71,7 +71,17 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
-- [x] PR #5 chart hardening merged (`4ba1e6f`): Checkov 214 → 70 failing checks, 0 new. Reviewed statically; the first `make kind-up` still has to confirm it on a cluster (no Docker daemon in the agent sandbox)
+- [x] PR #5 chart hardening merged (`4ba1e6f`): Checkov 214 → 70 failing checks, 0 new.
+  - **Confirmed on a cluster by the owner's `make kind-up` (2026-10-28):** a fresh regtest chain, images rebuilt from `upgrade/vault` (ycash6 `1c10c93cc`, lightwalletd-dd `a1d141e`, rpcversion 8).
+  - Passing: `make kind-smoke` and YEW's web smoke.
+  - Clean: every pod's logs scanned for read-only and permission errors. The only hit was a stale pre-#5 `web:local` image.
+- [~] Kind defects K-1..K-6 from that run, a fix agent in flight:
+  - K-1 a stale `:local` image crash-loops under #5;
+  - K-2 `kind-up` exits 0 while a pod crash-loops;
+  - K-3 the A-3 smoke check gives false failures at 4 lightwalletd replicas;
+  - K-4 `kind-reset-chain` hangs on the faucet's PVC;
+  - K-5 the miner's `ycash-cli` hangs across a node restart (no client timeout);
+  - K-6 yindex restarts until Postgres resolves.
 - [x] PR #8 code-scanning dismissal ledger merged (`3f1c52b`), after #5 as it required; 27/27 checks green
 - [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
 
