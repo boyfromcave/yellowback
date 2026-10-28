@@ -71,26 +71,26 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
 
 ### N3-a prefix harvest (`ycash-infra`)
-- [ ] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`)
-- [ ] Harvest scripts: export from Zebra, verify (hash chain, Zebra source checkpoints, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`
-- [ ] Unit tests on real Zcash testnet block vectors
-- [ ] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push, green on GitHub
+- [~] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`; contract fixed in the agents' briefing 2026-10-28)
+- [~] Harvest scripts: export from Zebra, verify (hash chain, Zebra source checkpoints, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`
+- [~] Unit tests on real Zcash testnet block vectors
+- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push, green on GitHub
 - [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
 - [ ] Byte-identical second run (reproducibility proven)
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
 
 ### N3-b prefix import checks (`ycash-infra`)
-- [ ] Framing and import scripts (raw stream to `blk` records with the network magic; `-loadblock`; manifest hash checks)
-- [ ] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} with node binaries from their CI artifacts
+- [~] Framing and import scripts (raw stream to `blk` records with the network magic; `-loadblock`; manifest hash checks)
+- [~] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} with node binaries from their CI artifacts
 - [ ] Import with checkpoints green on both lines (smoke range)
 - [ ] Import with checkpoints green on both lines (full prefix)
 - [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
 
 ### N3-c testnet chart scaffold (`ycash-infra`)
-- [ ] `charts/ycash-testnet`: seed StatefulSet (ycash6), cross-line verifier (ycash-dd), prefix-restore init container; no keys (T-9 pending)
-- [ ] `values-testnet.yaml` for `charts/ycash-lightwallet`
-- [ ] Lint, kubeconform and image-pin checks green in CI
-- [ ] `ycash-infra` plan gains the testnet phase rows
+- [~] `charts/ycash-testnet`: seed StatefulSet (ycash6), cross-line verifier (ycash-dd), prefix-restore init container; no keys (T-9 pending)
+- [~] `values-testnet.yaml` for `charts/ycash-lightwallet`
+- [~] Lint, kubeconform and image-pin checks green in CI
+- [~] `ycash-infra` plan gains the testnet phase rows
 
 ### Not started this round
 N1 (node parameters), N2 (devnet `--network`, ceremony, `ycash-bootstrap`), N4 (release CI), N5–N8.
