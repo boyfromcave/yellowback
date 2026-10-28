@@ -213,24 +213,84 @@ Address prefixes are unchanged (`sm…`, `ytestsapling`, `yt…` and PQ `571E` f
 encodings. Pre-fork coins on the prefix belong to whoever held them on Zcash testnet. That is
 harmless on a testnet, and mirrors mainnet.
 
-**The harvest (N1, once).**
-1. Run one Zebra node on Zcash testnet, our own. zcashd is deprecated; any archival Zcash
-   testnet node will do.
-2. Export blocks 0..510,247 with `getblock <hash> 0`.
-3. Write them as `blk`-format records framed with the **new** testnet magic.
-   `LoadExternalBlockFile` scans for the running network's magic.
-4. Import with `-loadblock` (`init.cpp:414`, :2471). ycash6 validates every block under its
-   own rules.
+**The harvest is an automated, reproducible job (N1).** It runs as
+`ycash6/.github/workflows/testnet-prefix.yml`, with the same script in
+`contrib/testnet/prefix/` for anyone to run locally under Docker.
 
-Three things cross-check the harvest:
-- the compiled hashes at 38,000, 207,500 and 280,000;
-- the hash at 510,247 from a second, independent source (a public explorer or another
-  operator's node);
-- one N1 CI run with `-checkpoints=0`. It proves that ycash6 and ycash-dd accept the whole
-  prefix with full verification. Ycash mainnet syncing Zcash mainnet history is proven; a
-  testnet prefix has never been run on these lines.
+**Where it can run:**
+- **Not in a cloud agent session.** Its egress is an HTTPS proxy with an allow-list. On
+  2026-10-28 it refused the Zcash testnet explorers with 403, and Zebra needs raw P2P TCP on
+  18233.
+- **Yes on a GitHub-hosted runner.** These have open outbound TCP. `boyfromcave/ycash6` is
+  public, so minutes and artifact storage are free.
+- **Yes in the `ycash-infra` cluster, or on a laptop**, with the same container.
 
-Size and import time are measured in that run.
+**Jobs:**
+
+1. **`harvest`** (ubuntu-latest, inside the 6 h job limit):
+   - Run `zebrad` from its image at a pinned digest, on Testnet, with the RPC on localhost.
+   - Once the tip passes 510,247, export blocks 0..510,247 with `getblockhash` and
+     `getblock <hash> 0`, then stop Zebra.
+   - Write them as a **magic-neutral raw block stream** (`u32 length ‖ block`) in fixed
+     height-range chunks of 50,000 blocks (11 files).
+   - **Check every block hash against Zebra's own source checkpoints** at a pinned commit:
+     1,276 hashes at or below 510,247 in `zebra-chain/src/parameters/checkpoint/test-checkpoints.txt`,
+     one every 400 blocks. Also check Ycash's compiled 38,000 / 207,500 / 280,000. The 38,000
+     and 280,000 hashes were checked against Zebra's list on 2026-10-28 and match.
+   - Then `tar --sort=name --mtime=@0 --owner=0 --group=0` and `gzip -n` per chunk, in the
+     same pinned container.
+   - Write `manifest.json`: per-chunk `sha256` and byte counts, the hash at every 10,000th
+     height, the Zebra image digest, and the checkpoint file's commit.
+   - Upload as a workflow artifact.
+2. **`import`**, a matrix of {ycash6, ycash-dd} × {checkpoints, `-checkpoints=0`}:
+   - Takes the node from the latest trusted `node-bin` artifact, the pattern YEW and yolo
+     already use.
+   - Frames the stream with the network's magic, imports with `-loadblock`, and checks the
+     manifest's hashes.
+   - Records each line's `gettxoutsetinfo` at 510,247. The two lines' digests are compared
+     within a line only, since their serialisations need not agree.
+   - The full-verification legs may run longer, as separate jobs.
+3. **`publish`**, on dispatch with `publish: true`:
+   - A release `testnet-prefix-v1` on `ycash6`. The tag does not match the node release's
+     `v*` trigger.
+   - Assets: the 11 chunks, `manifest.json`, `SHA256SUMS`, build-provenance attestations and
+     a cosign signature.
+   - Release assets do not expire; workflow artifacts expire after 90 days at most.
+   - `ycash-infra` mirrors them to the bundle CDN.
+
+**Why anyone can audit it.** The output is a pure function of Zcash testnet's history and
+the script version. Raw blocks are canonical bytes, chunks are cut by height, and the
+archive step runs in a pinned image. So **a rerun by anyone, from a fork of the repository or
+locally, must reproduce `SHA256SUMS` byte for byte**. Comparing one file is the whole audit.
+
+The magic-neutral stream is framed at import, so the prefix does not change when T-2's
+magic is chosen, or when a reset (T-7) changes it again. The same chunks also import into
+**today's** `upgrade/vault` binaries, whose testnet pre-fork pins are identical. The import
+legs can therefore run before N1 merges.
+
+**Size, estimated from public facts and to be measured by the first run.** Expected: about
+1–2 GB raw, and not much smaller compressed (Equihash solutions and proofs are random
+bytes).
+
+| Part | Estimate | Basis |
+|---|---|---|
+| Headers | ≈ 0.76 GB, incompressible | 510,248 headers × (140-byte header + 1,344-byte Equihash 200,9 solution + 3-byte length) |
+| Coinbases | ≈ 0.1–0.15 GB | One per block, a few hundred bytes with the founders' output |
+| Other transactions | ≈ 0.1–0.9 GB | The old Ycash testnet counted 862,651 transactions through 650,000 (`chainparams.cpp:575`), coinbases included. That leaves at most about 350,000 non-coinbase transactions below the fork, at 0.3–2.5 KB each (transparent, Sprout, Sapling) |
+| Hard upper bound | < 40 GiB | Zebra cuts a checkpoint early once 32 MiB accumulates (`MAX_CHECKPOINT_BYTE_COUNT`). None of its 1,276 gaps up to 510,247 is shorter than 400 blocks, so no 400-block window reaches 32 MiB. Its first short gap is at 4,306,000 |
+
+It fits:
+- Each 50,000-block chunk is about 100–200 MB, far under GitHub's 2 GiB per-asset limit.
+- The runner's disk holds Zebra's state for this range plus the output.
+- The ycash6 state bundle adds the Ycash part's blocks and the state. That is a few hundred
+  MB at testnet volumes.
+
+**If the Zebra sync does not finish inside 6 h** (testnet peers are fewer than mainnet's):
+- cache Zebra's state between runs (`actions/cache`, ≤ 10 GB per repository) and resume;
+- or use a larger or self-hosted runner;
+- or run the same container as a `ycash-infra` Job.
+
+The output does not depend on where it ran.
 
 **Mapping rows.** Two findings go into `docs/mapping.md` §22 with N1 (workspace rule 5):
 - The old testnet's checkpoint at 650,000 and its Ycash-fork activation hash make any
@@ -368,7 +428,7 @@ bundle follows that split.
 
 | Layer | Contents | Changes | Anchored by | Restored by |
 |---|---|---|---|---|
-| **Prefix bundle** | Blocks 0..510,247 in `blk` format (testnet magic), one `.tar.gz`. **Blocks only, no state** | Never. Published once, reused by every reset | Zcash testnet itself: anyone can compare any block hash with a Zcash testnet node or explorer. Also the compiled checkpoints at 38,000 and 510,247, and the node's own validation on import | `-loadblock` import. Every block is validated, so nothing in it is taken on trust except the checkpoint skipping of expensive checks below 510,247 (which `--verify-full` / `-checkpoints=0` turns off) |
+| **Prefix bundle** | Blocks 0..510,247 as a magic-neutral raw block stream, 11 deterministic `.tar.gz` chunks of 50,000 blocks (§2.1). **Blocks only, no state** | Never. Published once, reused by every reset | Zcash testnet itself: Zebra's 1,276 source checkpoints, any Zcash testnet node or explorer, and a byte-identical rerun of the job by anyone. Also the compiled checkpoints at 38,000 and 510,247, and the node's own validation on import | `-loadblock` import. Every block is validated, so nothing in it is taken on trust except the checkpoint skipping of expensive checks below 510,247 (which `--verify-full` / `-checkpoints=0` turns off) |
 | **State bundle** | A datadir at `H_B` above the fork (§4.1). It includes the prefix's blocks | Per rc | The compiled post-fork checkpoint, verifier statements and signatures (§4.2) | Extract, then verify the digests (§4.4) |
 
 **Picking a layer:**
@@ -730,7 +790,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 
 | Weeks | Work |
 |---|---|
-| 1 | The harvest and the prefix import (needs only a Zebra testnet node). Starts N1 |
+| 1 | `testnet-prefix.yml` (harvest, import on both lines against today's binaries, publish `testnet-prefix-v1`). Needs no node change. Starts N1 |
 | 1–3 | N1–N4 in parallel |
 | 3–4 | Private testnet on kind, then on EKS |
 | 4 | N6 launch: rc1, after one maturity period of the ceremony (≈ 1 day at T-4's value) |
@@ -749,7 +809,7 @@ The long poles are outside the code:
 |---|---|
 | A missed post-fork height constant splits the two lines at the fork or at Canopy | The N1 unit test asserts the subsidy and outputs at 510,248 and at the first Canopy block on both lines. The ceremony runs a ycash-dd node from the prefix |
 | One of the lines rejects some Zcash testnet block that the other accepts (a pre-fork rule difference between the v4.5.0 and 6.20.0 lineages) | The N1 `-checkpoints=0` import on both lines. A divergence is a finding against that line, recorded in mapping §22 |
-| The harvested prefix is wrong (a bad source node) | The compiled checkpoints at 38,000, 207,500 and 280,000; a second independent source for 510,247; full validation on import |
+| The harvested prefix is wrong (a bad source node) | Every 400th hash checked against Zebra's source checkpoints, plus the compiled 38,000 / 207,500 / 280,000; byte-identical reruns by others; full validation on import |
 | The ceremony build (Vault height, no set) is mistaken for a release | It is never tagged or published. R7 tightened at rc (§5.1) refuses it. The P8 `InitError` lands with rc1 |
 | The workspace dominates the testnet: house miners and house attestor seats | Stated on the status page. G-5 and G-4-style readings exclude house seats. Invited operators are on the launch checklist |
 | A bundle with a bad state is published | Three anchors (§4.2). The node refuses a tip that is not the checkpoint. Verifiers must agree byte for byte. `--verify-full` is there for the doubtful |
