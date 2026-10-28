@@ -70,11 +70,16 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] Bundle production and hosting live in `ycash-infra`; node repos pin what they accept (revision 2, owner)
 - [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
 
+### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
+- [x] PR #5 chart hardening merged (`4ba1e6f`): Checkov 214 → 70 failing checks, 0 new. Reviewed statically; the first `make kind-up` still has to confirm it on a cluster (no Docker daemon in the agent sandbox)
+- [x] PR #8 code-scanning dismissal ledger merged (`3f1c52b`), after #5 as it required; 27/27 checks green
+- [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
+
 ### N3-a prefix harvest (`ycash-infra`)
 - [x] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`, ycash-infra `3ff8575`): gzip of the length-prefixed raw stream per 50,000-block chunk. §2.1 and §4.0 say tar + gzip; the format drops the tar layer, since a single stream needs none
 - [x] Harvest scripts (`bundles/prefix/harvest.py`, `3ff8575`): export from Zebra, verify (hash chain, Zebra v7.0.0 source checkpoints vendored with sha256, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`. Zebra `zfnd/zebra:7.0.0@sha256:a70d2be8…`, pack image `python:3.13.18-slim-trixie@sha256:76baad60…`. Zebra RPC and stop-at-height behaviour read from source; first exercised by the smoke run
 - [x] Unit tests on real Zcash testnet block vectors: 33 tests, offline, green locally; pack twice gives identical `SHA256SUMS` (blocks 0..10)
-- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push. **Run 2 (40763603501) failed in the export phase.** Zebra checkpoint-synced 0..4,798 from the public testnet seeders in **35 s**, then a restart with no network looped on DNS and never served RPC. Fix in flight: export while Zebra keeps running. Unit-test job green on GitHub
+- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push. Run 2 (40763603501) failed in the export phase: Zebra checkpoint-synced 0..4,798 from the public seeders in **35 s**, then a restart with no network never served RPC (Zebra 7.0.0 starts RPC only after peer init: `zebrad/src/commands/start.rs:388-395`, `:512-514`). Fixed in `3801e77`: export from the running, syncing zebrad. Rerun pending
 - [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
 - [ ] Byte-identical second run (reproducibility proven)
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
@@ -89,7 +94,8 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 ### N3-c testnet chart scaffold (`ycash-infra`)
 - [x] `charts/ycash-testnet` (ycash-infra `0fd0f0a`): seed StatefulSet (ycash6, 3), cross-line verifier (ycash-dd, 1), prefix-restore init container (off by default; refuses an unpinned or mismatched bundle); no keys (T-9 pending). Render-only until N1: today's testnet parameters are the unreachable old testnet
 - [x] `values-testnet.yaml` for `charts/ycash-lightwallet` (overlay on `values-eks.yaml`; hostnames are T-3 placeholders)
-- [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally (13 + 14 + 25 resources valid). In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
+- [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally. In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
+- [x] Security hardening and scans (`d851da3`..`8ac3c81`): the testnet chart gets #5's pod and container hardening. Checkov now scans the testnet renders, and its gate keys rendered resources. Run locally, the testnet work adds **0 new findings** to Checkov (44 base / 44 head), Semgrep, zizmor, actionlint, gitleaks, shellcheck and CodeQL (python, actions). Not yet run in a pod
 - [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
 
 ### Findings this round (they amend the plan text)
