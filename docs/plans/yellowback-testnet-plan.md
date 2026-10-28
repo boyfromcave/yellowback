@@ -71,9 +71,9 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
 
 ### N3-a prefix harvest (`ycash-infra`)
-- [~] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`; contract fixed in the agents' briefing 2026-10-28)
-- [~] Harvest scripts: export from Zebra, verify (hash chain, Zebra source checkpoints, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`
-- [~] Unit tests on real Zcash testnet block vectors
+- [x] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`, ycash-infra `3ff8575`): gzip of the length-prefixed raw stream per 50,000-block chunk. §2.1 and §4.0 say tar + gzip; the format drops the tar layer, since a single stream needs none
+- [x] Harvest scripts (`bundles/prefix/harvest.py`, `3ff8575`): export from Zebra, verify (hash chain, Zebra v7.0.0 source checkpoints vendored with sha256, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`. Zebra `zfnd/zebra:7.0.0@sha256:a70d2be8…`, pack image `python:3.13.18-slim-trixie@sha256:76baad60…`. Zebra RPC and stop-at-height behaviour read from source; first exercised by the smoke run
+- [x] Unit tests on real Zcash testnet block vectors: 33 tests, offline, green locally; pack twice gives identical `SHA256SUMS` (blocks 0..10)
 - [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push, green on GitHub
 - [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
 - [ ] Byte-identical second run (reproducibility proven)
@@ -87,10 +87,10 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
 
 ### N3-c testnet chart scaffold (`ycash-infra`)
-- [~] `charts/ycash-testnet`: seed StatefulSet (ycash6), cross-line verifier (ycash-dd), prefix-restore init container; no keys (T-9 pending)
-- [~] `values-testnet.yaml` for `charts/ycash-lightwallet`
-- [~] Lint, kubeconform and image-pin checks green in CI
-- [~] `ycash-infra` plan gains the testnet phase rows
+- [x] `charts/ycash-testnet` (ycash-infra `0fd0f0a`): seed StatefulSet (ycash6, 3), cross-line verifier (ycash-dd, 1), prefix-restore init container (off by default; refuses an unpinned or mismatched bundle); no keys (T-9 pending). Render-only until N1: today's testnet parameters are the unreachable old testnet
+- [x] `values-testnet.yaml` for `charts/ycash-lightwallet` (overlay on `values-eks.yaml`; hostnames are T-3 placeholders)
+- [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally (13 + 14 + 25 resources valid). In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
+- [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
 
 ### Not started this round
 N1 (node parameters), N2 (devnet `--network`, ceremony, `ycash-bootstrap`), N4 (release CI), N5–N8.
