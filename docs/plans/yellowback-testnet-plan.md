@@ -79,8 +79,12 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`, ycash-infra `3ff8575`): gzip of the length-prefixed raw stream per 50,000-block chunk. §2.1 and §4.0 say tar + gzip; the format drops the tar layer, since a single stream needs none
 - [x] Harvest scripts (`bundles/prefix/harvest.py`, `3ff8575`): export from Zebra, verify (hash chain, Zebra v7.0.0 source checkpoints vendored with sha256, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`. Zebra `zfnd/zebra:7.0.0@sha256:a70d2be8…`, pack image `python:3.13.18-slim-trixie@sha256:76baad60…`. Zebra RPC and stop-at-height behaviour read from source; first exercised by the smoke run
 - [x] Unit tests on real Zcash testnet block vectors: 33 tests, offline, green locally; pack twice gives identical `SHA256SUMS` (blocks 0..10)
-- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push. Run 2 (40763603501) failed in the export phase: Zebra checkpoint-synced 0..4,798 from the public seeders in **35 s**, then a restart with no network never served RPC (Zebra 7.0.0 starts RPC only after peer init: `zebrad/src/commands/start.rs:388-395`, `:512-514`). Fixed in `3801e77`: export from the running, syncing zebrad. Rerun pending
-- [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
+- [x] `testnet-prefix.yml` smoke harvest green on GitHub: run 40767275967 at `8ac3c81`, 2026-10-28, blocks 0..4,799.
+  - Timings: Zebra synced from the public testnet seeders in 34 s (tip 19,200 by then), the export took 5 s (4,800 blocks in 4 s) and the pack 2 s.
+  - Output: 7,823,558 raw bytes (1,630 B per block) packed to 7,120,271 bytes gzipped, a 9 % saving. Hash chain from genesis verified; 12 checkpoints matched (Zebra source + Ycash compiled); re-verified outside the container.
+  - `SHA256SUMS`: `de642d6c…` for the chunk, `31a66dc2…` for `manifest.json`.
+  - Run 2 (40763603501) had failed in the export: Zebra 7.0.0 starts RPC only after its peer set is up (`zebrad/src/commands/start.rs:388-395`, `:512-514`), so a restart with no network never served RPC. `3801e77` fixed it by exporting from the running, syncing zebrad.
+- [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here. The smoke rate projects about 0.85 GB raw before transactions and an export of under 10 minutes. Blocked: `workflow_dispatch` needs the workflow on `upgrade/vault` (PR not yet opened, waiting on the owner)
 - [ ] Byte-identical second run (reproducibility proven)
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
 
