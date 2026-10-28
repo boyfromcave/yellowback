@@ -75,14 +75,13 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - **Confirmed on a cluster by the owner's `make kind-up` (2026-10-28):** a fresh regtest chain, images rebuilt from `upgrade/vault` (ycash6 `1c10c93cc`, lightwalletd-dd `a1d141e`, rpcversion 8).
   - Passing: `make kind-smoke` and YEW's web smoke.
   - Clean: every pod's logs scanned for read-only and permission errors. The only hit was a stale pre-#5 `web:local` image.
-- [~] Kind defects K-1..K-6 from that run, a fix agent in flight:
-  - K-1 a stale `:local` image crash-loops under #5;
-  - K-2 `kind-up` exits 0 while a pod crash-loops;
-  - K-3 the A-3 smoke check gives false failures at 4 lightwalletd replicas;
-  - K-4 `kind-reset-chain` hangs on the faucet's PVC;
-  - K-5 the miner's `ycash-cli` hangs across a node restart (no client timeout);
-  - K-6 yindex restarts until Postgres resolves.
-- [x] PR #8 code-scanning dismissal ledger merged (`3f1c52b`), after #5 as it required; 27/27 checks green
+- [~] Kind defects K-1..K-6 fixed on ycash-infra#10 (`92b3742`..`8be1eec`). Lint and the Checkov gate are green (0 new); nothing has run on a cluster yet. **The owner's re-test on kind is the open item.**
+  - K-1: images carry a Dockerfile-hash label, and `make image-check` refuses a stale `:local` image unless `ALLOW_STALE_IMAGES` is set.
+  - K-2: `kind-check-release.sh` runs the rollout checks and fails on a crash-looping pod.
+  - K-3: the A-3 burst is sized from the live replicas and sent in parallel.
+  - K-4: the faucet is scaled down and back up.
+  - K-5: a 30 s client timeout on the miner's and the Jobs' `ycash-cli` loops.
+  - K-6: yindex waits for Postgres.
 - [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
 
 ### N3-a prefix harvest (`ycash-infra`)
