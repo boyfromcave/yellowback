@@ -95,8 +95,13 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Output: 7,823,558 raw bytes (1,630 B per block) packed to 7,120,271 bytes gzipped, a 9 % saving. Hash chain from genesis verified; 12 checkpoints matched (Zebra source + Ycash compiled); re-verified outside the container.
   - `SHA256SUMS`: `de642d6c…` for the chunk, `31a66dc2…` for `manifest.json`.
   - Run 2 (40763603501) had failed in the export: Zebra 7.0.0 starts RPC only after its peer set is up (`zebrad/src/commands/start.rs:388-395`, `:512-514`), so a restart with no network never served RPC. `3801e77` fixed it by exporting from the running, syncing zebrad.
-- [~] Full harvest 0..510,247: dispatched on `upgrade/vault` 2026-10-28 22:54 (run 40783490314); size and duration to be recorded here. The smoke rate projects about 0.85 GB raw before transactions, and an export of under 10 minutes.
-- [ ] Byte-identical second run (reproducibility proven)
+- [x] **Full harvest 0..510,247 green on GitHub** (run 40783490314, 2026-10-28):
+  - Timings: Zebra synced from the public testnet seeders in about 19 min; the export took 437 s (510,248 blocks) and the pack 59 s. Whole job: 28 min of the 350 min budget.
+  - Size: 1,086,239,501 bytes raw in 11 chunks, 960,757,996 bytes gzipped. Every chunk is far under GitHub's 2 GiB asset limit.
+  - Checks: hash chain verified from genesis; **1,277 checkpoints matched** (Zebra's source checkpoints plus Ycash's compiled ones); re-verified outside the container.
+  - `SHA256SUMS`: `manifest.json` `7026607b…`, the first chunk `41317fa2…`, the last chunk `d3377353…`.
+  - Zebra's state is cached (3.7 GB) for reruns.
+- [~] Byte-identical second run: dispatched 2026-10-28 ~23:35
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
 
 ### N3-b prefix import checks (`ycash-infra`)
