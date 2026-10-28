@@ -1,6 +1,15 @@
 # Ycash Yellowback (YED) public testnet, checkpoint bootstrap bundles and release-candidate CI
 
-**Revision 1 (2026-10-28), proposed; nothing implemented.** It covers three things the
+**Revision 2 (2026-10-28), proposed; nothing implemented.** Revision 2 (owner's
+suggestion) builds the testnet the way Ycash itself was built:
+- Zcash testnet history up to the fork height, taken from Zcash testnet and anchored by it;
+- then a fresh Ycash fork at the original height, 510,248;
+- no new genesis.
+
+That splits the bootstrap bundle into an immutable, externally checkable prefix and a
+rolling state layer (§2.1, §2.2, §4.0). Revision 1 started a new chain from a fresh genesis.
+
+The plan covers three things the
 [upgrade plan](yellowback-upgrade-plan.md) needs before P7 and P8:
 
 1. A public Ycash testnet that carries `UPGRADE_VAULT` (branch ID `0x6d5b7a31`) and the YED
@@ -58,9 +67,20 @@ forked at `UPGRADE_YCASH` 510,248. Nobody can reach it. Here is what is in the c
   five other Yellowback tuning flags are refused off regtest (`src/yellowback/index.cpp:1141-1153`).
   The set is compiled in, per 01/V-7.
 
-**Consequence (T-1):** the public testnet is a **new chain**. It needs a new genesis, a new
-magic and a new datadir, and it is selected by the same `-testnet` flag. The existing
-`CTestNetParams` is replaced, not extended.
+Two further facts:
+- The magic `fa 1a f9 bf` is Zcash testnet's own. The old Ycash testnet never changed it.
+- A ycash6 node still cannot sync from Zcash testnet peers.
+  `MIN_TESTNET_PEER_PROTO_VERSION` is 270013 (`src/version.h:56`, enforced at
+  `main.cpp:8316`), and zcashd and Zebra advertise 170xxx versions.
+
+**Consequence (T-1):** the public testnet is a **re-fork of Zcash testnet**:
+- Everything at or below block 510,247 is Zcash testnet's history, unchanged. Today's
+  pre-fork parameters already describe it: the genesis, Overwinter 207,500 and Sapling 280,000
+  with their activation hashes, and the 38,000 checkpoint.
+- Block 510,248 onward is a **new** Ycash branch. Only the post-fork parameters change.
+- The blocks below the fork are harvested once from Zcash testnet and imported (§2.1). There is
+  no P2P link to Zcash peers.
+- The network keeps the `-testnet` flag. It gets a new magic and a new datadir (T-2).
 
 ### 1.2 Regtest is where everything works today, and where it differs from testnet
 
@@ -68,7 +88,8 @@ The differences below are the ones the regtest-to-testnet path (§3) has to abso
 
 | Topic | Regtest (today) | Testnet (§2) |
 |---|---|---|
-| Upgrades | Every upgrade is supplied by `-nuparams`: the six pre-Vault ones at height 1, Vault at `<h>` (`qa/rpc-tests/test_framework/yellowback_util.py:156-160`) | Compiled. `-nuparams` is refused off regtest (`init.cpp:1479-1482`) |
+| Upgrades | Every upgrade is supplied by `-nuparams`: the six pre-Vault ones at height 1, Vault at `<h>` (`qa/rpc-tests/test_framework/yellowback_util.py:156-160`) | Compiled. Overwinter and Sapling are at Zcash testnet's heights. The Ycash fork is at 510,248. Blossom, Heartwood, Canopy and Vault follow just after the fork (§2.1). `-nuparams` is refused off regtest (`init.cpp:1479-1482`) |
+| History below the first Ycash block | None | 510,248 blocks of Zcash testnet history, including Sprout and Sapling, imported from the prefix (§2.1) |
 | Attestor set | `-yellowbackattestorset=<setid>`, given after the set is created | Compiled (`TestParams().attestorSetId`) |
 | Set maturity | `nVaultMinSetMaturity` 2 (`chainparams.cpp:700`) | 16,128 today (`consensus/params.h:233`; T-4) |
 | Equihash | 48,5. The Python `stratum-miner` and yolo `auto` both use it | 192,7 after the fork upgrade (`chainparams.cpp:1012-1031`). This needs a real solver: the node's `-gen` miner, or a GPU miner behind yolo, whose `auto` mode picks 192,7 off regtest |
@@ -139,11 +160,11 @@ Three RPCs give agreement digests:
 
 ---
 
-## 2. The testnet: a new chain on the `ycash6` line
+## 2. The testnet: Zcash testnet to block 510,247, then a new Ycash fork, on the `ycash6` line
 
 ### 2.1 Chain parameters (N1, both node lines)
 
-`CTestNetParams` is rewritten **identically on `ycash6` and `ycash-dd`**:
+`CTestNetParams` is changed **identically on `ycash6` and `ycash-dd`**:
 - The release guard compares the Vault fields of main, test and regtest across the two lines.
 - `ycash-dd` nodes on the testnet are the cross-line verifiers (§5.3).
 - Workspace rule: a shared change is made on both lines together.
@@ -152,51 +173,95 @@ Three RPCs give agreement digests:
 `src/primitives/`). The values below are still consensus for the testnet, so the N1 PR carries
 the four-part check and gets two reviewers anyway.
 
+**Why the fork height stays at 510,248.**
+- It is the height every existing pre-fork pin was written for, so the change touches only the
+  post-fork values.
+- It lies below Zcash testnet's own Blossom (584,000). A later fork height would make Ycash
+  validate Zcash's post-Blossom history under Zcash's upgrade heights, which Ycash's upgrade
+  table does not describe.
+
+The result has the same shape as mainnet, which is Zcash mainnet through 569,999 and then
+Ycash:
+- the fork code paths run on testnet: the Equihash switch to 192,7, `minDifficultyAtYcashFork`
+  (`pow.cpp:53`) and the Ycash branch ID;
+- so do years of Sprout and Sapling history;
+- and so do realistic sizes for reindexing, rebuilding `vaults/` and producing bundles.
+
 | Parameter | Value | Why |
 |---|---|---|
-| Genesis | A fresh block: new timestamp, coinbase text naming the network, `nBits` = powLimit, a valid Equihash 200,9 solution minted with the genesis tool (N1). `hashGenesisBlock` and the merkle root are asserted as today | Nothing assumes genesis is exempt from PoW |
-| `pchMessageStart` | New, distinct from mainnet, the old testnet and regtest (T-2) | Dead `testnet3` peers never handshake |
-| Ports | P2P 18833, RPC 18832, unchanged | Clients' defaults keep working |
-| Datadir | `testnet4` (T-2) | Never mixes with a leftover `testnet3` directory. yolo's cookie lookup (`yolo/src/main.rs:109-110`) follows it |
-| Overwinter, Sapling, `UPGRADE_YCASH`, Blossom, Heartwood, Canopy | Height 1, `hashActivationBlock` unset | The regtest profile's heights. Equihash 192,7 and 75 s blocks from block 1 |
+| Genesis, pre-fork upgrades, checkpoint 38,000, founders' reward addresses, Equihash 200,9 before the fork, `nPowAllowMinDifficultyBlocksAfterHeight` 299,187 | **Unchanged** (`chainparams.cpp:404-436`, :546-553, :568-606) | They describe Zcash testnet's history, which is kept |
+| Checkpoint 510,247 | **New**: Zcash testnet's block hash at 510,247, taken from the harvest and matched against two independent Zcash testnet sources | Anchors the whole prefix to Zcash testnet. Expensive checks below it are skipped on import (`main.cpp:3530-3540`) |
+| Checkpoint 650,000 | **Removed** | It belongs to the old, lost Ycash branch |
+| `UPGRADE_YCASH` | 510,248, unchanged. `hashActivationBlock` is the **new** fork block, set by rc1 from the ceremony and unset in the ceremony build | Pins the new branch, and refuses the old one (`main.cpp:2600-2615`) |
+| Blossom, Heartwood, Canopy | Moved from 661,610 / 661,622 / 661,634 to just after the fork: the smallest heights N1's ordering and funding-stream audit accepts (for example 510,250 / 510,252 / 510,254) | Waiting 150,000 blocks at 150 s would take about 260 days |
 | NU5, NU6, NU6.1, NU6.2 | `NO_ACTIVATION_HEIGHT` | Required: they cannot be scheduled with Vault (`init.cpp:1556-1560`) |
-| `UPGRADE_VAULT` | Height `H_V`, small, for example 100 (fixed at the ceremony, §2.2) | Sapling must be active at or below it (`init.cpp:1556`) |
+| `UPGRADE_VAULT` | Height `H_V`, shortly after Canopy (for example 510,400; fixed at the ceremony, §2.2) | Sapling must be active at or below it (`init.cpp:1556`) |
+| `nMinimumChainWork` | The chain work at 510,247 in N1. Raised in each rc to the bundle height's work | The prefix is the floor. It rises with the checkpoints |
+| `pchMessageStart` | New, distinct from Zcash testnet, mainnet and regtest (T-2) | No Zcash testnet peer, and no leftover peer from the old Ycash testnet, ever handshakes. The prefix comes from the harvest, not from peers |
+| Ports | P2P 18833, RPC 18832, unchanged | Clients' defaults keep working |
+| Datadir | `testnet4` (T-2) | A leftover `testnet3` directory holds the old branch, and the node would abort on it. yolo's cookie lookup (`yolo/src/main.rs:109-110`) follows the name |
 | `nVaultMinSetMaturity` | T-4 (recommended: 1,152, about one day) | 16,128 blocks is about 14 days of waiting before every set exists |
 | `pqFalconHeight` | 0 | Same as mainnet (R6) |
 | Attestor set | `TestParams().attestorSetId`, the YED set created in the ceremony | 01/V-7 |
-| Checkpoints | Genesis only at N1. Then one per bundle height, added by each rc (§4.2) | The bundle's trust anchor |
-| `nMinimumChainWork` | 0 at launch. Raised in each rc to the bundle height's chain work | Same cadence as checkpoints |
+| Checkpoints after the fork | One per bundle height, added by each rc (§4.2) | The state bundle's trust anchor |
 | DNS seeds | Seeder hosts from §6.2 (T-3) | |
 | Fixed seeds | `pnSeed6_test` from the seed nodes' stable addresses (§6.2) | The fallback when DNS fails |
-| Height-indexed constants | **Audit every one in N1:** funding streams, YDF addresses and `nYdfMandateEndHeight`, slow start, halving, `nPowAllowMinDifficultyBlocksAfterHeight`, the Sprout and chain-supply checkpoints | A new history at height 1 shifts every schedule. A unit test asserts the block-1 subsidy and outputs |
+| Post-fork height-indexed constants | **Audit every one in N1:** YDF addresses and `nYdfMandateEndHeight`, funding streams at the moved Canopy height, halving, `nFutureTimestampSoftForkHeight` (follows Blossom), the Sprout and chain-supply checkpoints | The fork-relative schedules shift with Blossom and Canopy. The old testnet's YDF `sm…` addresses are kept unless T-2 replaces them with workspace testnet keys. A unit test asserts the subsidy and outputs of block 510,248 and of the first Canopy block |
 
 Address prefixes are unchanged (`sm…`, `ytestsapling`, `yt…` and PQ `571E` from
 `src/yellowback/params.cpp:183-196`). YEW, x402, yindex and lightwalletd keep their testnet
-encodings.
+encodings. Pre-fork coins on the prefix belong to whoever held them on Zcash testnet. That is
+harmless on a testnet, and mirrors mainnet.
 
-**Mapping row.** The finding "the old testnet's checkpoints and activation hashes make a new
-chain on its parameters abort" goes into `docs/mapping.md` §22 with N1 (workspace rule 5).
+**The harvest (N1, once).**
+1. Run one Zebra node on Zcash testnet, our own. zcashd is deprecated; any archival Zcash
+   testnet node will do.
+2. Export blocks 0..510,247 with `getblock <hash> 0`.
+3. Write them as `blk`-format records framed with the **new** testnet magic.
+   `LoadExternalBlockFile` scans for the running network's magic.
+4. Import with `-loadblock` (`init.cpp:414`, :2471). ycash6 validates every block under its
+   own rules.
 
-### 2.2 The genesis ceremony: getting an attestor set that the release can name
+Three things cross-check the harvest:
+- the compiled hashes at 38,000, 207,500 and 280,000;
+- the hash at 510,247 from a second, independent source (a public explorer or another
+  operator's node);
+- one N1 CI run with `-checkpoints=0`. It proves that ycash6 and ycash-dd accept the whole
+  prefix with full verification. Ycash mainnet syncing Zcash mainnet history is proven; a
+  testnet prefix has never been run on these lines.
+
+Size and import time are measured in that run.
+
+**Mapping rows.** Two findings go into `docs/mapping.md` §22 with N1 (workspace rule 5):
+- The old testnet's checkpoint at 650,000 and its Ycash-fork activation hash make any
+  re-fork abort.
+- The peer floor (270013) means Ycash cannot sync its own pre-fork history from Zcash peers.
+  The harvest-and-import path is the workaround.
+
+### 2.2 The launch ceremony: re-forking, and getting an attestor set that the release can name
 
 **The problem.** `setId` is the txid of a `SET_CREATE`. A `SET_CREATE` is valid only after
 Vault activates. So on any new network the set exists only *after* the Vault height, and the
 release that names it must come later. This plan does not change 01/V-7's rule that the set
 is compiled in. It sequences around it:
 
-1. **Ceremony build (not tagged, not published).** N1's parameters with `H_V` set and
-   `attestorSetId` null. In this state the module validates inertly
+0. **Import the prefix.** Every launch operator's node imports the prefix bundle (§4.0) and
+   stops at 510,247.
+1. **Ceremony build (not tagged, not published).** N1's parameters with `H_V` set, the
+   `UPGRADE_YCASH` activation hash unset, and `attestorSetId` null. In this state the module validates inertly
    (`init.cpp:1592` logs it). The planned P8 `InitError`, which stops a main or test node
    that has a Vault height but no set, must land **with or after** rc1 (step 4), never before.
    N1 records this ordering.
-2. **Private mining.** The launch operators mine the chain with `-connect` among themselves
-   only, past `H_V`. Each operator controls at least one node: ycash6 nodes, plus one ycash-dd
+2. **Private mining from the fork.** The launch operators mine the new fork block 510,248 at
+   minimum difficulty (`minDifficultyAtYcashFork`), then on past `H_V`, with `-connect`
+   among themselves only. Each operator controls at least one node: ycash6 nodes, plus one ycash-dd
    node.
 3. **Create the sets.** At `H_V`+ε, create the YED attestor set: `ratelimitbps` 0, per the
    P8 checklist, with the founding attestors' keys (T-5). Create the bridge persona's set at
    the same time if G-12 needs both shapes. Mine to maturity (T-4).
-4. **Tag `v6.22.0-rc1`.** It names the set and its first checkpoint, which is the
-   set-creation block or later, together with the first bundle (§4) at that height.
+4. **Tag `v6.22.0-rc1`.** It names the set, pins the new fork block as `UPGRADE_YCASH`'s
+   `hashActivationBlock`, and adds its first post-fork checkpoint, which is the set-creation
+   block or later, together with the first state bundle (§4) at that height.
    - The ycash-dd pairing tag `vault-params/v6.22.0-rc1` comes first, as for any release.
    - Seeds open, and the chain is public from here.
 
@@ -206,11 +271,13 @@ Launching the testnet is a re-run of a script that is already green.
 
 **Resets (T-7).** Before mainnet, a vault-rule change that makes past testnet history invalid
 **resets** the testnet:
-- a new genesis timestamp and magic in the next rc;
-- a fresh ceremony;
-- the datadir is kept, because the genesis-hash check refuses the old chain.
+- a new magic in the next rc;
+- a fresh ceremony from the unchanged prefix, which gives a new fork block that the next rc
+  pins;
+- every node wipes its post-prefix state and re-imports the prefix bundle. `ycash-bootstrap
+  --reset` does this.
 
-A reset costs one maturity period. A rule change that adds rules and leaves history valid
+The prefix never changes, so a reset costs one maturity period and one import. A rule change that adds rules and leaves history valid
 rolls forward like a normal rc. A reset is announced on the status page (§6.4) with the rc
 that carries it.
 
@@ -294,7 +361,32 @@ Each client already has a testnet enum. N5 fills in the values.
 
 ## 4. The checkpoint bootstrap bundle
 
-### 4.1 What it is
+### 4.0 Two layers: an immutable prefix and a rolling state bundle
+
+The re-fork (§2.1) splits the chain into two parts with different trust properties. The
+bundle follows that split.
+
+| Layer | Contents | Changes | Anchored by | Restored by |
+|---|---|---|---|---|
+| **Prefix bundle** | Blocks 0..510,247 in `blk` format (testnet magic), one `.tar.gz`. **Blocks only, no state** | Never. Published once, reused by every reset | Zcash testnet itself: anyone can compare any block hash with a Zcash testnet node or explorer. Also the compiled checkpoints at 38,000 and 510,247, and the node's own validation on import | `-loadblock` import. Every block is validated, so nothing in it is taken on trust except the checkpoint skipping of expensive checks below 510,247 (which `--verify-full` / `-checkpoints=0` turns off) |
+| **State bundle** | A datadir at `H_B` above the fork (§4.1). It includes the prefix's blocks | Per rc | The compiled post-fork checkpoint, verifier statements and signatures (§4.2) | Extract, then verify the digests (§4.4) |
+
+**Picking a layer:**
+- An operator who trusts nothing but Zcash testnet and their own CPU takes the prefix, then
+  syncs the Ycash part from peers. The Ycash part is small; most of the chain's history is
+  pre-fork.
+- An operator who wants minutes, not hours, takes the state bundle.
+- The ceremony (§2.2) and every reset start from the prefix.
+
+The prefix is produced in N1 by the harvest. Its `manifest.json` lists the block hash at
+every 10,000th height. `ycash-bootstrap --prefix` checks the tarball's `sha256`, imports it,
+and compares those hashes with the running node.
+
+**Mainnet has the same structure.** Ycash mainnet is Zcash mainnet through 569,999. A
+mainnet prefix bundle is anchored by Zcash mainnet in the same way, and by Ycash mainnet's
+existing checkpoints. The mainnet state bundle sits on top of it (§4.4).
+
+### 4.1 The state bundle
 
 The bundle is a `.tar.gz` of a ycash6 datadir, taken from a cleanly stopped node at height
 `H_B`. It holds `blocks/` (including `blocks/index` and the undo files), `chainstate/`,
@@ -387,8 +479,11 @@ anchors.
 The Docker entrypoint and the chart's init container run the same script. A fresh
 `ycash-lightwallet` replica then starts in minutes, not after an hour-long sync.
 
-**Mainnet bundles** use the same machinery once the format has run on testnet for two rc
-cycles (N7). No YED state exists on mainnet before activation; `vaults/` and `yellowback/`
+`ycash-bootstrap --prefix` restores the prefix layer instead (§4.0). `--reset` wipes a
+datadir down to nothing and restores the prefix, for testnet resets.
+
+**Mainnet bundles** (prefix and state) use the same machinery once the format has run on
+testnet for two rc cycles (N7). No YED state exists on mainnet before activation; `vaults/` and `yellowback/`
 are empty and their digests are those of the empty state.
 
 ---
@@ -601,8 +696,8 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 
 | # | Decision | Recommendation |
 |---|---|---|
-| **T-1** | Revive the old testnet, or start a new chain | **A new chain** (§1.1). Reviving needs a copy of a chain nobody can reach, plus the Foundation's seeds |
-| **T-2** | Network identity | New magic, ports unchanged, datadir `testnet4`, selected by `-testnet` |
+| **T-1** | Revive the old testnet, start a fresh genesis, or re-fork from Zcash testnet | **Re-fork from Zcash testnet at 510,248** (§2.1). Reviving needs a chain nobody can reach. A fresh genesis loses the mainnet-shaped history and the fork code paths, and gives the bundle no external anchor |
+| **T-2** | Network identity, and the post-fork YDF addresses | New magic (the old one is Zcash testnet's), ports unchanged, datadir `testnet4`, selected by `-testnet`. Keep the old YDF testnet addresses, or replace them with workspace-held testnet keys: recommended **replace**, so the testnet's development-fund outputs are spendable in drills |
 | **T-3** | Domains and seed hostnames; the Foundation's `testseed.ycash.xyz` | Ask the Foundation for the `testseed` delegation. Until then, a workspace-owned domain |
 | **T-4** | Testnet `nVaultMinSetMaturity` | **1,152 (≈ 1 day).** Mainnet's 16,128 is tested by regtest suites with the value as a parameter, and the parity check compares mainnet. Testnet's job is the drill cadence, including resets |
 | **T-5** | Founding attestor set | 7 seats with a threshold per §15. At launch at most 3 house seats, run by the workspace from distinct providers, and at least 4 invited operators. G-5's "≥ 7 operators" is read only once the house seats are replaced |
@@ -622,7 +717,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | Phase | Content | Depends on | Can start now? |
 |---|---|---|---|
 | **N0** decide | §8 answered; this plan revised; a row in the plans README | — | **Yes** |
-| **N1** node params (both lines) | §2.1 parameters; the genesis tool and the new genesis; the height-constant audit plus a unit test; `-stopatheight` (§4.3, review gate); the mapping §22 row; the profile files (§3.1). Branch `up/testnet-params` off `upgrade/vault` in `ycash6` and `ycash-dd`, merged after ycash6#63 and ycash-dd#141. The ceremony build is this branch with `H_V` set | N0 (T-1, T-2, T-4) | **Write now**, merge after the open PRs |
+| **N1** node params (both lines) | §2.1 parameters; the harvest from a Zcash testnet Zebra node, the prefix bundle, and the `-checkpoints=0` full-verification import on both lines; the post-fork height audit plus a unit test; `-stopatheight` (§4.3, review gate); the mapping §22 row; the profile files (§3.1). Branch `up/testnet-params` off `upgrade/vault` in `ycash6` and `ycash-dd`, merged after ycash6#63 and ycash-dd#141. The ceremony build is this branch with `H_V` set | N0 (T-1, T-2, T-4) | **Write now**, merge after the open PRs |
 | **N2** tooling | `yellowback-devnet --network`, join mode, the walk marked per network; `contrib/testnet/ceremony` (regtest rehearsal green); `ycash-bootstrap` plus the entrypoint `YCASHD_BOOTSTRAP` (proven against a regtest bundle); `Dockerfile.release` on both lines | N1 profile format | **Yes**, on regtest |
 | **N3** infra | `charts/ycash-testnet` (§6.2), `values-testnet.yaml`, personas image, the faucet ungated, the snapshotter, the alerts, the status page; everything green on kind with a *private* testnet (`-connect` only, the N1 ceremony build); the AGENTS.md amendments (T-9); then the EKS apply (owner, K2) | N0 (T-3, T-9, T-12); N1 for the kind run | **Yes**: chart, images and snapshotter against regtest/kind now |
 | **N4** release CI | Stage-aware rules (§5.1) and the protocol-version bump; provenance, cosign, SBOM; `rc-qualify` steps 1–4; `releases/*.yaml` and its check; ghcr push; client release workflows (yolo, lightwalletd-dd) | N0 (T-6, T-8); the open PRs merged before the version-rule change lands | **Yes**, on `ci/rc` branches |
@@ -635,6 +730,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 
 | Weeks | Work |
 |---|---|
+| 1 | The harvest and the prefix import (needs only a Zebra testnet node). Starts N1 |
 | 1–3 | N1–N4 in parallel |
 | 3–4 | Private testnet on kind, then on EKS |
 | 4 | N6 launch: rc1, after one maturity period of the ceremony (≈ 1 day at T-4's value) |
@@ -651,7 +747,9 @@ The long poles are outside the code:
 
 | Risk | Mitigation |
 |---|---|
-| The genesis tool or a missed height-indexed constant splits the two lines at block 1 | The N1 unit test asserts the block-1 subsidy and outputs on both lines. The ceremony runs a ycash-dd node from block 0 |
+| A missed post-fork height constant splits the two lines at the fork or at Canopy | The N1 unit test asserts the subsidy and outputs at 510,248 and at the first Canopy block on both lines. The ceremony runs a ycash-dd node from the prefix |
+| One of the lines rejects some Zcash testnet block that the other accepts (a pre-fork rule difference between the v4.5.0 and 6.20.0 lineages) | The N1 `-checkpoints=0` import on both lines. A divergence is a finding against that line, recorded in mapping §22 |
+| The harvested prefix is wrong (a bad source node) | The compiled checkpoints at 38,000, 207,500 and 280,000; a second independent source for 510,247; full validation on import |
 | The ceremony build (Vault height, no set) is mistaken for a release | It is never tagged or published. R7 tightened at rc (§5.1) refuses it. The P8 `InitError` lands with rc1 |
 | The workspace dominates the testnet: house miners and house attestor seats | Stated on the status page. G-5 and G-4-style readings exclude house seats. Invited operators are on the launch checklist |
 | A bundle with a bad state is published | Three anchors (§4.2). The node refuses a tip that is not the checkpoint. Verifiers must agree byte for byte. `--verify-full` is there for the doubtful |
