@@ -74,7 +74,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] Prefix format v1 frozen (`bundles/prefix/FORMAT.md`, ycash-infra `3ff8575`): gzip of the length-prefixed raw stream per 50,000-block chunk. §2.1 and §4.0 say tar + gzip; the format drops the tar layer, since a single stream needs none
 - [x] Harvest scripts (`bundles/prefix/harvest.py`, `3ff8575`): export from Zebra, verify (hash chain, Zebra v7.0.0 source checkpoints vendored with sha256, Ycash compiled checkpoints), deterministic pack, manifest, `SHA256SUMS`. Zebra `zfnd/zebra:7.0.0@sha256:a70d2be8…`, pack image `python:3.13.18-slim-trixie@sha256:76baad60…`. Zebra RPC and stop-at-height behaviour read from source; first exercised by the smoke run
 - [x] Unit tests on real Zcash testnet block vectors: 33 tests, offline, green locally; pack twice gives identical `SHA256SUMS` (blocks 0..10)
-- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push, green on GitHub
+- [~] `testnet-prefix.yml`: smoke harvest (first 4,800 blocks) on push. **Run 2 (40763603501) failed in the export phase.** Zebra checkpoint-synced 0..4,798 from the public testnet seeders in **35 s**, then a restart with no network looped on DNS and never served RPC. Fix in flight: export while Zebra keeps running. Unit-test job green on GitHub
 - [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here
 - [ ] Byte-identical second run (reproducibility proven)
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
