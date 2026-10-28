@@ -80,8 +80,8 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] `testnet-prefix-v1` release published, with provenance and signatures
 
 ### N3-b prefix import checks (`ycash-infra`)
-- [~] Framing and import scripts (raw stream to `blk` records with the network magic; `-loadblock`; manifest hash checks)
-- [~] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} with node binaries from their CI artifacts
+- [x] Framing and import scripts (`bundles/prefix/import/`, ycash-infra `c0fc439`): raw stream to `-loadblock` records with the network magic; manifest, hash-chain and checkpoint-height checks; 22 + 6 tests green against a stand-in node. No real ycashd yet: the sandbox cannot fetch the `node-bin` artifacts
+- [~] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
 - [ ] Import with checkpoints green on both lines (smoke range)
 - [ ] Import with checkpoints green on both lines (full prefix)
 - [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
@@ -91,6 +91,29 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] `values-testnet.yaml` for `charts/ycash-lightwallet` (overlay on `values-eks.yaml`; hostnames are T-3 placeholders)
 - [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally (13 + 14 + 25 resources valid). In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
 - [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
+
+### Findings this round (they amend the plan text)
+- **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
+  verifies Sprout proofs from before Sapling (block 280,000), even with `-checkpoints=0`
+  (`proof_verifier.cpp:26-31`). The "full verification" legs therefore verify everything the
+  node verifies, and no more.
+
+  In checkpoints mode both lines skip proof and script checks for the whole prefix:
+  - ycash6, because its last checkpoint is 650,000 (`main.cpp:3538`);
+  - ycash-dd, because of its import workaround (`checkpoints.cpp:81-100`). That workaround
+    also does not check checkpoint hashes during import, so `import.sh` checks them itself.
+- **F-T2 (N1 constraint).** A node aborts when its chain work reaches `nMinimumChainWork`
+  while an upgrade has its activation hash pinned but is not yet active (ycash6
+  `main.cpp:2581`). So N1 must not set `nMinimumChainWork` to the prefix's work while
+  `UPGRADE_YCASH`'s activation hash is pinned:
+  - keep it below the prefix's work until rc1 pins the new fork block;
+  - from rc1, raise it only to heights above the fork.
+
+  §2.1's "the chain work at 510,247 in N1" is amended accordingly. The import legs record
+  `chainwork` to confirm today's binaries stay below their current value.
+- **F-T3.** The ycash-dd line needs the Sapling and Sprout-Groth16 parameter files at
+  startup (`init.cpp:819-836`). ycash6 has them compiled in. Bundles and the chart must
+  provide them for ycash-dd nodes.
 
 ### Not started this round
 N1 (node parameters), N2 (devnet `--network`, ceremony, `ycash-bootstrap`), N4 (release CI), N5–N8.
@@ -264,7 +287,7 @@ Ycash:
 | Blossom, Heartwood, Canopy | Moved from 661,610 / 661,622 / 661,634 to just after the fork: the smallest heights N1's ordering and funding-stream audit accepts (for example 510,250 / 510,252 / 510,254) | Waiting 150,000 blocks at 150 s would take about 260 days |
 | NU5, NU6, NU6.1, NU6.2 | `NO_ACTIVATION_HEIGHT` | Required: they cannot be scheduled with Vault (`init.cpp:1556-1560`) |
 | `UPGRADE_VAULT` | Height `H_V`, shortly after Canopy (for example 510,400; fixed at the ceremony, §2.2) | Sapling must be active at or below it (`init.cpp:1556`) |
-| `nMinimumChainWork` | The chain work at 510,247 in N1. Raised in each rc to the bundle height's work | The prefix is the floor. It rises with the checkpoints |
+| `nMinimumChainWork` | Below the prefix's work in N1 (F-T2). Raised in each rc, from rc1, to the bundle height's work above the fork | Reaching it while `UPGRADE_YCASH`'s hash is pinned but not active aborts the node (F-T2) |
 | `pchMessageStart` | New, distinct from Zcash testnet, mainnet and regtest (T-2) | No Zcash testnet peer, and no leftover peer from the old Ycash testnet, ever handshakes. The prefix comes from the harvest, not from peers |
 | Ports | P2P 18833, RPC 18832, unchanged | Clients' defaults keep working |
 | Datadir | `testnet4` (T-2) | A leftover `testnet3` directory holds the old branch, and the node would abort on it. yolo's cookie lookup (`yolo/src/main.rs:109-110`) follows the name |
