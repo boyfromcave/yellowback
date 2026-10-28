@@ -113,7 +113,8 @@ Notes. `fees.protocol.bands` are the FEE-1′ brackets in order, the last with `
 `FeeBand.uptoCents = 0` in `params.h`, spec §1.1); `floorCents` the $1 per-action floor; `priceSource` names
 the price the protocol fee is struck at (the vault's stored `pMint`). `fees.network` is the policy rate of
 spec §3.1: `priceMicroUsd` is the **highest of the tip's window medians** (review M-1; `null` and
-`priceSource: "fallback"` while any halt bit is set or no median exists, then both `zatPerKB` are
+`priceSource: "fallback"` while the price is not trusted -- HALT-1 or HALT-3; HALT-2 alone keeps the price, fees
+spec §5.1 amendment 2026-10-28 -- or no median exists, then both `zatPerKB` are
 `fallbackZatPerKB`, the `-pqfeerate` rate, default the relay floor); `plain` / `yellowback` the two targets
 (`-pqfeeusdperkb` $0.02, `-yellowbackfeeusdperkb` $0.05; D-Q-26) and the rate each gives, never below
 `floorZatPerKB` = max(5,000 zat/KB, `-pqfeerate`); `yellowback.maxTxFeeZat` is the Yellowback cap

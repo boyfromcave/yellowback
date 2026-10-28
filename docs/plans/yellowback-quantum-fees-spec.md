@@ -315,7 +315,8 @@ targetUsdPerKB:  plain PQ      20,000 µUSD/KB ($0.02)   -pqfeeusdperkb      (0 
                  vault/YED     50,000 µUSD/KB ($0.05)   -yellowbackfeeusdperkb (0 = off)
 price:           max(pFast, pMid, pSlow) at the index tip (every window defined; review M-1, §5.1 — the draft's
                  Snapshots[tip].pMint, the min of windows, overcharged in YEC exactly when YEC was cheapest);
-                 undefined while ANY halt bit is set at the tip, or with no index/startHeight — then "fallback"
+                 undefined while the price is not trusted at the tip (HALT-1 or HALT-3; HALT-2 alone keeps it,
+                 §5.1 amendment 2026-10-28), or with no index/startHeight — then "fallback"
 rateZatPerKB  =  price defined ? max(floorPerKB, ceil(targetUsdPerKB x COIN / price)) : pqFeeRate (-pqfeerate)
 floorPerKB    =  max(5,000 zat/KB, -pqfeerate)                                   (review A-7, §5.1)
 fee(tx)       =  max(flatFloor, min(rateZatPerKB x size / 1000, cap))            -- capped, never refused
@@ -360,7 +361,8 @@ Not `V.pMint` (a plain PQ spend has no vault; a redeem's `pMint` may be a year o
 (§5.1):** the draft chose `Snapshots[tip].pMint` (the min of windows, "errs high") and rejected the max of windows as
 under-paying; the implementation publishes the **highest** window median (`pClaim`-style), because a fee in dollars
 should cost the payer the target at the most favourable current price, not the most YEC in a falling market, and
-**no** price while any halt bit is set (the `-pqfeerate` fallback, bounded by the cap). The price is published
+**no** price while the price is not trusted (HALT-1 or HALT-3; since the §5.1 amendment of 2026-10-28 HALT-2 alone
+keeps it) (the `-pqfeerate` fallback, bounded by the cap). The price is published
 atomically by the index (`AttestedFeePrice()`, review N-3) and reported as `params.fees.network.priceMicroUsd`; a
 client without an index (YEW via lightwalletd) reads the node-computed `zatPerKB` (§3.4) and never does price
 arithmetic.
@@ -468,7 +470,7 @@ Tests / docs: `src/test/yellowback_math_tests.cpp` (27 `FeeZat` uses, `:190-240`
 | 8 | Regtest column | Same bands, floor and `maxMint` as mainnet; delete the `feeBps 25` / `maxMint $10,000` overrides and rewrite the handful of tests that assumed them |
 | 9 | Bands on which amount | `mintedCents` (the debt) — not the burn, not the assignments, not the collateral |
 | 10 | Mint fee when ARMED needs `pMint` after MINT-9 | Split MINT-8: shape/payee before MINT-9, amount right after MINT-5 (§1.5); AFEE-1 moves with it |
-| 11 | Network-fee price | Draft: `Snapshots[tip].pMint` (min of windows). **As built (review M-1, §5.1): the max of the tip's window medians, none under any halt bit**; fallback to `-pqfeerate` when undefined; YED-rate for every YED-builder and `vault_*` transaction, plain rate for any other PQ-input transaction, nothing else touched |
+| 11 | Network-fee price | Draft: `Snapshots[tip].pMint` (min of windows). **As built (review M-1, §5.1): the max of the tip's window medians, none unless the price is trusted (HALT-1 and HALT-3 off; HALT-2 alone keeps it, §5.1 amendment 2026-10-28)**; fallback to `-pqfeerate` when undefined; YED-rate for every YED-builder and `vault_*` transaction, plain rate for any other PQ-input transaction, nothing else touched |
 | 12 | rpcversion | 8 on both lines (`feeMinZat`/`feeBps` removed, `yed_estimatefee` signature changed); keep `params.pq.feeRateZatPerKB` = the effective plain rate |
 | 13 | D-Q-23 mentions `bondMin`/`residualMinZat` "to follow the same pattern" | Out of scope here (no dollar anchor exists for a bond before the set is live); leave to yb-calibration as §9 item 5 says |
 | 14 | `TxLog.feeZat`, `feePaidZat` | Unchanged semantics (the amount paid) |
@@ -490,6 +492,27 @@ status).
   amended: `PublishFeePrice` publishes max(pFast, pMid, pSlow) at the tip; any halt bit (`HALT_NO_PRICE`,
   `HALT_GLOBAL_RATIO`, `HALT_DIVERGENCE`, …) publishes no price, and the wallets fall back to `-pqfeerate`. The price
   is an `std::atomic` written by the index under `cs_main` and read lock-free (N-3).
+
+  **Amendment (owner decision 2026-10-28; cross-reference upgrade plan U-27, HALT-2 divides by open debt): fee
+  publication follows price trust, not every halt bit.** `PublishFeePrice` publishes the dollar fee price whenever the
+  price itself is trusted, that is whenever HALT-1 (`HALT_NO_PRICE`) and HALT-3 (`HALT_DIVERGENCE`) are both off,
+  whatever HALT-2 (`HALT_GLOBAL_RATIO`) says; HALT-2 then restricts minting only (MINT-4, IT-5, unchanged). The reason:
+  Yellowback has three halts and they say two different things. HALT-1 (no trustworthy price) and HALT-3 (the price
+  windows disagree) mean "we do not trust the price right now"; a fee cannot honestly be priced in dollars at a price
+  nobody trusts, so the flat YEC fallback (`-pqfeerate`) is the right answer there. HALT-2 (the system is
+  under-collateralised) means "the vaults are thin": the price is still armed and the windows still agree. Since
+  U-27 HALT-2 divides by open debt instead of circulating supply, so it fires more often than before, including for
+  hours after a wave of claims in a crash, while the claimed debt waits for release. That is exactly when users need
+  predictable dollar-priced fees and when the attestors, paid from those fees, are doing the work that matters most.
+  Falling back to a flat YEC fee then makes every fee swing with the YEC price and cuts the attestors' share just
+  when it is earned. The rule is written positively, as "publish when the price is trusted": an explicit allow-list
+  of the halt bits that leave the price trusted (`FEE_PRICE_TRUSTED_HALTS` = `HALT_GLOBAL_RATIO`,
+  `yellowback::FeePriceTrusted`, `src/yellowback/index.h`), never "publish when no halt bit is set". A future halt bit
+  (a governance pause, say) is therefore not silently fee-neutral or fee-blocking: until someone decides it belongs on
+  the allow-list it withholds the price, as the reserved bits do. This is node policy, not consensus: block validity
+  never reads the published price (it is read only by the wallet, the YED builder, the `vault_*` RPCs and
+  `yed_getinfo.params.fees.network`), and the change is the same on both node lines (`ycash-dd`, `ycash6`). The RPC
+  contract is unchanged (`priceSource` stays `"tip"`/`"fallback"`; only when it reads `"tip"` moves).
 - **`-yellowbackmaxtxfee`, default 10 YEC (review M-1).** An absolute YEC ceiling on the Yellowback cap: cap =
   min(max(`-maxtxfee`, `-yellowbackmaxtxfeeusd` $2 at the price), `-yellowbackmaxtxfee`), with or without a price
   (`yellowback.maxTxFeeCeilingZat`). `YellowbackWallet::Commit` and `rpc/vault.cpp` Broadcast submit with the
