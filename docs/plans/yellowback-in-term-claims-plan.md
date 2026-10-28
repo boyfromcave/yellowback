@@ -86,7 +86,7 @@ All earlier proposals decided by the owner on 2026-10-07 (D-IT-10 in revised for
 | D-IT-11 | `globalRatioHaltBps` | **200 %** (today 300 %) — **confirmed by the owner 2026-10-07**. The halt sits below every class's base ratio (§1.4 invariant); classes start at 300 % |
 | D-IT-12 | `recapRatioBps` | **500 %** (today 600 %) — **confirmed by the owner 2026-10-07**: the recap floor equals class C's base; A and B fail it by construction, C meets it exactly |
 | D-IT-13 | Cancel delay (`claimDelay`) | **12 hours (576 blocks)** — coordinator's recommendation after T5 (24 h → 3.2 % bad debt on the worst year, 12 h → 2.1 %, 6 h → 1.2 %); the window is the attestors' time to cancel a wrong-price claim and the claimant's delay (the burn is refunded on cancel, CAN-1, audit 03/H-1; it was the claimant's exposure while D-U3's forfeit stood), not the owner's protection (that is the threshold plus the wallet warning, and redeem during the window still saves the vault). Regtest 10 blocks. **Decided by the owner 2026-10-07: 12 hours.** |
-| D-IT-14 | System ratio during a claim's cancel window | the vault is counted as it is: its debt left supply at the claim (burned), its collateral is still present until release — the accurate reading; the effect is a few vaults for hours against the whole system. **Decided by the owner 2026-10-07: as proposed.** *(Since CAN-1, audit 03/H-1: a cancel returns the debt to supply with its vault — the refund credits `supplyCents` — so a cancelled claim leaves no debt outside supply, 03/M-1.)* |
+| D-IT-14 | System ratio during a claim's cancel window | *(Amended 2026-10-28, IT-6: the ratio divides by open debt, so the CLAIMING vault counts with both its collateral and its debt until release; the text below is the original decision.)* the vault is counted as it is: its debt left supply at the claim (burned), its collateral is still present until release — the accurate reading; the effect is a few vaults for hours against the whole system. **Decided by the owner 2026-10-07: as proposed.** *(Since CAN-1, audit 03/H-1: a cancel returns the debt to supply with its vault — the refund credits `supplyCents` — so a cancelled claim leaves no debt outside supply, 03/M-1.)* |
 
 ## 3. The parameter set (mainnet / testnet; regtest in brackets)
 
@@ -127,8 +127,16 @@ The hardening plan's §1.4 invariant "halt < every enabled class's base ratio" h
 - **IT-5 (MINT-4/6 recap gate).** Under HALT_GLOBAL_RATIO, and above the soft cap, a mint is accepted iff
   `baseRatioBps[class] ≥ recapRatioBps` — with §3 that is class C only. The `termClass != 0` clause of H-10 is
   replaced by the ratio test (it was a proxy for it).
-- **IT-6 (HALT-2).** The system ratio counts ACTIVE and CLAIMING vaults' collateral against outstanding supply;
-  a claimed vault's debt leaves supply at the claim block (burn), its collateral at release (D-IT-14).
+- **IT-6 (HALT-2), amended 2026-10-28 (owner decision, after two independent reviews).** The system ratio counts
+  the ACTIVE and CLAIMING vaults' collateral against **their open debt** (`Totals.openDebtCents`, the sum of their
+  `mintedCents`; upgrade plan §15.10 "HALT-2 reads open debt"), not against outstanding supply. A claimed vault's
+  debt leaves supply at the claim block (burn) but stays in the open debt with its collateral until the release,
+  when both leave; a cancel changes neither (D-IT-14). `supplyCents` stays for MINT-6/6b and reporting, and
+  `supplyCents ≤ openDebtCents` always. DigiByte v9.26.6 (`2c1f09a0d8`) measures system health the same way:
+  collateral against open-vault principal (`src/digidollar/health.cpp:109-114`, the accumulator in
+  `src/consensus/digidollar_state.h:31, 63-70`, at v9.26.7). Before the amendment, supply read the CLAIMING
+  collateral against debt that had already left the denominator, so a cluster of claims in a crash made the halt
+  read healthier than after their release.
 - **IT-9 (early-redeem fee, D-IT-16).** A REDEEM at height < `lockHeight` pays `earlyRedeemFeeBps[class]` of the
   debt at the vault's mint price `pMint` (IT-9′, D-Q-23: `ceil(mintedCents × bps × COIN / pMint)` zat) in addition to
   FEE-1′, into the same pool-payee output; the owner path carries no attestor share (AFEE-1′); a REDEEM at or after

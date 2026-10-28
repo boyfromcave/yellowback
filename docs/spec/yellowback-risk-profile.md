@@ -34,7 +34,7 @@ Around the classes:
 | Volatility multiplier | pinned at **1** (`sigmaRefBps = 0`) | the required ratio is exactly the class base; the sampling code stays for a later update (D-IT-5) | `params.cpp:68`, `math.h:80-82` |
 | Claim threshold θ | **125 %** (`claimThresholdBps = 12500`) | a vault whose collateral is worth less than 125 % of its debt at the attested claim price may be claimed by anyone | `params.cpp:51` |
 | Claim cancel delay | **12 hours** (576 blocks) | the attestor set's window to cancel a claim made against a wrong price | `params.cpp:50` |
-| Global ratio halt | **200 %** | below this system-wide ratio only class C mints are accepted (the recapitalising tier) | `params.cpp:53`, `:54` |
+| Global ratio halt | **200 %** | below this system-wide ratio only class C mints are accepted (the recapitalising tier); the ratio is the ACTIVE and CLAIMING vaults' collateral against their open debt, not against the YED in circulation (HALT-2 amended 2026-10-28, upgrade plan §15.10) | `params.cpp:53`, `:54` |
 | Supply cap | **15 %** of market cap at the attested price; one vault at most the larger of 10 % of the cap and $10,000 (MINT-6b) | `params.cpp:19`, `:20`, `:52` |
 | Mint size | $100 to $100,000 | `params.cpp:18`, `:22` |
 | Grace after the term | 30 days; since IT-2 it gates no claim, it only sets the record's `claimHeight` and the mint's locktime bound | `params.cpp:48` |
@@ -112,7 +112,8 @@ From these, the Ycash lead Yellowback architect decided (2026-10-07, in-term pla
 
 Kept from the earlier Yellowback designs and absent from DigiDollar: the **supply cap** (15 % of
 market cap, v2, kept by D-IT-8), the **global-ratio halt** (v2 HALT-2, lowered to 200 % and recapitalised
-by the 500 % tier only, D-IT-6, D-IT-7, D-IT-11, D-IT-12), and minting that **requires an armed price
+by the 500 % tier only, D-IT-6, D-IT-7, D-IT-11, D-IT-12; measured against open vault debt since 2026-10-28, as
+DigiByte v9.26.6 measures its system health), and minting that **requires an armed price
 attestation** (`mintRequiresArmed`, hardening H-1).
 
 ## 4. Why this is the safer model, in one paragraph
