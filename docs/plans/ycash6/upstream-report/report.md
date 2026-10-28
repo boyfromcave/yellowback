@@ -125,6 +125,11 @@ Listed roughly by operational impact.
   parent failed, or an off-chain block whose `BLOCK_FAILED_CHILD` from `FindMostWorkChain` was never
   written), whose `pprev` then dangles; `CheckBlockIndex` fails `nNodes == forward.size()`. The
   v4.5.0 line (`ycash-dd`) takes `1770fce16` with both. `vault_activation_restart.py` covers it.
+  **Then (2026-10-28) generalised:** `1770fce16` has the same hole for a connected entry erased for a
+  stale branch id (a node that connected post-activation blocks under the old rules and holds
+  never-connected blocks above them, then upgrades): the child was kept under the erased parent.
+  `RewindBlockIndex` now visits entries parents first and erases every descendant of an erased
+  entry, which also covers the failed case, so the `LoadBlockIndexDB` line was removed.
 
 ### 3.3 NU6 / NU6.1 / NU6.2 regtest protocol versions exceed `PROTOCOL_VERSION`
 
