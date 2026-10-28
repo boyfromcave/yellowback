@@ -213,16 +213,34 @@ Address prefixes are unchanged (`sm…`, `ytestsapling`, `yt…` and PQ `571E` f
 encodings. Pre-fork coins on the prefix belong to whoever held them on Zcash testnet. That is
 harmless on a testnet, and mirrors mainnet.
 
-**The harvest is an automated, reproducible job (N1).** It runs as
-`ycash6/.github/workflows/testnet-prefix.yml`, with the same script in
-`contrib/testnet/prefix/` for anyone to run locally under Docker.
+**The harvest is an automated, reproducible job (N1), owned by `ycash-infra`.** It runs as
+`ycash-infra/.github/workflows/testnet-prefix.yml`, with the same script in
+`ycash-infra/bundles/prefix/` for anyone to run locally under Docker.
+
+**Who owns what.** The rule is: **`ycash-infra` produces and hosts data; the node repositories
+define what that data must be.**
+
+| `ycash-infra` (produce, host) | Node repos, `ycash6` and `ycash-dd` (define, consume, vouch) |
+|---|---|
+| The prefix harvest, its import checks, and the `testnet-prefix-v1` release | The checkpoints and `nMinimumChainWork` that anchor every bundle |
+| The state-bundle snapshotter and verifier jobs (§4.3) | `ycash-bootstrap` and the entrypoint's `YCASHD_BOOTSTRAP` (§4.4). They ship inside each release and must match its parameters |
+| The bundle CDN, `charts/ycash-testnet`, and testnet deploys | **The prefix's `SHA256SUMS` hash, pinned in `ycash-bootstrap`.** This is how a node release vouches for an artifact that infra produced |
+| | The node release workflow and `rc-qualify` (§5). These stay tag-driven next to the code they release |
+
+This keeps ycash-infra's rule 1 (no node change). The harvest uses a pinned third-party image,
+which is the precedent of its plan §1.3.
+
+The import legs need node binaries from another repository. They take them the way YEW's
+`devnet-nightly` already does: `gh run download` of the latest trusted `node-bin` artifact
+from `ycash6` and `ycash-dd`, with `actions: read`. Both repositories are public, so the job's
+own token reads them.
 
 **Where it can run:**
 - **Not in a cloud agent session.** Its egress is an HTTPS proxy with an allow-list. On
   2026-10-28 it refused the Zcash testnet explorers with 403, and Zebra needs raw P2P TCP on
   18233.
-- **Yes on a GitHub-hosted runner.** These have open outbound TCP. `boyfromcave/ycash6` is
-  public, so minutes and artifact storage are free.
+- **Yes on a GitHub-hosted runner.** These have open outbound TCP. `boyfromcave/ycash-infra`
+  is public, so minutes and artifact storage are free.
 - **Yes in the `ycash-infra` cluster, or on a laptop**, with the same container.
 
 **Jobs:**
@@ -251,12 +269,12 @@ harmless on a testnet, and mirrors mainnet.
      within a line only, since their serialisations need not agree.
    - The full-verification legs may run longer, as separate jobs.
 3. **`publish`**, on dispatch with `publish: true`:
-   - A release `testnet-prefix-v1` on `ycash6`. The tag does not match the node release's
-     `v*` trigger.
+   - A release `testnet-prefix-v1` on `ycash-infra`. It is kept away from the node
+     repositories' `v*` release tags.
    - Assets: the 11 chunks, `manifest.json`, `SHA256SUMS`, build-provenance attestations and
      a cosign signature.
    - Release assets do not expire; workflow artifacts expire after 90 days at most.
-   - `ycash-infra` mirrors them to the bundle CDN.
+   - The same repository mirrors them to the bundle CDN.
 
 **Why anyone can audit it.** The output is a pure function of Zcash testnet's history and
 the script version. Raw blocks are canonical bytes, chunks are cut by height, and the
@@ -777,9 +795,9 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | Phase | Content | Depends on | Can start now? |
 |---|---|---|---|
 | **N0** decide | §8 answered; this plan revised; a row in the plans README | — | **Yes** |
-| **N1** node params (both lines) | §2.1 parameters; the harvest from a Zcash testnet Zebra node, the prefix bundle, and the `-checkpoints=0` full-verification import on both lines; the post-fork height audit plus a unit test; `-stopatheight` (§4.3, review gate); the mapping §22 row; the profile files (§3.1). Branch `up/testnet-params` off `upgrade/vault` in `ycash6` and `ycash-dd`, merged after ycash6#63 and ycash-dd#141. The ceremony build is this branch with `H_V` set | N0 (T-1, T-2, T-4) | **Write now**, merge after the open PRs |
+| **N1** node params (both lines) | §2.1 parameters, including the 510,247 checkpoint taken from the prefix (which `ycash-infra` produces in N3); pinning the prefix's `SHA256SUMS` hash in `ycash-bootstrap`; the post-fork height audit plus a unit test; `-stopatheight` (§4.3, review gate); the mapping §22 row; the profile files (§3.1). Branch `up/testnet-params` off `upgrade/vault` in `ycash6` and `ycash-dd`, merged after ycash6#63 and ycash-dd#141. The ceremony build is this branch with `H_V` set | N0 (T-1, T-2, T-4) | **Write now**, merge after the open PRs |
 | **N2** tooling | `yellowback-devnet --network`, join mode, the walk marked per network; `contrib/testnet/ceremony` (regtest rehearsal green); `ycash-bootstrap` plus the entrypoint `YCASHD_BOOTSTRAP` (proven against a regtest bundle); `Dockerfile.release` on both lines | N1 profile format | **Yes**, on regtest |
-| **N3** infra | `charts/ycash-testnet` (§6.2), `values-testnet.yaml`, personas image, the faucet ungated, the snapshotter, the alerts, the status page; everything green on kind with a *private* testnet (`-connect` only, the N1 ceremony build); the AGENTS.md amendments (T-9); then the EKS apply (owner, K2) | N0 (T-3, T-9, T-12); N1 for the kind run | **Yes**: chart, images and snapshotter against regtest/kind now |
+| **N3** infra | `testnet-prefix.yml` (harvest, the import legs on both lines including `-checkpoints=0`, publish); `charts/ycash-testnet` (§6.2), `values-testnet.yaml`, personas image, the faucet ungated, the snapshotter, the alerts, the status page; everything green on kind with a *private* testnet (`-connect` only, the N1 ceremony build); the AGENTS.md amendments (T-9); then the EKS apply (owner, K2) | N0 (T-3, T-9, T-12); N1 for the kind run | **Yes**: chart, images and snapshotter against regtest/kind now |
 | **N4** release CI | Stage-aware rules (§5.1) and the protocol-version bump; provenance, cosign, SBOM; `rc-qualify` steps 1–4; `releases/*.yaml` and its check; ghcr push; client release workflows (yolo, lightwalletd-dd) | N0 (T-6, T-8); the open PRs merged before the version-rule change lands | **Yes**, on `ci/rc` branches |
 | **N5** clients | §3.3 values that do not depend on the set id (endpoints, profiles, e2e targets) | N3 hostnames | After N3 picks hosts |
 | **N6** launch | Ceremony on EKS; tag `vault-params/v6.22.0-rc1` then `v6.22.0-rc1` with the set id, the checkpoint and the first bundle; publish; open the seeds; YEW's compiled testnet values; announce | N1–N5; K2 applied | — |
@@ -790,7 +808,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 
 | Weeks | Work |
 |---|---|
-| 1 | `testnet-prefix.yml` (harvest, import on both lines against today's binaries, publish `testnet-prefix-v1`). Needs no node change. Starts N1 |
+| 1 | `ycash-infra` `testnet-prefix.yml` (harvest, import on both lines against today's binaries, publish `testnet-prefix-v1`). Needs no node change. Starts N1 and N3 |
 | 1–3 | N1–N4 in parallel |
 | 3–4 | Private testnet on kind, then on EKS |
 | 4 | N6 launch: rc1, after one maturity period of the ceremony (≈ 1 day at T-4's value) |
