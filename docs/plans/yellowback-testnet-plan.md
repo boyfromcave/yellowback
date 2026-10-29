@@ -68,7 +68,17 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 ### N0 decide
 - [x] T-1: re-fork from Zcash testnet (the owner's suggestion, revision 2)
 - [x] Bundle production and hosting live in `ycash-infra`; node repos pin what they accept (revision 2, owner)
-- [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
+- [x] D3 (2026-10-28): the Zcash parameter files are mirrored as a GitHub release in ycash-infra (`zcash-params-v1`; ycash-infra#13)
+- [x] T-2 (2026-10-29):
+  - datadir **`testnet-yb`**;
+  - new magic **`f7 79 62 d3`**, chosen to match none of Ycash's or Zcash's mainnet, testnet or regtest values (`24e92764`, `fa1af9bf`, `aae83f5f`).
+- [x] D1 (2026-10-29): **fixed seeds only**, no DNS seed; the seed IPs come with rc1.
+- [x] Seed hosting (2026-10-29): **option B, AWS EC2 + Elastic IPs**, split in two:
+  - a generic Terraform module in public ycash-infra;
+  - the account-specific configuration in the private `boyfromcave/ycash-ops`.
+  - Nothing that identifies the account is public.
+- [ ] D4: testnet set maturity (1,152 blocks recommended), pending the owner. N1 uses 1,152, marked pending.
+- [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
 - [x] PR #5 chart hardening merged (`4ba1e6f`): Checkov 214 → 70 failing checks, 0 new.
