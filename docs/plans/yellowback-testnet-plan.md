@@ -290,7 +290,12 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
-- [~] **N2 tooling** (branch `claude/n2-tooling`, ycash6 + ycash-dd): extend the existing regtest devnet with a testnet join mode (`--network`), `contrib/testnet/ceremony` (regtest rehearsal first), `ycash-bootstrap` + `YCASHD_BOOTSTRAP`
+- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). 45 offline unit tests green; the functional tests `ycash_bootstrap.py` and `testnet_ceremony.py` need CI.
+  - devnet join mode: `yellowback-devnet up --network testnet-yb-*`; regtest unchanged; profiles `contrib/yellowback/profiles/*.toml`.
+  - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
+  - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
+  - **Owner decision:** the house-seat bonds (10,000 YEC per seat; fast's 7 seats need 70,000) cannot be mined soon after the fork. Scale the fast column's bond floor, or fund the seats another way.
+  - Plan §2.2 to amend: the fork-block miner needs `-maxtipage`; after the fork, mining is Equihash 192,7 (a GPU miner through yolo).
 - [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`). Not run on a cluster or a real node. Per network, all off by default:
   - testnet faucet: its own wallet node, limits per IP and per address, optional proof of work;
   - status page and probe: the cross-line state-hash check;
