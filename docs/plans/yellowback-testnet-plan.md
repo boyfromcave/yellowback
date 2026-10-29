@@ -128,6 +128,10 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] Security hardening and scans (`d851da3`..`8ac3c81`): the testnet chart gets #5's pod and container hardening. Checkov now scans the testnet renders, and its gate keys rendered resources. Run locally, the testnet work adds **0 new findings** to Checkov (44 base / 44 head), Semgrep, zizmor, actionlint, gitleaks, shellcheck and CodeQL (python, actions). Not yet run in a pod
 - [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
 
+### N3-d Zcash params mirror (D3, `ycash-infra`)
+- [x] `bundles/zcash-params/` and `zcash-params.yml` (ycash-infra#13): download the three parameter files from download.z.cash, check them against the sizes and SHA-256 values ycash-dd pins (`zcutil/fetch-params.sh:223-225`), publish as a release with build provenance. Dry run green (run 40795883900)
+- [x] **`zcash-params-v1` published** 2026-10-29 (run 40797228488): https://github.com/boyfromcave/ycash-infra/releases/tag/zcash-params-v1. Assets checked against the pins: `sapling-spend.params` 47,958,396 B `8e48ffd2…`, `sapling-output.params` 3,592,860 B `2f0ebbcb…`, `sprout-groth16.params` 725,523,612 B `b685d700…`, plus `SHA256SUMS`. The chart's `zcashParams.url` can point at it
+
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
   verifies Sprout proofs from before Sapling (block 280,000), even with `-checkpoints=0`
