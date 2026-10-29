@@ -3,6 +3,10 @@
 # the manifest reads, the Markdown's relative links resolve, and a bootstrap dry run resolves every
 # entry in repos.yaml.
 #
+# In plain words: this repository holds the plans, the list of repositories and the release trains.
+# These checks make sure the documents the other repositories copy are up to date, the scripts and
+# lists still read, and every release train names program versions that exist and agree.
+#
 # Jobs (workspace CI/CD design, 2026-10-06; all push-tier, a minute or two each):
 #   check          this repository alone (no clones), as before, plus the link check.
 #   spec-copies    `make spec-check` across repositories: the four component repos whose copies the
@@ -17,6 +21,12 @@
 #   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
 #                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
 #                  node doc is not on the upgrade line yet, and says so.
+#   release-train  the release trains (testnet plan §5.4): scripts/release-train.py's unit tests, then
+#                  `check --online` on every releases/v*.yaml: each component's commit on its
+#                  upgrade/vault, the node tags once they exist, one rpcversion everywhere, the
+#                  clients' contract copies against the node's (extract_spec.py at the train's
+#                  workspace commit), hawkeye's wyec pin. In plain words: the list of program versions
+#                  a node release was tested with must name versions that really exist and agree.
 name: workspace-check
 
 # The branch list lives once, here: pull_request is unfiltered, push runs on main (the branch of
@@ -28,8 +38,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -45,6 +54,8 @@ jobs:
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -52,7 +63,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with: { python-version: '3.11' }
       - name: Scripts parse
-        run: for f in scripts/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py scripts/check-md-links.py
+        run: for f in scripts/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py scripts/check-md-links.py scripts/release-train.py
       - name: Manifest reads
         run: scripts/repos.sh list && for r in $(scripts/repos.sh list); do printf '%-18s %s\n' "$r" "$(scripts/repos.sh get "$r" role)"; done
       - name: Generated spec copies match the plan (the parts that live in this repo)
@@ -69,6 +80,8 @@ jobs:
   spec-copies:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -128,6 +141,8 @@ jobs:
   spec-upgrade:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -162,3 +177,20 @@ jobs:
           EXTRACT_SPEC_NODE_DIR="$RUNNER_TEMP/up/ycash-dd" EXTRACT_SPEC_NODE6_DIR="$RUNNER_TEMP/up/ycash6" \
           EXTRACT_SPEC_WALLET_DIR="$RUNNER_TEMP/up/yecwallet-dd" EXTRACT_SPEC_LWD_DIR="$RUNNER_TEMP/up/lightwalletd-dd" \
             scripts/extract-spec.sh --check-upgrade
+
+  release-train:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with: { python-version: '3.11' }
+      - name: release-train.py unit tests (local fixture repositories, no network)
+        run: python3 scripts/test_release_train.py -v
+      - name: Every release train holds (make release-train-check)
+        # Public repositories only, read over HTTPS with no credentials.
+        run: python3 scripts/release-train.py check --online
