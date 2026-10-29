@@ -297,20 +297,20 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
-- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). 45 offline unit tests green; the functional tests `ycash_bootstrap.py` and `testnet_ceremony.py` need CI.
+- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). 45 offline unit tests green; CodeQL and gitleaks fixed; the functional `testnet_ceremony.py` still fails in CI and is being fixed (the first fix: the ceremony found its set transaction through the wallet, which does not track it).
   - devnet join mode: `yellowback-devnet up --network testnet-yb-*`; regtest unchanged; profiles `contrib/yellowback/profiles/*.toml`.
   - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
   - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
   - **Owner decision:** the house-seat bonds (10,000 YEC per seat; fast's 7 seats need 70,000) cannot be mined soon after the fork. Scale the fast column's bond floor, or fund the seats another way.
   - Plan §2.2 to amend: the fork-block miner needs `-maxtipage`; after the fork, mining is Equihash 192,7 (a GPU miner through yolo).
-- [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`). Not run on a cluster or a real node. Per network, all off by default:
+- [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`), **PR CI green** (after a shellcheck SC2015 fix). Not run on a cluster or a real node. Per network, all off by default:
   - testnet faucet: its own wallet node, limits per IP and per address, optional proof of work;
   - status page and probe: the cross-line state-hash check;
   - snapshotter and verifier: format `ycash-state/1`, `bundles/state/`; ycash6 and ycash-dd statements must agree;
   - alerts (PrometheusRule).
   - Owner decisions open: T-9 (keys in the chart; the faucet and the GitHub publish token wait on it), T-3 (one status host or one per network).
   - Open question: do ycash6 and ycash-dd report the same `utxo_hash_serialized`?
-- [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); the new CI jobs have never run:
+- [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); **PR CI green on all three** after one fix round (the Ycash notice on `version.h`, no `ycash6` in `src/`, an action pin's version comment, test-file permissions); `rc-qualify` itself first runs at an rc tag:
   - release rules by stage (beta, rc, final; R7 per testnet profile; slow may have a height without a set, T-15);
   - protocol version 270013 → 270200 (T-8);
   - a release `sign` job: SBOM, SHA256SUMS, provenance, keyless cosign;
