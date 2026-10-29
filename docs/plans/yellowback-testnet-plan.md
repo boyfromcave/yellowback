@@ -77,10 +77,10 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - a generic Terraform module in public ycash-infra;
   - the account-specific configuration in the private `boyfromcave/ycash-ops`.
   - Nothing that identifies the account is public.
-- [ ] D4: testnet set maturity, pending the owner. 1,152 was the first recommendation; the owner wants faster iteration, and the coordinator now recommends **48 blocks (about 1 hour)**.
-  - It has two halves: `nVaultMinSetMaturity` (the vault primitive's minimum) and the YED module's testnet `BOND_MATURITY`. The module adopts a set only when the set's maturity equals `BOND_MATURITY` (`state.cpp:1184`), and testnet inherits mainnet's 16,128 (`yellowback/params.cpp:102`). Lowering only the first leaves YED on testnet at 14 days.
-  - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`).
-  - N1 currently has 1,152 for the primitive, marked pending, and the YED value unchanged.
+- [x] D4 (2026-10-29): testnet set maturity **48 blocks (about 1 hour)**, in both halves. The owner wanted faster iteration than the first recommendation (1,152).
+  - `nVaultMinSetMaturity` (the vault primitive's minimum) and the YED module's testnet `BOND_MATURITY` are both 48. The module adopts a set only when the set's maturity equals `BOND_MATURITY` (`state.cpp:1184`), so both must move together.
+  - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`), asserted for testnet too. Mainnet keeps 16,128, regtest 2 / 8.
+  - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
 - [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
@@ -136,19 +136,19 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] **`zcash-params-v1` published** 2026-10-29 (run 40797228488): https://github.com/boyfromcave/ycash-infra/releases/tag/zcash-params-v1. Assets checked against the pins: `sapling-spend.params` 47,958,396 B `8e48ffd2…`, `sapling-output.params` 3,592,860 B `2f0ebbcb…`, `sprout-groth16.params` 725,523,612 B `b685d700…`, plus `SHA256SUMS`. The chart's `zcashParams.url` can point at it
 
 ### N1 node parameters (both lines)
-- [~] Written and committed on both lines (`claude/lucid-fermi-ry9sby`: ycash6 `6385e1496`, ycash-dd `345062def`), 4 commits each. Not yet compiled: `yellowback tests` dispatched on both (ycash6 run 40798655491, ycash-dd run 40798664002). Changes:
+- [~] Written and committed on both lines (`claude/lucid-fermi-ry9sby`: ycash6 `775725259`, ycash-dd `b4db29da3`), 5 commits each including D4. Not yet compiled: `yellowback tests` dispatched on both (ycash6 run 40799401716, ycash-dd run 40799404971). Changes:
   - datadir `testnet-yb`, magic `f7 79 62 d3`;
   - DNS seed removed (and ycash-dd's old fixed seed); `pnSeed6_test` empty until rc1; fixed seeds used at once when a network has no DNS seeds;
   - checkpoint 510,247 `0000ec90…fb31` added, 650,000 removed; the old fork-block hash unset;
   - Blossom / Heartwood / Canopy at 510,250 / 510,252 / 510,254 (audit in the first commit message); the future-timestamp rule aligned on both lines at Blossom + 6 (the lines had disagreed);
   - `UPGRADE_VAULT` at 510,400; `-stopatheight` (from Bitcoin Core); new tests `testnet_params_tests.cpp` and `stopatheight.py`, byte-identical on both lines.
 - **Deviation:** `nMinimumChainWork` is block 280,000's work (`0x23bc0da20`), not 0. With 0 and the Overwinter and Sapling hashes still pinned, a node with a tip below 207,500 aborts (a fresh datadir at genesis). The value stays below the prefix's work, so F-T2 holds.
-- [ ] Review gate (two reviewers, four-part check in the PR body) and the PRs; after D4
+- [ ] Review gate (two reviewers, four-part check in the PR body) and the PRs, once CI is green
 - [ ] yolo's testnet cookie path (`testnet3` → `testnet-yb`)
 
 ### Seed hosting (option B)
 - [~] Public module (ycash-infra#14, `7742286`): `infra/testnet-seeds/ips` (Elastic IPs, `prevent_destroy`) and `nodes` (VPC, SSM-only access, encrypted volumes, first-boot prefix bootstrap); `terraform test` against a mocked provider; Checkov 33 passed / 0 failed; `node-image.yml` builds `ycashd` to ghcr with provenance. CI pending
-- [~] Private skeleton in `ycash-ops` (`bd0dd0c` on `main`, not pushed until the owner has seen it): deploy workflow (plan, apply, reset, status), AWS setup guide
+- [x] Private skeleton in `ycash-ops` (`bd0dd0c` on `main`, pushed 2026-10-29 with the owner's approval): deploy workflow (plan, apply, reset, status), AWS setup guide
 - [ ] Owner: AWS account, state bucket, OIDC role, three ycash-ops secrets; then the image, `apply` and the seed IPs into `pnSeed6_test` (rc1)
 - Estimated cost: about $22 per seed per month, three seeds about $66 plus data transfer
 
