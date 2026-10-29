@@ -292,7 +292,14 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
 - [~] **N2 tooling** (branch `claude/n2-tooling`, ycash6 + ycash-dd): extend the existing regtest devnet with a testnet join mode (`--network`), `contrib/testnet/ceremony` (regtest rehearsal first), `ycash-bootstrap` + `YCASHD_BOOTSTRAP`
 - [~] **N3 remainder** (branch `claude/n3-services`, ycash-infra): testnet faucet, snapshotter / bundle-verifier with the state-bundle format, status page, alerts, per network
-- [~] **N4 release-candidate CI** (branch `claude/n4-rc-ci`, the node lines and, as the plan places them, ycash-infra and the workspace): stage-aware release rules, provenance, cosign and SBOM, `rc-qualify` steps 1–4, the release train
+- [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); the new CI jobs have never run:
+  - release rules by stage (beta, rc, final; R7 per testnet profile; slow may have a height without a set, T-15);
+  - protocol version 270013 → 270200 (T-8);
+  - a release `sign` job: SBOM, SHA256SUMS, provenance, keyless cosign;
+  - `rc-qualify.yml` steps 1–4 and the qualification record;
+  - the release train (`releases/v<version>.yaml`, `scripts/release-train.py`).
+  - Owner decisions open: 270200; ycash-dd `MIN_PEER_PROTO_VERSION` (stays 170002, P8 says 270013); §5.1's rc row is to be amended to T-15.
+  - Not done: the §5.5 release image (ghcr push, `Dockerfile.release`), client release workflows, bundle-manifest provenance.
 - These stay off the seeds code (`infra/testnet-seeds`, `node-image.yml`) and ycash-ops while the owner tests the first deploy; each merges when the owner chooses
 
 ### Findings this round (they amend the plan text)
