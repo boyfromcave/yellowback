@@ -266,10 +266,10 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Note: on fast the first mint still needs about 28 hours after activation, because the price windows keep mainnet's values (`pSlowMinFill` 1,344 tagged blocks). Lifecycles run in hours after that warm-up
 - [x] PRs open: ycash6#67 and ycash-dd#145 (four-part check and tier in each body). **PR CI green on both** (yellowback tests run 40808099700 / 40808100848: build, unit, every functional group, audit including cross-line identity; codeql, semgrep, secops green)
 - [x] **Merged 2026-10-29** on the owner's decision, with CI green: ycash6#67 (`d1cf1c182`) and ycash-dd#145 (`fec0be1d1`), squash. **Deviation:** merged ahead of the two independent reviews the G-9 gate asks for. The reviews remain owed, before any rc is tagged
-- [~] yolo reads `testnetprofile=` for the cookie directory and default RPC port (yolo#9, `559bc7f`; 43 lib tests green); merges after the N1 PRs
+- [x] yolo reads `testnetprofile=` for the cookie directory and default RPC port (yolo#9, merged `0659f41`)
 
 ### Seed hosting (option B) and the EKS layer, three networks (revision 3)
-- [~] Public (ycash-infra#14, head `f400520`):
+- [x] Public (ycash-infra#14, **merged `dbf448a`** 2026-10-29; ycash-ops pinned to it). Fixed before merge: the seeds and the light-wallet chart now pass `YCASHD_TESTNET_PROFILE`, which the node image's entrypoint requires on testnet:
   - `infra/testnet-seeds`: one host serves yb-fast, yb-slow and legacy (one container each, ports 18833 / 18933 / 19033). Per-network deploy, upgrade, reset and status through SSM and an on-host `seedctl`. `main` is supported but off.
   - `infra/eks/module`: the K2 stack as a reusable module, one namespace and one database per network, account-bearing outputs sensitive. Per-network chart values.
   - `node-image.yml`; the owner's minisign key `keys/ycash-release.pub` and verify sections.
@@ -278,6 +278,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - three-network seed roots, `eks/testnet` (domain set, zone and ACME e-mail placeholders), inert mainnet roots;
   - `deploy.yml` (layer, network, action, typed confirm; environments `testnet` and, later, approval-gated `mainnet`), one infra pin;
   - `sign-release.yml` and `scripts/sign-release.sh` (environment `release-signing`: the signing key is never visible to the deploy jobs); dry-run tests green
+- [~] Node image: `node-image` run 40826269546 started (ycash6 `d1cf1c182`); then the owner makes the `ycashd` package public (ycash-ops `docs/aws-setup.md` §8)
 - [ ] Owner, in this order:
   1. AWS account, state bucket, OIDC, the two deploy roles.
   2. DNS: hosted zone, registrar name servers, WHOIS privacy.
