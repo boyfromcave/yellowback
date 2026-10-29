@@ -291,7 +291,13 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
 - [~] **N2 tooling** (branch `claude/n2-tooling`, ycash6 + ycash-dd): extend the existing regtest devnet with a testnet join mode (`--network`), `contrib/testnet/ceremony` (regtest rehearsal first), `ycash-bootstrap` + `YCASHD_BOOTSTRAP`
-- [~] **N3 remainder** (branch `claude/n3-services`, ycash-infra): testnet faucet, snapshotter / bundle-verifier with the state-bundle format, status page, alerts, per network
+- [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`). Not run on a cluster or a real node. Per network, all off by default:
+  - testnet faucet: its own wallet node, limits per IP and per address, optional proof of work;
+  - status page and probe: the cross-line state-hash check;
+  - snapshotter and verifier: format `ycash-state/1`, `bundles/state/`; ycash6 and ycash-dd statements must agree;
+  - alerts (PrometheusRule).
+  - Owner decisions open: T-9 (keys in the chart; the faucet and the GitHub publish token wait on it), T-3 (one status host or one per network).
+  - Open question: do ycash6 and ycash-dd report the same `utxo_hash_serialized`?
 - [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); the new CI jobs have never run:
   - release rules by stage (beta, rc, final; R7 per testnet profile; slow may have a height without a set, T-15);
   - protocol version 270013 → 270200 (T-8);
