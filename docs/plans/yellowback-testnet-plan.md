@@ -82,7 +82,7 @@ the seeds for the real Ycash network.
 | History | Prefix 0..510,247 (`testnet-prefix-v1`, shared: it is magic-neutral), fork at 510,248, Blossom / Heartwood / Canopy at 510,250 / 252 / 254 | same | same |
 | `UPGRADE_VAULT` | 510,400 | **Later, set by the network's first rc** (about a week of blocks after launch), so the activation itself is rehearsed live, with miners, wallets and lightwalletd crossing it as on mainnet | Never (`NO_ACTIVATION_HEIGHT`): YED off |
 | Set maturity (`nVaultMinSetMaturity`, YED `BOND_MATURITY`) | 48 / 48 (D4) | 16,128 / 16,128 (mainnet) | n/a |
-| Other YED block windows (dormancy, founding window, seat age, emergency notice, liveness minimum, …) | Scaled down by a calibrated "fast" column, every invariant kept (T-16; `yb-calibration` derives it, as regtest's column exists today) | Mainnet's | n/a |
+| Other YED block windows (dormancy, founding window, seat age, emergency notice, liveness minimum, …) | Scaled down in a "fast" column in the node's own parameters, by one stated rule, every invariant asserted (T-16), the way regtest's column exists today | Mainnet's | n/a |
 | Attestor set | Its own launch ceremony | Its own ceremony, after its activation | None |
 | Node lines | ycash6 and ycash-dd | both | both |
 
@@ -197,7 +197,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - `nVaultMinSetMaturity` (the vault primitive's minimum) and the YED module's testnet `BOND_MATURITY` are both 48. The module adopts a set only when the set's maturity equals `BOND_MATURITY` (`state.cpp:1184`), so both must move together.
   - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`), asserted for testnet too. Mainnet keeps 16,128, regtest 2 / 8.
   - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
-- [ ] Revision 3 (2026-10-29): three testnets (fast, slow, legacy) and seed tooling ready for mainnet. Direction decided by the owner; T-14..T-20 below have recommendations awaiting the owner's confirmation
+- [x] Revision 3 (2026-10-29, owner): three testnets (fast, slow, legacy), seeds and the EKS service stack deployed from `ycash-ops`, ready for mainnet. T-14..T-20 decided as recommended
 - [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
@@ -1055,13 +1055,13 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | **T-11** | Reproducible builds | A mainnet-launch item, not an rc item |
 | **T-12** | Registry | ghcr.io public, ECR as the EKS mirror |
 | **T-13** | Explorer | chain-viz plus yindex for testnet. A full explorer is a separate proposal |
-| **T-14** | Names and selection of the three testnets (revision 3) | `testnet-yb-fast`, `testnet-yb-slow`, `testnet-legacy`; `-testnet -testnetprofile=<fast\|slow\|legacy>`, required, compiled-in; `NetworkIDString()` stays `"test"`. Magics `f77962d3` / `d4` / `d5`; ports 18833 / 18933 / 19033 (RPC one below) |
-| **T-15** | When `testnet-yb-slow` activates Vault | About a week of blocks after its launch, set by its first rc, so the activation is rehearsed live as on mainnet. fast activates at 510,400; legacy never |
-| **T-16** | fast's other YED block windows | Scaled by a calibrated fast column (`yb-calibration`), every invariant asserted, so dormancy, revival and seat aging are testable in hours |
-| **T-17** | Seed shape | 2 hosts, each serving all three networks (`t3a.medium`); host count is a variable |
-| **T-18** | Mainnet seed readiness | `main` is a profile of the same module; a separate stack, state and account, applied only through an approval-gated GitHub Environment; nothing created before P8 |
-| **T-19** | Services per network | Seeds, lightwalletd, faucet and chain-viz on all three; YED personas and attestor sets on the two `yb` networks |
-| **T-20** | Kubernetes (EKS) for the testnets | One cluster, a namespace per network, deployed from `ycash-ops` like the seeds; up for campaigns and the rc soak, down otherwise; mainnet a separate approval-gated cluster in its own account, nothing before P8 |
+| **T-14** | Names and selection of the three testnets (revision 3) | **Decided (owner 2026-10-29).** `testnet-yb-fast`, `testnet-yb-slow`, `testnet-legacy`; `-testnet -testnetprofile=<fast\|slow\|legacy>`, required, compiled-in; `NetworkIDString()` stays `"test"`. Magics `f77962d3` / `d4` / `d5`; ports 18833 / 18933 / 19033 (RPC one below) |
+| **T-15** | When `testnet-yb-slow` activates Vault | **Decided (owner 2026-10-29).** About a week of blocks after its launch, set by its first rc, so the activation is rehearsed live as on mainnet. fast activates at 510,400; legacy never |
+| **T-16** | fast's other YED block windows | **Decided (owner 2026-10-29).** Scaled down in a fast column in the node's parameters by one stated rule, every invariant asserted, so dormancy, revival and seat aging are testable in hours |
+| **T-17** | Seed shape | **Decided (owner 2026-10-29).** 2 hosts, each serving all three networks (`t3a.medium`); host count is a variable |
+| **T-18** | Mainnet seed readiness | **Decided (owner 2026-10-29).** `main` is a profile of the same module; a separate stack, state and account, applied only through an approval-gated GitHub Environment; nothing created before P8 |
+| **T-19** | Services per network | **Decided (owner 2026-10-29).** Seeds, lightwalletd, faucet and chain-viz on all three; YED personas and attestor sets on the two `yb` networks |
+| **T-20** | Kubernetes (EKS) for the testnets | **Decided (owner 2026-10-29).** One cluster, a namespace per network, deployed from `ycash-ops` like the seeds; up for campaigns and the rc soak, down otherwise; mainnet a separate approval-gated cluster in its own account, nothing before P8 |
 
 ---
 
