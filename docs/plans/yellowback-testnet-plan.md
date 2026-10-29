@@ -278,7 +278,9 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - three-network seed roots, `eks/testnet` (domain set, zone and ACME e-mail placeholders), inert mainnet roots;
   - `deploy.yml` (layer, network, action, typed confirm; environments `testnet` and, later, approval-gated `mainnet`), one infra pin;
   - `sign-release.yml` and `scripts/sign-release.sh` (environment `release-signing`: the signing key is never visible to the deploy jobs); dry-run tests green
-- [~] Node image: `node-image` run 40826269546 started (ycash6 `d1cf1c182`); then the owner makes the `ycashd` package public (ycash-ops `docs/aws-setup.md` §8)
+- [x] Node image built (`node-image` run 40826269546, ycash6 `d1cf1c182`): `ghcr.io/boyfromcave/ycashd@sha256:b65049be…`, provenance attested; pinned in ycash-ops `testnet-seeds/nodes/main.tf`
+- [ ] Owner: make the `ycashd` package public (ycash-ops `docs/aws-setup.md` §8)
+- [x] DNS (§10): the zone is delegated to Route 53 (NS checked); zone and ACME contact set in `ycash-ops` only
 - [ ] Owner, in this order:
   1. AWS account, state bucket, OIDC, the two deploy roles.
   2. DNS: hosted zone, registrar name servers, WHOIS privacy.
