@@ -267,11 +267,23 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] Review gate (two reviewers, four-part check in the PR body) and the PRs, once CI is green
 - [~] yolo reads `testnetprofile=` for the cookie directory and default RPC port (yolo#9, `559bc7f`; 43 lib tests green); merges after the N1 PRs
 
-### Seed hosting (option B)
-- [~] Public module (ycash-infra#14, `7742286`): `infra/testnet-seeds/ips` (Elastic IPs, `prevent_destroy`) and `nodes` (VPC, SSM-only access, encrypted volumes, first-boot prefix bootstrap); `terraform test` against a mocked provider; Checkov 33 passed / 0 failed; `node-image.yml` builds `ycashd` to ghcr with provenance. CI green (25 passed, 2 skipped). Revision 3: extend to one host serving all three networks, and per-network deploy, reset and upgrade, before merging
-- [x] Private skeleton in `ycash-ops` (`bd0dd0c` on `main`, pushed 2026-10-29 with the owner's approval): deploy workflow (plan, apply, reset, status), AWS setup guide
-- [ ] Owner: AWS account, state bucket, OIDC role, three ycash-ops secrets; then the image, `apply` and the seed IPs into `pnSeed6_test` (rc1)
-- Estimated cost: about $22 per seed per month, three seeds about $66 plus data transfer
+### Seed hosting (option B) and the EKS layer, three networks (revision 3)
+- [~] Public (ycash-infra#14, head `f400520`):
+  - `infra/testnet-seeds`: one host serves yb-fast, yb-slow and legacy (one container each, ports 18833 / 18933 / 19033). Per-network deploy, upgrade, reset and status through SSM and an on-host `seedctl`. `main` is supported but off.
+  - `infra/eks/module`: the K2 stack as a reusable module, one namespace and one database per network, account-bearing outputs sensitive. Per-network chart values.
+  - `node-image.yml`; the owner's minisign key `keys/ycash-release.pub` and verify sections.
+  - Offline checks green: terraform test, seedctl tests, helm and kubeconform renders, Checkov 0 new, actionlint, zizmor. PR CI running
+- [x] Private `ycash-ops` (`main` at `c89508a`):
+  - three-network seed roots, `eks/testnet` (domain set, zone and ACME e-mail placeholders), inert mainnet roots;
+  - `deploy.yml` (layer, network, action, typed confirm; environments `testnet` and, later, approval-gated `mainnet`), one infra pin;
+  - `sign-release.yml` and `scripts/sign-release.sh` (environment `release-signing`: the signing key is never visible to the deploy jobs); dry-run tests green
+- [ ] Owner, in this order:
+  1. AWS account, state bucket, OIDC, the two deploy roles.
+  2. DNS: hosted zone, registrar name servers, WHOIS privacy.
+  3. GitHub environments `testnet` and `release-signing` with their secrets.
+  4. Merge the PRs, bump the infra pin, build the image, then `apply` and `deploy`.
+- [ ] Not verified on real AWS: SSM delivery, cloud-init, the first EKS apply, DNS and certificates, the signing run against a real release
+- Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
