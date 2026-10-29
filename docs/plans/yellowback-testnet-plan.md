@@ -297,7 +297,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
-- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). 45 offline unit tests green; CodeQL and gitleaks fixed; the functional `testnet_ceremony.py` still fails in CI and is being fixed (the first fix: the ceremony found its set transaction through the wallet, which does not track it).
+- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). **PR CI green on both lines** after three fix rounds, including the functional `testnet_ceremony.py` (the full regtest rehearsal: prefix bundle and restore, the fork block, the set, the house seats, maturity, an rc1-like node agreeing) and `ycash_bootstrap.py`. The fixes: find the set transaction through the blocks, not the wallet; a bond locktime of tip + 1, not 0; CodeQL file permissions; gitleaks.
   - devnet join mode: `yellowback-devnet up --network testnet-yb-*`; regtest unchanged; profiles `contrib/yellowback/profiles/*.toml`.
   - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
   - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
