@@ -132,11 +132,47 @@ Yellowback timing differ.
   - a GitHub Environment that needs the owner's approval for every apply.
 - Nothing is created for mainnet until the upgrade plan's P8. Mainnet keeps its existing DNS seeds; these hosts add fixed seeds.
 
+### Kubernetes on AWS in the same private deployment (T-20)
+
+In plain words: the seed machines only keep the networks alive. The services people use (the
+light-wallet server, the address index, the web wallet, the faucet, the chain visualizer, the
+bundle snapshotter) run on Kubernetes. That stack was built and proven on kind and written for
+AWS (EKS) in `ycash-infra` K2. The private `ycash-ops` repository deploys it too, with the
+same one-click flow as the seeds.
+
+- **Two layers, both driven from `ycash-ops`:**
+  - **Seeds on EC2.** Always on, cheap, fixed IPs, independent of the cluster. The seeds stay
+    on EC2 rather than in the cluster, so the networks survive a cluster being down, rebuilt or
+    switched off.
+  - **The service stack on EKS.** `infra/eks` plus the `ycash-lightwallet` and `ycash-testnet` charts.
+- **One testnet cluster, one namespace per network** (`yb-fast`, `yb-slow`, `legacy`), each
+  running that network's lightwalletd, yindex, web, faucet, chain-viz, snapshotter and status.
+  The personas run only on the two `yb` networks (T-19). yindex uses one RDS instance, with
+  one database per network.
+- **Switched on when needed.** The K2 runbook estimates about $625–645 a month for the
+  cluster, which is most of the testnet's cost. Recommendation: bring it up for test campaigns
+  and the rc soak, and take it down otherwise. The seeds keep the chains running in between.
+  `make eks-up` / `eks-down` already exist; `ycash-ops` gets the same as workflow buttons.
+- **Public side (ycash-infra):** `infra/eks` becomes a reusable module, like `infra/testnet-seeds`:
+  - the provider and backend move to the caller, and every name, domain, zone and e-mail is a variable;
+  - the local `make eks-*` path keeps working through a thin example root;
+  - outputs that embed the account ID (`ecr_registry`) are masked in workflow logs, never printed.
+- **Private side (`ycash-ops`):**
+  - `eks/testnet/` calls the module at a pinned SHA, and holds the domain, hosted zone, ACME e-mail and sizes.
+  - The deploy workflow gains cluster plan / apply / down, and a per-network chart deploy (images by digest from ghcr, mirrored to ECR, T-12), followed by the smoke tests.
+- **Mainnet:** `eks/mainnet/` is the same module in its own account and state, behind the
+  approval-gated `mainnet` Environment. Nothing is created before P8.
+- **Anonymity limits (honest):**
+  - A public hostname is public: certificates are logged in Certificate Transparency.
+  - The domain should be registered with privacy protection, and the ACME e-mail should be a role address.
+  - The account ID, ARNs, state bucket and Terraform plans stay in `ycash-ops` and its private logs.
+
 ### Cost (estimate, us-east-1 on demand)
 
-A `t3a.medium` (4 GiB, for three nodes), about 100 GiB of gp3 and one public IPv4 address come
+Seeds: a `t3a.medium` (4 GiB, for three nodes), about 100 GiB of gp3 and one public IPv4 address come
 to about $40 per host per month. **2 hosts ≈ $80 a month**, plus data transfer. The
-single-network plan was three hosts at about $66.
+single-network plan was three hosts at about $66. The EKS service stack (T-20) adds about
+$625–645 a month while it is up.
 
 ## Execution status (authoritative; kept by the coordinator from agent reports)
 
@@ -161,7 +197,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - `nVaultMinSetMaturity` (the vault primitive's minimum) and the YED module's testnet `BOND_MATURITY` are both 48. The module adopts a set only when the set's maturity equals `BOND_MATURITY` (`state.cpp:1184`), so both must move together.
   - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`), asserted for testnet too. Mainnet keeps 16,128, regtest 2 / 8.
   - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
-- [ ] Revision 3 (2026-10-29): three testnets (fast, slow, legacy) and seed tooling ready for mainnet. Direction decided by the owner; T-14..T-19 below have recommendations awaiting the owner's confirmation
+- [ ] Revision 3 (2026-10-29): three testnets (fast, slow, legacy) and seed tooling ready for mainnet. Direction decided by the owner; T-14..T-20 below have recommendations awaiting the owner's confirmation
 - [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
@@ -1025,6 +1061,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | **T-17** | Seed shape | 2 hosts, each serving all three networks (`t3a.medium`); host count is a variable |
 | **T-18** | Mainnet seed readiness | `main` is a profile of the same module; a separate stack, state and account, applied only through an approval-gated GitHub Environment; nothing created before P8 |
 | **T-19** | Services per network | Seeds, lightwalletd, faucet and chain-viz on all three; YED personas and attestor sets on the two `yb` networks |
+| **T-20** | Kubernetes (EKS) for the testnets | One cluster, a namespace per network, deployed from `ycash-ops` like the seeds; up for campaigns and the rc soak, down otherwise; mainnet a separate approval-gated cluster in its own account, nothing before P8 |
 
 ---
 
