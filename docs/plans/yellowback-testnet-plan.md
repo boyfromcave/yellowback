@@ -289,6 +289,12 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] Not verified on real AWS: SSM delivery, cloud-init, the first EKS apply, DNS and certificates, the signing run against a real release
 - Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
+### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
+- [~] **N2 tooling** (branch `claude/n2-tooling`, ycash6 + ycash-dd): extend the existing regtest devnet with a testnet join mode (`--network`), `contrib/testnet/ceremony` (regtest rehearsal first), `ycash-bootstrap` + `YCASHD_BOOTSTRAP`
+- [~] **N3 remainder** (branch `claude/n3-services`, ycash-infra): testnet faucet, snapshotter / bundle-verifier with the state-bundle format, status page, alerts, per network
+- [~] **N4 release-candidate CI** (branch `claude/n4-rc-ci`, the node lines and, as the plan places them, ycash-infra and the workspace): stage-aware release rules, provenance, cosign and SBOM, `rc-qualify` steps 1–4, the release train
+- These stay off the seeds code (`infra/testnet-seeds`, `node-image.yml`) and ycash-ops while the owner tests the first deploy; each merges when the owner chooses
+
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
   verifies Sprout proofs from before Sapling (block 280,000), even with `-checkpoints=0`
