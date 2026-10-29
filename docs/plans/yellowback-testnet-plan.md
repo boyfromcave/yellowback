@@ -198,6 +198,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`), asserted for testnet too. Mainnet keeps 16,128, regtest 2 / 8.
   - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
 - [x] Revision 3 (2026-10-29, owner): three testnets (fast, slow, legacy), seeds and the EKS service stack deployed from `ycash-ops`, ready for mainnet. T-14..T-20 decided as recommended
+- [x] T-3, T-5, T-6 (2026-10-29): a workspace-owned domain held in `ycash-ops`; signer sets fast 7 house seats, slow 3 house + 4 invited; owner minisign key, automatic signing from `ycash-ops`, testnet verifier rule relaxed to 2 house keys
 - [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
@@ -1047,10 +1048,10 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 |---|---|---|
 | **T-1** | Revive the old testnet, start a fresh genesis, or re-fork from Zcash testnet | **Re-fork from Zcash testnet at 510,248** (§2.1). Reviving needs a chain nobody can reach. A fresh genesis loses the mainnet-shaped history and the fork code paths, and gives the bundle no external anchor |
 | **T-2** | Network identity, and the post-fork YDF addresses | New magic (the old one is Zcash testnet's), ports unchanged, datadir `testnet4`, selected by `-testnet`. Keep the old YDF testnet addresses, or replace them with workspace-held testnet keys: recommended **replace**, so the testnet's development-fund outputs are spendable in drills |
-| **T-3** | Domains and seed hostnames; the Foundation's `testseed.ycash.xyz` | Ask the Foundation for the `testseed` delegation. Until then, a workspace-owned domain |
+| **T-3** | Domains and seed hostnames; the Foundation's `testseed.ycash.xyz` | **Decided (owner 2026-10-29).** A workspace-owned domain (not ycash.xyz), registered with WHOIS privacy; its name lives only in `ycash-ops`. Hostnames per network (`lite-fast.`, `lite-slow.`, `lite-legacy.`, `viz-*`, `faucet-*`, `status.`). No DNS seed (fixed seeds, D1) |
 | **T-4** | Testnet `nVaultMinSetMaturity` | **1,152 (≈ 1 day).** Mainnet's 16,128 is tested by regtest suites with the value as a parameter, and the parity check compares mainnet. Testnet's job is the drill cadence, including resets |
-| **T-5** | Founding attestor set | 7 seats with a threshold per §15. At launch at most 3 house seats, run by the workspace from distinct providers, and at least 4 invited operators. G-5's "≥ 7 operators" is read only once the house seats are replaced |
-| **T-6** | Signing | GitHub provenance plus keyless cosign for all assets, plus an owner minisign key on `SHA256SUMS`. Bundle statements are signed by at least 2 verifier keys, at least one of them not the workspace's |
+| **T-5** | Founding attestor set | **Decided (owner 2026-10-29).** testnet-yb-fast: 7 house seats, keys generated into the cluster secret store. testnet-yb-slow: 3 house seats at launch, 4 invited operators added as recruited (house seats fill in until then). G-5's "≥ 7 operators" is read on slow |
+| **T-6** | Signing | **Decided (owner 2026-10-29).** GitHub provenance plus keyless cosign for all assets; the owner's minisign key (`55040B5107FB0B35`, public key `RWQ1C/sHUQsEVfmA4Lnsu6pIJV75LdzrbCPoonuXrRAakY116SGJF6rJ`) signs `SHA256SUMS`, automatically from a `ycash-ops` workflow (secret key in its secrets) and by hand with a local script when needed. Testnet bundle statements: 2 house verifier keys (relaxed); at least one outside verifier is a mainnet requirement |
 | **T-7** | Reset policy | Reset on any history-invalidating rule change before mainnet. Never reset after the mainnet height is set |
 | **T-8** | Stage-aware release rules, and taking the protocol-version bump at rc1 | Yes (§5.1) |
 | **T-9** | Amend `ycash-infra` rules 4 and 5 for `charts/ycash-testnet` | Yes, scoped to testnet keys and release images |
