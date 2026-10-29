@@ -144,10 +144,10 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - `UPGRADE_VAULT` at 510,400; `-stopatheight` (from Bitcoin Core); new tests `testnet_params_tests.cpp` and `stopatheight.py`, byte-identical on both lines.
 - **Deviation:** `nMinimumChainWork` is block 280,000's work (`0x23bc0da20`), not 0. With 0 and the Overwinter and Sapling hashes still pinned, a node with a tip below 207,500 aborts (a fresh datadir at genesis). The value stays below the prefix's work, so F-T2 holds.
 - [ ] Review gate (two reviewers, four-part check in the PR body) and the PRs, once CI is green
-- [ ] yolo's testnet cookie path (`testnet3` → `testnet-yb`)
+- [~] yolo's testnet cookie path (`testnet3` → `testnet-yb`): yolo#9, merges after the N1 PRs
 
 ### Seed hosting (option B)
-- [~] Public module (ycash-infra#14, `7742286`): `infra/testnet-seeds/ips` (Elastic IPs, `prevent_destroy`) and `nodes` (VPC, SSM-only access, encrypted volumes, first-boot prefix bootstrap); `terraform test` against a mocked provider; Checkov 33 passed / 0 failed; `node-image.yml` builds `ycashd` to ghcr with provenance. CI pending
+- [~] Public module (ycash-infra#14, `7742286`): `infra/testnet-seeds/ips` (Elastic IPs, `prevent_destroy`) and `nodes` (VPC, SSM-only access, encrypted volumes, first-boot prefix bootstrap); `terraform test` against a mocked provider; Checkov 33 passed / 0 failed; `node-image.yml` builds `ycashd` to ghcr with provenance. CI green (25 passed, 2 skipped); ready to merge
 - [x] Private skeleton in `ycash-ops` (`bd0dd0c` on `main`, pushed 2026-10-29 with the owner's approval): deploy workflow (plan, apply, reset, status), AWS setup guide
 - [ ] Owner: AWS account, state bucket, OIDC role, three ycash-ops secrets; then the image, `apply` and the seed IPs into `pnSeed6_test` (rc1)
 - Estimated cost: about $22 per seed per month, three seeds about $66 plus data transfer
