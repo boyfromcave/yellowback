@@ -199,6 +199,13 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
 - [x] Revision 3 (2026-10-29, owner): three testnets (fast, slow, legacy), seeds and the EKS service stack deployed from `ycash-ops`, ready for mainnet. T-14..T-20 decided as recommended
 - [x] T-3, T-5, T-6 (2026-10-29): a workspace-owned domain held in `ycash-ops`; signer sets fast 7 house seats, slow 3 house + 4 invited; owner minisign key, automatic signing from `ycash-ops`, testnet verifier rule relaxed to 2 house keys
+- [x] Round 3 decisions (owner, 2026-10-29):
+  - testnet-yb-fast house-seat bonds at a thousandth of mainnet's (10 / 20 YEC, `TestFastParams`); testnet-yb-slow keeps mainnet's (in ycash6#70 / ycash-dd#147);
+  - the Vault-era protocol version is 270200 (T-8);
+  - ycash-dd `MIN_PEER_PROTO_VERSION` stays 170002 until the P8 checklist raises it to 270013;
+  - §5.1's rc row amended to T-15 (slow's height may precede its set);
+  - T-9: testnet keys allowed in `charts/ycash-testnet` (the faucet wallet, the publish token), from External Secrets only, never mainnet (ycash-infra `AGENTS.md` rule 4, in ycash-infra#17);
+  - the status page is one host per network.
 - [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
@@ -888,7 +895,7 @@ the stage the tag names (T-8):
 | Tag | Required | Not required |
 |---|---|---|
 | `v6.22.N-betaM` | parity between lines, maturity set, 6.22 version | heights, sets, protocol version |
-| `v6.22.N-rcM` | parity; **testnet** Vault height and set both set (R7, tightened from "both or neither" to "both"); R3–R5 (the protocol-version bump); R6 | R1 and R2 (mainnet height and set stay unset on an rc unless the owner sets them) |
+| `v6.22.N-rcM` | parity; R7 per testnet profile (owner 2026-10-29, amended to T-15): testnet-yb-fast's Vault height and set both set; testnet-yb-slow may have its height without a set (its set follows its activation), never a set without a height; testnet-legacy never a height; R3–R5 (the protocol-version bump to 270200); R6 | R1 and R2 (mainnet height and set stay unset on an rc unless the owner sets them) |
 | `v6.22.N` (final) | R1–R7 as today | — |
 
 The protocol-version bump (P8 part D) is therefore **taken with rc1**:
