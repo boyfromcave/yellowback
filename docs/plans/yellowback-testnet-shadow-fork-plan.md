@@ -106,8 +106,9 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 ### S0. Decide
 - [x] The shadow fork for slow and legacy, with replay-safe branch IDs (owner, 2026-10-31)
 - [x] fast stays on the Zcash testnet history
-- [ ] **H_S**, the last copied mainnet block: a recent multiple of 10,000 at least 1,000 blocks below
-  the tip when the harvest runs. It is fixed by the harvest and compiled into the release;
+- [ ] **H_S**, the last copied mainnet block: a recent height of the form k × 10,000 − 1 (for example
+  3,089,999) at least 1,000 blocks below the tip when the harvest runs, so every history chunk holds
+  exactly 10,000 blocks and the split is at the round k × 10,000. It is fixed by the harvest and compiled into the release;
   `UPGRADE_SHADOW` activates at H_S + 1.
 - [ ] **Funding slow's house seats.** At H_S the block reward is about 1.56 TAY, so the 3 bonds of
   10,000 TAY plus a faucet take about 20,000 blocks, roughly 3 weeks at 75 s per block. slow's
@@ -126,7 +127,9 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 - [ ] PRs on both lines; CI green; **two independent reviews (G-9)**; merge
 
 ### S2. Harvest Ycash mainnet history
-- [~] `mainnet-prefix.yml` and its offline tests
+- [~] `mainnet-prefix.yml`, `mainnet-prefix-import.yml`, `run-local-mainnet.sh` (the EC2 path) and their
+  offline tests (69 green); the network `ycash-mainnet` in the prefix format, 10,000-block chunks,
+  mainnet's 18 checkpoints vendored, the second-node cross-check and the tree state at H_S
 - [ ] Run it: sync mainnet with ycashd, export 0..H_S, verify, pack; publish `mainnet-prefix-v1`
   (signed with the owner's minisign key from `ycash-ops`)
 - [ ] Import checks: both node lines take the bundle under mainnet's parameters and reach H_S with
