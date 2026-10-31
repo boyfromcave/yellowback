@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees release-train-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -64,6 +64,9 @@ spec-check-fees: ## The fees line's copies (the quantum line after D-Q-23/24/25,
 
 spec-fees: ## Write the fees line's copies (the in-term spec; the quantum contract with docs/plans/yellowback-quantum-fees-rpc-delta.md §4.11)
 	@scripts/extract-spec.sh --write-fees
+
+release-train-check: ## Check every releases/v*.yaml: shape, commits on upgrade/vault, tags, rpcversion, contract copies (testnet plan §5.4; OFFLINE=1: shape only)
+	@python3 scripts/release-train.py check $(if $(OFFLINE),,--online)
 
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit
