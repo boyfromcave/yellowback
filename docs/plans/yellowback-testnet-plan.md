@@ -73,41 +73,25 @@ never be replayed on real mainnet. They do that with their own network-upgrade I
 which every signature commits to. Each shadow testnet gets its own branch ID at the split block
 and its own branch ID for the Vault upgrade, never mainnet's.
 
-### Design
+### Summary (the detail, the fixed values and the work packages are in the shadow-fork plan)
 
-| | Up to the split block H_S | After H_S |
-|---|---|---|
-| History | Ycash mainnet blocks 0..H_S, harvested reproducibly with ycashd (Zebra does not follow Ycash) and published like the prefix | the testnet's own blocks |
-| Chain parameters | mainnet's: genesis, upgrade heights, checkpoints, funding and YDF addresses | testnet magic (`f7 79 62 d4` slow, `d5` legacy), ports, datadirs and `TAY` unit as revision 3 |
-| Branch ID | mainnet's (the history is mainnet's) | a **shadow upgrade at H_S + 1** with its own branch ID, a different one for slow and for legacy; slow's later Vault activation uses a **slow-only Vault branch ID**, never `0x6d5b7a31` |
-| Difficulty | mainnet's | one-time reset to the PoW limit at H_S + 1, then testnet rules (minimum-difficulty blocks allowed after H_S) |
-| Funding after H_S | — | YDF and any funding outputs to workspace testnet keys, never the real YDF keys |
-
-- **Replay safety, both ways:** a signature on a shadow testnet commits to a branch ID mainnet has
-  never had and never will, so it is invalid on mainnet; mainnet signatures are invalid on the
-  testnet after H_S for the same reason. slow and legacy differ from each other too.
-- **Per-network branch IDs:** today branch IDs are global constants (`src/consensus/upgrades.cpp`,
-  librustzcash6 `BranchId`). The node lines and librustzcash6 learn a per-network override
-  (the upgrade keeps its rules; only the ID a network signs and checks under changes). This is
-  consensus code: the G-9 review gate and the four-part check apply. Mainnet's values do not change.
-- **Size:** the owner estimates 60–90 GB for mainnet history. Seed data volumes grow accordingly
-  (about 200 GB per host for fast + slow + legacy). legacy may prune on non-seed nodes; slow may not
-  (nodes with a Vault height refuse `-prune`), and the seeds keep full history to serve it.
-- **Coins:** copied mainnet balances are worthless `TAY` on the testnets. The docs and the faucet say
-  so plainly, and say never to treat them as YEC.
-- **testnet-yb-fast is unchanged** (Zcash testnet history, revision 3). slow and legacy launch as
-  built today and are **reset** onto the shadow fork when it is ready (T-7 allows resets before mainnet).
-
-### Work
-
-- **N1-S (node, both lines + librustzcash6):** per-network branch IDs; the shadow-fork chain
-  parameters for slow and legacy; the difficulty reset; post-split funding addresses; tests,
-  including that a shadow-testnet signature is rejected on mainnet parameters and the reverse.
-- **N3-S (ycash-infra):** the mainnet harvest: a reproducible ycashd-based export of blocks 0..H_S,
-  verified against mainnet's checkpoints, packed in the prefix format, published (`mainnet-prefix-v1`);
-  run on a large runner or on EC2 (it is larger than a standard runner's disk). Seed volume sizes.
-- **Decisions:** H_S (a recent mainnet height, fixed when the harvest runs); the new branch-ID values
-  (chosen to collide with no Zcash or Ycash ID, as the magics were).
+- **History:** slow and legacy carry Ycash mainnet blocks 0..H_S (H_S = the last copied block),
+  harvested with ycashd and published as `mainnet-prefix-v1`. fast keeps `testnet-prefix-v1`.
+- **Parameters:** slow and legacy are built on mainnet's parameters: genesis, upgrade heights,
+  checkpoints, PoW limits, and the founders' and dev-fund history checked against mainnet's
+  scripts. Only the magic, ports, data directory, unit (TAY), displayed address prefixes, seeds
+  and BIP-44 coin type differ.
+- **Replay safety:** a new testnet-only upgrade, `UPGRADE_SHADOW`, activates at H_S + 1 with its
+  own branch ID on each network (Canopy's rules). slow's later Vault activation uses a slow-only
+  Vault branch ID, never `0x6d5b7a31`. Signatures cannot replay between mainnet, slow and legacy in
+  any direction. librustzcash6 gets new `BranchId` variants. Mainnet's values do not change.
+- **Difficulty:** minimum difficulty for one averaging window after the split, then testnet rules.
+- **Size:** about 60–90 GB of history; seed volumes about 300 GB per host; slow and legacy get state
+  bundles. The harvest runs on EC2 or a self-hosted runner.
+- **Timeline:** slow's house seats need about 3 weeks of mining after the split to fund their bonds,
+  so slow's Vault height follows that.
+- **Rollout:** slow and legacy launch as built today and are **reset** onto the shadow fork when it
+  is ready (T-7 allows resets before mainnet). This is consensus code: the G-9 review gate applies.
 
 ## Revision 3 (2026-10-29, owner): three testnets, and seed infrastructure ready for mainnet
 

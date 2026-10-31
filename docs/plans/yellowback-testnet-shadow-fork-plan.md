@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) testnets: the shadow-fork plan for testnet-yb-slow and testnet-legacy
 
-**Revision 1 (2026-10-31), owner decision; implementation started.** This plan details revision 4 of
+**Revision 2 (2026-10-31), owner decision; implementation started.** Revision 2 folds in an independent review: the shadow upgrade is a new network upgrade, slow and legacy are built on mainnet's parameters, the founders' and dev-fund history checks, the Rust network parameters, the slow funding timeline, the client pins, harvest trust and disk sizes. This plan details revision 4 of
 the [testnet plan](yellowback-testnet-plan.md): testnet-yb-slow and testnet-legacy are rebuilt as
 replay-safe shadow forks of Ycash mainnet. testnet-yb-fast is unchanged. The testnet plan stays the
 parent document: decisions T-1 to T-20, the bundles, the release-candidate CI and the infrastructure
@@ -40,14 +40,15 @@ signature is then simply invalid on mainnet, and the reverse.
 | History before its own blocks | its own | Zcash testnet blocks 0..510,247 (`testnet-prefix-v1`) | **Ycash mainnet blocks 0..H_S** (`mainnet-prefix-v1`) | **Ycash mainnet blocks 0..H_S** (same bundle) |
 | Genesis block | `00040fe8…3dce08` (Zcash mainnet's) | `05a60a92…4a2c38` (Zcash testnet's) | `00040fe8…3dce08` (mainnet's) | `00040fe8…3dce08` (mainnet's) |
 | Where it splits off | — | 510,248 (the Ycash fork height, as Ycash did from Zcash) | H_S + 1 (the shadow split) | H_S + 1 |
-| Branch ID after the split | Ycash's, then Vault `0x6d5b7a31` at P8 | Ycash's, then Vault `0x6d5b7a31` at 510,400 | **slow-only shadow ID** at H_S + 1, then a **slow-only Vault ID** | **legacy-only shadow ID** at H_S + 1, nothing after |
-| Vault (Yellowback) activates | at the gate-passing release (P8) | 510,400 | about a week after the slow split, set by slow's first rc (T-15) | never |
+| Branch ID of the current epoch, then after | Canopy `0x19bd2d2f`, then Vault `0x6d5b7a31` at P8 | Canopy `0x19bd2d2f` from 510,254, then Vault `0x6d5b7a31` at 510,400 | mainnet's (Canopy `0x19bd2d2f`) up to H_S; **`UPGRADE_SHADOW` with a slow-only ID** at H_S + 1; then **Vault with a slow-only ID** | mainnet's up to H_S; **`UPGRADE_SHADOW` with a legacy-only ID** at H_S + 1; nothing after |
+| Vault (Yellowback) activates | at the gate-passing release (P8) | 510,400 | after the split, once the house seats can be bonded; set by slow's rc (T-15; see S0 for the funding timeline) | never |
 | Set and bond maturity | 16,128 blocks (14 days) | 48 blocks (1 hour) | 16,128 | — |
 | Other YED waiting periods | mainnet's | the fast column (scaled down, every invariant kept) | mainnet's | — |
 | House-seat bond | 10,000 YEC (cap 20,000) | 10 TAY (cap 20) | 10,000 TAY (cap 20,000) | — |
 | Founding signer set | P8 | 7 house seats | 3 house seats, then 4 invited operators | — |
-| Difficulty | real mining | testnet rules | one-time reset to minimum at H_S + 1, then testnet rules | same as slow |
+| Difficulty | real mining | testnet rules | mainnet's up to H_S; minimum difficulty from H_S + 1 for one averaging window, then testnet rules (minimum-difficulty blocks allowed after H_S) | same as slow |
 | Coin unit shown | YEC | TAY | TAY (copied mainnet balances are TAY, worthless) | TAY |
+| Address prefixes shown | mainnet's (`s1…`, `zs…`) | testnet's | testnet's (display only; the copied history's founders' and dev-fund outputs are checked against mainnet's scripts) | testnet's (same) |
 | Network magic | `24 e9 27 64` | `f7 79 62 d3` | `f7 79 62 d4` | `f7 79 62 d5` |
 | P2P / RPC ports | 8833 / 8832 | 18833 / 18832 | 18933 / 18932 | 19033 / 19032 |
 | Data directory | (default) | `testnet-yb-fast` | `testnet-yb-slow` | `testnet-legacy` |
@@ -63,18 +64,20 @@ IDs, a transaction spending one of them would be valid on both networks.
 
 ## 2. Replay safety, end to end
 
-1. **Before H_S** the shadow testnets are byte-for-byte mainnet: same blocks, same rules, same branch
-   IDs. Nothing is signed on them in that range; it is history.
-2. **At H_S + 1** each shadow testnet activates a testnet-only network upgrade. It changes no rule
-   except the branch ID that every signature commits to (ZIP-243 `consensusBranchId`).
+1. **Up to and including H_S** (the last copied block) the shadow testnets are byte-for-byte mainnet:
+   same blocks, same rules, same branch IDs. Nothing is signed on them in that range; it is history.
+   No vault or YED state exists at H_S, because Vault was never active on mainnet.
+2. **At H_S + 1** each shadow testnet activates a new, testnet-only network upgrade, `UPGRADE_SHADOW`.
+   It has Canopy's rules and its own branch ID, which every signature commits to (ZIP-243
+   `consensusBranchId`). Because it is a new epoch, the history tree also restarts there.
    - A transaction signed on slow or legacy after the split carries an ID mainnet rejects.
    - A transaction signed on mainnet carries an ID the shadow testnets reject.
    - slow and legacy use different IDs, so they cannot replay onto each other.
 3. **When slow activates Vault**, it uses a slow-only Vault branch ID, not mainnet's `0x6d5b7a31`.
    Otherwise, once mainnet itself activates Vault, a slow transaction spending a copied coin would be
    valid on mainnet again.
-4. **Mainnet's values never change.** The per-network branch IDs are an override for the shadow
-   testnets only.
+4. **Mainnet's values never change.** `UPGRADE_SHADOW` is never scheduled on mainnet, and the
+   slow-only Vault ID is used by slow alone.
 5. **Tested both ways** before anything ships:
    - a shadow-testnet signature is rejected under mainnet's parameters;
    - a mainnet signature is rejected under the shadow testnet's;
@@ -88,13 +91,13 @@ the status pages say so.
 
 | Component | Change | Branch / PR |
 |---|---|---|
-| **Both node lines** (`ycash6`, `ycash-dd`) | (a) per-network branch IDs (an upgrade keeps its rules; a network may sign and check under its own ID); (b) slow and legacy parameters = mainnet's up to H_S, then the testnet magic, ports, data directory, TAY and testnet address prefixes; (c) the shadow upgrade at H_S + 1; (d) the one-time difficulty reset; (e) after H_S, dev-fund and funding outputs paid to testnet keys, never the real dev-fund keys; (f) the release guard learns H_S and the new IDs. **Consensus code: the G-9 review gate and the four-part check apply.** | `claude/shadow-fork` (in progress) |
-| **librustzcash6** | its `BranchId` accepts the new IDs, with the rules of the epoch they stand for, so signing and verifying work; then ycash6's pin moves to that commit | `claude/shadow-fork` (in progress) |
-| **ycash-infra** | the mainnet history harvest (`mainnet-prefix.yml`): a ycashd node syncs Ycash mainnet, exports blocks 0..H_S, verifies them against mainnet's checkpoints and the 570,000 Ycash fork block, packs them in the prefix format and publishes `mainnet-prefix-v1`; import checks on both node lines. Too big for a standard GitHub runner: it runs on a larger runner or on EC2. | `claude/mainnet-harvest` (in progress) |
-| **ycash-infra** (later) | `seedctl` and the testnet chart bootstrap slow and legacy from `mainnet-prefix-v1` instead of the Zcash prefix; seed data volumes grow to about 200 GB per host | after the node change |
+| **Both node lines** (`ycash6`, `ycash-dd`) | (a) `UPGRADE_SHADOW`, a new network upgrade, and per-network branch IDs; (b) slow and legacy built on mainnet's parameters, with only the magic, ports, data directory, unit, displayed address prefixes, seeds and BIP-44 coin type changed; the founders' and dev-fund history checked against mainnet's scripts; (c) the difficulty reset after H_S; (d) the Rust side gets the profile's upgrade heights; (e) the RPCs report the network's own branch IDs; (f) the release guard learns H_S and the new IDs. **Consensus code: the G-9 review gate and the four-part check apply.** | `claude/shadow-fork` (in progress) |
+| **librustzcash6** | new `BranchId` variants for the three new IDs (never aliases of existing ones), with the rules of the epoch they stand for; then ycash6's pin, and YEW's and x402's, move to that commit | `claude/shadow-fork` (in progress) |
+| **ycash-infra** | the mainnet history harvest (`mainnet-prefix.yml`): a ycashd node syncs Ycash mainnet, exports blocks 0..H_S, verifies them against mainnet's checkpoints, the 570,000 Ycash fork block and a second independent node, packs them in the prefix format and publishes `mainnet-prefix-v1` with the Sapling tree state at H_S; import checks on both node lines. It runs on EC2 or a self-hosted runner: GitHub-hosted jobs stop at 6 hours. | `claude/mainnet-harvest` (in progress) |
+| **ycash-infra** (later) | `seedctl` and the testnet chart bootstrap slow and legacy from `mainnet-prefix-v1` instead of the Zcash prefix, one network after the other; seed data volumes grow to about 300 GB per host; state bundles for slow and legacy | after the node change |
 | **ycash6 / ycash-dd tools** | `ycash-bootstrap` and the ceremony learn the mainnet prefix for slow and legacy | after the node change |
 | **ycash-ops** (private) | larger seed volumes; reset slow and legacy onto the shadow fork; no new secrets | owner, at launch |
-| **Clients** (YEW, lightwalletd, wallets, x402, Hawkeye) | sign under the network's own branch ID, read from the node (`getblockchaininfo` consensus `nextblock`), never a hardcoded value | checked in rc-qualify |
+| **Clients** (YEW, lightwalletd, wallets, x402, Hawkeye) | sign under the network's own branch ID, read from the node (`getblockchaininfo` consensus `nextblock`), never a hardcoded value (Hawkeye's `0x6d5b7a31` fallback goes: it fails closed); librustzcash6 pins bumped; lightwalletd and wallet birthdays start at H_S | WP-3b, checked in rc-qualify |
 
 ## 4. The steps, in order
 
@@ -103,18 +106,23 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 ### S0. Decide
 - [x] The shadow fork for slow and legacy, with replay-safe branch IDs (owner, 2026-10-31)
 - [x] fast stays on the Zcash testnet history
-- [ ] **H_S**, the split height: a recent mainnet height, a multiple of 10,000 at least 1,000 blocks
-  below the tip when the harvest runs. It is fixed by the harvest and compiled into the release.
+- [ ] **H_S**, the last copied mainnet block: a recent multiple of 10,000 at least 1,000 blocks below
+  the tip when the harvest runs. It is fixed by the harvest and compiled into the release;
+  `UPGRADE_SHADOW` activates at H_S + 1.
+- [ ] **Funding slow's house seats.** At H_S the block reward is about 1.56 TAY, so the 3 bonds of
+  10,000 TAY plus a faucet take about 20,000 blocks, roughly 3 weeks at 75 s per block. slow's
+  Vault height is therefore set after that (recorded at rc time from `getblocksubsidy`). The
+  alternative, funding them from copied coins, is ruled out by the user safety rule (§2).
 - [ ] **The new branch-ID values** (slow shadow, slow Vault, legacy shadow): proposed by the node
   work, chosen to collide with no Zcash or Ycash ID, like the network magics.
-- [ ] **Where the harvest runs:** a larger GitHub runner, or EC2 from `ycash-ops`.
+- [ ] **Where the harvest runs:** EC2 from `ycash-ops`, or a self-hosted runner.
 
 ### S1. Node changes (both lines + librustzcash6)
-- [~] Per-network branch IDs, the slow and legacy shadow parameters, the difficulty reset, the
-  post-split funding keys, and the release guard
+- [~] `UPGRADE_SHADOW` and per-network branch IDs, slow and legacy on mainnet's parameters, the
+  difficulty reset, the Rust network parameters, the RPCs, and the release guard
 - [ ] Tests: replay rejected both ways; slow's Vault ID is not mainnet's; slow and legacy equal
   mainnet up to H_S; the difficulty reset
-- [ ] librustzcash6 PR, then the ycash6 pin bump
+- [ ] librustzcash6 PR, then the ycash6 pin bump (WP-3), then the YEW and x402 pins (WP-3b)
 - [ ] PRs on both lines; CI green; **two independent reviews (G-9)**; merge
 
 ### S2. Harvest Ycash mainnet history
@@ -127,11 +135,13 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 ### S3. Bootstrap and infrastructure
 - [ ] `ycash-bootstrap`, `seedctl` and the testnet chart use `mainnet-prefix-v1` for slow and
   legacy, framed with their own magic (`d4`, `d5`)
-- [ ] Seed data volumes resized (about 200 GB per host); the cost estimate updated
+- [ ] Seed data volumes resized (about 300 GB per host); imports one network at a time; the cost
+  estimate updated
+- [ ] State bundles for slow and legacy at a post-split height
 
 ### S4. A release candidate that carries the shadow fork
 - [ ] H_S and the checkpoint at H_S compiled in; the release guard checks them
-- [ ] `rc-qualify`, including a check that a slow transaction is refused by a mainnet node
+- [ ] `rc-qualify` runs the replay test (a C++ test under slow's and mainnet's parameters)
 
 ### S5. Launch slow and legacy on the shadow fork
 - [ ] In `ycash-ops`: deploy the rc image, then **reset** slow and legacy, so their seeds
@@ -141,7 +151,8 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 - [ ] Faucet, status pages and alerts per network; announce, with the user safety note (§2)
 
 ### S6. Slow's Yellowback activation (the rehearsal itself)
-- [ ] slow's rc sets its Vault height (about a week after the split) and its slow-only Vault branch ID
+- [ ] slow's rc sets its Vault height (after the house seats can be funded, S0) and its slow-only
+  Vault branch ID
 - [ ] The ceremony for slow: its signer set at mainnet's maturity, 3 house seats, then invited operators
 - [ ] legacy keeps running with no Vault: the comparison baseline
 
@@ -151,7 +162,9 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 |---|---|---|
 | A replay-protection bug | a testnet transaction moves real mainnet money | new IDs on every post-split upgrade, tested both ways, G-9 review, mainnet values untouched, the user safety note |
 | A client hardcodes `0x6d5b7a31` | its signatures fail on slow (safe, but broken) | clients read the branch ID from the node; rc-qualify checks |
-| Size (60–90 GB) | slow syncs and harvests take hours; disks cost more | state bundles let new nodes start in minutes; seeds hold full history; legacy non-seed nodes may prune |
+| Size (60–90 GB) | slow syncs and harvests take hours; disks cost more; an import needs about twice the bundle in temporary space | state bundles for slow and legacy; seeds hold full history; imports one network at a time, deleting each chunk once framed; legacy non-seed nodes may prune |
+| Harvest trust above the last checkpoint (2,250,000) | a bad peer feeds the harvest a wrong chain | a second independent node confirms H_S's hash; the release compiles H_S's checkpoint |
+| A copied block rejected on import | slow and legacy cannot start | slow and legacy use mainnet's founders' and dev-fund scripts and mainnet's PoW parameters up to H_S; WP-1's parameter test and WP-4's import check |
 | Difficulty right after the split | blocks are slow until the averaging window catches up | the one-time reset to minimum difficulty, tested on regtest-shaped data |
 | Confusion with real YEC | someone treats copied balances as real | TAY everywhere, clear notes on the faucet and status pages |
 
@@ -205,64 +218,96 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 | Mainnet Equihash | 200,9 before 570,000; 192,7 from it (unchanged after H_S on the shadow testnets) |
 | fast's history | `testnet-prefix-v1` (ycash-infra release; network `zcash-testnet`, 0..510,247) |
 | slow and legacy history | `mainnet-prefix-v1` (ycash-infra release, to be published; network `ycash-mainnet`, 0..H_S, same `ycash-prefix/1` format) |
-| H_S | one value for slow and legacy; **unset until S2's harvest fixes it**. In code, a marked "not set" value that the release guard refuses for an rc |
-| New branch IDs | three values (slow shadow, slow Vault, legacy shadow), proposed by WP-1, recorded in §4 S0 once the owner accepts them. Until then WP-1's placeholders are used everywhere, from one definition per line |
+| H_S | the **last copied** mainnet block; one value for slow and legacy; unset until S2's harvest fixes it |
+| The shadow upgrade | `Consensus::UPGRADE_SHADOW`, a new upgrade index (after NU6_2, before VAULT), Canopy's rules, protocol version 270013, its own branch ID per network; `nActivationHeight = H_S + 1` on slow and legacy, `NO_ACTIVATION_HEIGHT` on every other network and while H_S is unset |
+| slow's Vault | the existing `UPGRADE_VAULT`, with a slow-only `nBranchId` override; height unset until slow's rc |
+| Founders' and dev-fund history on slow and legacy | mainnet's `vFoundersRewardAddress`, `vYcashFoundersRewardAddress` and `nYdfMandateEndHeight = 2,275,000`, resolved to scripts with mainnet's key constants. Nothing is owed after H_S: the mandate ends below it, and Ycash has no funding streams |
+| Difficulty | mainnet's `powLimit` and fork-difficulty fields; `nPowAllowMinDifficultyBlocksAfterHeight = H_S`; the PoW limit for H_S + 1 … H_S + 1 + `nPowAveragingWindow`, as the Ycash fork did (`minDifficultyAtYcashFork`) |
+| Rust network parameters | slow and legacy pass their own upgrade heights to the Rust side through the local-network path (as regtest does, network type Test), never librustzcash's built-in TestNetwork |
+| Profile TOML keys (WP-5) | `[heights] shadow_split = H_S`; `[branch_ids] shadow = …`, `vault = …` |
+| New branch IDs | three values (slow shadow, slow Vault, legacy shadow), proposed by WP-1, recorded in §4 S0 once the owner accepts them, and added to librustzcash6 as **new `BranchId` variants (never aliases)**. RPCs (`getblockchaininfo.upgrades` keys, `vault_getinfo.branchid`) report the network's own IDs; `-nuparams` keeps the global IDs |
 | Branch ID a client signs with | read from the node, `getblockchaininfo` → `consensus.nextblock`; never hardcoded |
 | Coin label | `TAY` on all testnets (`CChainParams::CurrencyUnits()`); amounts unchanged |
 | Owner's signing key | minisign `02C923A6C593AF18`, public key `RWQYr5PFpiPJAigk86vf89bPYrJCXj5tskgRAPRYFsEXyciZo8dveOGQ` (ycash-infra `keys/ycash-release.pub`) |
 
 ### 6.3 Work packages
 
-Dependencies: WP-1 and WP-2 first, together; WP-4 runs in parallel from the start. WP-3 needs WP-2
-merged. WP-5 and WP-6 need WP-1's values and WP-4's bundle format. WP-7 needs WP-1, WP-5 and WP-6.
-WP-8 is last.
+Dependencies:
+- WP-1 and WP-2 first, together; WP-4 runs in parallel from the start.
+- WP-3 and WP-3b need WP-2 merged. WP-1's ycash6 CI is judged after WP-3 (ycash6 cannot build the
+  new IDs before its pin moves).
+- WP-5 needs WP-1's values, WP-4's bundle format and N2 (ycash6#70, ycash-dd#147) merged.
+- WP-6 needs WP-1's values and WP-4's bundle format.
+- WP-7 needs WP-1, WP-5, WP-6 and N4 (ycash6#69, ycash-dd#146) merged.
+- WP-8 is last.
+
+Ownership: WP-1 owns `qa/yellowback-vault-params.py` and the release-height script; WP-7 only adds
+the rc-time checks.
 
 #### WP-1. Node: per-network branch IDs and the shadow-fork profiles (S1)
 - **Repos, branch:** `ycash6` and `ycash-dd`, `claude/shadow-fork` (worktrees `ycash6-shadow`,
   `ycash-dd-shadow`). **In progress.**
 - **Files:**
-  - `src/consensus/upgrades.{h,cpp}` (branch-ID lookup per network: `CurrentEpochBranchId`,
-    `PrevEpochBranchId`, `IsConsensusBranchId`), `src/consensus/params.h`;
-  - `src/chainparams.cpp` (slow and legacy built from mainnet's values up to H_S), `src/pow.cpp`
-    (the difficulty reset);
+  - `src/consensus/upgrades.{h,cpp}` (`UPGRADE_SHADOW`; branch-ID lookup per network:
+    `CurrentEpochBranchId`, `PrevEpochBranchId`, `IsConsensusBranchId`), `src/consensus/params.h`;
+  - `src/chainparams.cpp` (slow and legacy on a mainnet-valued base, not `CTestNetParams`; the
+    founders' and dev-fund scripts), `src/pow.cpp` (the difficulty reset);
+  - `src/rust/src/params.rs` and its C++ call site (the local-network path for slow and legacy),
+    `src/rust/src/history.rs` (the new `BranchId` variants dispatch to the V1 history leaves);
+  - `src/rpc/blockchain.cpp` (`getblockchaininfo.upgrades` keys), `src/rpc/vault.cpp`
+    (`vault_getinfo.branchid`);
   - wherever the transaction's `nConsensusBranchId` is checked;
   - `src/test/testnet_params_tests.cpp`, `src/gtest/test_upgrades.cpp`, `src/gtest/test_sighash.cpp`;
   - `qa/yellowback-vault-params.py` and `qa/yellowback-release-heights.sh` (the release guard).
 - **Must do:**
-  - an upgrade keeps its rules, while a network may sign and check under its own branch ID;
-  - the shadow upgrade at H_S + 1 on slow and legacy (previous epoch's rules, new ID);
-  - slow's Vault under a slow-only ID, its height unset until slow's rc (T-15);
-  - legacy never Vault;
-  - mainnet's chain parameters up to H_S; magic, ports, data directory, TAY and testnet address
-    prefixes after it;
-  - a one-time difficulty reset to the PoW limit at H_S + 1, then testnet minimum-difficulty rules;
-    check the difficulty-averaging window right after the reset;
-  - dev-fund and funding outputs after H_S to the testnet keys the testnet profile already uses;
-  - the release guard: an rc with slow or legacy is refused while H_S is unset.
+  - everything in §6.2's rows for the shadow upgrade, slow's Vault, the founders' and dev-fund
+    history, difficulty, Rust network parameters and branch IDs;
+  - slow and legacy differ from mainnet only in magic, ports, data directory, unit, displayed address
+    prefixes, seeds and BIP-44 coin type, and a test lists exactly those exceptions;
+  - legacy never activates Vault;
+  - the release guard (`qa/yellowback-vault-params.py`, which today expects slow and legacy as
+    `CTestNetParams` subclasses) reads the new base and fields, and refuses an rc with slow or legacy
+    while H_S is unset;
+  - the replay test as a C++ unit test: `SelectParams` for slow (and legacy) against mainnet's
+    parameters, both directions.
 - **Must not touch:** mainnet values; fast's values; regtest; consensus code beyond what the
   override needs.
 - **Done when:**
-  - a transaction signed under slow's or legacy's post-split ID fails verification under mainnet
-    parameters, and the reverse;
-  - slow's Vault ID ≠ `0x6d5b7a31`;
-  - slow and legacy equal mainnet up to H_S (a test compares the parameters);
-  - the difficulty reset is tested;
-  - the cross-line check and the qa suites are green; CI green after the push.
+  - the replay test passes both ways; slow's Vault ID ≠ `0x6d5b7a31`;
+  - the parameter test passes, and a copied mainnet block (a fixture from early mainnet, with a
+    founders' reward output) validates under slow's parameters;
+  - the difficulty reset is tested across the averaging window;
+  - the cross-line check and the qa suites are green; ycash-dd CI green after the push, and ycash6
+    CI green after WP-3.
 
 #### WP-2. librustzcash6: the new branch IDs (S1)
 - **Repo, branch:** `librustzcash6`, `claude/shadow-fork` (worktree `lrz6-shadow`). **In progress.**
 - **Files:** `components/zcash_protocol/src/consensus.rs` (`BranchId`), and its tests.
-- **Must do:** `BranchId` accepts the three new IDs. Each maps to the semantics of the epoch it stands
-  for: the shadow IDs as the epoch before them, the slow Vault ID as `Vault` (no Orchard; v5 not
-  valid). Signing and verification work under them.
+- **Must do:** add three **new `BranchId` variants**, never aliases of existing ones (otherwise
+  `u32::from(BranchId)` returns a mainnet ID and the Rust builder signs under it: a replay hole).
+  The shadow variants have Canopy's semantics; the slow Vault variant has `Vault`'s (no Orchard; v5
+  not valid). Signing and verification work under them.
 - **Must not touch:** existing IDs and their behaviour.
-- **Done when:** unit tests for the new values pass with `cargo test -p zcash_protocol`.
+- **Done when:** `cargo test -p zcash_protocol` passes, including `u32::from(BranchId::try_from(x)) == x`
+  for every ID, old and new.
 
 #### WP-3. ycash6: move the librustzcash6 pin (S1)
 - **Repo:** `ycash6`, on WP-1's branch, after WP-2 is merged.
 - **Files:** `Cargo.toml` `[patch.crates-io]` (every `zcash_*` crate to the merged librustzcash6
   commit), `Cargo.lock`.
 - **Done when:** CI builds ycash6 against it and the sighash tests pass under the new IDs.
+
+#### WP-3b. Clients: pins, branch IDs and birthdays (S1–S3)
+- **Repos:** `yew` (`core/Cargo.toml`), `x402-ycash` (`light/Cargo.toml`, `light/src/net.rs`),
+  `hawkeye`, `lightwalletd-dd`; one branch per repo, after WP-2 merges.
+- **Must do:**
+  - bump the librustzcash6 pins to the merged commit;
+  - x402 gains slow and legacy network definitions;
+  - Hawkeye's `0x6d5b7a31` fallback (`engine/sign.rs`, `burn.rs`, `ycash.rs`) is removed: it fails
+    closed when the node does not answer;
+  - lightwalletd starts slow and legacy at H_S (`-start-height`); YEW and x402 wallet birthdays on
+    slow and legacy are at least H_S.
+- **Done when:** each repo's CI is green against a node with the new IDs.
 
 #### WP-4. ycash-infra: harvest Ycash mainnet history (S2)
 - **Repo, branch:** `ycash-infra`, `claude/mainnet-harvest` (worktree `infra-mharvest`).
@@ -277,9 +322,13 @@ WP-8 is last.
   - a ycashd node (the published image, or the CI `node-bin`) syncs mainnet from Ycash peers;
   - export blocks 0..H_S with `getblock <hash> 0`;
   - verify the hash chain from the mainnet genesis, every compiled checkpoint and the fork block;
-  - pack deterministically; write `manifest.json` (with H_S and its hash) and `SHA256SUMS`;
-  - publish `mainnet-prefix-v1` (chunks under 2 GiB) to a GitHub release, or to S3 behind an input;
-  - run on a larger runner or EC2 (an input, plus `run-local.sh`).
+  - above the last checkpoint (2,250,000), confirm H_S's hash and a few heights in between against a
+    **second independent node**, and record both;
+  - pack deterministically; `manifest.json` records H_S (the last copied block), its hash, time and
+    `chaintx`, and `SHA256SUMS`;
+  - publish `mainnet-prefix-v1` (chunks under 2 GiB) to a GitHub release, or to S3 behind an input,
+    with `z_gettreestate` at H_S beside it;
+  - run on EC2 (`run-local.sh`) or a self-hosted runner; GitHub-hosted jobs stop at 6 hours.
 - **Must not touch:** `infra/testnet-seeds/`, `node-image.yml`, ycash-ops.
 - **Done when:**
   - offline tests, actionlint, zizmor, shellcheck and `make lint` are green;
@@ -291,10 +340,12 @@ WP-8 is last.
   ycash-dd#147 merge, which add these tools).
 - **Files:**
   - `contrib/yellowback/profiles/testnet-yb-slow.toml` and `testnet-legacy.toml`: mainnet genesis,
-    the history bundle `mainnet-prefix-v1` and its pinned `SHA256SUMS` hash, H_S, mainnet's
-    Equihash schedule, the new branch IDs;
+    the history bundle `mainnet-prefix-v1` and its pinned `SHA256SUMS` hash, `[heights] shadow_split`,
+    mainnet's Equihash schedule, `[branch_ids] shadow` and `vault`;
   - `contrib/bootstrap/ycash-bootstrap`: the history bundle per profile;
-  - `contrib/testnet/ceremony/ceremony`: slow's mainnet-scale maturity and bonds; mining past H_S + 1;
+  - `contrib/testnet/ceremony/ceremony`: slow's mainnet-scale maturity and bonds (it checks the
+    wallet holds enough mined, shielded TAY before the seats step); mining past H_S + 1 needs
+    `-maxtipage`, because the copied tip is old;
   - `test_ybprofile.py` keeps checking the profiles against the compiled parameters.
 - **Done when:**
   - the offline tests are green;
@@ -308,9 +359,12 @@ WP-8 is last.
   - `infra/testnet-seeds/nodes/` (`variables.tf`, `locals.tf`, `files/seedctl`): today one shared
     `var.prefix` serves every network. It becomes **per network**: fast keeps `testnet-prefix-v1`,
     slow and legacy take `mainnet-prefix-v1`; each is framed with its network's magic;
-  - the default data volume sized for fast + slow + legacy (about 200 GB);
-  - `charts/ycash-testnet/values-{yb-slow,legacy}.yaml` (the prefix restore per network);
-  - the cost notes.
+  - imports one network at a time, deleting each downloaded chunk once it is framed (an import
+    needs about twice the bundle in temporary space);
+  - the default data volume sized for fast + slow + legacy (about 300 GB);
+  - `charts/ycash-testnet/values-{yb-slow,legacy}.yaml` (the prefix restore per network) and the
+    snapshotter's state bundles for slow and legacy;
+  - the cost notes; the import timed on an rc image (with H_S's checkpoint compiled in).
 - **Must not touch:** the `ips` layer (the addresses stay); fast's behaviour.
 - **Done when:**
   - `make seeds-validate`, `make lint`, `make lint-testnet` and the Checkov gate are green;
@@ -319,10 +373,11 @@ WP-8 is last.
 #### WP-7. Release: the shadow fork in a release candidate (S4)
 - **Repos:** `ycash6` (and the ycash-dd guard), on top of N4 (ycash6#69, ycash-dd#146).
 - **Must do:**
-  - the guard checks H_S, its checkpoint and the new IDs for an rc;
-  - rc-qualify gains a replay check: a transaction made on a slow node is refused by a mainnet-params
-    node and the reverse (a regtest-shaped harness);
-  - client checks confirm signing uses `consensus.nextblock`.
+  - the rc-time checks on top of WP-1's guard: H_S, its checkpoint and the new IDs are set and
+    consistent;
+  - rc-qualify runs WP-1's replay unit test (`-nuparams` cannot schedule slow's IDs on regtest, so the
+    test, not a network harness, is the check);
+  - client checks (YEW, x402, Hawkeye, lightwalletd) confirm signing uses `consensus.nextblock`.
 - **Done when:** the guard tests and rc-qualify's offline tests are green.
 
 #### WP-8. Launch (S5, S6): coordinator and owner, not an agent
