@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) public testnet, checkpoint bootstrap bundles and release-candidate CI
 
-**Revision 3 (2026-10-29): three testnets, see below.** **Revision 2 (2026-10-28).** Revision 2 (owner's
+**Revision 4 (2026-10-31): slow and legacy become shadow forks of Ycash mainnet, see below.** **Revision 3 (2026-10-29): three testnets.** **Revision 2 (2026-10-28).** Revision 2 (owner's
 suggestion) builds the testnet the way Ycash itself was built:
 - Zcash testnet history up to the fork height, taken from Zcash testnet and anchored by it;
 - then a fresh Ycash fork at the original height, 510,248;
@@ -57,6 +57,57 @@ compare one checksum file.
 **Release candidates.** Before a new version of the node software is final, it goes out as a
 "release candidate" (rc). Automated checks run it together with all the other Yellowback
 programs. Then it runs on the testnet for a while, and only after that is it published.
+
+## Revision 4 (2026-10-31, owner): testnet-yb-slow and testnet-legacy become shadow forks of Ycash mainnet
+
+**The detailed plan, with the four networks side by side and the steps S0–S6:** [yellowback-testnet-shadow-fork-plan.md](yellowback-testnet-shadow-fork-plan.md).
+
+### In plain words
+
+testnet-yb-slow is the mainnet rehearsal, so it should run on real Ycash history. Instead of Zcash's
+testnet history, slow and legacy start as a copy of Ycash mainnet up to a recent block (a "shadow
+fork") and continue from there as testnets. testnet-yb-fast stays on the Zcash testnet history.
+
+Copying mainnet copies everyone's coins, so the testnets must make sure a testnet transaction can
+never be replayed on real mainnet. They do that with their own network-upgrade IDs (branch IDs),
+which every signature commits to. Each shadow testnet gets its own branch ID at the split block
+and its own branch ID for the Vault upgrade, never mainnet's.
+
+### Design
+
+| | Up to the split block H_S | After H_S |
+|---|---|---|
+| History | Ycash mainnet blocks 0..H_S, harvested reproducibly with ycashd (Zebra does not follow Ycash) and published like the prefix | the testnet's own blocks |
+| Chain parameters | mainnet's: genesis, upgrade heights, checkpoints, funding and YDF addresses | testnet magic (`f7 79 62 d4` slow, `d5` legacy), ports, datadirs and `TAY` unit as revision 3 |
+| Branch ID | mainnet's (the history is mainnet's) | a **shadow upgrade at H_S + 1** with its own branch ID, a different one for slow and for legacy; slow's later Vault activation uses a **slow-only Vault branch ID**, never `0x6d5b7a31` |
+| Difficulty | mainnet's | one-time reset to the PoW limit at H_S + 1, then testnet rules (minimum-difficulty blocks allowed after H_S) |
+| Funding after H_S | — | YDF and any funding outputs to workspace testnet keys, never the real YDF keys |
+
+- **Replay safety, both ways:** a signature on a shadow testnet commits to a branch ID mainnet has
+  never had and never will, so it is invalid on mainnet; mainnet signatures are invalid on the
+  testnet after H_S for the same reason. slow and legacy differ from each other too.
+- **Per-network branch IDs:** today branch IDs are global constants (`src/consensus/upgrades.cpp`,
+  librustzcash6 `BranchId`). The node lines and librustzcash6 learn a per-network override
+  (the upgrade keeps its rules; only the ID a network signs and checks under changes). This is
+  consensus code: the G-9 review gate and the four-part check apply. Mainnet's values do not change.
+- **Size:** the owner estimates 60–90 GB for mainnet history. Seed data volumes grow accordingly
+  (about 200 GB per host for fast + slow + legacy). legacy may prune on non-seed nodes; slow may not
+  (nodes with a Vault height refuse `-prune`), and the seeds keep full history to serve it.
+- **Coins:** copied mainnet balances are worthless `TAY` on the testnets. The docs and the faucet say
+  so plainly, and say never to treat them as YEC.
+- **testnet-yb-fast is unchanged** (Zcash testnet history, revision 3). slow and legacy launch as
+  built today and are **reset** onto the shadow fork when it is ready (T-7 allows resets before mainnet).
+
+### Work
+
+- **N1-S (node, both lines + librustzcash6):** per-network branch IDs; the shadow-fork chain
+  parameters for slow and legacy; the difficulty reset; post-split funding addresses; tests,
+  including that a shadow-testnet signature is rejected on mainnet parameters and the reverse.
+- **N3-S (ycash-infra):** the mainnet harvest: a reproducible ycashd-based export of blocks 0..H_S,
+  verified against mainnet's checkpoints, packed in the prefix format, published (`mainnet-prefix-v1`);
+  run on a large runner or on EC2 (it is larger than a standard runner's disk). Seed volume sizes.
+- **Decisions:** H_S (a recent mainnet height, fixed when the harvest runs); the new branch-ID values
+  (chosen to collide with no Zcash or Ycash ID, as the magics were).
 
 ## Revision 3 (2026-10-29, owner): three testnets, and seed infrastructure ready for mainnet
 
