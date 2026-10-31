@@ -114,13 +114,15 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   10,000 TAY plus a faucet take about 20,000 blocks, roughly 3 weeks at 75 s per block. slow's
   Vault height is therefore set after that (recorded at rc time from `getblocksubsidy`). The
   alternative, funding them from copied coins, is ruled out by the user safety rule (§2).
-- [ ] **The new branch-ID values**, proposed by WP-1 (checked against every Zcash and Ycash ID and every
-  magic), awaiting the owner: slow shadow `0x57a24d5d`, slow Vault `0xe1f1cc08`, legacy shadow
-  `0x35706728`.
-- [ ] **Mining after the split:** the PoW limit stays mainnet's (the copied history was checked against
-  it), so a minimum-difficulty block on slow or legacy still needs about 8,192 Equihash 192,7
-  solutions: GPU miners through yolo. A separate, easier post-split limit would be a larger consensus
-  change (not made).
+- [x] **The new branch-ID values** (owner, 2026-10-31), proposed by WP-1 and checked against every
+  Zcash and Ycash ID and every magic: slow shadow `0x57a24d5d`, slow Vault `0xe1f1cc08`, legacy
+  shadow `0x35706728`.
+- [x] **Mining after the split** (owner, 2026-10-31): the PoW limit stays mainnet's (the copied history
+  was checked against it), so a minimum-difficulty block on slow or legacy still needs about 8,192
+  Equihash 192,7 solutions: GPU miners through yolo. A separate, easier post-split limit would be a
+  larger consensus change (not made). Because mining will be sparse, **every slow and legacy node runs
+  with `-maxtipage=999999999`**, so the chain can sit idle for days and mining resumes whenever a
+  miner returns (testnet plan §2.3; ycash-infra#19).
 - [ ] **Merge timing:** WP-1 merges only once H_S is known; merging turns slow and legacy into the
   shadow profiles, which have no blocks of their own until then.
 - [ ] **Where the harvest runs:** EC2 from `ycash-ops`, or a self-hosted runner.
@@ -162,8 +164,9 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 ### S5. Launch slow and legacy on the shadow fork
 - [ ] In `ycash-ops`: deploy the rc image, then **reset** slow and legacy, so their seeds
   re-bootstrap from `mainnet-prefix-v1`
-- [ ] Mine past H_S + 1 at minimum difficulty (`-maxtipage` on the first miner, since the copied
-  tip is older than the node's sync-age limit; a GPU miner through yolo after that)
+- [ ] Mine past H_S + 1 at minimum difficulty (`-maxtipage=999999999` on every node, the first miner's
+  above all, since the copied tip is older than the node's one-day sync-age limit; a GPU miner
+  through yolo after that)
 - [ ] Faucet, status pages and alerts per network; announce, with the user safety note (§2)
 
 ### S6. Slow's Yellowback activation (the rehearsal itself)

@@ -337,7 +337,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
   - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
   - **Owner decision:** the house-seat bonds (10,000 YEC per seat; fast's 7 seats need 70,000) cannot be mined soon after the fork. Scale the fast column's bond floor, or fund the seats another way.
-  - Plan §2.2 to amend: the fork-block miner needs `-maxtipage`; after the fork, mining is Equihash 192,7 (a GPU miner through yolo).
+  - Plan §2.2 to amend: the fork-block miner needs `-maxtipage` (now on every testnet node, §2.3); after the fork, mining is Equihash 192,7 (a GPU miner through yolo).
 - [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`), **PR CI green** (after a shellcheck SC2015 fix). Not run on a cluster or a real node. Per network, all off by default:
   - testnet faucet: its own wallet node, limits per IP and per address, optional proof of work;
   - status page and probe: the cross-line state-hash check;
@@ -726,6 +726,16 @@ that carries it.
 | chain-viz | 1 public instance | Workspace | chain-viz release |
 | Faucet | 1 | Workspace | `images/faucet`, ungated (§6.3) |
 | Bundle producer and verifier | 1 producer (ycash6), plus at least 2 independent verifiers (§4.3) | Workspace, plus invited operators | Release image |
+
+**Every testnet node runs with `-maxtipage=999999999`** (owner, 2026-10-31), and the operator docs
+tell everyone else to. In plain words: a testnet can go days without a block, and a node restarted
+when the newest block is more than a day old thinks it is still syncing. It then refuses
+`getblocktemplate` (a miner cannot restart the chain) and ignores peers' `getheaders` (newcomers
+cannot sync from it). The flag turns that check off; it changes no consensus rule, and mainnet keeps
+the default. It does not lower difficulty: after six block intervals without a block the next may
+be mined at minimum difficulty, which on slow and legacy is mainnet's (a GPU miner through yolo).
+Our seeds and charts set it (ycash-infra#19); the explanation for outside operators is
+`ycash-infra/images/ycashd/README.md`, "Keeping a quiet testnet alive".
 
 ---
 
