@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) public testnet, checkpoint bootstrap bundles and release-candidate CI
 
-**Revision 2 (2026-10-28), proposed; nothing implemented.** Revision 2 (owner's
+**Revision 4 (2026-10-31): slow and legacy become shadow forks of Ycash mainnet, see below.** **Revision 3 (2026-10-29): three testnets.** **Revision 2 (2026-10-28).** Revision 2 (owner's
 suggestion) builds the testnet the way Ycash itself was built:
 - Zcash testnet history up to the fork height, taken from Zcash testnet and anchored by it;
 - then a fresh Ycash fork at the original height, 510,248;
@@ -58,6 +58,157 @@ compare one checksum file.
 "release candidate" (rc). Automated checks run it together with all the other Yellowback
 programs. Then it runs on the testnet for a while, and only after that is it published.
 
+## Revision 4 (2026-10-31, owner): testnet-yb-slow and testnet-legacy become shadow forks of Ycash mainnet
+
+**The detailed plan, with the four networks side by side and the steps S0–S6:** [yellowback-testnet-shadow-fork-plan.md](yellowback-testnet-shadow-fork-plan.md).
+
+### In plain words
+
+testnet-yb-slow is the mainnet rehearsal, so it should run on real Ycash history. Instead of Zcash's
+testnet history, slow and legacy start as a copy of Ycash mainnet up to a recent block (a "shadow
+fork") and continue from there as testnets. testnet-yb-fast stays on the Zcash testnet history.
+
+Copying mainnet copies everyone's coins, so the testnets must make sure a testnet transaction can
+never be replayed on real mainnet. They do that with their own network-upgrade IDs (branch IDs),
+which every signature commits to. Each shadow testnet gets its own branch ID at the split block
+and its own branch ID for the Vault upgrade, never mainnet's.
+
+### Summary (the detail, the fixed values and the work packages are in the shadow-fork plan)
+
+- **History:** slow and legacy carry Ycash mainnet blocks 0..H_S (H_S = the last copied block),
+  harvested with ycashd and published as `mainnet-prefix-v1`. fast keeps `testnet-prefix-v1`.
+- **Parameters:** slow and legacy are built on mainnet's parameters: genesis, upgrade heights,
+  checkpoints, PoW limits, and the founders' and dev-fund history checked against mainnet's
+  scripts. Only the magic, ports, data directory, unit (TAY), displayed address prefixes, seeds
+  and BIP-44 coin type differ.
+- **Replay safety:** a new testnet-only upgrade, `UPGRADE_SHADOW`, activates at H_S + 1 with its
+  own branch ID on each network (Canopy's rules). slow's later Vault activation uses a slow-only
+  Vault branch ID, never `0x6d5b7a31`. Signatures cannot replay between mainnet, slow and legacy in
+  any direction. librustzcash6 gets new `BranchId` variants. Mainnet's values do not change.
+- **Difficulty:** minimum difficulty for one averaging window after the split, then testnet rules.
+- **Size:** about 60–90 GB of history; seed volumes about 300 GB per host; slow and legacy get state
+  bundles. The harvest runs on EC2 or a self-hosted runner.
+- **Timeline:** slow's house seats need about 3 weeks of mining after the split to fund their bonds,
+  so slow's Vault height follows that.
+- **Rollout:** slow and legacy launch as built today and are **reset** onto the shadow fork when it
+  is ready (T-7 allows resets before mainnet). This is consensus code: the G-9 review gate applies.
+
+## Revision 3 (2026-10-29, owner): three testnets, and seed infrastructure ready for mainnet
+
+### In plain words
+
+One testnet cannot do every job. Testers need to watch a whole vault and bond lifecycle in an
+afternoon, but the release also needs a rehearsal that runs at mainnet's real pace, and a
+"control" network that runs today's Ycash rules so any difference can be blamed on the upgrade
+and nothing else. So we build **three practice networks at once**. All three start from the same
+Zcash history (the prefix bundle already published) and split from each other at block 510,248.
+The same seed machines serve all three, and one click deploys or resets any one of them without
+touching the others. The same tooling is written so that, when the day comes, it can also run
+the seeds for the real Ycash network.
+
+### The three networks
+
+| | **testnet-yb-fast** | **testnet-yb-slow** | **testnet-legacy** |
+|---|---|---|---|
+| Job | Iterate: vault cycles, bond maturity, dormancy and revival, in hours | Mainnet rehearsal: every Yellowback value exactly as on mainnet; the rc soak | Control: today's Ycash rules, no Vault, the baseline to compare against |
+| Datadir | `testnet-yb-fast` | `testnet-yb-slow` | `testnet-legacy` |
+| Magic | `f7 79 62 d3` (T-2) | `f7 79 62 d4` | `f7 79 62 d5` |
+| P2P / RPC ports | 18833 / 18832 (clients' testnet defaults keep working) | 18933 / 18932 | 19033 / 19032 |
+| History | Prefix 0..510,247 (`testnet-prefix-v1`, shared: it is magic-neutral), fork at 510,248, Blossom / Heartwood / Canopy at 510,250 / 252 / 254 | same | same |
+| `UPGRADE_VAULT` | 510,400 | **Later, set by the network's first rc** (about a week of blocks after launch), so the activation itself is rehearsed live, with miners, wallets and lightwalletd crossing it as on mainnet | Never (`NO_ACTIVATION_HEIGHT`): YED off |
+| Set maturity (`nVaultMinSetMaturity`, YED `BOND_MATURITY`) | 48 / 48 (D4) | 16,128 / 16,128 (mainnet) | n/a |
+| Other YED block windows (dormancy, founding window, seat age, emergency notice, liveness minimum, …) | Scaled down in a "fast" column in the node's own parameters, by one stated rule, every invariant asserted (T-16), the way regtest's column exists today | Mainnet's | n/a |
+| Attestor set | Its own launch ceremony | Its own ceremony, after its activation | None |
+| Node lines | ycash6 and ycash-dd | both | both |
+
+Block time (75 s), Equihash, subsidy and address prefixes (`yt…`) are the same on all three, so
+wallets, pools and explorers treat every one as "testnet". Only the magic, ports, datadir and the
+Yellowback timing differ.
+
+### How a node picks one (N1, both lines)
+
+- **Compiled-in profiles, not free-form parameters.** `-testnet` plus `-testnetprofile=fast|slow|legacy`
+  (T-14). A missing or unknown profile stops the node at startup with a clear message, so nobody
+  lands on the wrong network by default, and a typo cannot create a fourth chain. Every
+  profile's values are reviewed like any other chain parameter.
+- `NetworkIDString()` stays `"test"` for all three, so address encoding, the YED module's
+  `network` and every client's chain check stay unchanged. `getblockchaininfo` gains one
+  additive field naming the profile.
+- Fixed seeds per profile: the same seed hosts, each network on its own port.
+- **Replay between networks (accepted).** fast and slow share the Vault branch ID, and legacy
+  shares the Ycash one, so a transaction spending pre-fork coins can be replayed onto a sibling
+  network. That is harmless for worthless coins. Distinct branch IDs would be a consensus
+  change for no product gain.
+- N1 as written (one testnet) becomes the `fast` profile; its review and PRs wait for the
+  profile rework.
+
+### Infrastructure (N3 and the seeds)
+
+- **One seed host serves all three networks:** one container per network, its own port, its
+  own data directory, the same image (the profile is a runtime argument). Networks matter more
+  than seed count (owner), so start with **2 hosts × 3 networks** (T-17). The host count is one
+  variable; adding a network is one map entry.
+- **Per-network lifecycle:** deploy, upgrade (image per network), reset and status, each for one
+  network, without changing the Elastic IPs or touching the other two. One workflow run can also
+  do all three.
+- Bundles: the prefix is shared. State bundles, checkpoints and the snapshotter run per network.
+- `charts/ycash-testnet`: one release per network (a `network` value); kind can run any one, or all three.
+- Services per network (T-19): seeds, lightwalletd, faucet and chain-viz on all three; YED
+  personas and the attestor set on the two `yb` networks.
+- rc flow: an rc deploys to fast first, then slow (the soak the gates read). legacy runs the
+  same rc with Vault off, the non-activation regression: the upgrade code, inactive, must not
+  change today's rules.
+
+### Ready for mainnet seeds (T-18)
+
+- The seed module treats `main` as one more profile (port 8833).
+- A mainnet stack is a separate instance of the same module, with:
+  - its own state, Elastic IPs and AWS account (recommended);
+  - a GitHub Environment that needs the owner's approval for every apply.
+- Nothing is created for mainnet until the upgrade plan's P8. Mainnet keeps its existing DNS seeds; these hosts add fixed seeds.
+
+### Kubernetes on AWS in the same private deployment (T-20)
+
+In plain words: the seed machines only keep the networks alive. The services people use (the
+light-wallet server, the address index, the web wallet, the faucet, the chain visualizer, the
+bundle snapshotter) run on Kubernetes. That stack was built and proven on kind and written for
+AWS (EKS) in `ycash-infra` K2. The private `ycash-ops` repository deploys it too, with the
+same one-click flow as the seeds.
+
+- **Two layers, both driven from `ycash-ops`:**
+  - **Seeds on EC2.** Always on, cheap, fixed IPs, independent of the cluster. The seeds stay
+    on EC2 rather than in the cluster, so the networks survive a cluster being down, rebuilt or
+    switched off.
+  - **The service stack on EKS.** `infra/eks` plus the `ycash-lightwallet` and `ycash-testnet` charts.
+- **One testnet cluster, one namespace per network** (`yb-fast`, `yb-slow`, `legacy`), each
+  running that network's lightwalletd, yindex, web, faucet, chain-viz, snapshotter and status.
+  The personas run only on the two `yb` networks (T-19). yindex uses one RDS instance, with
+  one database per network.
+- **Switched on when needed.** The K2 runbook estimates about $625–645 a month for the
+  cluster, which is most of the testnet's cost. Recommendation: bring it up for test campaigns
+  and the rc soak, and take it down otherwise. The seeds keep the chains running in between.
+  `make eks-up` / `eks-down` already exist; `ycash-ops` gets the same as workflow buttons.
+- **Public side (ycash-infra):** `infra/eks` becomes a reusable module, like `infra/testnet-seeds`:
+  - the provider and backend move to the caller, and every name, domain, zone and e-mail is a variable;
+  - the local `make eks-*` path keeps working through a thin example root;
+  - outputs that embed the account ID (`ecr_registry`) are masked in workflow logs, never printed.
+- **Private side (`ycash-ops`):**
+  - `eks/testnet/` calls the module at a pinned SHA, and holds the domain, hosted zone, ACME e-mail and sizes.
+  - The deploy workflow gains cluster plan / apply / down, and a per-network chart deploy (images by digest from ghcr, mirrored to ECR, T-12), followed by the smoke tests.
+- **Mainnet:** `eks/mainnet/` is the same module in its own account and state, behind the
+  approval-gated `mainnet` Environment. Nothing is created before P8.
+- **Anonymity limits (honest):**
+  - A public hostname is public: certificates are logged in Certificate Transparency.
+  - The domain should be registered with privacy protection, and the ACME e-mail should be a role address.
+  - The account ID, ARNs, state bucket and Terraform plans stay in `ycash-ops` and its private logs.
+
+### Cost (estimate, us-east-1 on demand)
+
+Seeds: a `t3a.medium` (4 GiB, for three nodes), about 100 GiB of gp3 and one public IPv4 address come
+to about $40 per host per month. **2 hosts ≈ $80 a month**, plus data transfer. The
+single-network plan was three hosts at about $66. The EKS service stack (T-20) adds about
+$625–645 a month while it is up.
+
 ## Execution status (authoritative; kept by the coordinator from agent reports)
 
 Started 2026-10-28 (owner: begin with ycash-infra and the testnet harvest). Node baselines
@@ -68,20 +219,44 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 ### N0 decide
 - [x] T-1: re-fork from Zcash testnet (the owner's suggestion, revision 2)
 - [x] Bundle production and hosting live in `ycash-infra`; node repos pin what they accept (revision 2, owner)
-- [ ] T-2..T-13 answered (recommendations in §8 are the working defaults until then)
+- [x] D3 (2026-10-28): the Zcash parameter files are mirrored as a GitHub release in ycash-infra (`zcash-params-v1`; ycash-infra#13)
+- [x] T-2 (2026-10-29):
+  - datadir **`testnet-yb`**;
+  - new magic **`f7 79 62 d3`**, chosen to match none of Ycash's or Zcash's mainnet, testnet or regtest values (`24e92764`, `fa1af9bf`, `aae83f5f`).
+- [x] D1 (2026-10-29): **fixed seeds only**, no DNS seed; the seed IPs come with rc1.
+- [x] Seed hosting (2026-10-29): **option B, AWS EC2 + Elastic IPs**, split in two:
+  - a generic Terraform module in public ycash-infra;
+  - the account-specific configuration in the private `boyfromcave/ycash-ops`.
+  - Nothing that identifies the account is public.
+- [x] D4 (2026-10-29): testnet set maturity **48 blocks (about 1 hour)**, in both halves. The owner wanted faster iteration than the first recommendation (1,152).
+  - `nVaultMinSetMaturity` (the vault primitive's minimum) and the YED module's testnet `BOND_MATURITY` are both 48. The module adopts a set only when the set's maturity equals `BOND_MATURITY` (`state.cpp:1184`), so both must move together.
+  - Floor: `BOND_MATURITY ≥ ATTEST_MAX_AGE` (20; `params.cpp:173-177`), asserted for testnet too. Mainnet keeps 16,128, regtest 2 / 8.
+  - Committed on both lines (ycash6 `775725259`, ycash-dd `b4db29da3`); cross-line identity and the vault-params compare pass.
+- [x] Revision 3 (2026-10-29, owner): three testnets (fast, slow, legacy), seeds and the EKS service stack deployed from `ycash-ops`, ready for mainnet. T-14..T-20 decided as recommended
+- [x] T-3, T-5, T-6 (2026-10-29): a workspace-owned domain held in `ycash-ops`; signer sets fast 7 house seats, slow 3 house + 4 invited; owner minisign key, automatic signing from `ycash-ops`, testnet verifier rule relaxed to 2 house keys
+- [x] Round 3 decisions (owner, 2026-10-29):
+  - testnet-yb-fast house-seat bonds at a thousandth of mainnet's (10 / 20 YEC, `TestFastParams`); testnet-yb-slow keeps mainnet's (in ycash6#70 / ycash-dd#147);
+  - the Vault-era protocol version is 270200 (T-8);
+  - ycash-dd `MIN_PEER_PROTO_VERSION` stays 170002 until the P8 checklist raises it to 270013;
+  - §5.1's rc row amended to T-15 (slow's height may precede its set);
+  - T-9: testnet keys allowed in `charts/ycash-testnet` (the faucet wallet, the publish token), from External Secrets only, never mainnet (ycash-infra `AGENTS.md` rule 4, in ycash-infra#17);
+  - the status page is one host per network.
+- [ ] Remaining T-decisions (§8 recommendations are the working defaults)
 
 ### Security housekeeping (`ycash-infra`, owner request 2026-10-28)
 - [x] PR #5 chart hardening merged (`4ba1e6f`): Checkov 214 → 70 failing checks, 0 new.
   - **Confirmed on a cluster by the owner's `make kind-up` (2026-10-28):** a fresh regtest chain, images rebuilt from `upgrade/vault` (ycash6 `1c10c93cc`, lightwalletd-dd `a1d141e`, rpcversion 8).
   - Passing: `make kind-smoke` and YEW's web smoke.
   - Clean: every pod's logs scanned for read-only and permission errors. The only hit was a stale pre-#5 `web:local` image.
-- [~] Kind defects K-1..K-6 fixed on ycash-infra#10 (`92b3742`..`8be1eec`). Lint and the Checkov gate are green (0 new); nothing has run on a cluster yet. **The owner's re-test on kind is the open item.**
-  - K-1: images carry a Dockerfile-hash label, and `make image-check` refuses a stale `:local` image unless `ALLOW_STALE_IMAGES` is set.
-  - K-2: `kind-check-release.sh` runs the rollout checks and fails on a crash-looping pod.
-  - K-3: the A-3 burst is sized from the live replicas and sent in parallel.
-  - K-4: the faucet is scaled down and back up.
-  - K-5: a 30 s client timeout on the miner's and the Jobs' `ycash-cli` loops.
-  - K-6: yindex waits for Postgres.
+- [x] Kind defects K-1..K-6 fixed on ycash-infra#10, merged 2026-10-28 as `d673148` (`92b3742`..`8be1eec`, `f81b3ac` for `kind-personas up` waiting for the node's RPC after a reset, and `2e6bf16` for K-6).
+  - **Owner's re-test on kind (2026-10-28): K-1..K-5 confirmed.**
+    - K-1: stale images caught, and the allow-list override works.
+    - K-2: every workload rolled out, none failing.
+    - K-3: A-3 answered 39, limited 41.
+    - K-4: `kind-reset-chain` no longer hangs on the faucet.
+    - K-5: after the node pod was deleted, the miner resumed by itself (410 → 416 in 30 s).
+  - The personas armed: 3 seated, minting allowed.
+  - **K-6 confirmed after the follow-up fix.** The server and the ingester raced to create the schema on a fresh database (SQLSTATE 23505). The schema is now applied under a Postgres advisory lock, and a regression test fails on the old code. On the owner's re-test, both yindex pods showed 0 restarts on a fresh chain.
 - [ ] Open code-scanning alert count confirmed at 0 (the agent token cannot list alerts: 403; Dependabot is disabled on the repository)
 
 ### N3-a prefix harvest (`ycash-infra`)
@@ -93,23 +268,92 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Output: 7,823,558 raw bytes (1,630 B per block) packed to 7,120,271 bytes gzipped, a 9 % saving. Hash chain from genesis verified; 12 checkpoints matched (Zebra source + Ycash compiled); re-verified outside the container.
   - `SHA256SUMS`: `de642d6c…` for the chunk, `31a66dc2…` for `manifest.json`.
   - Run 2 (40763603501) had failed in the export: Zebra 7.0.0 starts RPC only after its peer set is up (`zebrad/src/commands/start.rs:388-395`, `:512-514`), so a restart with no network never served RPC. `3801e77` fixed it by exporting from the running, syncing zebrad.
-- [ ] Full harvest 0..510,247 green on GitHub; measured size and duration recorded here. The smoke rate projects about 0.85 GB raw before transactions and an export of under 10 minutes. Blocked: `workflow_dispatch` needs the workflow on `upgrade/vault` (PR not yet opened, waiting on the owner)
-- [ ] Byte-identical second run (reproducibility proven)
-- [ ] `testnet-prefix-v1` release published, with provenance and signatures
+- [x] **Full harvest 0..510,247 green on GitHub** (run 40783490314, 2026-10-28):
+  - Timings: Zebra synced from the public testnet seeders in about 19 min; the export took 437 s (510,248 blocks) and the pack 59 s. Whole job: 28 min of the 350 min budget.
+  - Size: 1,086,239,501 bytes raw in 11 chunks, 960,757,996 bytes gzipped. Every chunk is far under GitHub's 2 GiB asset limit.
+  - Checks: hash chain verified from genesis; **1,277 checkpoints matched** (Zebra's source checkpoints plus Ycash's compiled ones); re-verified outside the container.
+  - `SHA256SUMS`: `manifest.json` `7026607b…`, the first chunk `41317fa2…`, the last chunk `d3377353…`.
+  - Zebra's state is cached (3.7 GB) for reruns.
+- [x] **Byte-identical second run** (run 40787936355): all 12 files in `SHA256SUMS` are identical to run 40783490314. Run 2 resumed from run 1's cached Zebra state; the export, verify and pack are fully repeated. The publish run syncs cold, which gives a third, independent reproduction
+- [x] **`testnet-prefix-v1` published** 2026-10-29 00:26 UTC: https://github.com/boyfromcave/ycash-infra/releases/tag/testnet-prefix-v1. Its publish run (40790941022) synced cold from the public seeders, a third independent reproduction, and its `SHA256SUMS` is identical to runs 40783490314 and 40787936355. 13 assets (11 chunks, `manifest.json`, `SHA256SUMS`); build provenance attested
 
 ### N3-b prefix import checks (`ycash-infra`)
 - [x] Framing and import scripts (`bundles/prefix/import/`, ycash-infra `c0fc439`): raw stream to `-loadblock` records with the network magic; manifest, hash-chain and checkpoint-height checks; 22 + 6 tests green against a stand-in node. No real ycashd yet: the sandbox cannot fetch the `node-bin` artifacts
-- [~] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
-- [ ] Import with checkpoints green on both lines (smoke range)
-- [ ] Import with checkpoints green on both lines (full prefix)
-- [ ] Import with `-checkpoints=0` (full verification) green on both lines (full prefix)
+- [x] `testnet-prefix-import.yml`: matrix {ycash6 `1c10c93cc`, ycash-dd `1bbcf26bc`} × {checkpoints, full}, with node binaries from their CI artifacts. Written and lint-clean. Its `workflow_run` trigger fires only once the workflow is on `upgrade/vault`, so it has not run. The `node-bin` artifacts expire after 3 days and must be re-dispatched for older pins
+- [x] Import green on both lines, **both modes**, smoke range 0..4,799: runs 40783701751 and 40783689294, 2026-10-28, after ycash-infra#10 merged (`d673148`). All four legs and the compare passed on ycash6 `1c10c93cc` and ycash-dd `1bbcf26bc` binaries, in about 1 minute per leg. The node pins move to ycash6 `727c613` / ycash-dd `559d04e` once ycash6's CI on `727c613` is green
+- [x] Import of the **full prefix** with checkpoints, green on both lines (run 40787221990, pins ycash6 `1c10c93cc` / ycash-dd `1bbcf26bc`): ycash6 in 21.7 min, ycash-dd in 42.9 min
+- [x] Import with `-checkpoints=0` (full verification) green on both lines, full prefix: ycash6 in 24.7 min, ycash-dd in 25.9 min (run 40787221990)
 
 ### N3-c testnet chart scaffold (`ycash-infra`)
 - [x] `charts/ycash-testnet` (ycash-infra `0fd0f0a`): seed StatefulSet (ycash6, 3), cross-line verifier (ycash-dd, 1), prefix-restore init container (off by default; refuses an unpinned or mismatched bundle); no keys (T-9 pending). Render-only until N1: today's testnet parameters are the unreachable old testnet
 - [x] `values-testnet.yaml` for `charts/ycash-lightwallet` (overlay on `values-eks.yaml`; hostnames are T-3 placeholders)
-- [~] Lint, kubeconform and image-pin checks: `make lint-testnet` green locally. In CI they run on a pull request only (`ci.yml` triggers), so not yet on GitHub
+- [x] Lint, kubeconform and image-pin checks green in CI on ycash-infra#10. Every check passed on `c2b905a`, CodeQL and Semgrep code scanning included, after fixing the PR's 6 test-file alerts.
 - [x] Security hardening and scans (`d851da3`..`8ac3c81`): the testnet chart gets #5's pod and container hardening. Checkov now scans the testnet renders, and its gate keys rendered resources. Run locally, the testnet work adds **0 new findings** to Checkov (44 base / 44 head), Semgrep, zizmor, actionlint, gitleaks, shellcheck and CodeQL (python, actions). Not yet run in a pod
 - [x] `ycash-infra` plan gains the testnet phase rows (K5–K7) and a plain-words testnet section
+
+### N3-d Zcash params mirror (D3, `ycash-infra`)
+- [x] `bundles/zcash-params/` and `zcash-params.yml` (ycash-infra#13): download the three parameter files from download.z.cash, check them against the sizes and SHA-256 values ycash-dd pins (`zcutil/fetch-params.sh:223-225`), publish as a release with build provenance. Dry run green (run 40795883900)
+- [x] **`zcash-params-v1` published** 2026-10-29 (run 40797228488): https://github.com/boyfromcave/ycash-infra/releases/tag/zcash-params-v1. Assets checked against the pins: `sapling-spend.params` 47,958,396 B `8e48ffd2…`, `sapling-output.params` 3,592,860 B `2f0ebbcb…`, `sprout-groth16.params` 725,523,612 B `b685d700…`, plus `SHA256SUMS`. The chart's `zcashParams.url` can point at it
+
+### N1 node parameters (both lines)
+- [~] Written and committed on both lines (`claude/lucid-fermi-ry9sby`: ycash6 `775725259`, ycash-dd `b4db29da3`), 5 commits each including D4. Not yet compiled: `yellowback tests` dispatched on both (ycash6 run 40799401716, ycash-dd run 40799404971). Changes:
+  - datadir `testnet-yb`, magic `f7 79 62 d3`;
+  - DNS seed removed (and ycash-dd's old fixed seed); `pnSeed6_test` empty until rc1; fixed seeds used at once when a network has no DNS seeds;
+  - checkpoint 510,247 `0000ec90…fb31` added, 650,000 removed; the old fork-block hash unset;
+  - Blossom / Heartwood / Canopy at 510,250 / 510,252 / 510,254 (audit in the first commit message); the future-timestamp rule aligned on both lines at Blossom + 6 (the lines had disagreed);
+  - `UPGRADE_VAULT` at 510,400; `-stopatheight` (from Bitcoin Core); new tests `testnet_params_tests.cpp` and `stopatheight.py`, byte-identical on both lines.
+- **Deviation:** `nMinimumChainWork` is block 280,000's work (`0x23bc0da20`), not 0. With 0 and the Overwinter and Sapling hashes still pinned, a node with a tip below 207,500 aborts (a fresh datadir at genesis). The value stays below the prefix's work, so F-T2 holds.
+- [x] Single-network N1 + D4 compiled and tested in CI on both lines (ycash6 run 40799401716, ycash-dd run 40799404971): build, unit and every functional group green; only the audit failed (three upstream files without the Ycash copyright line, `ycash6` named in a test comment), fixed in the rework
+- [~] **Profiles (revision 3)** committed on both lines (ycash6 `05ad13a47`, ycash-dd `24e871ac1`, plus the copyright fix): `-testnetprofile=fast|slow|legacy`, required, checked in `ChainNameFromCommandLine()`; `CTestNetParams` plus three subclasses (the release guard parses constructor bodies); per-profile magic, ports, datadir, Vault height, maturity, empty fixed seeds; `getblockchaininfo.testnetprofile`; the YED fast column `TestFastParams` (rule max(floor, ceil(mainnet × 48 / 16,128)), every invariant asserted; mapping §22); release guard R7 per profile; docker entrypoint needs `YCASHD_TESTNET_PROFILE`. Local checks green (qa Python suites, cross-line identity both ways, vault-params compare, the ycash-dd audit's every gating leg). CI dispatched (ycash6 run 40805292068, ycash-dd run 40805298247)
+  - Note: on fast the first mint still needs about 28 hours after activation, because the price windows keep mainnet's values (`pSlowMinFill` 1,344 tagged blocks). Lifecycles run in hours after that warm-up
+- [x] PRs open: ycash6#67 and ycash-dd#145 (four-part check and tier in each body). **PR CI green on both** (yellowback tests run 40808099700 / 40808100848: build, unit, every functional group, audit including cross-line identity; codeql, semgrep, secops green)
+- [x] **Merged 2026-10-29** on the owner's decision, with CI green: ycash6#67 (`d1cf1c182`) and ycash-dd#145 (`fec0be1d1`), squash. **Deviation:** merged ahead of the two independent reviews the G-9 gate asks for. The reviews remain owed, before any rc is tagged
+- [x] yolo reads `testnetprofile=` for the cookie directory and default RPC port (yolo#9, merged `0659f41`)
+
+### Seed hosting (option B) and the EKS layer, three networks (revision 3)
+- [x] Public (ycash-infra#14, **merged `dbf448a`** 2026-10-29; ycash-ops pinned to it). Fixed before merge: the seeds and the light-wallet chart now pass `YCASHD_TESTNET_PROFILE`, which the node image's entrypoint requires on testnet:
+  - `infra/testnet-seeds`: one host serves yb-fast, yb-slow and legacy (one container each, ports 18833 / 18933 / 19033). Per-network deploy, upgrade, reset and status through SSM and an on-host `seedctl`. `main` is supported but off.
+  - `infra/eks/module`: the K2 stack as a reusable module, one namespace and one database per network, account-bearing outputs sensitive. Per-network chart values.
+  - `node-image.yml`; the owner's minisign key `keys/ycash-release.pub` and verify sections.
+  - Offline checks green: terraform test, seedctl tests, helm and kubeconform renders, Checkov 0 new, actionlint, zizmor. PR CI running
+- [x] Private `ycash-ops` (`main` at `c89508a`):
+  - three-network seed roots, `eks/testnet` (domain set, zone and ACME e-mail placeholders), inert mainnet roots;
+  - `deploy.yml` (layer, network, action, typed confirm; environments `testnet` and, later, approval-gated `mainnet`), one infra pin;
+  - `sign-release.yml` and `scripts/sign-release.sh` (environment `release-signing`: the signing key is never visible to the deploy jobs); dry-run tests green
+- [x] Node image rebuilt with the package-page labels and its own page (ycash-infra#16; `node-image` run 40832098390, ycash6 `71e74a9ef`): `ghcr.io/boyfromcave/ycashd@sha256:78f4a969…`, provenance attested; pinned in ycash-ops `testnet-seeds/nodes/main.tf` (the first build `b65049be…` is superseded)
+- [ ] Owner: make the `ycashd` package public (ycash-ops `docs/aws-setup.md` §8)
+- [x] DNS (§10): the zone is delegated to Route 53 (NS checked); zone and ACME contact set in `ycash-ops` only
+- [ ] Owner, in this order:
+  1. AWS account, state bucket, OIDC, the two deploy roles.
+  2. DNS: hosted zone, registrar name servers, WHOIS privacy.
+  3. GitHub environments `testnet` and `release-signing` with their secrets.
+  4. Merge the PRs, bump the infra pin, build the image, then `apply` and `deploy`.
+- [ ] Not verified on real AWS: SSM delivery, cloud-init, the first EKS apply, DNS and certificates, the signing run against a real release
+- Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
+
+### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
+- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). **PR CI green on both lines** after three fix rounds, including the functional `testnet_ceremony.py` (the full regtest rehearsal: prefix bundle and restore, the fork block, the set, the house seats, maturity, an rc1-like node agreeing) and `ycash_bootstrap.py`. The fixes: find the set transaction through the blocks, not the wallet; a bond locktime of tip + 1, not 0; CodeQL file permissions; gitleaks.
+  - devnet join mode: `yellowback-devnet up --network testnet-yb-*`; regtest unchanged; profiles `contrib/yellowback/profiles/*.toml`.
+  - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
+  - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
+  - **Owner decision:** the house-seat bonds (10,000 YEC per seat; fast's 7 seats need 70,000) cannot be mined soon after the fork. Scale the fast column's bond floor, or fund the seats another way.
+  - Plan §2.2 to amend: the fork-block miner needs `-maxtipage` (now on every testnet node, §2.3); after the fork, mining is Equihash 192,7 (a GPU miner through yolo).
+- [~] **N3 remainder**: draft PR ycash-infra#17 (branch `claude/n3-services`), **PR CI green** (after a shellcheck SC2015 fix). Not run on a cluster or a real node. Per network, all off by default:
+  - testnet faucet: its own wallet node, limits per IP and per address, optional proof of work;
+  - status page and probe: the cross-line state-hash check;
+  - snapshotter and verifier: format `ycash-state/1`, `bundles/state/`; ycash6 and ycash-dd statements must agree;
+  - alerts (PrometheusRule).
+  - Owner decisions open: T-9 (keys in the chart; the faucet and the GitHub publish token wait on it), T-3 (one status host or one per network).
+  - Open question: do ycash6 and ycash-dd report the same `utxo_hash_serialized`?
+- [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); **PR CI green on all three** after one fix round (the Ycash notice on `version.h`, no `ycash6` in `src/`, an action pin's version comment, test-file permissions); `rc-qualify` itself first runs at an rc tag:
+  - release rules by stage (beta, rc, final; R7 per testnet profile; slow may have a height without a set, T-15);
+  - protocol version 270013 → 270200 (T-8);
+  - a release `sign` job: SBOM, SHA256SUMS, provenance, keyless cosign;
+  - `rc-qualify.yml` steps 1–4 and the qualification record;
+  - the release train (`releases/v<version>.yaml`, `scripts/release-train.py`).
+  - Owner decisions open: 270200; ycash-dd `MIN_PEER_PROTO_VERSION` (stays 170002, P8 says 270013); §5.1's rc row is to be amended to T-15.
+  - Not done: the §5.5 release image (ghcr push, `Dockerfile.release`), client release workflows, bundle-manifest provenance.
+- These stay off the seeds code (`infra/testnet-seeds`, `node-image.yml`) and ycash-ops while the owner tests the first deploy; each merges when the owner chooses
 
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
@@ -483,6 +727,16 @@ that carries it.
 | Faucet | 1 | Workspace | `images/faucet`, ungated (§6.3) |
 | Bundle producer and verifier | 1 producer (ycash6), plus at least 2 independent verifiers (§4.3) | Workspace, plus invited operators | Release image |
 
+**Every testnet node runs with `-maxtipage=999999999`** (owner, 2026-10-31), and the operator docs
+tell everyone else to. In plain words: a testnet can go days without a block, and a node restarted
+when the newest block is more than a day old thinks it is still syncing. It then refuses
+`getblocktemplate` (a miner cannot restart the chain) and ignores peers' `getheaders` (newcomers
+cannot sync from it). The flag turns that check off; it changes no consensus rule, and mainnet keeps
+the default. It does not lower difficulty: after six block intervals without a block the next may
+be mined at minimum difficulty, which on slow and legacy is mainnet's (a GPU miner through yolo).
+Our seeds and charts set it (ycash-infra#19); the explanation for outside operators is
+`ycash-infra/images/ycashd/README.md`, "Keeping a quiet testnet alive".
+
 ---
 
 ## 3. Regtest to testnet is one setting: the network profile
@@ -686,7 +940,7 @@ the stage the tag names (T-8):
 | Tag | Required | Not required |
 |---|---|---|
 | `v6.22.N-betaM` | parity between lines, maturity set, 6.22 version | heights, sets, protocol version |
-| `v6.22.N-rcM` | parity; **testnet** Vault height and set both set (R7, tightened from "both or neither" to "both"); R3–R5 (the protocol-version bump); R6 | R1 and R2 (mainnet height and set stay unset on an rc unless the owner sets them) |
+| `v6.22.N-rcM` | parity; R7 per testnet profile (owner 2026-10-29, amended to T-15): testnet-yb-fast's Vault height and set both set; testnet-yb-slow may have its height without a set (its set follows its activation), never a set without a height; testnet-legacy never a height; R3–R5 (the protocol-version bump to 270200); R6 | R1 and R2 (mainnet height and set stay unset on an rc unless the owner sets them) |
 | `v6.22.N` (final) | R1–R7 as today | — |
 
 The protocol-version bump (P8 part D) is therefore **taken with rc1**:
@@ -886,10 +1140,10 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 |---|---|---|
 | **T-1** | Revive the old testnet, start a fresh genesis, or re-fork from Zcash testnet | **Re-fork from Zcash testnet at 510,248** (§2.1). Reviving needs a chain nobody can reach. A fresh genesis loses the mainnet-shaped history and the fork code paths, and gives the bundle no external anchor |
 | **T-2** | Network identity, and the post-fork YDF addresses | New magic (the old one is Zcash testnet's), ports unchanged, datadir `testnet4`, selected by `-testnet`. Keep the old YDF testnet addresses, or replace them with workspace-held testnet keys: recommended **replace**, so the testnet's development-fund outputs are spendable in drills |
-| **T-3** | Domains and seed hostnames; the Foundation's `testseed.ycash.xyz` | Ask the Foundation for the `testseed` delegation. Until then, a workspace-owned domain |
+| **T-3** | Domains and seed hostnames; the Foundation's `testseed.ycash.xyz` | **Decided (owner 2026-10-29).** A workspace-owned domain (not ycash.xyz), registered with WHOIS privacy; its name lives only in `ycash-ops`. Hostnames per network (`lite-fast.`, `lite-slow.`, `lite-legacy.`, `viz-*`, `faucet-*`, `status.`). No DNS seed (fixed seeds, D1) |
 | **T-4** | Testnet `nVaultMinSetMaturity` | **1,152 (≈ 1 day).** Mainnet's 16,128 is tested by regtest suites with the value as a parameter, and the parity check compares mainnet. Testnet's job is the drill cadence, including resets |
-| **T-5** | Founding attestor set | 7 seats with a threshold per §15. At launch at most 3 house seats, run by the workspace from distinct providers, and at least 4 invited operators. G-5's "≥ 7 operators" is read only once the house seats are replaced |
-| **T-6** | Signing | GitHub provenance plus keyless cosign for all assets, plus an owner minisign key on `SHA256SUMS`. Bundle statements are signed by at least 2 verifier keys, at least one of them not the workspace's |
+| **T-5** | Founding attestor set | **Decided (owner 2026-10-29).** testnet-yb-fast: 7 house seats, keys generated into the cluster secret store. testnet-yb-slow: 3 house seats at launch, 4 invited operators added as recruited (house seats fill in until then). G-5's "≥ 7 operators" is read on slow |
+| **T-6** | Signing | **Decided (owner 2026-10-29).** GitHub provenance plus keyless cosign for all assets; the owner's minisign key (`02C923A6C593AF18`, public key `RWQYr5PFpiPJAigk86vf89bPYrJCXj5tskgRAPRYFsEXyciZo8dveOGQ`; replaced the first key the same day) signs `SHA256SUMS`, automatically from a `ycash-ops` workflow (secret key in its secrets) and by hand with a local script when needed. Testnet bundle statements: 2 house verifier keys (relaxed); at least one outside verifier is a mainnet requirement |
 | **T-7** | Reset policy | Reset on any history-invalidating rule change before mainnet. Never reset after the mainnet height is set |
 | **T-8** | Stage-aware release rules, and taking the protocol-version bump at rc1 | Yes (§5.1) |
 | **T-9** | Amend `ycash-infra` rules 4 and 5 for `charts/ycash-testnet` | Yes, scoped to testnet keys and release images |
@@ -897,6 +1151,13 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | **T-11** | Reproducible builds | A mainnet-launch item, not an rc item |
 | **T-12** | Registry | ghcr.io public, ECR as the EKS mirror |
 | **T-13** | Explorer | chain-viz plus yindex for testnet. A full explorer is a separate proposal |
+| **T-14** | Names and selection of the three testnets (revision 3) | **Decided (owner 2026-10-29).** `testnet-yb-fast`, `testnet-yb-slow`, `testnet-legacy`; `-testnet -testnetprofile=<fast\|slow\|legacy>`, required, compiled-in; `NetworkIDString()` stays `"test"`. Magics `f77962d3` / `d4` / `d5`; ports 18833 / 18933 / 19033 (RPC one below) |
+| **T-15** | When `testnet-yb-slow` activates Vault | **Decided (owner 2026-10-29).** About a week of blocks after its launch, set by its first rc, so the activation is rehearsed live as on mainnet. fast activates at 510,400; legacy never |
+| **T-16** | fast's other YED block windows | **Decided (owner 2026-10-29).** Scaled down in a fast column in the node's parameters by one stated rule, every invariant asserted, so dormancy, revival and seat aging are testable in hours |
+| **T-17** | Seed shape | **Decided (owner 2026-10-29).** 2 hosts, each serving all three networks (`t3a.medium`); host count is a variable |
+| **T-18** | Mainnet seed readiness | **Decided (owner 2026-10-29).** `main` is a profile of the same module; a separate stack, state and account, applied only through an approval-gated GitHub Environment; nothing created before P8 |
+| **T-19** | Services per network | **Decided (owner 2026-10-29).** Seeds, lightwalletd, faucet and chain-viz on all three; YED personas and attestor sets on the two `yb` networks |
+| **T-20** | Kubernetes (EKS) for the testnets | **Decided (owner 2026-10-29).** One cluster, a namespace per network, deployed from `ycash-ops` like the seeds; up for campaigns and the rc soak, down otherwise; mainnet a separate approval-gated cluster in its own account, nothing before P8 |
 
 ---
 
