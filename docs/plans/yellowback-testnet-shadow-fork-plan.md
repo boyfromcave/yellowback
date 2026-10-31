@@ -114,13 +114,26 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   10,000 TAY plus a faucet take about 20,000 blocks, roughly 3 weeks at 75 s per block. slow's
   Vault height is therefore set after that (recorded at rc time from `getblocksubsidy`). The
   alternative, funding them from copied coins, is ruled out by the user safety rule (§2).
-- [ ] **The new branch-ID values** (slow shadow, slow Vault, legacy shadow): proposed by the node
-  work, chosen to collide with no Zcash or Ycash ID, like the network magics.
+- [ ] **The new branch-ID values**, proposed by WP-1 (checked against every Zcash and Ycash ID and every
+  magic), awaiting the owner: slow shadow `0x57a24d5d`, slow Vault `0xe1f1cc08`, legacy shadow
+  `0x35706728`.
+- [ ] **Mining after the split:** the PoW limit stays mainnet's (the copied history was checked against
+  it), so a minimum-difficulty block on slow or legacy still needs about 8,192 Equihash 192,7
+  solutions: GPU miners through yolo. A separate, easier post-split limit would be a larger consensus
+  change (not made).
+- [ ] **Merge timing:** WP-1 merges only once H_S is known; merging turns slow and legacy into the
+  shadow profiles, which have no blocks of their own until then.
 - [ ] **Where the harvest runs:** EC2 from `ycash-ops`, or a self-hosted runner.
 
 ### S1. Node changes (both lines + librustzcash6)
-- [~] `UPGRADE_SHADOW` and per-network branch IDs, slow and legacy on mainnet's parameters, the
-  difficulty reset, the Rust network parameters, the RPCs, and the release guard
+- [~] WP-1 and WP-2 written: draft PRs ycash6#73, ycash-dd#151, librustzcash6#19 (`UPGRADE_SHADOW`,
+  per-network branch IDs, slow and legacy on mainnet's parameters, the difficulty reset, the Rust
+  network parameters, the RPCs, R8 in the release guard). ycash6 pins librustzcash6 at the branch
+  commit for CI; it moves to the merged commit later. CI is the first full build
+- [~] Found on the way, and split out because it affects testnet-yb-fast today: ycash6#74. The Rust side
+  used the old testnet's upgrade heights (Canopy 661,634, no Vault), so a ycash6 node on fast would
+  reject a block with a shielded coinbase output between 510,254 and 661,634, and ycash-dd would
+  accept it. It must merge, and the node image be rebuilt, before fast goes live
 - [ ] Tests: replay rejected both ways; slow's Vault ID is not mainnet's; slow and legacy equal
   mainnet up to H_S; the difficulty reset
 - [ ] librustzcash6 PR, then the ycash6 pin bump (WP-3), then the YEW and x402 pins (WP-3b)
