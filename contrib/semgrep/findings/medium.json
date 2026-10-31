@@ -1,0 +1,30 @@
+{
+ "bucket": "medium",
+ "sla_days": 90,
+ "findings": [
+  {
+   "fingerprint": "34ce828308a77a9d",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "scripts/release-train.py",
+   "line": 200,
+   "first_seen": "2026-10-31",
+   "due": "2027-01-29"
+  },
+  {
+   "fingerprint": "697dc3cf38d63bda",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "scripts/release-train.py",
+   "line": 262,
+   "first_seen": "2026-10-31",
+   "due": "2027-01-29"
+  },
+  {
+   "fingerprint": "30edb075c03d64dd",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "scripts/test_release_train.py",
+   "line": 38,
+   "first_seen": "2026-10-31",
+   "due": "2027-01-29"
+  }
+ ]
+}
