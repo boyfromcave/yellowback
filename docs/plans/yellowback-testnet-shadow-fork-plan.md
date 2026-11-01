@@ -119,7 +119,8 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   shadow `0x35706728`.
 - [x] **Mining after the split** (owner, 2026-10-31): the PoW limit stays mainnet's (the copied history
   was checked against it), so a minimum-difficulty block on slow or legacy still needs about 8,192
-  Equihash 192,7 solutions: GPU miners through yolo. A separate, easier post-split limit would be a
+  Equihash 192,7 solutions: GPU miners through yolo (rented on Vast.ai from `ycash-ops`: 2 × RTX
+  3070 class on slow, legacy by burst; testnet plan revision 5). A separate, easier post-split limit would be a
   larger consensus change (not made). Because mining will be sparse, **every slow and legacy node runs
   with `-maxtipage=999999999`**, so the chain can sit idle for days and mining resumes whenever a
   miner returns (testnet plan §2.3; ycash-infra#19).
@@ -166,7 +167,8 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   re-bootstrap from `mainnet-prefix-v1`
 - [ ] Mine past H_S + 1 at minimum difficulty (`-maxtipage=999999999` on every node, the first miner's
   above all, since the copied tip is older than the node's one-day sync-age limit; a GPU miner
-  through yolo after that)
+  through yolo after that: the Vast.ai fleet, `miners` `up` for slow and `burst` for legacy, testnet
+  plan revision 5)
 - [ ] Faucet, status pages and alerts per network; announce, with the user safety note (§2)
 
 ### S6. Slow's Yellowback activation (the rehearsal itself)
