@@ -1,11 +1,30 @@
 # Ycash Yellowback (YED) and the vault network upgrade on kogany (Zakura) — integration plan
 
+**Revision 2 (2026-11-01, same day).** Two owner decisions taken today change the plan's end
+state; everything else in revision 1 stands.
+- **The product is kogany plus a parity sidecar (K-20, decided).** Revision 1 left wallet
+  functions on a ycash6 `connect=` sidecar and the signing roles on ycashd (K-3), to be revisited
+  after W9. The owner wants a Ycash deployment with no ycashd at all. So a separate component, its
+  own repository on `upgrade/vault` (name pending, written `<sidecar>`), built on **yew-core**,
+  serves the ycashd wallet RPCs by name and JSON shape in front of kogany, and signs in a separate
+  process. The new **§3b** plans it as six chunks **S0–S5**. Its gate: the wallet RPC contracts
+  and the 48 wallet-needing functional scripts pass on kogany + sidecar. The ycash6 `connect=`
+  sidecar stays as the test rig for W1–W8 and as a reference column in W9.
+- **Vault stays v4-only (K-21, decided: option D of
+  [`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md)).** U-26 stands. The
+  ZIP-244 vault signing message is written now as a dormant spec section, with vectors from ycash6's
+  dormant v5 code, and switched on only if Ycash adopts NU5.
+
+Revision 2 adds §3b, K-20…K-26, W7-e, the S rows of the status block, §4.3, the sidecar CI,
+success criteria, estimate rows, risks R-16…R-21 and mapping rows M24-32…M24-41. Text that
+revision 2 supersedes is kept and marked *(superseded, rev 2)*.
+
 **Revision 1 (2026-11-01).** Synthesis of the five planning surveys in [`surveys/`](surveys/) (lanes A–E,
 same date). Nothing is ported yet: kogany `upgrade/vault` = `kogany-legacy` = Zakura `main` @
 `2b062412c5`. Modelled on [`yellowback-ycash6-plan.md`](../yellowback-ycash6-plan.md) (the 4.5.0 →
 6.20.0 port) and the execution-status style of [`yellowback-upgrade-plan.md`](../yellowback-upgrade-plan.md).
-Items are numbered **K-\*** (owner decisions), waves **W0–W9**, chunks **W<n>-<x>**, findings
-**KF-\*** (§9) and mapping rows **M24-\*** (§10).
+Items are numbered **K-\*** (owner decisions), waves **W0–W9**, chunks **W<n>-<x>**, sidecar chunks
+**S0–S5** (rev 2), findings **KF-\*** (§9) and mapping rows **M24-\*** (§10).
 
 **Pins.** Every citation is at these commits unless it names another tree.
 
@@ -19,6 +38,9 @@ Items are numbered **K-\*** (owner decisions), waves **W0–W9**, chunks **W<n>-
 | `librustzcash6` | `upgrade/vault` | `af841431` |
 | `zakura-zcash-script` 0.0.1 (crates.io, checksum = `ref/zakura/Cargo.lock:3636`) | `zakura-core/common` `crates/zcash_script` | `ca4c341ed9c4` |
 | `zakura-protocol`/`-primitives`/`-address`/`-equihash` 5.0.0-rc.2 (crates.io) | `zakura-core/common` | `bdbca121628d` |
+| `yew` (rev 2: yew-core, the sidecar's base) | `upgrade/vault` | `c4dd450` |
+| `hawkeye` (rev 2: RPC consumer) | `upgrade/vault` | `7022742` |
+| `x402-ycash` (rev 2: RPC consumer) | `upgrade/vault` | `334d74c` |
 
 Paths starting `crates/`, `.github/`, `qa/`, `docs/` or `Cargo.*` with no tree named are under
 `ref/zakura/`. Crate-package citations are written `zakura-protocol:src/…` (lane B's convention).
@@ -32,6 +54,10 @@ Legend: `[x]` done and verified on the integration tree, `[~]` in flight (agent 
 
 **Owner decisions (§0):** K-1 … K-19 all **pending**. W0 may start once K-2, K-5, K-15 and K-19 are
 answered; W1 needs K-1, K-9, K-10, K-11, K-12 as well.
+**Rev 2:** **K-20 decided** (2026-11-01: the product is kogany + a parity sidecar; §3b). **K-21
+decided** (2026-11-01: Vault v4-only, option D; the ZIP-244 vault message is a dormant spec
+section). K-22 … K-26 (the sidecar's name, transport, signer, RPC scope and kogany additions)
+**pending**. S0 needs K-22 and K-23; S2 needs K-24; S4 needs K-25; W7-e needs K-26.
 
 | Wave | Content | State | Gate seen green |
 |---|---|---|---|
@@ -42,9 +68,22 @@ answered; W1 needs K-1, K-9, K-10, K-11, K-12 as well.
 | W4 | the vault primitive: templates, acts, set state, storage, snapshot, reorg | [ ] not started | — |
 | W5 | the YED rule module: math, params, codecs, attestations, state, index | [ ] not started | — |
 | W6 | relay policy and mempool | [ ] not started | — |
-| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract | [ ] not started | — |
+| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract; rev 2: W7-e reject-reason parity and regtest `setmocktime` for the sidecar | [ ] not started | — |
 | W8 | mining: template filter, coinbase tag | [ ] not started | — |
-| W9 | wallet via ycash6 sidecar, full mixed matrix, client legs, demonstration | [ ] not started | — |
+| W9 | wallet via the ycash6 sidecar test rig, full mixed matrix, client legs, demonstration; rev 2: the third matrix column comes from S5 | [ ] not started | — |
+
+**Parity sidecar track (rev 2, §3b).** It runs beside W5–W8 with its own agents. It can start
+around W5/W6 and cannot finish before W7.
+
+| Chunk | Content | State | Gate seen green |
+|---|---|---|---|
+| S0 | repository, scaffold, façade skeleton (forwarding, auth, method table), harness mode `SIDECAR_BIN`, contract suites pointed at it | [ ] not started | — |
+| S1 | wallet state and sync on yew-core against kogany: transparent, Sapling, PQ keys, YED tokens, vaults and intents; sync barrier, reorgs | [ ] not started | — |
+| S2 | builders and the signer boundary: yew-core builders mapped to the build RPCs; new set/act, generic vault and cancel builders; the signer process | [ ] not started | — |
+| S3 | roles: attestor `attest` mode, Hawkeye member, x402 `rpcWalletSigner` (yolo's payout needs no wallet) | [ ] not started | — |
+| S4 | façade complete: the 47 RPCs plus the stock wallet set, error and arity parity, auth, process lifecycle | [ ] not started | — |
+| S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [ ] not started | — |
+| V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [ ] not started | — |
 
 **Branches.** Integration branch `upgrade/vault` in `kogany` and in the common fork (K-2); agents
 work in `wt/<chunk>` on `up/<chunk>` off `upgrade/vault`; the coordinator merges. No commit to
@@ -87,7 +126,32 @@ Yellowback (YED) rule module, so that it agrees with both C++ lines block for bl
   Each layer is checked against the vectors before the next starts.
 - **W6–W8 the node around them.** Relay policy, the read RPCs and mining.
 - **W9 the full test matrix.** kogany has no wallet. Wallet functions are covered the way Zakura
-  itself covers them: a ycash6 node runs beside it as a wallet sidecar.
+  itself covers them: a ycash6 node runs beside it as a wallet sidecar. *(Rev 2: this ycash6
+  sidecar is the test rig. The product's wallet is the parity sidecar, below.)*
+- **S0–S5 the parity sidecar (rev 2).** A separate wallet process on yew-core that answers the
+  ycashd wallet RPCs in front of kogany. It runs beside W5–W8 and closes with W9.
+
+**The product (rev 2, K-20).** What ships is **kogany + a parity sidecar**, and no ycashd. kogany
+stays wallet-less: it validates, relays, mines and serves the read RPCs. The sidecar is a
+separate component in its own repository. It is built on **yew-core**, the Rust core of the YEW
+mobile wallet, which already holds the wallet state, transparent and Sapling sync, the vault-spend
+and YED mint/redeem/claim builders and post-quantum signing. In front of kogany it exposes a
+**ycashd-compatible wallet-RPC façade**: the 47 Yellowback wallet RPCs by name and JSON shape,
+plus the stock wallet RPCs the tests and tools call. So existing tests, tools and operators run
+unchanged. Keys never sit in the façade. Every transaction is built unsigned, signed in a separate
+signer process (or, later, a device) and then broadcast. The sidecar reaches kogany only through
+its public JSON-RPC, Zakura's gRPC indexer streams and lightwalletd-dd (where yew-core already
+uses it). The goal is **kogany + sidecar == ycash6, functionally**, measured by the wallet RPC
+contracts and the 48 wallet-needing functional scripts. The attestor in `attest` mode, Hawkeye
+members and x402's node-wallet signer then run with no ycashd (§6).
+
+**The transaction version (rev 2, K-21).** Vault stays **v4-only** (U-26 stands; option D of
+[`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md)). v5 cannot be made
+coherent on Ycash without NU5's block auth-data commitment, which means NU5 itself. ycash-dd has no
+v5 code. The one real gain, partial txid non-malleability, does not pay for a format change. The
+ZIP-244 restatement of the vault and PQ signing messages is written now as a dormant spec section,
+with vectors from ycash6's dormant v5 code, and switched on only at the NU5 (or NU7/Tachyon)
+forcing event. kogany needs nothing for it: K-1 already keeps v5 out under Vault.
 
 **Headline numbers** (estimates; §7 carries the uncertainty):
 
@@ -99,8 +163,10 @@ Yellowback (YED) rule module, so that it agrees with both C++ lines block for bl
 | Edits to upstream Zakura files (the touch budget) | ~5–8k lines, about half of it in W1 (network identity is spread across many crates) |
 | Edits to the forked crates (`zakura-core/common`) | ~0.9–1.3k lines (branch IDs, Ycash constants, Vault, four opcodes) |
 | Tests | ~25–30k lines plus ~7k lines of generated checkpoints |
-| Effort | **~70–105 agent-days** across 10 waves and 48 chunks; calendar time is set by the two-person consensus review gate and by mainnet sync wall-clock time |
-| Owner decisions | 19 (K-1 … K-19), six of them decisive |
+| Effort | **~70–105 agent-days** across 10 waves and 48 chunks; calendar time is set by the two-person consensus review gate and by mainnet sync wall-clock time *(rev 1 figure, node only)* |
+| Parity sidecar (rev 2) | ~9.5–14k production lines on top of ~29k reused yew-core lines; **~23–34 agent-days** (S0–S5) plus 1–2 for W7-e |
+| Effort, rev 2 total | **~99–150 agent-days** (central ~120), including the S-track, W7-e, V5-spec and the sync chunks; ~5–7 months elapsed (§7) |
+| Owner decisions | 26 (K-1 … K-26): two decided (K-20, K-21); ten decisive in all (K-1…K-6, K-20, K-21, K-24, K-25) *(rev 1: 19, six decisive)* |
 
 **The biggest risks.**
 1. **Order is a feature switch in Zakura.** Copying the C++ position of Vault (after NU5..NU6.2)
@@ -114,7 +180,9 @@ Yellowback (YED) rule module, so that it agrees with both C++ lines block for bl
    interpreter is a crates.io crate. Both must be forked and kept rebaseable onto upstream (K-2).
 4. **No wallet.** The roles that sign inside the node cannot run on kogany: attestors in `attest`
    mode, Hawkeye bridge members, the node bundled with YecWallet, and x402's `rpcWalletSigner`.
-   They keep a ycashd (K-3).
+   They keep a ycashd (K-3). *(Superseded, rev 2: they run on kogany + the parity sidecar, K-20.
+   Only YecWallet, which bundles ycashd, stays out of scope, K-25. The risks that remain are
+   two-process operation, parity versus identity and key custody, R-16…R-19.)*
 5. **Upstream churn.** Zakura moves fast at the tail of its upgrade list (NU7 already has a
    mainnet height). The plan inserts in the middle and syncs upstream at wave boundaries (§4).
 
@@ -127,15 +195,20 @@ the survey questions merged into each row (A2 = lane A question 2, D-3 = lane D'
 The six decisive ones come first. **Each recommendation is the plan's default;** a chunk that
 needs a decision does not start before it is answered.
 
+**Rev 2.** K-20 and K-21 are **decided** (owner, 2026-11-01) and are decisive. K-22 … K-26 are the
+sidecar track's own questions. Of those, K-24 (key custody) and K-25 (RPC scope) are decisive. So
+there are ten decisive decisions in all, two of them taken. K-3 is superseded in part by K-20, and
+K-7 now cross-references K-21.
+
 | # | Decision | Options | Recommendation and why | Blocks | Source |
 |---|---|---|---|---|---|
 | **K-1** | **Upgrade-enum placement.** Zakura's `NetworkUpgrade` order *is* the feature gate. | (a) `Ycash` between Sapling and Blossom, `Vault` between Canopy and Nu5, both new variants in height order; (b) Vault at the end (C++ order); (c) Vault after Nu6_2 (literal ycash6 mirror); (d) Vault not an upgrade, a parameter plus branch-ID override; (e) per-network upgrade sequences | **(a).** (b)/(c) inherit NU5–NU7 rules and fork on the first Vault block (§1.2). (d) spreads an override across 17 `branch_id()` callers and the history-tree reset. (e) rewrites ~20 Ord gates, which makes rebasing hostile. With (a), "v5 is invalid under Vault" (U-26) falls out of the existing gates. Vault activity is tested only by **explicit membership** (`is_vault_active`, §2), never by `current >= Vault`. | W1 (Ycash variant), W2 | A1, D-1, B (lane D input) |
 | **K-2** | **Crate-fork strategy** for `zakura-protocol`/`-primitives`/`-address`/`-transparent` and for `zakura-zcash-script`. | (O1) Ycash-only replace-in-fork (the librustzcash6 pattern); **(O2)** feature-gated fork (`ycash` cargo feature); (O3) shim inside kogany, no fork; (O4) swap in librustzcash6's crates; (O5) upstream generalisation | **O2, one fork repo of `zakura-core/common`** carrying both the librustzcash crates and `crates/zcash_script`. Both come from that monorepo (§1.4), so one fork with one `-legacy` baseline. kogany pins it by exact rev through `[patch.crates-io]`, as ycash6 pins librustzcash6. Under O2 the forked crates are upstream when the feature is off, so upstream tests still run. O3 cannot represent Ycash's NU5 ID `f919a198` and so fails constraint 1. O4 breaks every NU6.3/NU7/v6 API. Pursue O5 alongside as an upstream proposal, never as a dependency. **Name** to be chosen (lane B suggests `zakura-common-ycash`); add it to `repos.yaml` with `-legacy` at the base commit. | W0, W1, W3 | A3, B1, C-T3 |
-| **K-3** | **Wallet-less node, sidecar, or external signer.** | (a) wallet-less: read RPCs only, with signing roles staying on ycashd and the wallet functions served by a ycash6 `connect=` sidecar (Zakura's zcashd-compat pattern); (b) an external-signer interface (PSBT-like build/sign/send) in kogany; (c) a native kogany wallet | **(a).** Far smaller. The sidecar fully validates every block it receives, so it doubles as a two-line differential. kogany serves the read and node-state RPCs (R1–R4, §1.6). The "build" RPCs (`vault_buildunlock`, `vault_buildcancel`, `set_buildact`, `yed_buildcancel`) are **wallet RPCs**: they fund from the wallet and remember the build in it (`ycash6/src/rpc/vault.cpp:2002-2019,2191`). They stay on the sidecar. YecWallet against kogany is out of scope (it bundles ycashd). Record that attestor `attest` mode, Hawkeye and x402's `rpcWalletSigner` need ycashd. Revisit (b) only after W9. | W7 scope, W9 | A2, B7, C1, E3, E4 |
+| **K-3** | **Wallet-less node, sidecar, or external signer.** | (a) wallet-less: read RPCs only, with signing roles staying on ycashd and the wallet functions served by a ycash6 `connect=` sidecar (Zakura's zcashd-compat pattern); (b) an external-signer interface (PSBT-like build/sign/send) in kogany; (c) a native kogany wallet | **(a).** Far smaller. The sidecar fully validates every block it receives, so it doubles as a two-line differential. kogany serves the read and node-state RPCs (R1–R4, §1.6). The "build" RPCs (`vault_buildunlock`, `vault_buildcancel`, `set_buildact`, `yed_buildcancel`) are **wallet RPCs**: they fund from the wallet and remember the build in it (`ycash6/src/rpc/vault.cpp:2002-2019,2191`). They stay on the sidecar. YecWallet against kogany is out of scope (it bundles ycashd). Record that attestor `attest` mode, Hawkeye and x402's `rpcWalletSigner` need ycashd. Revisit (b) only after W9. **Rev 2, superseded in part by K-20:** (a) stands for *kogany itself*: wallet-less, read and node-state RPCs only, and the ycash6 `connect=` sidecar stays as the **test rig** for the harness (W1–W8, W9-a, and the reference column of the W9 matrix). "Revisit after W9" is replaced: the product's wallet is the parity sidecar, a separate component (§3b), not a ycashd and not a wallet inside kogany. That is (b) placed outside the node. The roles listed above move to kogany + sidecar. | W7 scope, W9 | A2, B7, C1, E3, E4 |
 | **K-4** | **Rust rewrite or C++ through FFI** for `src/vault` and `src/yellowback` consensus code. | (a) rewrite in Rust as new `kogany-*` crates, checked by the vectors, the Python model and mixed regtest; (b) link the C++ overlay through FFI; (c) hybrid: FFI for pure codecs, Rust for state | **(a)** for the primitive and the module, with **vendored C only for PQ verification** (K-8). The C++ overlay is entangled with `CCoins`, LevelDB, `cs_main` and the 11 pinned shim files where the two C++ lines already differ (`qa/yellowback-cross-line.manifest`). Those are exactly the places Zakura differs most: concurrent semantic checks, RocksDB column families, `UpdateWith` reorgs. `zakura-script` is `forbid(unsafe_code)`. A Python model already exists as an independent implementation, and the vectors are designed to check another one. The cost is a third implementation, and the risk is the arithmetic (§4.4). | W3–W5 | C3 |
 | **K-5** | **Runtime or compile-time gating; the shape of the Ycash network.** | Ycash identity: (a) compile-time `ycash` profile that swaps the mainnet/default-testnet/regtest constants (lane B); (b) a runtime `Network::Ycash` variant (touches ~641 non-test `Mainnet` sites); (c) Ycash mainnet as a configured `Testnet` (wrong `kind()` and t-addr kind). Vault: (d) runtime parameter (height `None` on Zcash networks); (e) cargo feature or `cfg`. | **(a) for network identity and (d) for Vault, reconciled as in §2.3:** the `Ycash` and `Vault` enum variants and the `0x6d5b7a31` table row exist in **every** build, as inert data without a height. The Ycash *values* (branch IDs of Blossom/Heartwood/Canopy/NU5, heights, ports, prefixes, Equihash and YDF rules) sit behind the `ycash` feature. So the feature-off build behaves as Zakura on Zcash networks, and upstream's NU5–NU7 tests run there with Vault present and dormant. The feature-on build is Ycash-only. Lane D's "keep Zcash networks in kogany" (D-3) is met by the feature-off build, not inside the Ycash binary. CI builds both ways. | W0 (CI matrix), W1, W2 | B2, D-3, D-5 |
 | **K-6** | **C++ lines' `CurrentEpoch` realignment as a precondition of relaxing U-26.** On ycashd the epoch is the highest *index* with a height, and Vault's index is above NU5..NU6.2. If NU5 were ever scheduled after Vault, `CurrentEpoch` would return Vault forever (`ycash6/src/consensus/upgrades.cpp:130-139`). | (a) realign `ycash-dd`, `ycash6` and librustzcash6 now (Vault below NU5); (b) record it as a mandatory precondition of any U-26 relaxation and do nothing now | **(b).** It has no consensus effect today, because U-26 forbids scheduling Vault with any of NU5..NU6.2 (`ycash6/src/init.cpp:1541-1565`). Moving it now would put changes through the consensus review gate on both C++ lines for no behaviour. Record the four-line ordering divergence as invariant M24-3 and add the precondition to upgrade plan U-26's "given up". | none now; any future NU5 on Ycash | D-2 |
-| K-7 | **Implicit activation and the far boundary.** In Zakura, adopting a later Zcash upgrade brings every earlier one. Tachyon ⇒ NU7 ⇒ 25 s blocks + v4 ban. | (a) accept, and record that Ycash cannot adopt NU7 or Tachyon until a v5/v6 vault signing message exists and the block-count constants are recalibrated for 25 s blocks; (b) per-network sequences (O5 in lane D) to cherry-pick | **(a).** Cherry-picking means rewriting every Ord gate. Also confirm that `0xf919a198` (`ycash6/src/consensus/upgrades.cpp:68`) is the reserved Ycash NU5 branch ID, so the W1 table carries it. | none now (record in W2) | D-4, D-6, D-7 |
+| K-7 | **Implicit activation and the far boundary.** In Zakura, adopting a later Zcash upgrade brings every earlier one. Tachyon ⇒ NU7 ⇒ 25 s blocks + v4 ban. | (a) accept, and record that Ycash cannot adopt NU7 or Tachyon until a v5/v6 vault signing message exists and the block-count constants are recalibrated for 25 s blocks; (b) per-network sequences (O5 in lane D) to cherry-pick | **(a).** Cherry-picking means rewriting every Ord gate. Also confirm that `0xf919a198` (`ycash6/src/consensus/upgrades.cpp:68`) is the reserved Ycash NU5 branch ID, so the W1 table carries it. **Rev 2:** the "v5/v6 vault signing message" this boundary needs is pre-written as K-21's dormant section, so at the NU7/Tachyon boundary the message is a reviewed text, not a blank page. | none now (record in W2) | D-4, D-6, D-7 |
 | K-8 | **PQ verification source.** | (a) vendor the C++ lines' verify-only C (PQClean Falcon, slhdsa-c, with local patches) through `cc`; (b) Rust crates (YEW uses `slh-dsa =0.1.0`), held to the KAT/ACVP vectors and malformed cases | **(a)**, byte-identical by construction, pinned by SHA256SUMS as `yew/core/pq-c/README.md` does. Signing code is not vendored (no wallet). (b) stays an option once the malformed-encoding corpus exists. | W3 | A4, C4, C-T4 |
 | K-9 | **Pre-Canopy trust and checkpoint coverage.** Zakura validates pre-Canopy blocks by checkpoint hashes only. | (a) checkpoint-only through 1,100,005, as Zakura does for Zcash, stated as an assumption; (b) also port the Ycash-fork difficulty and pre-Canopy YDF for an independent re-validation | **(a)**, written down. Checkpoint lists must **never** cover Vault-epoch blocks until kogany's vault and YED state matches the C++ lines there (M24-14). | W1 (Y4) | B4, D-T7 |
 | K-10 | **Testnet profiles.** ycash6 carries three re-forked profiles (fast, slow, legacy). | (a) all three; (b) fast and slow only, with legacy testnet3 dropped as ycash6 did | **(b)**, as lane B recommends. | W1 (Y1, Y4) | B5 |
@@ -148,6 +221,13 @@ needs a decision does not start before it is answered.
 | K-17 | **Notifications.** Zakura has no ZMQ and no `-blocknotify`. chain-viz uses ZMQ (`chain-viz/src/collector.rs:178`). | (a) chain-viz polls (or uses Zakura's gRPC `indexer.proto` streams) against kogany: no node change; (b) add a notify hook | **(a).** | W7 | C6, E5, A-§8 |
 | K-18 | **Functional test reuse.** 48 of the 58 Yellowback functional scripts need a wallet on at least one node. | (a) mixed-line harness: the unchanged scripts gain kogany followers (`KOGANY_BIN`) whose tips and state hashes are asserted at every sync point; (b) port wallet RPCs so scripts run on kogany alone | **(a).** One run is both the C++ regression and the kogany equivalence check. CI runs it with and without `KOGANY_BIN`. | W1 (harness skeleton), W4+ | C2, E-§3.2 |
 | K-19 | **When kogany becomes a qualified line, and the AGENTS.md amendment.** | (a) at the end of W9 by explicit owner decision: release train, three-way rc-qualify, "both lines" → "all lines"; until then kogany follows vector changes by a PIN bump and is report-only for clients; (b) earlier | **(a).** Amend AGENTS.md at W0 *now* only for the layout (kogany and the common fork as working forks, rule 2 branch names) and the shared-defect rule, which becomes "C++ lines together; librustzcash6, the common fork and kogany follow in the same change set from W2 on." Release obligations wait for (a). Also: who tries to obtain **Yolk v4.3.1** (§8, R-9)? | W0 (amendment), end of W9 | C5, E6, B3, B-synthesis |
+| **K-20** | **The product: kogany + a parity sidecar.** **Decided** (owner, 2026-11-01). | — | A deliberate, separate component: **its own repository on `upgrade/vault`** (name: K-22), built on **yew-core**. It heavily reuses yew-core's wallet state, its Sapling and transparent sync, its vault-spend and YED mint/redeem/claim builders and its PQ signing. It exposes a **ycashd-compatible wallet-RPC façade**: the 47 wallet RPCs by name and JSON shape, so existing tests, tools and operators run unchanged. It has a **signer boundary from day one**: build unsigned, sign in a separate process or device, broadcast (PSBT-style). It reaches kogany only through public RPC and Zakura's gRPC indexer streams, and lightwalletd-dd where yew-core already uses it. **Goal: kogany + sidecar == ycash6 functional parity**, measured by the wallet RPC contract and the 48 wallet-needing functional scripts passing on kogany + sidecar. The ycash6 `connect=` sidecar remains the test rig for W1–W8 and a reference in W9. Plan: §3b. | S0–S5, W9 | owner |
+| **K-21** | **Transaction version for Vault.** **Decided** (owner, 2026-11-01): option **D** of [`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md). | (A) v4-only; (B) v5-only Vault; (C) v4 and v5; **(D) v4 now, dormant v5 message** | Vault stays **v4-only (U-26 stands)**. The ZIP-244 vault signing message is written now as a **dormant spec section** ("§15.2-v5" beside upgrade plan §15.2): `SetSigMsg` over the ZIP-244 S.2 digest with `ALL\|ANYONECANPAY`, `OP_CHECKPQSIG` over S.2 `ALL`, `actMsg` unchanged (assessment §4 D). It carries vectors generated from ycash6's dormant v5 code: a ycash6 unit-test generator calls the ZIP-244 `SignatureHash` path (`src/script/interpreter.cpp:1441-1497`, Rust `sighash_v5.rs`) on hand-built v5 transactions, so no node configuration has to schedule Vault and NU5 together. The vectors stay outside `qa/yellowback-cross-line.manifest` until activation. The stale Python `zip244.py` digest is fixed or replaced before any vector is derived from it (assessment §2 row 16). The section is switched on only if Ycash adopts NU5. **kogany:** nothing (K-1 already keeps v5 out under Vault); W2-c pins the dormant vector file report-only. Chunk V5-spec, ~1–2 agent-days, no consensus change. Cross-references K-6 (its precondition), K-7 (the far boundary) and upgrade plan U-26. | none now | owner; assessment |
+| K-22 | **The sidecar's name and repository.** | candidates: **`yewd`** (the YEW core as a daemon); **`kogany-wallet`** (says what it pairs with); **`ycash-walletd`** (says what it replaces) | Owner's choice. The plan writes `<sidecar>`. Avoid names that collide with YecWallet or Ywallet, and keep "Yellowback" out of it (it is a YEC and YED wallet, naming rule 6). Add it to `repos.yaml` at S0 with no `-legacy` (net new, like hawkeye). | S0 | rev 2 |
+| K-23 | **How the sidecar reads the chain.** yew-core's types are lightwalletd's proto types (`yew/core/src/net/mod.rs`: `CompactTxStreamer`, `YellowbackStreamer`). | (a) lightwalletd-dd in front of kogany for everything yew-core already reads (transparent UTXOs and history, YED tokens and `yed_*` reads, Sapling compact blocks), plus kogany JSON-RPC for the reads lightwalletd does not proxy (`set_*`, `vault_list`, `getrawmempool`, `gettxout`), plus the indexer streams for tip, reorg and mempool events; (b) a JSON-RPC transport inside yew-core (`net::node`) for the transparent and YED reads, with lightwalletd-dd only for Sapling | **(a)**. No yew-core change for S1. lightwalletd-dd on kogany is already W9-c's leg. Every `YellowbackStreamer` method is a thin proxy of one `yed_*` RPC, so (b) stays mechanical if the extra hop fails S1's barrier latency. | S0, S1 | rev 2 |
+| **K-24** | **Key custody and the signer.** | (a) a signer process on the same host, Unix-domain socket with a peer-UID check, keys in the signer's encrypted store; the façade holds only public material (xpubs, PQ key ids, the Sapling UFVK); (b) (a) plus an offline file-drop or device transport later; (c) keys in the façade (ycashd's model) | **(a) now, (b) designed for.** The signer recomputes every digest from the transaction bytes and the prevouts it is shown, never from a digest the façade sends. It keeps the **sign-once records** (07/F-5, `set_listsigned`) and the **attestation equivocation guard** (`attest-signed.dat`), because a guard must live with the key. It runs yew-core's local gate (`gate.rs`) and term checks (`build/terms.rs`) before signing. Sapling: v4 has no partially-constructed-transaction format (librustzcash's PCZT targets v5; *uncertain* for v4), so the signer runs the whole Sapling build and proof for z-spends. (c) is refused: it would make the façade a hot wallet that any RPC caller drives. | S2 | rev 2 |
+| **K-25** | **RPC scope of the façade.** ycashd's wallet surface is far larger than the 47. | (a) the 47 + the R7 PQ wallet RPCs + **the stock wallet set the scripts and roles call** (§3b S4: 30 used by the 58 Yellowback scripts, 4 more used only by the attestor and x402) + three raw-transaction helpers ycashd serves without a wallet and Zakura lacks; (b) the 47 only; (c) all of ycashd's wallet RPCs | **(a).** (b) fails the 48-script gate: the scripts call `getnewaddress` 136 times, `sendtoaddress` 56, `signrawtransaction` 33 (§3b S4). (c) is unbounded scope (R-18). **YecWallet stays out of scope**: it bundles ycashd. Revisit after S5. | S4 | rev 2 |
+| K-26 | **kogany additions the sidecar needs beyond W7** (W7-e). | (a) add them to kogany: reject-reason parity in `sendrawtransaction` and a regtest-only `setmocktime`; (b) map reject strings in the harness and drop the three `setmocktime` scripts from the gate | **(a).** 23 of the 58 scripts match vault or YED reject reasons (71 distinct `bad-*` strings across the scripts), and the parity gate says "scripts unchanged". The mapping is RPC presentation, not consensus: the internal `TransactionError` keeps Zakura's form (§4.2 rule 4 (iii)). `setmocktime` is test-access only on regtest. | W7-e | rev 2 |
 
 ---
 
@@ -352,7 +432,9 @@ Until then the primitive treats `YED\0` as inert, which is safe only on regtest.
 - x402's verifier;
 - ycash-infra.
 
-Cannot: YecWallet, Hawkeye, attestor `attest` mode, x402's `rpcWalletSigner`.
+Cannot: YecWallet, Hawkeye, attestor `attest` mode, x402's `rpcWalletSigner`. *(Rev 2: all but
+YecWallet run against kogany + the parity sidecar, §3b S3. YecWallet bundles ycashd and stays out,
+K-25.)*
 
 ### 1.7 Verification assets (lane E)
 
@@ -614,6 +696,12 @@ Entry: K-3, K-17 decided.
 | W7-c `rpc-stock` | `sendrawtransaction` `allowyedburn` (H7), `validateaddress` P2PQPKH, `getblockchaininfo.testnetprofile` | contract cases | 200–300 / 200 / 1 |
 | W7-d `rpc-artifacts` | `xtask check-rpc-artifacts` (OpenRPC ⊇ contract read methods; wallet methods listed as sidecar-served); `make spec` gains `EXTRACT_SPEC_KOGANY_DIR`; chain-viz (polling, K-17) and lightwalletd-dd legs against kogany, report-only | `make spec-check`; both client legs run | 100 / 200 / 1–2 |
 
+**Rev 2: W7-e, for the parity sidecar** (entry: W7-b, K-26; not consensus).
+
+| Chunk | Scope | Exit gate | Size |
+|---|---|---|---|
+| W7-e `rpc-parity` | (1) `sendrawtransaction` returns ycashd's `-26` `"<code>: <reason>"` and `-25` texts for every reason in `ycash6/doc/vault-rpc.md` "Error reasons" and `doc/yellowback-rpc.md` "Error identifiers (M8)", through a table from kogany's `TransactionError` variants; the internal errors keep Zakura's form (§4.2 rule 4 (iii)). (2) A regtest-only `setmocktime` (`RpcAccess::Test`, as Zakura classes `generate`; `crates/zakura-rpc/src/methods.rs:242-246`) feeding the template `curtime` and the quote age (used by `yellowback_mining`, `_quote`, `_stratum`). (3) A diff of verbose `getrawtransaction`/`getblock` against ycash6 on the scripts' fields (`vin[].scriptSig`, `vout[].scriptPubKey.addresses`, PQ addresses); fixes land here if W1-Y6 left any. | the reject strings that the 23 scripts match are produced by kogany for the same provocations; `setmocktime` moves `curtime`; the verbose-shape diff is empty | 300–500 / 300 / 1–2 |
+
 **W7 exit gate:** the contracts' read shapes match against kogany, `check-rpc-artifacts` and
 `spec-check` pass, and the client legs run (report-only).
 
@@ -637,6 +725,190 @@ Entry: K-16 decided.
 | W9-b `mixed-all` | the whole Yellowback functional suite (58 scripts) in mixed mode; `yellowback-rc-crossline.py --kogany-zakurad` with three-way agreement every 100 blocks on the devnet | suite green twice in a row; 5 rounds × 100 blocks, three-way | 0 / 300 / 2 |
 | W9-c `client-legs` | `node_line: kogany` legs in lightwalletd-dd, chain-viz, yolo, x402 (verifier), YEW (via lightwalletd), ycash-infra (backend swap), with a ycash6 sidecar where needed | every leg green | client repos / 1–2 |
 | W9-d `review-demo` | `kogany/doc/yellowback-review.md` (budget actuals, the hook table with every site's four-part check, the dormancy evidence); the §6 demonstration transcript; release-train entry prepared but not enabled (K-19) | §6 met | docs / 1–2 |
+
+*Rev 2.* W9-a's ycash6 sidecar is the **test rig** (K-3 as amended), not the product. The W9
+matrix gains a third column from S5 (§3b): **ycash6 | kogany + ycash6 test rig | kogany + parity
+sidecar**. W9-c's client legs that need a wallet (x402's `rpcWalletSigner`, Hawkeye) run in both
+kogany columns. W9-d's review document gains a section on the sidecar.
+
+---
+
+## 3b. The parity sidecar track (S0–S5) — rev 2
+
+**What it is (K-20).** `<sidecar>` (name: K-22) is a wallet process that sits in front of a
+wallet-less kogany and answers the ycashd wallet RPCs. Together the two are a Ycash node with a
+wallet, and no ycashd is involved. It is a **client** of kogany in the AGENTS rule-2 sense: its own
+repository on `upgrade/vault`, net new, no `-legacy`. It reaches kogany only through public
+interfaces, and it never needs a consensus change.
+
+```
+ test script / tool / operator
+        │  JSON-RPC, ycashd method names and shapes (rpcuser/rpcpassword or cookie)
+        ▼
+ ┌──────────── <sidecar> façade ─────────────┐        build unsigned ─▶ ┌──────────────────┐
+ │ wallet RPCs: served from wallet state     │ ◀── signed / refused ─── │ <sidecar>-signer │
+ │ node RPCs:   forwarded unchanged          │   Unix socket (K-24)     │ keys, sign-once, │
+ │ raw helpers: served locally               │                          │ attest guard,    │
+ └──┬───────────────┬──────────────────┬─────┘                          │ gate, Sapling    │
+    │ JSON-RPC      │ gRPC indexer     │ gRPC CompactTxStreamer /       └──────────────────┘
+    │ (cookie)      │ streams          │ YellowbackStreamer (yew-core's transport, K-23)
+    ▼               ▼                  ▼
+  kogany ◀──────────────────────── lightwalletd-dd
+```
+
+- **Node RPCs** (`getblockcount`, `getrawtransaction`, `generate`, `invalidateblock`, …) are
+  forwarded to kogany unchanged. Their shapes are W1-Y6's and W7's responsibility, not the
+  sidecar's. The façade adds only the sync barrier (S4 hazard H1).
+- **Wallet RPCs** (the 47, R7, the stock wallet set of K-25) are served from the wallet state.
+  They are built on yew-core, and the signer signs.
+- **Raw-transaction helpers** that ycashd serves without a wallet and Zakura lacks
+  (`createrawtransaction`, `decoderawtransaction`, `decodescript`; Zakura's method table at
+  `ref/zakura/crates/zakura-rpc/src/methods.rs:206-247` has none of them) are served locally from
+  yew-core's `tx.rs` parser and serializer. kogany does not change for them.
+
+**Backend-agnostic by construction.** The sidecar speaks only public RPC, so until kogany's W7
+lands, S-chunks develop and test against **ycash6 started with `-disablewallet`** as the backend.
+It serves the same read RPCs; it has no indexer streams, so the poll fallback that S4 needs anyway
+is used. That is how the track starts around W5/W6. Every exit gate is then run on **kogany**,
+which is why the track cannot finish before W7. A sidecar run on ycash6 `-disablewallet` is also a
+free differential: the same wallet over both node lines.
+
+**What yew-core already gives** (`yew` @ `c4dd450`, `core/src/`, ~38k lines, of which ~29k are
+reusable outside the Flutter bridge `api.rs`/`frb_generated.rs`):
+
+| Need | yew-core today | Gap for the sidecar |
+|---|---|---|
+| Seed and transparent keys | `keys.rs` (BIP39, BIP32 at `m/44'/347'/0'/{0,1}/i`, `s…`/`yb…` encodings, WIF), `wallet.rs` `receive_address` `:332`, `change_address` `:345` | ycashd semantics: unlimited `getnewaddress`, labels, `getrawchangeaddress`; imported keys with rescan (`api.rs` `import_wif` `:2438` exists for one key) |
+| PQ keys | `pq.rs`: the node wallet's seed derivation (ruling A-12) `PqSeedRoot::derive` `:453`, `slh_key` `:464`, `falcon_key` `:474`, `sign` `:560`; `TX_PQPKH` scripts; `wallet.rs` `pq_owner_key` `:410`, Falcon holders `:492-518` | `z_importpqkey`; `vaultsetsig=`/PQ lines in dumps. **`pq_wallet_vectors.json` applies to the sidecar**: the ninth vector file, N/A for kogany, gets a consumer |
+| Store | `store.rs` (SQLite schema v5: addresses, UTXOs with one class each, locks, history and labels, own tokens, mints, vaults, intents, PQ owners) | ycashd accounting fields (`confirmations`, `category`, minconf); the vault **build records** (`vaultbuild`, 07/N-2); member keys; the persistence of coin locks |
+| Transparent and YED sync | `sync.rs` `sync` `:99` (gap limit, `GetTaddressTxids`, `GetAddressUtxos` including the `sq…` forms, `GetAddressTokens` for YED tokens, `PreLock`), `refresh_vaults` `:770`, `refresh_intents` `:1082`, `label_history` `:1410`; UTXO classes in `coins.rs` | the tip **barrier**, stream-driven wake-ups, reorg rewind to a fork point (S1) |
+| Sapling | `shielded.rs` over `x402_ycash_light` (compact-block sync from lightwalletd-dd): `sync` `:646`, `plan` `:921`, `build` `:1046`, `build_shield` `:1173`; `build/yec_private.rs`, `build/yec_move.rs` | one account and its diversified addresses only; `z_sendmany` operation ids; a UFVK-only view in the façade with the spend in the signer (K-24) |
+| Builders | `build/`: `mint.rs`, `redeem.rs`, `claim.rs`, `release.rs`, `yed_transfer.rs`, `yec_send.rs`, `yec_private.rs`, `yec_move.rs`; `coinselect.rs` (the node's floor-aware selector, verbatim); `vault.rs` (V and I templates, generic `build_vault` `:152`, `build_intent` `:194`, selectors) | set acts and set signatures, generic (non-YED) vault spends, YED cancels, attestor bonds and attestations (S2, S3) |
+| Signing | `tx.rs` v4 serializer, ZIP-243 `sighash` `:372`, `sign_p2pkh_input` `:454`, `sign_pqpkh_input` `:494`; `redeem.rs` `sign_owner_input` `:304` | the signer process and its request format (S2) |
+| Safety | `gate.rs` `check` `:192` (each path's input classes, no override), `build/terms.rs` (server-supplied terms recomputed) | runs inside the signer; new gate paths for set and act transactions |
+| Transport | `net/compact.rs`, `net/yellowback.rs` (lightwalletd-dd gRPC; `YellowbackStreamer` proxies one `yed_*` read each) | kogany JSON-RPC for `set_*`/`vault_list`/mempool reads; the indexer streams (`ref/zakura/crates/zakura-rpc/proto/indexer.proto:101,108,111`) |
+
+**Reuse from Hawkeye.** `hawkeye/crates/hawkeye-core/src/{setsig,sighash,template,tx}.rs` already
+compute set-signature digests and parse the templates, and `hawkeye-store/src/signonce.rs` keeps
+sign-once state. Today Hawkeye still has the node wallet sign (`hawkeye-ycash/src/client.rs`). S2
+takes these modules as the starting point for the set/act code, checked against
+`vault_vectors.json` `acts[]`, `setSigMsgs[]` and `signatures[]`. Whether to vendor them or depend
+on them by pinned rev is S2's call, recorded in its PR.
+
+### S0 — repository, scaffold, façade skeleton (~2–3 agent-days)
+
+| | |
+|---|---|
+| **Scope** | Repository `<sidecar>` on `upgrade/vault` in `repos.yaml`, with AGENTS.md rule-2 text for it (a client: no node change). Cargo workspace: `<sidecar>-facade` (JSON-RPC server), `<sidecar>-wallet` (state, sync, builders on yew-core), `<sidecar>-signer` (separate binary), `<sidecar>-proto` (the sign request and response). yew-core pinned by exact git rev. Façade skeleton: ycashd-style auth (`rpcuser`/`rpcpassword`, `.cookie`, `rpcallowip`), the full method table (wallet methods answer `-32601` until implemented), forwarding of every other method to kogany with kogany's cookie, `help`, `stop`. Harness: `SIDECAR_BIN` beside `KOGANY_BIN` in `YellowbackTestFramework` (`ycash6/qa/rpc-tests/test_framework/yellowback_util.py:515`), where node *i* = kogany *i* + sidecar *i*, the node's RPC URL is the façade's, and the ycashd-argument map gains the wallet arguments. `vault_rpc_contract.py` and `yellowback_rpc_contract.py` pointed at the façade. |
+| **Entry** | W1 green (kogany follows Ycash regtest) and W1-Y7's harness; K-20 (decided), K-22, K-23. Scheduled at W5/W6. |
+| **Exit gate** | Forwarded node RPCs answer through the façade in a ycash6 regtest script run with `KOGANY_BIN` + `SIDECAR_BIN`. The contract suites run and report *n*/47 (the baseline). Security CI green (§5). |
+| **Size** | 1.0–1.5k / 0.8k / 2–3 |
+| **kogany RPCs** | none new (forwarding only) |
+| **Owner decisions** | K-22, K-23 |
+
+### S1 — wallet state and sync against kogany (~4–6 agent-days)
+
+| | |
+|---|---|
+| **Scope** | Bind yew-core's modules directly, not its `api.rs` (the Flutter bridge holds one global wallet). **Transparent**: `sync.rs` over lightwalletd-dd (K-23 (a)), coinbase to the wallet (H8), ycashd accounting (`getbalance` minconf, `listunspent`, `gettransaction`, `listlockunspent`). **Sapling**: `shielded.rs` with the façade holding the UFVK only (K-24); `z_getbalance`, `z_listunspent`, `z_getnewaddress` as diversified addresses of the one account. **PQ**: owner and Falcon keys from the seed (`pq.rs`), the `sq…`/`tq…`/`rq…` forms, `getnewaddress "" "pq"`, `vault_getnewowner`. **YED index reads** come from kogany: `yed_listtokens` through `GetAddressTokens` or directly, `yed_getvault`/`yed_listvaults`/`yed_listclaimable`, `set_getinfo`/`vault_list` for member and template state; the wallet computes the `wallet`/`mine` fields that kogany omits (W7-a). **Sync discipline**: indexer `ChainTipChange`, `NonFinalizedStateChange` and `MempoolChange` streams as wake-ups, kogany RPC as the truth, poll fallback; rewind to the fork point on a reorg. |
+| **Entry** | S0; transparent and Sapling parts need only W1 + lightwalletd-dd on kogany; the YED and vault parts are developed against ycash6 `-disablewallet` and gated on kogany after W7-a/b. |
+| **Exit gate** | The read-only wallet subset of both contract suites conforms on kogany + sidecar (`getbalance`, `listunspent`, `yed_getbalance`, `yed_listunspent`, `yed_listpositions`, `yed_listtransactions`, `yed_listaddresses`, `yed_validateaddress`, the address RPCs, `set_listsigned`). `pq_wallet_vectors.json` replays. A soak passes with consistent balances: kogany restart, sidecar restart, `invalidateblock` reorgs of 2 and 10 blocks. |
+| **Size** | 2–3k / 1.5k / 4–6 |
+| **kogany RPCs** | W1-Y6 (`getaddressutxos`, `getaddresstxids`, `getrawtransaction`, already in Zakura), W7-a/b reads; indexer gRPC enabled in kogany's Ycash config (configuration, not code) |
+| **Owner decisions** | K-23 |
+
+### S2 — builders and the signer boundary (~6–9 agent-days)
+
+| | |
+|---|---|
+| **Scope** | The **signer** (K-24): a separate binary holding the seed, member and attestor keys and the sign-once and attestation guards. A `SignRequest` carries the unsigned v4 transaction, the branch ID of the next block, every spent prevout (script, amount), a key reference per input (BIP32 path, PQ key id, member key, Sapling note), the act payloads to sign, the gate path and the outflow cap. It also carries a `HandoffPreview`-shaped summary (`ycash6/doc/vault-rpc.md` "Shapes") for a human or device to show. The signer recomputes every digest, runs `gate.rs` and `build/terms.rs`, and either signs or refuses with a reason the façade maps to the ycashd error. **The build RPCs** are mapped below. |
+| **Entry** | S1; W4 (set state on kogany) for the set and vault rows, W5 for the YED rows. Developed against ycash6 `-disablewallet` before then. |
+| **Exit gate** | Every build RPC produces a transaction **accepted by kogany and by a ycash6 peer** in a mixed regtest run, with the same resulting `statehash`/`yed_getstatehash` (the §4.3 parity definition). `vault_vectors.json` `acts[]`/`setSigMsgs[]`/`signatures[]` and `ownerSpends[]` replay in the signer. Negative tests: the signer refuses a request whose preview disagrees with the bytes (mutated amount, swapped recipient, foreign input, outflow above the cap). Sign-once holds across a signer restart and refuses a second sighash for one `(setid, prevout)`. |
+| **Size** | 3–4.5k / 3k / 6–9 |
+| **kogany RPCs** | `yed_validaterawtransaction` (W7-b) gives `signrawtransaction`'s `complete` and `valid` with the vault flags and set state at the tip. No mempool dry-run is needed: ycash6's `wouldrefuse` is wallet-local (foreign inputs, outflow; `ycash6/src/rpc/vault.cpp:1121-1155`) |
+| **Owner decisions** | K-24 |
+
+The build RPCs (wallet-context, `ycash6/doc/vault-rpc.md`, `doc/yellowback-rpc.md`) mapped onto
+yew-core:
+
+| RPC | yew-core function | Gap: new code? |
+|---|---|---|
+| `yed_mint` | `build::mint::estimate` `:373`, `carrier_step` `:526`, `start` `:645`, `finish` `:1116`; `build::terms` | glue only (`from`, `bundleHex`, `wait`, `maxCollateralZat`) |
+| `yed_send`, `yed_sendmany`, `yed_estimatesend` | `build::yed_transfer::build_yed_transfer` `:335`, `select_yed` `:255`; `coinselect::select_floor_aware` `:308`, `nearest_workable` `:427` | glue only |
+| `yed_redeem`, `yed_estimateredeem` | `build::redeem::build_redeem` `:564`, `plan_vault_spend` `:128`, `early_redeem_fee_for` `:447` | glue only |
+| `yed_claim`, `yed_claimnotice` | `build::claim::claimable` `:136`, `start` `:274`, `finish` `:757`; `net::yellowback` `notice` | small: the `claimnotice` RPC shape |
+| `yed_sweepcarriers` | `build::mint::sweep` `:1298` | glue only |
+| `vault_release` | `build::release::build_release` `:163`, `build_pq_coin_move` `:320` | small: an explicit recipient for intents not paying this wallet |
+| `vault_ownerspend` | `redeem::sign_owner_input` `:304` (YED vault owner path) | small: any tag, any recipient |
+| `vault_getnewowner`, `getnewaddress "" "pq"`, `z_importpqkey` | `wallet::pq_owner_key` `:410`, `pq::PqSeedRoot` | small: import |
+| `vault_lock` | `vault::build_vault` `:152` (generic `VaultParams`); funding as in `mint::carrier_step` | **new**: a generic lock builder (YEW locks only inside a mint) |
+| `vault_buildunlock`, `vault_buildcancel`, `vault_refee`, `vault_app`, `vault_send` | templates and selectors in `vault.rs` (`vault_app_script_sig` `:407`); none of the set-signed spends | **new**: generic template spends with intents, re-lock (S-2), the remembered build (07/N-2: same recipients ⇒ `reused`/`refunded`), foreign-input and outflow checks |
+| `set_create`, `set_join`, `set_heartbeat`, `set_leave`, `set_buildact`, `set_signact`, `set_sendact`, `set_equivocation` | none | **new**: the `YV` act codec, `SHA256d("YcashSetAct"‖P‖vin[0].prevout)`, ≤16 recoverable signatures (from `hawkeye-core`, checked against `vault_vectors.json`) |
+| `set_signunlock`, `set_signcancel`, `set_listsigned`, `set_importsigned`, `set_acknowledgerestore` | none | **new**: the set-signature message (plan §15.2 step 4, ZIP-243 `ALL\|ANYONECANPAY`) and the sign-once records with the restore marker, in the signer |
+| `yed_buildcancel`, `yed_signcancelcosign` | none | **new**: the YED cancel and its cosignature |
+| `yed_registerattestor`, `yed_withdrawbond`, `yed_revive`, `yed_reportequivocation`, `yed_signattestation` | none | **new**, in S3 |
+| `sendtoaddress`, `sendmany`, `fundrawtransaction` | `build::yec_send::build_yec_send` `:58`, `build::yec_private::plan_yec_send` `:97` | small: several recipients; `fundrawtransaction` |
+| `z_sendmany` (t→z, z→t, z→z) | `shielded::Shielded::build` `:1046`, `build_shield` `:1173`, `build::yec_move` | **new**: async operation ids (`z_getoperationstatus`/`result`, `z_listoperationids`); the Sapling build in the signer |
+| `signrawtransaction` | `tx.rs` `sign_p2pkh_input` `:454`, `sign_pqpkh_input` `:494` | small: `prevtxs`/`privkeys` arguments, P2SH multisig (`addmultisigaddress`, one script), `complete` from `yed_validaterawtransaction` |
+
+### S3 — roles (~3–5 agent-days)
+
+| | |
+|---|---|
+| **Scope** | **Attestor, `attest` mode** (`ycash6/contrib/yellowback/attest`): it calls `yed_signattestation` (`attest.rs:242`), `yed_signcancelcosign` (`:368,391`; `cancel.rs:1025`), `yed_buildcancel` (`cancel.rs:2302`), `signmessage` (`cancel.rs:1871`), and in `post_onchain` `yed_listunspent`, `listunspent`, `createrawtransaction`, `signrawtransaction`, `sendrawtransaction` (`cancel.rs:1998-2049`), plus reads. New in the signer: the 74-byte attestation message and its equivocation guard (`attest-signed.dat`), checked against `yellowback_attest_vectors.json`; the attestor bond RPCs (`yed_registerattestor`, `yed_withdrawbond`, `yed_revive`, `yed_reportequivocation`). `subscribe` mode's `yed_addattestation` is node-state on kogany (W7-b), not the sidecar's. **Hawkeye member**: `hawkeye-ycash/src/client.rs` calls 22 `set_*`/`vault_*` wallet RPCs (`:236-448`) and the stock `getnewaddress`, `importprivkey` (`rescan=false`), `listunspent`, `sendmany`, `lockunspent`, `signrawtransaction` (`:553-637`); Hawkeye runs unchanged against the façade URL. **x402 `rpcWalletSigner`** (`x402-ycash/packages/ycash/src/exact/client/rpcWalletSigner.ts`, method names in `packages/ycash/src/node/rpc.ts`): `getrawchangeaddress`, `yed_getnewaddress`, `listunspent`, `yed_listunspent`, `createrawtransaction`, `signrawtransaction` (including the verify-only call with empty keys, `rpc.ts:184`), `lockunspent`; its funder also uses `sendtoaddress`, `z_sendmany`, `z_getnewaddress`, `z_getnewdiversifiedaddress`, `z_listreceivedbyaddress`, `z_getoperationresult`. **Pool payout**: yolo calls no wallet RPC; payout is the coinbase (`yolo/src/rpc.rs:185-203`), so W8-c already covers it and S3 only records that. |
+| **Entry** | S2; W7-b (attestation pool, `yed_listattestors`) |
+| **Exit gate** | On kogany + sidecar with no ycashd: the attestor agent's `attest`-mode tests and a `yellowback_devnet_roles.py` round (price, cancel cosign) pass; Hawkeye's `crates/hawkeye/tests/regtest_self_signing.rs` and `bond_exit.rs` pass against the façade; x402's `rpcWalletSigner` integration test passes. |
+| **Size** | 1–1.5k / 1k / 3–5 |
+| **kogany RPCs** | W7-b's `yed_addattestation`, `yed_getattestations`, `yed_listattestors` |
+| **Owner decisions** | — |
+
+### S4 — the façade complete (~5–7 agent-days)
+
+| | |
+|---|---|
+| **Scope** | **All 47** (R5 22 + R6 25, `surveys/c-yellowback-delta-inventory.md` §2.7), **R7** (PQ wallet: `getnewaddress "" "pq"`, `z_importpqkey`, the `vaultsetsig=`/`vaultbuild=`/`vaultrecipient=` dump lines), and the **stock wallet set (K-25)**. The 30 the 58 scripts call: `addmultisigaddress`, `backupwallet`, `dumpprivkey`, `encryptwallet`, `fundrawtransaction`, `getbalance`, `getnewaddress`, `getreceivedbyaddress`, `gettransaction`, `getwalletinfo`, `importprivkey`, `importwallet`, `listlockunspent`, `listunspent`, `lockunspent`, `sendmany`, `sendtoaddress`, `settxfee`, `signrawtransaction`, `walletlock`, `walletpassphrase`, `z_exportwallet`, `z_getbalance`, `z_getnewaddress`, `z_getoperationresult`, `z_getoperationstatus`, `z_importwallet`, `z_listoperationids`, `z_listunspent`, `z_sendmany`. The 4 only the roles call: `getrawchangeaddress`, `signmessage`, `z_getnewdiversifiedaddress`, `z_listreceivedbyaddress`. **Error parity**: the codes of `vault-rpc.md` "Conventions" (−8, −5, −4, −6, −1, −26, −25) and every message in its "Error reasons" table and in `yellowback-rpc.md` "Error identifiers (M8)"; `-13` while the wallet is locked or the signer is away. **Arity and help**: wrong arity gives ycashd's error with the usage text. **Number formatting**: YEC amounts are written as JSON numbers with ycashd's 8-decimal text, never through a binary float. **Auth**: client→façade as ycashd; façade→kogany with kogany's cookie on loopback (`Admin`/`Test` methods such as `invalidateblock`, `generate`, `stop` need it); façade→signer over a Unix socket with a peer-UID check; façade→lightwalletd-dd plain on loopback in regtest, TLS otherwise. **Lifecycle**: the hazards below. |
+| **Entry** | S2, S3; W7 complete, W7-e; K-25 |
+| **Exit gate** | `vault_rpc_contract.py` and `yellowback_rpc_contract.py` conform on kogany + sidecar, with every documented error provoked returning the same code and message substring. The façade's method table equals ycash6's for the K-25 set (a diff of `help` listings). Each hazard H1–H11 has a test. |
+| **Size** | 2.5–3.5k / 2k / 5–7 |
+| **kogany RPCs** | W7-e (reject reasons, `setmocktime`) |
+| **Owner decisions** | K-25, K-26 |
+
+**Two-process hazards and their mitigations.**
+
+| # | Hazard | Mitigation |
+|---|---|---|
+| H1 | **Node ahead of wallet.** A script calls `generate` or `sendrawtransaction` and then a wallet RPC at once. The in-process ycashd wallet has seen the block when the next RPC runs; the sidecar may not have. | Every wallet RPC passes a **barrier** first: kogany's `getbestblockhash` equals the wallet's last processed hash, and lightwalletd-dd's `GetLatestBlock` equals it too (for Sapling and the YED reads). It waits up to a timeout and then fails with `-28` (ycashd's warm-up code), never with stale data. |
+| H2 | **Wallet ahead of node, or a reorg** (`invalidateblock`, a kogany restart on a shorter chain, a split). | The processed hash is checked to be on kogany's main chain; if not, rewind to the fork point. Transparent and YED rows above it are dropped and re-read. The Sapling store rewinds to a checkpoint at or below the fork (`x402_ycash_light`). Vault and intent rows are refreshed from kogany. |
+| H3 | **Mempool visibility.** Unconfirmed incoming payments, evictions after W6-c's re-check on `Grow`, and the ycashd `minconf=0` views. | Own broadcasts are recorded synchronously when sent (yew-core `record_broadcast`, `PreLock`). Foreign ones come from the `MempoolChange` stream. The barrier includes "kogany's `getrawmempool` ⊆ processed". A removal event unlocks pending coins. |
+| H4 | **Stream gaps and reconnection.** | Streams are wake-ups, never the source of truth. On reconnect the wallet reconciles by RPC from its last processed hash. While reconciling, wallet RPCs answer `-28`. |
+| H5 | **Start order.** The sidecar may start before kogany is ready. | Backoff; the façade's `getinfo`/`getwalletinfo` answer only once kogany and lightwalletd-dd are reachable and reconciled, so the harness's `wait_for_rpc` waits for the pair. |
+| H6 | **`stop`.** | In the harness bundle the façade's `stop` stops both processes (the pair is one node). In production it stops the sidecar only (configurable). |
+| H7 | **lightwalletd-dd lag.** The compact-block cache trails kogany. | Part of H1's barrier; `z_*` RPCs also wait for the Sapling scan to reach the tip. |
+| H8 | **Coinbase to the wallet.** ycashd's `generate` pays a fresh keypool key per block; kogany pays its configured `miner_address`. | The harness provisions kogany's `miner_address` as a sidecar address that the wallet watches, with coinbase maturity as in ycashd. S0 checks whether any script depends on distinct coinbase addresses and records it in §9. |
+| H9 | **Concurrent RPCs spending one coin.** | One wallet writer; yew-core's coin locks and the build records; locks persisted as ycashd persists vault builds. |
+| H10 | **Signer away or locked.** | `-13`, as a locked ycashd wallet answers; nothing is half-signed (a request is signed whole or refused). |
+| H11 | **Time.** `setmocktime` on the façade. | Forwarded to kogany (W7-e) and applied to the façade's own clock. Expiry and locktime are height-based. |
+
+### S5 — the parity gate (~3–4 agent-days plus 7 nightly days)
+
+| | |
+|---|---|
+| **Scope** | The harness's third column: every node of a script is kogany + sidecar, and the scripts are unchanged. The **three-way W9 matrix**: column 1 ycash6 alone (the reference); column 2 kogany followers + the ycash6 test rig (W9-a/b); column 3 kogany + parity sidecar. A mixed variant of column 3 keeps one ycash6 peer, so every transaction the sidecar builds is also judged by ycash6. A nightly job. The sidecar section of `kogany/doc/yellowback-review.md` (W9-d). |
+| **Entry** | S4; W8 green; W9-a/b green (columns 1–2) |
+| **Exit gate** | Both contract suites and **the 48 wallet-needing scripts** green on column 3 **twice in a row**. The nightly is green for 7 days. The matrix is three-way green with `statehash` and `yed_getstatehash` equal at every sync point. Every difference from ycash6's byte output is explained under §4.3's definition. |
+| **Size** | 0 / 0.5k / 3–4 + wall |
+| **kogany RPCs** | none beyond W7-e |
+| **Owner decisions** | — |
+
+**kogany RPCs the sidecar needs that W7 does not already provide** (collected; all in W7-e, K-26):
+1. reject-reason parity in `sendrawtransaction` (`-26 "<code>: <reason>"`, `-25`) for the
+   documented reasons;
+2. a regtest-only `setmocktime`;
+3. *verify only:* zcashd-shaped verbose `getrawtransaction`/`getblock` on the fields the scripts
+   read (W1-Y6 should already give it).
+
+Configuration, not RPC: the indexer gRPC listener on, and `miner_address` set to a sidecar address
+(H8). Not needed: a mempool dry-run RPC (S2 "kogany RPCs").
 
 ---
 
@@ -730,6 +1002,38 @@ more than 25 % stops for a findings row and a coordinator decision before it mer
      message.
 9. **No AI attribution** anywhere (rule 8). Commits are authored as the owner.
 
+### 4.3 The sidecar's rules (rev 2)
+
+1. **Client discipline.** The sidecar is a client, like Hawkeye and x402. It reaches kogany only
+   through its public JSON-RPC, the gRPC indexer streams and lightwalletd-dd. **No node change is
+   ever made for it** except the RPC-presentation chunk W7-e, which goes through the kogany
+   coordinator as a kogany chunk, never from the sidecar repository. It never links a kogany crate
+   for state; pure codecs come from yew-core or hawkeye-core (§3b) or are re-derived, and are checked against the vectors.
+2. **Keys never in kogany, and never in the façade.** Seeds, member keys, attestor keys, PQ secret
+   keys and Sapling spending keys live in the signer (K-24). The façade holds public material: xpubs,
+   PQ key ids, the Sapling UFVK. The sign-once records and the attestation equivocation guard live
+   with the keys. A dump (`z_exportwallet`) is produced by the signer.
+3. **Parity is not byte-identity.** The sidecar's transactions differ from a ycashd wallet's in
+   bytes: other keys, other change addresses, and RFC 6979 signatures over them. YEC coin choice may
+   differ too (YED selection is the node's selector verbatim, `yew/core/src/coinselect.rs`). The
+   gate is defined as: **for the same script, every transaction the sidecar builds is accepted by
+   both lines (kogany and a ycash6 peer), and the resulting state is the same**: the same
+   `vault_getinfo.statehash` and `yed_getstatehash` at every sync point, and the same values for
+   every quantity the script asserts (balances, positions, verdicts, error codes and message
+   substrings). A script that asserts a byte-level detail of a wallet-built transaction (an exact
+   fee, an input count) is a finding (§9). It is resolved by showing the ycashd value is not a
+   contract value, never by editing the script silently.
+4. **yew-core changes land in `yew` first.** The sidecar consumes yew-core at a pinned rev, never a
+   branch. A change it needs is a PR to `yew` on `upgrade/vault`, with YEW's own tests and vector
+   checks green, then a rev bump in the sidecar in its own commit that lists the yew commits. yew-core
+   stays a mobile and wasm core: nothing server-only (sockets, daemons) goes into it.
+5. **One contract, three implementations.** The RPC documents (`ycash6/doc/vault-rpc.md`,
+   `doc/yellowback-rpc.md`) and their JSON contracts stay the single source. A façade behaviour
+   that ycashd lacks is a contract change made on the C++ lines first. A ycashd behaviour the façade
+   cannot reproduce is a §9 finding with an owner decision.
+6. **Naming.** The repository and crates take the name K-22 chooses. `yellowback` names the system
+   and `yed` counts units (rule 6), as in the node.
+
 ---
 
 ## 5. Verification and CI
@@ -772,7 +1076,8 @@ gitleaks, OSV over `Cargo.lock`, cargo-deny with `contrib/secops/deny-node.toml`
 | vectors | nextest `kogany-vectors`, debug and `ci-tests` | **blocking** | W2 |
 | kogany-regtest | Rust regtest tests (activation, reorg, restart) | **blocking** | W4 |
 | mixed-regtest | ycash6 `node-bin.tgz` at the matching branch + kogany; the §3 harness on a shard list, run with and without `KOGANY_BIN` | report-only until its wave's gate, then **blocking** for the scripts that wave named | W1 (skeleton), W2+ |
-| sidecar | nightly: kogany + `connect=` ycash6 wallet scripts | report-only → blocking at W9 | W9 |
+| sidecar | nightly: kogany + `connect=` ycash6 wallet scripts *(rev 2: the test rig)* | report-only → blocking at W9 | W9 |
+| parity (rev 2) | nightly: column 3 of the W9 matrix, kogany + the parity sidecar at its pinned rev | report-only → blocking at S5 | S0 (skeleton), S5 |
 | sync | manual/weekly: full Ycash mainnet and testnet sync, checkpoints equal ycash6 | manual gate | W1 |
 
 **The mixed-line harness (`KOGANY_BIN`).** `YellowbackTestFramework`
@@ -793,6 +1098,24 @@ class. `split_network` uses `disconnectnode`, which Zakura lacks, so kogany stay
   *shape* only. kogany-produced blocks go through the Python (48,5) solver.
 - (192,7) is proven by unit vectors and the sync leg only.
 - Recorded as M24-20.
+
+**The sidecar's CI (rev 2, in the `<sidecar>` repository).**
+
+| Leg | What | Blocking? | From |
+|---|---|---|---|
+| security | `semgrep.yml`, `codeql.yml` (rust, actions, python), `secops.yml` (zizmor, gitleaks, OSV over `Cargo.lock`, cargo-deny), `code-scanning.yml`, the pattern of `ycash6/SECURITY-CI.md` as yew and hawkeye carry it; dependabot security-only | **blocking** | S0 |
+| unit | cargo nextest over façade, wallet, signer and proto; clippy; attribution and naming greps | **blocking** | S0 |
+| vectors | `pq_wallet_vectors.json`, `vault_vectors.json` (`acts`, `setSigMsgs`, `signatures`, `ownerSpends`), `yellowback_attest_vectors.json`, pinned by SHA-256 to the ycash6 copies (the kogany `PIN` pattern, W2-c) and replayed in the signer | **blocking** | S2 |
+| signer refusals | the S2 negative tests (lying preview, foreign input, outflow, sign-once across restart, attestation equivocation) | **blocking** | S2 |
+| contract vs ycash6 | `vault_rpc_contract.py` and `yellowback_rpc_contract.py` against plain ycash6, at the ycash6 rev the sidecar targets: proves the harness and the contract copy | **blocking** | S0 |
+| contract vs kogany + sidecar | the same two suites on column 3; counts *n*/47 and the stock set | report-only → **blocking** at S4 | S0 |
+| backend ycash6 | the wallet suites with the sidecar in front of ycash6 `-disablewallet` (the backend-agnostic differential) | report-only | S1 |
+| hazards | H1–H11 tests (restart, reorg, stream drop, start order) on kogany + sidecar | **blocking** from S4 | S4 |
+| parity nightly | the 48 scripts on column 3 and the mixed variant with one ycash6 peer | report-only → **blocking** at S5 | S5 |
+
+kogany's CI pulls the sidecar at a pinned rev for its `parity` leg, and the sidecar's CI pulls
+kogany and ycash6 `node-bin.tgz` at the revs the sidecar's `PIN` names. Neither repository's
+gate depends on the other's branch tip.
 
 **When the workspace tooling includes kogany.**
 - `make spec`/`spec-check`: from W7, when kogany serves the RPCs (`EXTRACT_SPEC_KOGANY_DIR`).
@@ -833,6 +1156,28 @@ On this machine, from `kogany` `upgrade/vault` at one commit, with the transcrip
   artefact with two reviewers per consensus PR, mapping §24 complete.
 - [ ] **Owner decision K-19(a)** taken on whether kogany becomes a qualified release line.
 
+Rev 2 adds the product demonstration (K-20). It is recorded in the same transcript, and the host
+runs **no ycashd process** (shown by `pgrep -l ycashd` printing nothing):
+
+- [ ] **Parity.** On kogany + the parity sidecar, `vault_rpc_contract.py` and
+  `yellowback_rpc_contract.py` conform: the 47 wallet RPCs, R7 and the K-25 stock set, with
+  ycashd's error codes and messages. The 48 wallet-needing scripts pass unchanged, twice in a row,
+  and the parity nightly is green for 7 days.
+- [ ] **Three-way matrix.** ycash6 | kogany + ycash6 test rig | kogany + parity sidecar are all
+  green, with `statehash` and `yed_getstatehash` equal at every sync point. The mixed variant
+  shows every sidecar-built transaction accepted by a ycash6 peer (§4.3 rule 3).
+- [ ] **Roles without ycashd.** An attestor runs in `attest` mode against kogany + sidecar through
+  a price round, a cancel cosign and a bond renewal. A Hawkeye member signs an unlock and a cancel
+  for a WYEC vault and heartbeats its set. x402's `rpcWalletSigner` pays through the façade. yolo
+  mines on kogany (it needs no wallet).
+- [ ] **Signer boundary.** Every one of those signatures was made in the signer process. The
+  façade's data directory holds no secret key (checked by a scan of its store). The signer refused
+  each S2 negative case. `pq_wallet_vectors.json`, N/A for kogany in the Oracle row above, replays
+  in the signer.
+- [ ] **V5-spec (K-21).** The dormant ZIP-244 vault-message section and its vectors are merged on
+  the workspace and ycash6 `upgrade/vault`. The vectors are outside the cross-line manifest, and
+  U-26 is unchanged.
+
 ---
 
 ## 7. Estimate
@@ -852,7 +1197,25 @@ Agent-days. "Wall" means elapsed time that is not agent work.
 | W8 | 3–5 | low-medium | coinbase builder hook |
 | W9 | 6–10 + wall (7 nightly days) | medium | sidecar behaviour unverified (K-3) |
 | Rebase/sync chunks (~6 over the plan) | 3–6 | medium | upstream churn rate |
-| **Total** | **~74–112 agent-days** (central ~90) | ±30 % | |
+| **Total (rev 1, node only)** | **~74–112 agent-days** (central ~90) | ±30 % | |
+| W7-e (rev 2) | 1–2 | low | reject-string table; `setmocktime` |
+| S0 | 2–3 | low | scaffold, forwarding, harness mode |
+| S1 | 4–6 | medium | the barrier and reorg rewind; ycashd accounting semantics yew-core never needed |
+| S2 | 6–9 | **high** | the set/act family and generic vault spends are new (13 + 6 RPCs); the signer protocol; Sapling in the signer |
+| S3 | 3–5 | medium | attestation signing and its guard are new; three external test suites |
+| S4 | 5–7 | medium | 30 + 4 stock RPCs, dumps, async operations, error and arity parity, the hazard tests |
+| S5 | 3–4 + wall (7 nightly days) | medium | parity-vs-identity findings in the 48 scripts |
+| **S-track subtotal** | **~23–34** (central ~28) | ±30 % | |
+| V5-spec (K-21) | 1–2 | low | docs, a vector generator, the `zip244.py` fix |
+| **Total (rev 2)** | **~99–150 agent-days** (central ~120) | ±30 % | |
+
+**The S-track figure, refined.** The coordinator's first estimate was ~20–30 agent-days. Reading
+yew-core moves it up a little, for one reason: the 48 scripts and the roles need **~34 stock wallet
+RPCs** beyond the 47 (K-25), which the first figure did not count. yew-core covers more than
+expected on the YED side: mint, redeem, claim, release, transfer, the selector and PQ derivation
+need glue only. It covers nothing of the set-member side (13 `set_*` RPCs) or of the generic
+vault spends (6 `vault_*` RPCs). Hawkeye's `setsig`/`sighash`/`template` modules shorten that
+part. Net: **~23–34 for S0–S5** (central ~28), plus 1–2 for W7-e.
 
 The summary's "~70–105" is the same figure without the sync chunks. **Calendar time** is set by
 three things more than by agent count:
@@ -860,7 +1223,9 @@ three things more than by agent count:
 - each consensus chunk waits for two independent reviewers;
 - there are two wall-clock gates (mainnet sync, seven days of nightlies).
 
-With 2–4 parallel agents inside a wave, expect roughly **4–6 months** of elapsed time. This is
+With 2–4 parallel agents inside a wave, expect roughly **4–6 months** of elapsed time. *(Rev 2:
+the S-track runs beside W5–W8 with its own agents, so most of it is off the critical path, but
+S4 and S5 follow W7 and W8 and add about 3–5 weeks: **~5–7 months**.)* This is
 flagged as uncertain: the ycash6 port's speed (days) came from copying C++ verbatim, and nothing
 here is copied.
 
@@ -876,15 +1241,21 @@ here is copied.
 | R-4 | **Pipeline serialisation:** post-Vault blocks must await the parent's committed set state before scripts run; verification throughput unknown | measure in W4; Zakura's NSM path already does this (`block.rs:503-530`) |
 | R-5 | **Fork drift:** Zakura bumps `zakura-*` crates often; the two-commit origin of the published crates (§1.4) | §4.2 rules 7–8; W0-b reproducibility check; O5 upstream proposal |
 | R-6 | **Wildcard `_ =>` arms** silently classify Vault | lane A's audit list in W2-b; one test per arm |
-| R-7 | **Wallet-hosted roles** cannot run on kogany (attestor `attest` mode, Hawkeye, YecWallet, x402 `rpcWalletSigner`) | K-3: stated limitation; ycashd remains required for them |
+| R-7 | **Wallet-hosted roles** cannot run on kogany (attestor `attest` mode, Hawkeye, YecWallet, x402 `rpcWalletSigner`) | K-3: stated limitation; ycashd remains required for them. *(Superseded, rev 2: K-20, the parity sidecar, §3b S3; YecWallet alone stays on ycashd, K-25.)* |
 | R-8 | **Same genesis and magic as Zcash** on Zakura's v2 overlay | K-11: v2 off; P2P versions exclude Zcash peers |
 | R-9 | **Yolk v4.3.1**: `ref/ycash6/src/version.h:16,25,42,55` names a Zebra-based Ycash node on the live network ("agreed as the floor across ycashd and Yolk/Zebra"). Lane B's web search found no public source. If its source exists, it is the closest prior art for W1 (Zebra lineage with Ycash parameters: branch IDs, Equihash switch, YDF, P2P) and should become a `ref/` pin | owner (K-19) asks the Ycash developers before W1 starts; W1 does not wait for it |
-| R-10 | **Unverified sidecar behaviour**: whether a plain `connect=` ycash6 suffices, or valargroup-style changes are needed (`docs/zcashd-compat.md:85-104`) | W9-a first; tests only, production hardening is a separate decision |
+| R-10 | **Unverified sidecar behaviour**: whether a plain `connect=` ycash6 suffices, or valargroup-style changes are needed (`docs/zcashd-compat.md:85-104`) | W9-a first; tests only, production hardening is a separate decision. *(Rev 2: no production hardening of the ycash6 rig is planned; production is the parity sidecar, K-20.)* |
 | R-11 | **Feature unification** turns a Zcash-built dependency into Ycash in one binary | both-ways build matrix; kogany ships one binary per profile |
 | R-12 | **Reorg-window memory**: per-fork vault and YED deltas over 1,000 blocks | measure in W4 (K-13) |
 | R-13 | **Upstream tests that enumerate all upgrades** may assume every variant has a height or a Zcash ID | found in W1/W2; any edit listed in the PR body (§2.5) |
 | R-14 | **C++ lines cannot activate NU5 after Vault** as written (`CurrentEpoch`) | K-6 precondition; M24-3 |
-| R-15 | **The NU7/Tachyon boundary** needs a new vault signing message and recalibrated constants | K-7 record in upgrade plan U-26 |
+| R-15 | **The NU7/Tachyon boundary** needs a new vault signing message and recalibrated constants | K-7 record in upgrade plan U-26; rev 2: the message is pre-written as K-21's dormant section, so only its activation and the constants remain |
+| R-16 | **Two-process operation (rev 2).** The in-process ycashd wallet sees a block before the next RPC runs; a stream-fed sidecar can lag, miss an event or be ahead of a reorged node. Tests would flap and operators would see stale balances. | §3b S4 hazards H1–H11: the barrier on every wallet RPC (best hash, lightwalletd-dd tip, mempool snapshot), RPC as the truth with streams as wake-ups, rewind to the fork point, `-28` instead of stale data; hazard tests blocking from S4 |
+| R-17 | **Parity versus identity (rev 2).** A script asserts a detail that is a property of ycashd's wallet, not of the contract (an exact fee, an input count, a change position, distinct coinbase addresses, H8). | §4.3 rule 3's definition; each case a §9 finding resolved by showing the value is not a contract value, or by a contract change made on the C++ lines first (§4.3 rule 5); the mixed variant of column 3 proves acceptance by ycash6 |
+| R-18 | **Scope creep (rev 2).** ycashd's wallet surface is far larger than the 47, and "drop-in" invites reimplementing all of it, YecWallet's calls included. | K-25 fixes the set: the 47, R7, the 34 stock RPCs that scripts and roles call, three local raw helpers. Anything else needs an owner decision; YecWallet stays out until after S5 |
+| R-19 | **Key custody (rev 2).** A façade that signs on request is a hot wallet for anyone with RPC access; set members and attestors equivocate if a guard is lost or duplicated. | K-24: keys and both guards only in the signer, which recomputes every digest and refuses on preview mismatch; façade store scanned for secrets in the demo; sign-once survives restart; import never merges two signing histories (`set_importsigned` semantics) |
+| R-20 | **yew-core coupling (rev 2).** The sidecar depends on a mobile and wasm core whose priorities differ; a yew change could break the sidecar, or a sidecar need could bloat yew. | §4.3 rule 4: pinned rev, yew-first PRs with YEW's tests green, nothing server-only in yew-core; the sidecar binds modules, not `api.rs` |
+| R-21 | **Reject-string parity needs a kogany change (rev 2).** Zakura's errors differ by design (§4.2 rule 4 (iii)), and the scripts match ycashd's strings. | W7-e maps at the RPC surface only; internal verdicts and verdict-class equality stay as in W4-e |
 
 ---
 
@@ -939,7 +1310,23 @@ Citations are at the pins in the header (Zakura paths under `ref/zakura/`).
 | M24-25 | PQ verification by vendored C (`ycash6/src/crypto/pq/`, patches P1–P3) | No PQ code | vendored verify-only C via `cc`, SHA256SUMS-pinned (K-8) | primitive-crypto choice; byte-identical by construction |
 | M24-26 | Ordered `std::map` iteration in state hashes; `int64_t` with range checks; no float, clock or socket | `HashMap` random order; release profile wraps on overflow (`ref/zakura/Cargo.toml:195-210`); unwinding panics | `BTreeMap` only; `checked_*`/`i128`; clippy denies; release-profile test runs | implementation discipline, no tier |
 | M24-27 | `-blocknotify`/ZMQ for clients (`ycash6/src/zmq/zmqpublishnotifier.cpp`) | None; gRPC `indexer.proto:99-129` streams | clients poll or use gRPC (K-17) | no node change |
-| M24-28 | Wallet signs YED, vault and PQ spends in the node (`ycash6/src/rpc/yellowbackwallet.cpp`, `rpc/vault.cpp` act RPCs) | No wallet, no `signrawtransaction` (`zakurad/src/components/zcashd_compat/supervisor.rs:34-36`) | read and node-state RPCs native; wallet via ycash6 sidecar (K-3) | interface decision, no consensus rung |
+| M24-28 | Wallet signs YED, vault and PQ spends in the node (`ycash6/src/rpc/yellowbackwallet.cpp`, `rpc/vault.cpp` act RPCs) | No wallet, no `signrawtransaction` (`zakurad/src/components/zcashd_compat/supervisor.rs:34-36`) | read and node-state RPCs native; wallet via ycash6 sidecar (K-3). *Rev 2: the wallet is the parity sidecar (K-20); M24-32…M24-40* | interface decision, no consensus rung |
 | M24-29 | Same genesis and magic as Zcash; separation by port, seeds, protocol version, branch IDs (`ref/ycash6/src/chainparams.cpp:214-228`) | v2 overlay `chain_id` = genesis hash (`zakura-network/src/zakura/handshake.rs:265-271`) | v2 off on Ycash (K-11); later a Ycash `chain_id` | network layer, no consensus change |
 | M24-30 | P2P 270013 floor, 270200 at Vault, MSG_WTX unadvertised (`ref/ycash6/src/version.h:13-56`) | 170_190 and per-upgrade 170_xxx minima (`zakura-network/src/constants.rs:350-364`, `protocol/external/types.rs:88-129`) | profile-driven version table | network policy |
 | M24-31 | Wildcard-free C++ switch on upgrade index | `_ =>` arms compile silently with a new variant (`zakura-rpc/src/methods/types/get_block_template/proposal.rs:206-216`) | hand audit of every `_ =>` match on `NetworkUpgrade`, one test per arm | review discipline |
+
+**Rev 2: the parity sidecar's rows (K-20, K-21).** Here "Zakura's Z" means kogany + `<sidecar>`.
+None of them is a consensus change.
+
+| # | Ycash does X in Y via M | Zakura's Z, lacking M | Adaptation W | Rung, and why not lower |
+|---|---|---|---|---|
+| M24-32 | The wallet lives in the node process and is up to date with the block an RPC just produced (`ycash6/src/wallet/`, `rpc/yellowbackwallet.cpp`) | A separate process fed by gRPC indexer streams (`ref/zakura/crates/zakura-rpc/proto/indexer.proto:101,108,111`) and lightwalletd-dd; streams can lag, drop or run ahead of a reorg | barrier on every wallet RPC (best hash, lightwalletd-dd tip, mempool snapshot), RPC as the truth, rewind to the fork point, `-28` while behind (§3b S4 H1–H4) | interface; a wallet inside kogany would be the "native wallet" K-3 (c) rejected |
+| M24-33 | Keys in `wallet.dat`; every `*sign*`/`*send*` RPC signs in-process (`ycash6/src/rpc/vault.cpp`, `src/yellowback/txbuilder.cpp`) | No keys in kogany, by K-3; none in the façade, by K-24 | build unsigned → `SignRequest` to the signer, which recomputes every digest and runs yew-core's `gate.rs` and `build/terms.rs` → broadcast | interface; signing in the façade would make it a hot wallet (R-19) |
+| M24-34 | Set sign-once records (07/F-5, `set_listsigned`) and the attestation guard (`attest-signed.dat`, `src/yellowback/wallet.cpp:246-247`) in the node wallet | No node wallet; a guard away from its key can be bypassed | both guards in the signer's store, restored and imported with ycashd's refusal rules (`set_importsigned`, restore marker) | interface; the guard must sit with the key |
+| M24-35 | `generate` pays a fresh keypool key per block (ycashd wallet) | kogany pays its configured `miner_address` | harness provisions `miner_address` as a watched sidecar address; distinct-address assumptions are §9 findings (§3b H8) | test harness |
+| M24-36 | `sendrawtransaction` rejects with `-26 "<code>: <reason>"` strings the scripts match (`ycash6/doc/vault-rpc.md` "Error reasons", `doc/yellowback-rpc.md` M8) | Zakura's `TransactionError` texts and codes; reject strings differ by design (§4.2 rule 4 (iii)) | W7-e maps the documented reasons at the RPC surface only | RPC presentation in kogany; mapping in the harness would break "scripts unchanged" |
+| M24-37 | `setmocktime` on regtest (`yellowback_mining`, `_quote`, `_stratum`) | Not in Zakura's method table (`ref/zakura/crates/zakura-rpc/src/methods.rs:206-247`) | regtest-only `setmocktime` at `RpcAccess::Test` (W7-e); the façade also applies it to its own clock | test RPC; dropping the scripts would shrink the gate |
+| M24-38 | `createrawtransaction`, `decoderawtransaction`, `decodescript` served by the node without a wallet (`ycash6/src/rpc/rawtransaction.cpp`) | Absent from Zakura (`methods.rs:206-247`) | served locally by the façade from yew-core's `tx.rs` | interface; no node change needed for pure functions |
+| M24-39 | Sapling spends built and proved in-process by the wallet (`z_sendmany`, async operations) | v4 has no partially-constructed-transaction format (PCZT targets v5; *uncertain* for v4); the façade holds only the UFVK | the signer runs the whole Sapling build and proof; the façade keeps operation ids (`z_getoperationstatus`) | interface (K-24) |
+| M24-40 | The wallet reads its own chain view in-process, in ycashd's JSON shapes | yew-core reads lightwalletd proto types (`yew/core/src/net/mod.rs`) and kogany JSON | the façade renders ycashd JSON from both sources (K-23 (a)); amounts written with ycashd's 8-decimal text, never a binary float | interface |
+| M24-41 | Vault and PQ signatures are ZIP-243 only, v4-only (U-26; upgrade plan §15.1) | Zakura carries ZIP-244 for v5 from Nu5 (`crates/zakura-consensus/src/transaction.rs:1152-1190`); K-1 keeps v5 out under Vault | **K-21 (decided):** v4-only stands; the ZIP-244 restatement is a dormant spec section with vectors from ycash6's dormant v5 code; kogany pins the vector file report-only | spec only now; the transaction-field rung (a v5 message) is deferred to the NU5/NU7 forcing event ([`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md)) |
