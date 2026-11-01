@@ -955,6 +955,21 @@ more than 25 % stops for a findings row and a coordinator decision before it mer
 
 ### 4.2 Working rules
 
+0. **Where the work lives: `vaults/kogany-compat`** (lead architect, 2026-11-01). `upgrade/vault`
+   is stable and must stay so. Every writable repository in the workspace carries an integration
+   branch `vaults/kogany-compat`, cut from `upgrade/vault` on 2026-11-01 (ycash-ops from `main`),
+   and all kogany work — the node, the Zakura library fork, `yewd`, the mixed-line harness in the
+   C++ lines' `qa/`, client changes, this plan's status block and the mapping §24 rows — lands
+   there. It merges back into `upgrade/vault` only at a wave gate the plan names, by a reviewed
+   PR per repository, never the other way round except to refresh the branch (`upgrade/vault` →
+   `vaults/kogany-compat` merges are routine and may be done by the coordinator). The main trees
+   stay on `upgrade/vault`; agents work in `wt/kc-<name>` worktrees on `kc/<name>` off
+   `vaults/kogany-compat`, and the coordinator merges into `vaults/kogany-compat`. `repos.yaml`
+   keeps `upgrade/vault` as the branch of record. (The name was first proposed as
+   `dev/kogany-compat-vaults`; it was renamed because `boyfromcave/ycash6` holds a stale `dev`
+   branch, and git cannot hold `dev` and `dev/…` in one repository — the `dev/` trap AGENTS.md
+   records.)
+
 1. **Where code goes.** New behaviour goes in new crates: `kogany-pq`, `kogany-vault`,
    `kogany-yellowback`, `kogany-rpc`. They use the `kogany-` prefix so `git grep` separates ours
    from upstream (naming rule 6: `yellowback` names the system, `yed` counts units). Edits to
