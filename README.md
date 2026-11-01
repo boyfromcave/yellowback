@@ -78,7 +78,7 @@ Each component is its own git repository, cloned side by side into this workspac
 | Bridge attestor | [hawkeye](https://github.com/boyfromcave/hawkeye) | the sidecar each bridge attestor runs: watches Ycash and the other chain, and challenges what it cannot match |
 | Ethereum contracts | [wyec](https://github.com/boyfromcave/wyec) | the wYEC token and bridge contracts (drafts, not audited, not deployed) |
 | Infrastructure | [ycash-infra](https://github.com/boyfromcave/ycash-infra) | Kubernetes deployment of the light-wallet backend: `ycashd` pool, lightwalletd, address index, gateway |
-| Operations (private) | ycash-ops | the owner's deployment of the testnets on AWS from ycash-infra's recipes, run from GitHub Actions |
+| Operations (private) | ycash-ops | the Ycash developers' deployment of the testnets on AWS from ycash-infra's recipes, run from GitHub Actions |
 
 Every client reaches the node only through its public RPCs (the mobile and web wallets through
 lightwalletd). The node is the only place a rule lives.

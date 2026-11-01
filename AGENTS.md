@@ -107,9 +107,9 @@ and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402
 `boyfromcave/librustzcash6` at `eeb7740d`. On `harden/yellowback` it stays a zero-delta fork. (It is
 a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is already an older fork.)
 
-**The third node line: `kogany`** (owner, 2026-11-01). `kogany` is the owner's GitHub fork of
+**The third node line: `kogany`** (lead architect, 2026-11-01). `kogany` is the Ycash developers' GitHub fork of
 Zakura (`ref/zakura`: zakura-core's consensus-compatible Zcash full node in Rust, forked from
-Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; owner's choice, the commit the fork
+Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; the lead architect's choice, the commit the fork
 was taken at). `kogany-legacy` is that pin (**never commit to it**) and `upgrade/vault` was cut
 from it; nothing is ported yet, so `make diff` shows no delta. It is a third codebase lineage
 (Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
@@ -120,7 +120,7 @@ it, and `make spec` / the release train do not cover it. Zakura's own `AGENTS.md
 `.claude/` ship in the tree and describe upstream's conventions; where they conflict with this
 file, this file wins (rule 8 above all). **Its GitHub Actions stay off**: GitHub has not enabled
 the upstream workflows on the fork (53 of them: tests, deploys, scheduled jobs), and they must
-not be enabled until the owner decides which ones the fork runs.
+not be enabled until the Yellowback lead architect decides which ones the fork runs.
 
 ## Rules
 

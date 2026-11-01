@@ -3,7 +3,7 @@
 Plans for bringing Ycash Yellowback (YED) and the vault network upgrade to **kogany**, the fork of
 Zakura (a Rust Zcash full node from the Zebra lineage) that becomes the third Ycash node line.
 
-- [`kogany-yellowback-plan.md`](kogany-yellowback-plan.md) — **the plan** (revision 3, 2026-11-01): **all 26 owner decisions locked 2026-11-01; the sidecar is `yewd` inside `yew`** (`yew/yewd/`, a third shell on the YEW core beside `app` and `web`, not a new repository). Owner decisions K-1…K-26, waves W0–W9 with chunks and gates, and the **parity sidecar track S0–S5** (§3b): the product is kogany plus a separate wallet process on yew-core that answers the ycashd wallet RPCs, with a signer boundary, gated on the wallet RPC contracts and the 48 wallet-needing scripts. Budgets, CI, estimate, risks, mapping §24 rows. Revision 1 (same day) had the wallet on a ycash6 sidecar only; that sidecar remains the test rig.
+- [`kogany-yellowback-plan.md`](kogany-yellowback-plan.md) — **the plan** (revision 3, 2026-11-01): **all 26 decisions locked by the lead architect 2026-11-01; the sidecar is `yewd` inside `yew`** (`yew/yewd/`, a third shell on the YEW core beside `app` and `web`, not a new repository). Decisions (lead architect) K-1…K-26, waves W0–W9 with chunks and gates, and the **parity sidecar track S0–S5** (§3b): the product is kogany plus a separate wallet process on yew-core that answers the ycashd wallet RPCs, with a signer boundary, gated on the wallet RPC contracts and the 48 wallet-needing scripts. Budgets, CI, estimate, risks, mapping §24 rows. Revision 1 (same day) had the wallet on a ycash6 sidecar only; that sidecar remains the test rig.
 
 Surveys (2026-11-01, inputs to the plan):
 
@@ -16,4 +16,4 @@ Surveys (2026-11-01, inputs to the plan):
 Research notes (2026-11-01, read-only, inputs to revision 2):
 
 - [`research/tx-v4-vs-v5-protocol.md`](research/tx-v4-vs-v5-protocol.md) — transaction v4 versus v5: the formats (ZIP 225, ZIP 244), where each node line implements them, and the trade-offs.
-- [`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md) — what defining the vault upgrade on v5 would take; options A–D. The owner chose **D** (v4-only now, a dormant ZIP-244 message), recorded as K-21.
+- [`research/vault-on-v5-assessment.md`](research/vault-on-v5-assessment.md) — what defining the vault upgrade on v5 would take; options A–D. The Yellowback lead architect chose **D** (v4-only now, a dormant ZIP-244 message), recorded as K-21.

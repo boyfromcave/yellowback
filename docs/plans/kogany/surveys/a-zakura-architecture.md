@@ -381,7 +381,7 @@ The rows come from mapping §22 and the hook files in ycash6 (`main.cpp:840-934,
 | T-7 no wallet | ycashd wallet signs YED and PQ spends (`rpc/yellowbackwallet.cpp`) | no wallet, no `signrawtransaction` (§8) | the node serves read and build-unsigned RPCs; signing moves to clients or a sidecar | no consensus rung; an interface decision |
 | T-8 mempool recheck | `RecheckMempool` on every tip change (`vault/node.cpp`) | the mempool re-verifies only on `Reset` (`mempool.rs:865-907`) | re-verify template-input transactions on `Grow` | policy only |
 
-## Open questions for the owner
+## Open questions for the lead architect
 
 1. **Enum placement (T-1).** Do you accept that kogany's `NetworkUpgrade` gains `Ycash` and
    `Vault` variants in height order? Vault would sit before Nu5, the reverse of the C++ index

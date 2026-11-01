@@ -180,12 +180,12 @@ mechanically, but they apply one for one by meaning.
 |---|---|---|---|---|---|
 | **O1. Replace-in-fork** (librustzcash6 pattern) | Fork `zakura-core/common` at `bdbca121`. Replace Zcash IDs and constants with Ycash's, add `Ycash` (later `Vault`) variants. kogany pins it via `[patch.crates-io]`, the way ycash6 pins librustzcash6 (`ycash6 Cargo.toml`). | Every bump of `zakura-*` 5.0.x means re-porting about 250 lines. The fork's upstream tests (Zcash vectors) break and must be skipped, as in `ec525fae`. | Low. A proven pattern; the crate becomes Ycash-only, so a wrong-chain mix-up is impossible. | Ycash's NU5 ID is representable. Orchard remains available. | ~250–300 lines |
 | **O2. Feature-gated fork** (recommended) | As O1, but every Ycash value sits behind `#[cfg(feature = "ycash")]` in `zcash_protocol`, `zcash_primitives` and `zcash_address`. kogany's `ycash` feature turns it on. | Better than O1: with the feature off the fork is upstream, so upstream tests still pass, and it could be offered upstream. | Low. It adds a feature-unification hazard: a Zcash-built dependency in the same binary would silently become Ycash. That is acceptable for a node binary, and CI must build both ways. | As O1. | ~300–400 lines |
-| **O3. kogany-only shim, no crate fork** | Keep the stock `zakura-*`. Map each Ycash ID to the Zcash `BranchId` of the same era only inside `to_librustzcash`, and hash with the native u32. Encode `s1`/`ys` addresses with a kogany-native encoder. | Best: no crate fork. | **Medium.** Every `zcash_primitives` path that folds the enum's branch ID into a digest must be proven unreachable for Ycash. Today that means the non-v4 fallback in `sighash.rs:233-237` and any library-side signing. A wrong ID there silently changes consensus. | **Fails the owner's constraint.** v5 transactions carry the branch ID in their bytes, and Zcash's enum cannot represent `f919a198`, so turning NU5 on later would force O1 or O2 anyway. | ~400 lines in kogany |
+| **O3. kogany-only shim, no crate fork** | Keep the stock `zakura-*`. Map each Ycash ID to the Zcash `BranchId` of the same era only inside `to_librustzcash`, and hash with the native u32. Encode `s1`/`ys` addresses with a kogany-native encoder. | Best: no crate fork. | **Medium.** Every `zcash_primitives` path that folds the enum's branch ID into a digest must be proven unreachable for Ycash. Today that means the non-v4 fallback in `sighash.rs:233-237` and any library-side signing. A wrong ID there silently changes consensus. | **Fails the lead architect's constraint.** v5 transactions carry the branch ID in their bytes, and Zcash's enum cannot represent `f919a198`, so turning NU5 on later would force O1 or O2 anyway. | ~400 lines in kogany |
 | O4. Swap in librustzcash6 crates | Replace `zakura-*` with librustzcash6's `zcash_*` 0.9/0.28 line. | Breaks every Zakura API that uses NU6.3, NU7, V6 or Ironwood. | High | Defeats rebasing. | Very large. **Reject.** |
 | O5. Upstream generalisation | Propose that `zakura-core/common` take branch IDs and constants from a `Parameters` object (`BranchId::Other(u32)` or similar). | Ideal if accepted. | — | — | Not in our control. Pursue alongside O2, never as a dependency. |
 
 **Recommendation: O2**, together with T2's compile-time Ycash profile in kogany. The fork lives as a
-new workspace repo: a fifth Rust fork, `zakura-common-ycash` (name for the owner), with a `-legacy`
+new workspace repo: a fifth Rust fork, `zakura-common-ycash` (name for the lead architect), with a `-legacy`
 baseline at `bdbca121`. It is pinned by exact rev, with the same discipline as
 `ycash6 → librustzcash6`. The workspace already runs that line, so the review-gate, CI and pin
 machinery (`repos.yaml`, `make status`) carries over.
@@ -216,11 +216,11 @@ tests, and about 7k lines of generated checkpoint data. That is two to three tim
 librustzcash6 library delta, because Zakura spreads network identity across many crates where
 ycashd puts it in `chainparams.cpp`.
 
-## Open questions for the owner
+## Open questions for the lead architect
 
 1. **Dependency option.** O2 (feature-gated fork of `zakura-core/common`, recommended), O1
    (Ycash-only fork), or O3 (shim, which conflicts with "turn NU5 on later")? Also the fork's repo
-   name and owner, and whether it enters `repos.yaml` with a `-legacy` baseline.
+   name and the GitHub account that holds it, and whether it enters `repos.yaml` with a `-legacy` baseline.
 2. **Profile mechanism.** A compile-time `ycash` feature, so the kogany binary is Ycash-only and the
    default build stays Zakura-identical (recommended)? Or a runtime network variant that could run
    Zcash and Ycash from one binary?

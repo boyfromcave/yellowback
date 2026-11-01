@@ -301,7 +301,7 @@ with `KOGANY_BIN` set.
 | **W6** mempool/policy | vault/YED standardness, fee rules, limits | mixed: `vault_policy`, `vault_refee`, `yellowback_mempool_limits` with mempool-set equality and verdict-class equality on every rejected tx |
 | **W7** read RPCs | `vault_*`/`set_*`/`yed_*` read surface, `rpcversion` 8 | `vault_rpc_contract.py`/`yellowback_rpc_contract.py` shapes against kogany; `xtask check-rpc-artifacts`; spec copy in kogany (`make spec-check`); chain-viz and lightwalletd-dd read-only suites against kogany (report-only) |
 | **W8** mining | template tag, TPL rules, coinbase | mixed `yellowback_mining`; kogany-produced blocks (Python solver) accepted by ycash6; yolo `ci.yml` against kogany green |
-| **W9** wallet via sidecar + full matrix | ycash6 sidecar profile, client matrix | the whole Yellowback functional suite in mixed mode green, twice in a row; sidecar nightly green 7 days; three-way rc-crossline on the devnet (5 rounds × 100 blocks); every client's `node_line: kogany` leg green; then the owner decides whether kogany joins the release train |
+| **W9** wallet via sidecar + full matrix | ycash6 sidecar profile, client matrix | the whole Yellowback functional suite in mixed mode green, twice in a row; sidecar nightly green 7 days; three-way rc-crossline on the devnet (5 rounds × 100 blocks); every client's `node_line: kogany` leg green; then the lead architect decides whether kogany joins the release train |
 
 Cross-cutting at every wave: the consensus-diff report attached to the PR with the four-part check
 (AGENTS rule 2/4); mapping §24 rows for each trap; no change to the shared vectors except on all
@@ -315,7 +315,7 @@ sync-point asserts: 2. rc-crossline third line: ½. Sidecar profile: 1–2, most
 part of Q3. Mainnet/testnet sync gate: 1, plus wall-clock sync time. Client `node_line: kogany`
 legs: 1–2.
 
-## Open questions for the owner
+## Open questions for the lead architect
 
 1. **Which upstream workflows run on kogany?** Recommendation: the six in §5.1 (trimmed), the 21
    others off, enabled one at a time; the scheduled ones only after kogany's default branch is
@@ -332,7 +332,7 @@ legs: 1–2.
 5. **Notify hooks** (`-blocknotify` and the like, used by chain-viz): add a Zakura equivalent or
    have chain-viz poll on kogany? Recommendation: poll, so no node change.
 6. **When does kogany become a qualified line** (release train, three-way rc-qualify,
-   both-lines → all-lines rule)? Recommendation: at the end of W9, by explicit owner decision,
+   both-lines → all-lines rule)? Recommendation: at the end of W9, by explicit decision of the lead architect,
    not automatically.
 7. **Regtest PoW on kogany:** accept that kogany regtest checks the solution shape only, with
    (48,5) PoW checked by the C++ peers in mixed tests? Recommendation: accept, and record it.

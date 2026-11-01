@@ -273,7 +273,7 @@ For kogany the invariant has to change shape — **the golden vectors are the or
 | T7 | Bakes calibrated constants into `src/yellowback/params.cpp`; yb-calibration emits a `params.cpp` patch; `qa/yellowback-vault-params.py` parses C++ constructor bodies | Rust constants, no C++ parser | generate kogany's constants from the same source as the C++ (or check them against the C++ by a script), never hand-copied | tooling; a hand copy is a third place for a constant to drift |
 | T8 | Treats the YED index as consensus and aborts the node when it cannot evaluate (`AbortNode`, mapping §22 "Unhealthy index") | Zebra-lineage nodes keep secondary indexes outside block verification | the YED state must be inside kogany's verified-state path (committed atomically with the block), not an indexer | state rung; an asynchronous indexer would accept blocks the module rejects |
 
-## Open questions for the owner
+## Open questions for the lead architect
 
 1. **Wallet-hosted roles.** Is kogany wallet-less for good (attestors, Hawkeye, set members and
    YecWallet stay on ycashd), or does the plan include a signer — an external-signer interface (PSBT-like

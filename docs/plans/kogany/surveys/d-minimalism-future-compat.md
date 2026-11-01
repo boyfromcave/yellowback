@@ -193,7 +193,7 @@ side is configuration plus a per-network ID table. The vault rules are the hard 
 | Tachyon | No variant exists at the pin. It is mentioned only in `README.md:21, 30` and `docs/design/dogwood.md:47, 203`. Assume it is appended after `Nu7` and carries NU7's rules | As NU7, plus whatever transaction format Tachyon defines |
 
 So O1 keeps every one of these *reachable*; none of them is free. Of the decisions before the
-owner, only the order choice is consequential now: putting Vault before Nu5 is what keeps NU5..NU7
+lead architect, only the order choice is consequential now: putting Vault before Nu5 is what keeps NU5..NU7
 reachable on kogany without reordering later.
 
 ## 6. Verification hooks this design gives lane E
@@ -209,7 +209,7 @@ reachable on kogany without reordering later.
 
 ---
 
-## Open questions for the owner
+## Open questions for the lead architect
 
 1. **D-1, Vault's position on kogany.** Approve Vault between Canopy and Nu5 (O1). This diverges
    from the C++ index order (after NU5 on ycash-dd, after NU6.2 on ycash6) and from librustzcash6.

@@ -31,7 +31,7 @@ The kogany plan is cited from branch `plan/kogany-yellowback` @ `45929d0`
   only: Sapling version group, ZIP-243 sighash. Under `UPGRADE_VAULT` any other version group is invalid. No
   ZIP-244 message is defined. At start-up, every network refuses (`InitError`) a schedule that puts Vault with any of
   NU5..NU6.2, or Vault without Sapling active at or below it.
-- **U-26** (`:827`) chose option (a) on 2026-10-13 (owner).
+- **U-26** (`:827`) chose option (a) on 2026-10-13 (lead architect).
   - **Rejected, option (b):** a ZIP-244 message for the set signatures and PQ signatures under v5. The reason given
     is "a second signed-message definition, golden vectors and a history-tree fix for a configuration no Ycash
     network has".
@@ -233,7 +233,7 @@ without Nu5" does not exist there either.
 | **`YV` act carrier size** (1,200-byte OP_RETURN policy, §15.5 `:957`) | policy | identical | **none** |
 | **Act replay across a chain split** (`actMsg` binds no branch ID; the attestors design proposes `ActMsg2` with `consensusBranchId`, `yellowback-quantum-attestors-design.md:193-195`) | open design item | a v5 tx carries `nConsensusBranchId`, but `actMsg` is a separate digest | **none**. Fix it in `actMsg` if wanted, independently of the tx version |
 | **Mempool placeholder prevouts** (04/F-2 aggravation) | inert under ZIP-243 | a **live bug** under ZIP-244 (all prevouts are hashed) | **loss** (must be fixed) |
-| **Future Zcash upgrades** (owner constraint: NU5, NU6.x/Ironwood, NU7, Tachyon dormant but enable-able, kogany plan §2.4) | NU5 blocked by U-26 until a message exists; NU7 needs v5/v6 | v5 message in place ahead of time | gain only at the boundary, which (D) also reaches by defining the message then (v6 may need one anyway) |
+| **Future Zcash upgrades** (lead architect's constraint: NU5, NU6.x/Ironwood, NU7, Tachyon dormant but enable-able, kogany plan §2.4) | NU5 blocked by U-26 until a message exists; NU7 needs v5/v6 | v5 message in place ahead of time | gain only at the boundary, which (D) also reaches by defining the message then (v6 may need one anyway) |
 
 **Verdict on gains.** The only concrete improvement to a recorded Yellowback problem is the *partial* removal of
 template-spend txid malleability. It is already mitigated operationally, and its fee-input half survives v5.
