@@ -21,7 +21,9 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | Ycash 6.20.0 (miodragpop) | `ref/ycash6` | `dev-rebase-6.20.0` @ commit (2026; Zcash 6.x lineage; no tag) | `040894344b` |
 | Patched librustzcash (miodragpop) | `ref/librustzcash6` | `ycashd-v6.20.0` @ commit (pinned by rev in `ref/ycash6/Cargo.toml:129-134`; no tag) | `ec525fae82` |
 | Working fork (v6.20.0 node) | `ycash6` | branch `feature/yellowback` off `ycash6-legacy` (= `ref/ycash6`) — the v6 port, §19 | `040894344b` |
+| Zakura (zakura-core) | `ref/zakura` | `main` @ commit (2026-11-02; a Zcash full node in Rust, Zebra lineage; past `v1.7.0`, pinned by commit by the owner's choice) | `2b062412c5` |
 | Working fork (patched librustzcash) | `librustzcash6` | branch `feature/yellowback` off `librustzcash6-legacy` (= `ref/librustzcash6`); zero-delta until the port needs it | `ec525fae82` |
+| Working fork (Zakura, the third node line) | `kogany` | branch `upgrade/vault` off `kogany-legacy` (= `ref/zakura`); no delta yet, no crosswalk section yet | `2b062412c5` |
 | yolo pool (Perl, yecdev) | `ref/yolo` | `main` @ commit (2020-12-17; no tag) — reference for the Rust `yolo/`, §17 | `c9c155c6` |
 
 Line numbers below were read at these pins. If a pin moves, re-verify before trusting them.

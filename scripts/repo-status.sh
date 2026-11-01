@@ -52,6 +52,11 @@ field() { printf "    ${D}%-8s${R} %s\n" "$1" "$2"; }
 repo_status() {
   local label="$1" path="$2" want_tag="$3" want_branch="$4" base="${5:--}"
 
+  if [ ! -e "$path/.git" ] && [ "$(manifest "$path" private)" = true ]; then
+    printf "\n${B}▸ %s${R}  ${D}%s (private)${R}\n" "$label" "$path"
+    field "" "${D}not cloned: a private repository (needs access; make bootstrap SSH=1)${R}"
+    return
+  fi
   if [ ! -e "$path/.git" ]; then
     printf "\n${B}▸ %s${R}  ${D}%s${R}\n" "$label" "$path"
     field "" "${BAD} not a git repository"

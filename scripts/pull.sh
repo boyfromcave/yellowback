@@ -137,8 +137,11 @@ pull_fork() {
 }
 
 pull_app() {
-  local path="$1" branch="$2"
+  local path="$1" branch="$2" private="${3:-}"
   head2 "$path" "app"
+  if [ ! -e "$path/.git" ] && [ "$private" = true ]; then
+    item "${D}not cloned: a private repository (needs access; make bootstrap SSH=1)${R}"; return
+  fi
   [ -e "$path/.git" ] || { bad "not a git repository — run 'make bootstrap'"; return; }
   run git -C "$path" fetch --quiet --prune origin || { bad "fetch origin failed"; return; }
   local cur; cur="$(git -C "$path" rev-parse --abbrev-ref HEAD)"
@@ -197,7 +200,7 @@ for path in $("$REPOS" list); do
                  "$("$REPOS" get "$path" url)" ;;
     fork)      pull_fork "$path" \
                  "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" base)" ;;
-    app)       pull_app "$path" "$("$REPOS" get "$path" branch)" ;;
+    app)       pull_app "$path" "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" private)" ;;
   esac
 done
 
