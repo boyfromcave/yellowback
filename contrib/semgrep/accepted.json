@@ -7,6 +7,27 @@
       "reason": "REMOVED_PATH_RE's repeated group (?:\\.[A-Za-z_][A-Za-z0-9_]*)* starts each repetition with a literal '.', so there is one way to match and no catastrophic backtracking; its input is a removed-field path from the repository's own plan, not untrusted text.",
       "by": "secops CI setup",
       "date": "2026-10-23"
+    },
+    "34ce828308a77a9d": {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+      "path": "scripts/release-train.py",
+      "reason": "git(): argv list, no shell, executable fixed to 'git'. Its arguments come from validate()-checked release trains (commit = HEX40, tag = TAGGED pattern of a VERSION-regex version, both fixed before any online call) and from repos.yaml URLs/branches and the constant WORKSPACE_URL, all reviewed files of this repository; CI runs it with contents: read and persist-credentials: false. No outside input reaches it.",
+      "by": "@boyfromcave",
+      "date": "2026-11-01"
+    },
+    "697dc3cf38d63bda": {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+      "path": "scripts/release-train.py",
+      "reason": "spec_check(): argv list, no shell, runs sys.executable on <workspace>/scripts/extract_spec.py with a mode from the SPEC_MODE table. The workspace tree is materialized only after Remote.on_branch() proves the train's 40-hex workspace commit is on upgrade/vault, i.e. reviewed code of this repository; env adds only the tree paths of the materialized components.",
+      "by": "@boyfromcave",
+      "date": "2026-11-01"
+    },
+    "30edb075c03d64dd": {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+      "path": "scripts/test_release_train.py",
+      "reason": "Unit-test helper: argv list, no shell, executable fixed to 'git', arguments are the test's own literals and temporary fixture paths (offline file:// repositories); no external input.",
+      "by": "@boyfromcave",
+      "date": "2026-11-01"
     }
   },
   "rule_paths": []
