@@ -6,6 +6,7 @@
 /lightwalletd-dd/
 /ycash6/
 /librustzcash6/
+/kogany/
 /yew/
 /yolo/
 /chain-viz/
@@ -14,6 +15,7 @@
 /wyec/
 /hawkeye/
 /ycash-infra/
+/ycash-ops/
 
 # macOS
 .DS_Store

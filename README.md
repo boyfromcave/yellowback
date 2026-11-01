@@ -66,6 +66,7 @@ Each component is its own git repository, cloned side by side into this workspac
 |---|---|---|
 | Node, Ycash 6.20 line (**release line**) | [ycash6](https://github.com/boyfromcave/ycash6) | `ycashd` 6.20.0 with the vault upgrade and Yellowback; releases are built here |
 | Rust library for the 6.20 node | [librustzcash6](https://github.com/boyfromcave/librustzcash6) | the patched librustzcash that `ycash6` builds against |
+| Node, Zakura line (just started) | [kogany](https://github.com/boyfromcave/kogany) | a fork of [Zakura](https://github.com/zakura-core/zakura), a Zcash full node in Rust; the third node line, nothing ported yet |
 | Node, Ycash 4.5 line | [ycash-dd](https://github.com/boyfromcave/ycash-dd) | the same upgrade on `ycashd` 4.5.0, where changes land first |
 | Desktop wallet | [yecwallet-dd](https://github.com/boyfromcave/yecwallet-dd) | YecWallet (Qt) with a Yellowback tab; bundles the node |
 | Light-client server | [lightwalletd](https://github.com/boyfromcave/lightwalletd) | lightwalletd with read-only Yellowback and vault calls (local dir `lightwalletd-dd/`) |
@@ -77,6 +78,7 @@ Each component is its own git repository, cloned side by side into this workspac
 | Bridge attestor | [hawkeye](https://github.com/boyfromcave/hawkeye) | the sidecar each bridge attestor runs: watches Ycash and the other chain, and challenges what it cannot match |
 | Ethereum contracts | [wyec](https://github.com/boyfromcave/wyec) | the wYEC token and bridge contracts (drafts, not audited, not deployed) |
 | Infrastructure | [ycash-infra](https://github.com/boyfromcave/ycash-infra) | Kubernetes deployment of the light-wallet backend: `ycashd` pool, lightwalletd, address index, gateway |
+| Operations (private) | ycash-ops | the owner's deployment of the testnets on AWS from ycash-infra's recipes, run from GitHub Actions |
 
 Every client reaches the node only through its public RPCs (the mobile and web wallets through
 lightwalletd). The node is the only place a rule lives.

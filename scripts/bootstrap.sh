@@ -127,7 +127,12 @@ bootstrap_app() {
     return
   fi
   say "  cloning $path from $url"
-  run git clone --quiet --branch "$branch" "$url" "$dir"
+  if [ "${4:-}" = true ]; then   # private (repos.yaml): no access is not an error
+    run git clone --quiet --branch "$branch" "$url" "$dir" 2>/dev/null \
+      || { say "  ${D}$path not cloned: a private repository (needs access; SSH=1 clones over SSH)${R}"; return; }
+  else
+    run git clone --quiet --branch "$branch" "$url" "$dir"
+  fi
   ok "$path cloned on $branch"
 }
 
@@ -155,7 +160,7 @@ for path in $("$REPOS" list); do
     reference) bootstrap_reference "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" tag)" "$("$REPOS" get "$path" commit)" ;;
     fork)      bootstrap_fork "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" upstream)" \
                               "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" base)" "$("$REPOS" get "$path" base-commit)" ;;
-    app)       bootstrap_app "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" ;;
+    app)       bootstrap_app "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" private)" ;;
     *) die "$path: unknown role '$role' in repos.yaml" ;;
   esac
 done

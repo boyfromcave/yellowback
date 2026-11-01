@@ -24,6 +24,10 @@
 #              diff against: `make status` only checks it is on `branch`; `make diff`/`make log`
 #              skip it.
 #
+# `private: true` (any role) marks a repository not everyone can clone. Where it is absent, make
+# bootstrap, make pull and make status note it and go on instead of failing; where it is cloned,
+# it is handled like any other entry. Clone it over SSH (`make bootstrap SSH=1`).
+#
 # Re-pinning a reference is rare and deliberate: change `tag` and `commit` here, then update
 # the mirrors in AGENTS.md and docs/mapping.md — every file:line citation depends on them.
 
@@ -61,6 +65,13 @@ ref/librustzcash6:
   branch: ycashd-v6.20.0     # the patched librustzcash ref/ycash6's Cargo.toml [patch.crates-io] pins by rev
   commit: ec525fae82
   what: Ycash-aware librustzcash (Ycash NetworkUpgrade/BranchId, activation heights, address prefixes), pristine baseline for librustzcash6
+
+ref/zakura:
+  role: reference
+  url: https://github.com/zakura-core/zakura.git
+  branch: main               # zakura-core's main on 2026-11-02, past v1.7.0 (owner's choice: the commit kogany was forked at)
+  commit: 2b062412c5
+  what: Zakura, a consensus-compatible Zcash full node in Rust (forked from Zebra), pristine baseline for kogany
 
 ref/lightwalletd:
   role: reference
@@ -113,6 +124,15 @@ librustzcash6:
   base: librustzcash6-legacy
   base-commit: ec525fae82    # = ref/librustzcash6 pin
   what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork); ycash6 Cargo.toml pins rev eeb7740d on upgrade/vault
+
+kogany:
+  role: fork
+  url: https://github.com/boyfromcave/kogany.git
+  upstream: https://github.com/zakura-core/zakura.git
+  branch: upgrade/vault       # the vault network upgrade line, cut at the pin (2026-11-01); nothing on it yet
+  base: kogany-legacy
+  base-commit: 2b062412c5    # = ref/zakura pin
+  what: working fork of Zakura, the third node line (Rust, Zebra lineage): the Yellowback overlay is to be ported onto it; until then upgrade/vault = kogany-legacy
 
 yew:
   role: app
@@ -168,3 +188,10 @@ ycash-infra:
   url: https://github.com/boyfromcave/ycash-infra.git
   branch: upgrade/vault       # the vault network upgrade line; net new, no baseline (ycash-infra/docs/plans/ycash-infra-plan.md)
   what: ycash-infra, the Ycash light-wallet backend on Kubernetes: a ycashd node pool, horizontally scaled lightwalletd-dd, the yindex address index, Redis, an Envoy Gateway and the yew/web bundle; one Helm chart, kind and EKS value sets; reaches ycashd only through stock JSON-RPC and lightwalletd-dd only by running its image
+
+ycash-ops:
+  role: app
+  url: https://github.com/boyfromcave/ycash-ops.git
+  branch: main                # GitHub default; it has no upgrade/vault branch yet
+  private: true               # the one private repository: needs access, clone over SSH
+  what: ycash-ops, the owner's private operations repository: the GitHub Actions that deploy and run the testnets (and, after P8, mainnet) on AWS from ycash-infra's public recipes; holds no account identifiers (those live in GitHub environment secrets)

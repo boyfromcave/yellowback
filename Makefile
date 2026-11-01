@@ -78,7 +78,8 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	done
 
 # Every fork (role `fork` in repos.yaml), each with its own branch and baseline: the v4.5.0 forks are on
-# feature/yellowback-price-attest, the v6.20.0 forks (ycash6, librustzcash6) on feature/yellowback.
+# feature/yellowback-price-attest, the v6.20.0 forks (ycash6, librustzcash6) on feature/yellowback, kogany (the
+# Zakura line) on upgrade/vault off kogany-legacy.
 FORKS := $(shell for r in $$($(REPOS) list); do [ "$$($(REPOS) get $$r role)" = fork ] && printf '%s ' "$$r"; done)
 
 diff: ## Fork deltas: every fork vs its -legacy baseline (the app repos have none)

@@ -30,6 +30,7 @@ yellowback-workspace/
 │   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
 │   ├── ycash6/      READ-ONLY. miodragpop/ycash, ycashd 6.20.0 (Zcash 6.x lineage), dev-rebase-6.20.0 @ 040894344b (no tag)
 │   ├── librustzcash6/ READ-ONLY. miodragpop/librustzcash, the patched librustzcash ref/ycash6's Cargo.toml pins, ycashd-v6.20.0 @ ec525fae82 (no tag)
+│   ├── zakura/      READ-ONLY. zakura-core/zakura, a Zcash full node in Rust (Zebra lineage), main @ 2b062412c5 (past v1.7.0)
 │   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
@@ -37,6 +38,7 @@ yellowback-workspace/
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
+├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= 2b062412c5) — just forked, no overlay yet, see "The third node line" below
 │                    (the branches above are the branches of record; the line being built is `upgrade/vault` — rule 2)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `upgrade/vault` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `upgrade/vault` — plan docs/plans/role-pool-regtest-plan.md
@@ -45,6 +47,7 @@ yellowback-workspace/
 ├── yb-calibration/  THE PARAMETER CALIBRATION TOOL (yb-calibration), its own repo, branch `upgrade/vault` — calibrates the constants baked into Yellowback releases
 ├── hawkeye/         THE BRIDGE ATTESTOR (Hawkeye), its own repo, branch `upgrade/vault` — the wYEC bridge's attestor sidecar, plan hawkeye/docs/hawkeye-bridge-plan.md
 ├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
+├── ycash-ops/       THE OPERATIONS REPO (ycash-ops), PRIVATE, its own repo, branch `main` (no `upgrade/vault` yet) — the GitHub Actions that deploy the testnets on AWS from ycash-infra's recipes; no account identifiers in it
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `upgrade/vault` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        yellowback-risk-profile.md (READ FIRST: the collateral model as the upgrade/vault node
@@ -69,7 +72,7 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines, ten component repos.** Yellowback is an overlay on the node
+**One overlay, two node lines (a third, `kogany`, just started), ten component repos.** Yellowback is an overlay on the node
 (`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
 the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
@@ -104,19 +107,34 @@ and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402
 `boyfromcave/librustzcash6` at `eeb7740d`. On `harden/yellowback` it stays a zero-delta fork. (It is
 a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is already an older fork.)
 
+**The third node line: `kogany`** (owner, 2026-11-01). `kogany` is the owner's GitHub fork of
+Zakura (`ref/zakura`: zakura-core's consensus-compatible Zcash full node in Rust, forked from
+Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; owner's choice, the commit the fork
+was taken at). `kogany-legacy` is that pin (**never commit to it**) and `upgrade/vault` was cut
+from it; nothing is ported yet, so `make diff` shows no delta. It is a third codebase lineage
+(Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
+`docs/mapping.md` gets a section for it before the first port, and the four-part check (rule 4)
+applies as on the other lines. Until it carries the overlay, the both-lines rules above (one
+change on every line, the shared branch ID, clients tested against each line) do not yet include
+it, and `make spec` / the release train do not cover it. Zakura's own `AGENTS.md` / `CLAUDE.md` /
+`.claude/` ship in the tree and describe upstream's conventions; where they conflict with this
+file, this file wins (rule 8 above all). **Its GitHub Actions stay off**: GitHub has not enabled
+the upstream workflows on the fork (53 of them: tests, deploys, scheduled jobs), and they must
+not be enabled until the owner decides which ones the fork runs.
+
 ## Rules
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All seven `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, `ref/ycash6`,
-`ref/librustzcash6` and `ref/yolo`, whose upstreams publish no tags, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
+All eight `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, `ref/ycash6`,
+`ref/librustzcash6` and `ref/yolo`, whose upstreams publish no tags, and `ref/zakura`, pinned past its last tag by choice, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
 
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/` — on `upgrade/vault`; the branches of record are `feature/yellowback-price-attest` and, on the 6.20.0 line, `feature/yellowback`.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/`, and for the third node line in `kogany/` — on `upgrade/vault`; the branches of record are `feature/yellowback-price-attest` and, on the 6.20.0 line, `feature/yellowback`.
 
 **`upgrade/vault` is the line being built** (owner, 2026-10-06; `docs/plans/yellowback-upgrade-plan.md`):
 the integration branch in `ycash-dd`, `ycash6`, `librustzcash6` and every client repo (YecWallet,
@@ -155,7 +173,7 @@ measure, not a gate. **On `harden/yellowback` the zero-delta rule stands**: froz
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
 `ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, `lightwalletd-legacy`
-is upstream `master` at the pin, and `ycash6-legacy` / `librustzcash6-legacy` are the v6.20.0 pins — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+is upstream `master` at the pin, and `ycash6-legacy` / `librustzcash6-legacy` are the v6.20.0 pins and `kogany-legacy` the Zakura pin — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
 the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
@@ -325,10 +343,10 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its twenty clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty-three clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
-make diff       # fork deltas: each of the five forks vs its -legacy baseline
+make diff       # fork deltas: each of the six forks vs its -legacy baseline
 make log        # commits on each fork branch beyond its baseline
 make spec       # regenerate the spec + RPC contract copies from the plans (make spec-check verifies)
 ```
