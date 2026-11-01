@@ -1,6 +1,6 @@
 # Ycash Yellowback (YED) public testnet, checkpoint bootstrap bundles and release-candidate CI
 
-**Revision 4 (2026-10-31): slow and legacy become shadow forks of Ycash mainnet, see below.** **Revision 3 (2026-10-29): three testnets.** **Revision 2 (2026-10-28).** Revision 2 (owner's
+**Revision 5 (2026-11-01): the testnets' blocks come from GPU miners rented on Vast.ai, see below.** **Revision 4 (2026-10-31): slow and legacy become shadow forks of Ycash mainnet, see below.** **Revision 3 (2026-10-29): three testnets.** **Revision 2 (2026-10-28).** Revision 2 (owner's
 suggestion) builds the testnet the way Ycash itself was built:
 - Zcash testnet history up to the fork height, taken from Zcash testnet and anchored by it;
 - then a fresh Ycash fork at the original height, 510,248;
@@ -57,6 +57,74 @@ compare one checksum file.
 **Release candidates.** Before a new version of the node software is final, it goes out as a
 "release candidate" (rc). Automated checks run it together with all the other Yellowback
 programs. Then it runs on the testnet for a while, and only after that is it published.
+
+## Revision 5 (2026-11-01, owner): block production is GPU miners rented on Vast.ai
+
+### In plain words
+
+A blockchain only moves forward when someone finds blocks, and finding a Ycash block means solving
+a puzzle (Equihash 192,7) that graphics cards (GPUs) do well and ordinary processors badly. Until now
+the plan had the node software's own built-in miner (`-gen`) running on our cloud machines. That is
+too slow for slow and legacy, which keep mainnet's difficulty floor, and the big clouds do not allow
+mining anyway. So the testnets' blocks now come from **graphics cards rented by the hour on
+Vast.ai**, a marketplace where people rent out their own GPUs and where mining is allowed. A small
+private fleet file says how many cards each network gets; a GitHub Actions workflow rents them,
+replaces any that die and gives them back. The mining pools (yolo) stay on our own AWS servers next
+to the seeds: they hand out work and never mine themselves.
+
+### Decisions (owner, 2026-11-01)
+
+- [x] **Provider: Vast.ai.** AWS, Google Cloud, Azure, Lambda and Hetzner prohibit or restrict
+  cryptocurrency mining in their terms. Vast.ai explicitly allows it when the rental is paid from
+  credit bought with cryptocurrency; that credit is not refundable, so it is topped up in small
+  amounts, and the balance is the hard spending cap. The owner sets the account up (ycash-ops
+  `docs/vast-setup.md`). No benchmark first: the fleet is built now and sized from published rates.
+- [x] **No `-gen` miners on AWS or EKS.** The §2.3 "Miners" row and the §6.2 `miner` Deployment are
+  replaced by the rented fleet. The yolo pools stay on AWS (they do not mine).
+- [x] **Fleet sizing** (ycash-ops `miners/fleet.json`; the floors are at minimum difficulty):
+
+| Network | Floor for 75 s blocks | Fleet | Cost (prices change daily) |
+|---|---|---|---|
+| testnet-yb-fast | about 0.43 Sol/s (testnet PoW limit: 32 solutions per block) | 1 × the cheapest card (RTX 3060 class), always on | about $45–60 a month |
+| testnet-yb-slow | about 109 Sol/s (mainnet's PoW limit after the shadow fork: 8,192 solutions per block) | 2 × RTX 3070 class (about 45–60 Sol/s each, so about 150 s blocks), always on, each on a different pool | about $120–190 a month |
+| testnet-legacy | as slow | 1 × RTX 3070 class, `count: 0`: only during campaigns (`burst`) | about $25 a month when used |
+
+  fast stays one GPU for now. A later cost option for fast: CPU mining with the node's own
+  open-source 192,7 solver on a cheap Vast machine (not on AWS, whose terms prohibit mining); not built.
+
+### How it works
+
+- **The miner:** ycash-infra `images/miner`. The image holds **no miner binary** (owner,
+  2026-11-01): at start it downloads the selected miner from its official release, checks it
+  against a SHA-256 pinned in `images/miner/miners.conf` and refuses to run on a mismatch or a
+  failed download. We redistribute neither miner.
+  - **lolMiner, the default:** 1.98a from its GitHub release (1 % developer fee), run as
+    `--algo EQUI192_7 --pers ZcashPoW`, matching the node's personalization
+    `"ZcashPoW" || le32(192) || le32(7)` (`src/crypto/equihash.cpp`). Its SHA-256 was computed from
+    the download; the owner confirms it against the release page.
+  - **miniZ, optional and off:** `MINER=miniz` is refused until its official download URL and
+    SHA-256 are pinned, which waits for the owner to read miniZ's Terms (miniz.cc, unreachable from
+    the build machine) and confirm its 192,7 flags (`--par=192,7 --pers=ZcashPoW --url=<worker>@<pool>`,
+    from its documentation, not verified). Then slow's second miner switches to it, for software
+    diversity.
+  - Published to `ghcr.io/boyfromcave/ycash-miner` by `miner-image.yml` with build provenance. The
+    container holds only a pool address, a worker name, an optional payout address and the public
+    download pins: the rented machines' owners can read it, so it never carries a key, password or
+    token.
+- **The fleet:** ycash-infra `scripts/vast-fleet.py` (standard library, the Vast REST API) reconciles
+  the account with the fleet file: it rents the cheapest matching one-GPU offer under the price cap,
+  spreads a network's miners over its pools round-robin, replaces dead or stuck miners, gives back
+  extras and networks no longer in the file, and runs time-limited bursts. Each network names its
+  miner (`lolminer`, or a list spread over the slots; `miniz` only with the fleet's pinned
+  `miniz_url` / `miniz_sha256`). It touches only instances labelled `ycash-<network>-<n>`. Generic and public; the fleet file and the API key are private.
+- **The buttons:** ycash-ops `.github/workflows/miners.yml` (environment `testnet-miners`, `main`
+  only, secret `VAST_API_KEY`): `status`, `reconcile`/`up`, `down` (typed confirmation), `burst`
+  (network, count, hours), and a reconcile every 30 minutes that stops before calling Vast until the
+  repository variable `MINERS_ENABLED` is `true` (and while the fleet asks for no miners).
+  `miners-burst-expire.yml` ends bursts on time and switches itself off when none is left.
+- **The pools:** yolo with `--payout` (the pool operator's testnet address) and without `--password`,
+  so the rented miners need no address and no secret. Where the pools run on AWS (the seed hosts or
+  the testnet chart) is still open.
 
 ## Revision 4 (2026-10-31, owner): testnet-yb-slow and testnet-legacy become shadow forks of Ycash mainnet
 
@@ -207,7 +275,8 @@ same one-click flow as the seeds.
 Seeds: a `t3a.medium` (4 GiB, for three nodes), about 100 GiB of gp3 and one public IPv4 address come
 to about $40 per host per month. **2 hosts ≈ $80 a month**, plus data transfer. The
 single-network plan was three hosts at about $66. The EKS service stack (T-20) adds about
-$625–645 a month while it is up.
+$625–645 a month while it is up. The rented GPU miners (revision 5, T-21) add about $165–250 a month
+(fast 1 and slow 2 always on), plus about $25 a month for legacy when it is used in campaigns.
 
 ## Execution status (authoritative; kept by the coordinator from agent reports)
 
@@ -355,6 +424,21 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - Not done: the §5.5 release image (ghcr push, `Dockerfile.release`), client release workflows, bundle-manifest provenance.
 - These stay off the seeds code (`infra/testnet-seeds`, `node-image.yml`) and ycash-ops while the owner tests the first deploy; each merges when the owner chooses
 
+### Testnet miners on Vast.ai (revision 5, owner 2026-11-01)
+- [x] T-21 decided: GPU miners rented on Vast.ai (crypto-funded credit), driven from `ycash-ops`; no `-gen` miners on AWS or EKS; yolo pools stay on AWS
+- [~] Public half, ycash-infra branch `claude/vast-miners` (`baa85a1`, `cd101ff`, `b8b2a5a`, `5bfc250`; no PR yet):
+  - `images/miner`: no miner binary in the image (`buildpack-deps:noble-curl` by digest); the entrypoint downloads lolMiner 1.98a (SHA-256 `0b807829…`) at start, checks it, runs `EQUI192_7` / `ZcashPoW`; miniZ optional and refused until pinned; `miner-image.yml`;
+  - `scripts/vast-fleet.py` (per-network `miner`, miniZ only with its pins, a miner whose miner or pool changed is replaced) with a stand-in Vast API (`scripts/tests/fake_vast.py`) and 26 unit tests; the entrypoint's test against a stand-in curl (match runs, mismatch and no network refuse, miniZ refused without pins); `make miners-test` and a CI job;
+  - `infra/vast-miners/README.md` and `fleet.example.json`; `charts/ycash-testnet` had no `-gen` miner (its README row now says so).
+  - Checked locally: the tests, shellcheck, hadolint, Checkov (images/miner: 0 failed), zizmor, actionlint. Not run: the image build (no Docker here), lolMiner on a GPU, a real Vast call.
+- [~] Private half, ycash-ops branch `claude/vast-miners` (`8b7638d`, `98246eb`; no PR yet): `miners/fleet.json` (fast 1, slow 2, legacy 0, all lolMiner, miniZ unpinned; placeholder pools and digest), `miners/infra.ref` = ycash-infra `5bfc250`, `scripts/miners.sh`, `miners.yml`, `miners-burst-expire.yml`, `tests/miners-dryrun.sh` (in `check.yml`, with and without `GITHUB_ACTIONS`), `docs/vast-setup.md`
+- [ ] Owner: confirm lolMiner 1.98a's SHA-256 against its GitHub release page (`docs/vast-setup.md` §5)
+- [ ] Owner, optional: miniZ's Terms read and its 192,7 flags confirmed; then its URL and SHA-256 pinned and slow's second miner switched to it (`docs/vast-setup.md` §8)
+- [ ] Owner, `ycash-ops` `docs/vast-setup.md`: the Vast account (alias e-mail, 2FA), crypto credit in small amounts, a limited API key, the `testnet-miners` environment (main only) with `VAST_API_KEY`, then `MINERS_ENABLED=true`
+- [ ] Coordinator: merge both PRs; run `miner-image`; owner makes the `ycash-miner` package public; the digest and the pools' stratum endpoints into `miners/fleet.json`; re-pin `miners/infra.ref` (or drop it) once the fleet is on ycash-infra's `upgrade/vault`
+- [ ] Where the yolo pools run on AWS (the seed hosts or `charts/ycash-testnet`), one per network and two on slow, with `--payout` and without `--password`
+- [ ] First live run: `up`, blocks on fast and slow, `status` cost within the table above
+
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line
   verifies Sprout proofs from before Sapling (block 280,000), even with `-checkpoints=0`
@@ -446,7 +530,7 @@ The differences below are the ones the regtest-to-testnet path (§3) has to abso
 | History below the first Ycash block | None | 510,248 blocks of Zcash testnet history, including Sprout and Sapling, imported from the prefix (§2.1) |
 | Attestor set | `-yellowbackattestorset=<setid>`, given after the set is created | Compiled (`TestParams().attestorSetId`) |
 | Set maturity | `nVaultMinSetMaturity` 2 (`chainparams.cpp:700`) | 16,128 today (`consensus/params.h:233`; T-4) |
-| Equihash | 48,5. The Python `stratum-miner` and yolo `auto` both use it | 192,7 after the fork upgrade (`chainparams.cpp:1012-1031`). This needs a real solver: the node's `-gen` miner, or a GPU miner behind yolo, whose `auto` mode picks 192,7 off regtest |
+| Equihash | 48,5. The Python `stratum-miner` and yolo `auto` both use it | 192,7 after the fork upgrade (`chainparams.cpp:1012-1031`). This needs a real solver: a GPU miner behind yolo, whose `auto` mode picks 192,7 off regtest (revision 5: rented on Vast.ai) |
 | Difficulty | No retargeting | Retargets over a 17-block window. A min-difficulty block is allowed after a gap of 6 × 75 s (`chainparams.cpp:415`, `pow.cpp:83-84`) |
 | Peers | `-connect` between local nodes | DNS seed, fixed seeds, `addnode` |
 | Tooling | `yellowback-devnet` (8 or 11 nodes), `upgrade-walk`, the kind chart's `arm.yaml` Job, host-run personas | Not yet built (§3, §6) |
@@ -719,7 +803,8 @@ that carries it.
 |---|---|---|---|
 | Seed nodes, ycash6 | 3, on at least 2 providers or regions | Workspace (`ycash-infra`) | Release image |
 | Cross-line verifier, ycash-dd | 1 or more | Workspace (`ycash-infra`), and invited operators | ycash-dd image at the `vault-params` tag |
-| Miners | 2 independent block producers at launch, then yolo pools | Workspace: node `-gen` at first. Pool operators bring yolo plus GPU miners (192,7) | Release image, yolo release |
+| Miners | fast 1, slow 2 GPUs always on; legacy 0, campaigns only (revision 5) | Workspace: GPU miners rented on Vast.ai from `ycash-ops` (`miners.yml`), no `-gen` on AWS or EKS. Invited operators bring their own GPU miners (192,7) | `ycash-miner` (lolMiner, ycash-infra `images/miner`) |
+| Mining pools (yolo) | fast 1, slow 2, legacy 1 | Workspace, on AWS beside the seeds (they do not mine); `--payout`, no `--password` | yolo release |
 | YED attestors | The ceremony set (T-5). G-5 wants at least 7 seats from at least 7 operators | Founding seats per T-5, then recruited operators | `contrib/yellowback/attest` release |
 | Bridge signers (persona) | One set per shape, for G-12 | Workspace, with `bridge-sim` until wyec P5 | |
 | lightwalletd-dd + yindex | 1 public endpoint | Workspace (`charts/ycash-lightwallet`, `network: testnet`) | lightwalletd-dd release |
@@ -1068,8 +1153,8 @@ runs what was released, by digest.
 | `seed` | StatefulSet, 3 replicas, `podAntiAffinity` by zone; each pod gets a stable public IP (NLB per pod, or a node with hostNetwork on a small dedicated pool) on 18833 | The addresses go into `pnSeed6_test` (N1 follow-up, each rc) |
 | `dnsseed` | Deployment of a Ycash-configured seeder (a fork of `zcash/zcash-seeder` set to the new magic and port); NS delegation for the seed hostname (T-3) | Crawls the network and answers A/AAAA |
 | `verifier-dd` | StatefulSet, 1 replica, ycash-dd image | Signs bundle statements. Its state digests are scraped (§6.4) |
-| `miner` | Deployment, 2 replicas, release image with `-gen -genproclimit=N -mineraddress=<testnet key>` | Until real pools join. Each replica is in a different zone |
-| `pool` | Optional yolo Deployment and Service on 3333 | For invited GPU miners at 192,7 |
+| ~~`miner`~~ | **Not in the cluster** (revision 5): no `-gen` Deployment. The blocks come from GPU miners rented on Vast.ai from `ycash-ops` | — |
+| `pool` | yolo Deployment and Service on 3333 (or on the seed hosts: open) | The stratum endpoints the rented miners use (fast 1, slow 2, legacy 1), with `--payout` and without `--password`; also open to invited GPU miners at 192,7 |
 | `attestor` | One StatefulSet per house seat: the attest agent plus its node, keys from External Secrets | Founding seats only (T-5). Replaces the host-run `kind-personas.py` for testnet. The image comes from `images/personas/`, finished here |
 | `bridge-persona` | `bridge-sim` per shape | For G-12, until wyec P5 |
 | `faucet` | Deployment, ungated from `regtest.enabled`; per-IP and per-address rate limits; a proof-of-work or captcha challenge; a daily cap | Pays tYEC. It never pays YED: users mint it |
@@ -1102,8 +1187,8 @@ Alerts are added to the existing kube-prometheus-stack:
 
 ### 6.5 Operations
 
-- **Rolling upgrade per rc:** canary, then seeds one at a time, then miners, then attestors,
-  then the lightwallet endpoint. It is stopped by any §6.4 alert.
+- **Rolling upgrade per rc:** canary, then seeds one at a time, then the pools' nodes, then attestors,
+  then the lightwallet endpoint (the rented miners speak only stratum and need no upgrade). It is stopped by any §6.4 alert.
 - **Reset runbook (T-7):** stop roles, wipe PVCs, run the ceremony, republish the bundle,
   update the status page.
 - **Cost:** the lightwallet stack's ≈ $625–645/month (`docs/eks-runbook.md`) plus about
@@ -1158,6 +1243,7 @@ Each decision has a recommendation. Phases that depend on a decision state that 
 | **T-18** | Mainnet seed readiness | **Decided (owner 2026-10-29).** `main` is a profile of the same module; a separate stack, state and account, applied only through an approval-gated GitHub Environment; nothing created before P8 |
 | **T-19** | Services per network | **Decided (owner 2026-10-29).** Seeds, lightwalletd, faucet and chain-viz on all three; YED personas and attestor sets on the two `yb` networks |
 | **T-20** | Kubernetes (EKS) for the testnets | **Decided (owner 2026-10-29).** One cluster, a namespace per network, deployed from `ycash-ops` like the seeds; up for campaigns and the rc soak, down otherwise; mainnet a separate approval-gated cluster in its own account, nothing before P8 |
+| **T-21** | Testnet block production | **Decided (owner 2026-11-01).** GPU miners rented on Vast.ai (the big clouds and Lambda and Hetzner prohibit or restrict mining; Vast allows it with crypto-funded credit), reconciled from `ycash-ops` against a fleet file: fast 1 × RTX 3060 class and slow 2 × RTX 3070 class always on, legacy by burst; the image downloads lolMiner at start (no miner redistributed), miniZ optional and off until pinned; no `-gen` miners on AWS or EKS; the yolo pools stay on AWS. No benchmark first (revision 5) |
 
 ---
 
@@ -1205,3 +1291,4 @@ The long poles are outside the code:
 | Testnet resets erode participation | Resets only for history-invalidating changes (T-7); each is announced with its rc; the ceremony is scripted, so a reset costs one maturity period |
 | CI cost and duration of `rc-qualify` | It runs per rc, not per push, and on large runners. Steps 1–4 are parallel jobs. Step 5 is wall-clock, not compute |
 | The Foundation's seed name stays unavailable | A workspace domain, plus fixed seeds compiled into each rc |
+| The rented miners go away (a host leaves, the offers move above the cap, the credit runs out, Vast changes its terms) | The 30-minute reconcile replaces a dead miner from any matching host; every testnet node runs with `-maxtipage=999999999`, so a chain left idle resumes when a miner returns; the prepaid balance caps the spend; invited operators can mine through the same pools |
