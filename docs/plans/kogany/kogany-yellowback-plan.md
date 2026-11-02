@@ -72,14 +72,14 @@ K-10, K-11, K-12; K-20 and K-21 decided in rev 2; K-22 … K-26 pending.)*
 
 | Wave | Content | State | Gate seen green |
 |---|---|---|---|
-| W0 | scaffolding: fork repos, baseline tag, CI allowlist, security CI, audit legs, crate verification | [x] done 2026-11-02 (W0-a..d merged; fork base `bdbca121628d`; tag `kogany-baseline` = kogany `7924d1627`) | local: lint, audit legs, zakura-chain tests, cargo deny/vet; GitHub Actions still off |
-| W1 | Ycash network on Zakura (Y0–Y8): branch IDs, Equihash (192,7), YDF, checkpoints, P2P, RPC answers, sync | [~] Y0 merged (fork `1dd25c9d`); Y1–Y3 `kc/w1-profile`, Y7 harness `kc/harness` in flight; mainnet sync node started 2026-11-02 | — |
-| W2 | Vault epoch: `NetworkUpgrade::Vault`, `0x6d5b7a31`, v4-only, U-26 builder, vectors pinned | [~] W2-c vectors pinned (`4c82f1f74`); W2-a `kc/fork-protocol` in flight | — |
-| W3 | script and PQ: CSV 0xb2, 0xc0, 0xc1, 0xc2, BIP68, SLH-DSA/Falcon verification | [~] W3-a merged (fork `2773f4a4`), W3-b merged (`b90fc9b19`); W3-c/d/e not started | W3-a 29 tests, upstream vectors unchanged; W3-b 17 tests debug+release |
-| W4 | the vault primitive: templates, acts, set state, storage, snapshot, reorg | [~] W4-a merged (`c23455a3e`); W4-b `kc/set-state` in flight | W4-a: every vault_vectors template/act case, debug+release+ci-tests |
-| W5 | the YED rule module: math, params, codecs, attestations, state, index | [~] W5-a merged (`f546b4803`); W5-b `kc/yed-codecs` in flight | W5-a: 67 math cases debug+release+ci-tests; params checked against params.cpp |
+| W0 | scaffolding: fork repos, baseline tag, CI allowlist, security CI, audit legs, crate verification | [x] done 2026-11-02: W0-a..d merged; fork base `bdbca121628d`; tag **`kogany-baseline`** = kogany `7924d1627` | `verify_crates_io`: 25 crates reproduce from the fork base; local lint, audit legs, zakura-chain tests, cargo deny/vet; GitHub Actions still off |
+| W1 | Ycash network on Zakura (Y0–Y9): branch IDs, Equihash (192,7), YDF, checkpoints, P2P, RPC answers, relay policy, sync | [~] done: Y0 (fork `1dd25c9d`), Y1/Y2/Y3 (`679d3870b`), Y6 (`5f38ea2aa`), Y7 harness (ycash6 `f4967b0d7`), Y9 relay policy (`e62179e97`, new chunk, KF-07). Open: Y4 checkpoints, Y5 P2P (in flight), Y8 sync gate (mainnet sync node running, KF-39) | Y1–Y3: 18 real mainnet coinbases (fetched P2P from `lite.ycash.xyz:8833`, `PROVENANCE.json`); Y6: parity on 133 calls; Y9: 72 verdicts equal to ycashd |
+| W2 | Vault epoch: `NetworkUpgrade::Vault`, `0x6d5b7a31`, v4-only, U-26 builder, vectors pinned | [x] done 2026-11-02: W2-a (fork `7534e26c`), W2-b/c/d (`f1d8220fd`; W2-c vectors pinned at `4c82f1f74`) | sighash replay of `vault_vectors.spends[]`; builder accept/refuse table; `is_vault_active` false on every Zcash network |
+| W3 | script and PQ: CSV 0xb2, 0xc0, 0xc1, 0xc2, BIP68, SLH-DSA/Falcon verification | [x] done 2026-11-02: W3-a (fork `2773f4a4`), W3-b (`b90fc9b19`), W3-c (`9498671a5`), W3-d (`9d470fb7c`), W3-e (`709195d08`) | W3-a 29 tests, upstream vectors unchanged; W3-b 17 tests debug+release; W3-e 3,735 fuzz verdicts replay |
+| W4 | the vault primitive: templates, acts, set state, storage, snapshot, reorg | [~] done: W4-a (`c23455a3e`), W4-b (`7a23a09da`), W4-c (`4b8c75d3a`, DB format 30.1.0). In flight: W4-d snapshot hook; starting: W4-e harness state | W4-a: every `vault_vectors` template/act case, debug+release+ci-tests; W4-b: statehash equal to ycashd on the recorded `vault_rpc` and `vault_slashing` chains (KF-21) |
+| W5 | the YED rule module: math, params, codecs, attestations, state, index | [~] done: W5-a (`f546b4803`), W5-b (`f30918149`), W5-c (`9316a0c9d`), W5-d1 (`980a6c342`). In flight: W5-d2, W5-e | W5-a: 67 math cases debug+release+ci-tests, params checked against `params.cpp`; W5-d1: golden chain replays to the pinned hash `ee6a9f15…`, pq chain to `9bc637c4…` |
 | W6 | relay policy and mempool | [ ] not started | — |
-| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract; rev 2: W7-e reject-reason parity and regtest `setmocktime` for the sidecar | [~] W7-a prototype `kc/rpc-dispatch` in flight | — |
+| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract; rev 2: W7-e reject-reason parity and regtest `setmocktime` for the sidecar | [~] done: W7-a (`c8d74c30e`), W7-b (`5b31db972`), W7-d (`ebde83aa7`). In flight: W7-c | W7-b: 27 methods pass `Contract.check` against the mock; W7-d: lightwalletd-dd leg 8/8, chain-viz leg blocked on the `chainwork` shape (KF-27, W7-c) |
 | W8 | mining: template filter, coinbase tag | [ ] not started | — |
 | W9 | wallet via the ycash6 sidecar test rig, full mixed matrix, client legs, demonstration; rev 2: the third matrix column comes from S5 | [ ] not started | — |
 
@@ -88,17 +88,19 @@ around W5/W6 and cannot finish before W7.
 
 | Chunk | Content | State | Gate seen green |
 |---|---|---|---|
-| S0 | the `yewd` shell inside `yew` (`yew/yewd/`: crate layout, build beside the app and web shells, CI job `yewd`), façade skeleton (forwarding, auth, method table), harness mode `YEWD_BIN`, contract suites pointed at it | [x] merged yew `5773061` 2026-11-02; YEWD_BIN wiring and the n/47 baseline move to the harness chunk | check-yewd.sh, 22 tests, regtest round trip vs ycashd |
-| S1 | wallet state and sync on yew-core against kogany: transparent, Sapling, PQ keys, YED tokens, vaults and intents; sync barrier, reorgs | [ ] not started | — |
+| S0 | the `yewd` shell inside `yew` (`yew/yewd/`: crate layout, build beside the app and web shells, CI job `yewd`), façade skeleton (forwarding, auth, method table), harness mode `YEWD_BIN`, contract suites pointed at it | [x] merged yew `5773061` 2026-11-02; YEWD_BIN wiring and the n/47 baseline moved to the harness chunk | check-yewd.sh, 22 tests, regtest round trip vs ycashd |
+| S1 | wallet state and sync on yew-core against kogany: transparent, Sapling, PQ keys, YED tokens, vaults and intents; sync barrier, reorgs | [x] merged yew `3679eff` 2026-11-02 (reads blocks over node JSON-RPC, a K-23 (a) deviation, KF-34). S2 in flight | 9 of the 47 RPCs served |
 | S2 | builders and the signer boundary: yew-core builders mapped to the build RPCs; new set/act, generic vault and cancel builders; the signer process | [ ] not started | — |
 | S3 | roles: attestor `attest` mode, Hawkeye member, x402 `rpcWalletSigner` (yolo's payout needs no wallet) | [ ] not started | — |
 | S4 | façade complete: the 47 RPCs plus the stock wallet set, error and arity parity, auth, process lifecycle | [ ] not started | — |
 | S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [ ] not started | — |
 | V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [x] merged 2026-11-02 (workspace `e6e3eae`, ycash6 `e5dac3a30`): `docs/spec/vault-signing-message-v5.md` | zip244.py vs 10 upstream vectors; vault_v5_dormant_tests 137 assertions |
 
-**Branches.** Integration branch `upgrade/vault` in `kogany` and in the common fork (K-2); agents
-work in `wt/<chunk>` on `up/<chunk>` off `upgrade/vault`; the coordinator merges. No commit to
-`kogany-legacy` or the fork's `-legacy` baseline, ever.
+**Branches.** Integration branch `vaults/kogany-compat` in `kogany`, in the common fork (K-2) and in
+every repository the kogany work touches (§4.2 rule 0); agents work in `wt/kc-<name>` on `kc/<name>`
+off `vaults/kogany-compat`; the coordinator merges. No commit to `kogany-legacy` or the fork's
+`-legacy` baseline, ever. Integration heads at this update: kogany `080dc1426`, fork `7281d463`,
+ycash6 `eac62c942`, ycash-dd `93a23da20`, yew `3679eff`, workspace `0944d30`.
 
 ---
 
@@ -608,6 +610,7 @@ Entry: W0 green; K-1, K-9, K-10, K-11, K-12 decided.
 | W1-Y6 `rpc-ycash` | addresses in RPC and config (`s1`/`sm`/`ys`/`yc`); `getblocktemplate` YDF coinbase; `getblockchaininfo` (upgrades keyed by branch ID, as `vault_harness.py:134-136` asserts), `getblocksubsidy`, `validateaddress` | Y1, Y3 | RPC answers equal ycash6 field by field for the lightwalletd-dd and yolo call sets (lane B §1 row 19) | 400–700 / 400 / 2 | — | — |
 | W1-Y7 `regtest-harness` | Ycash regtest parity (Ycash epoch at 1, `vault` height configurable, (48,5)); **mixed-line harness skeleton**: `KOGANY_BIN` in `YellowbackTestFramework`, the ycashd-argument → `zakurad.toml` map, `sync_all` tip assertion | Y1, Y5 | a ycash6 regtest script runs with one kogany follower in sync to the end; kogany ⇄ ycash6 P2P on regtest | 150–300 + harness ~400 / — / 2 | K-18 | — |
 | W1-Y8 `sync-gate` | nextest profile `ycash-sync`: full mainnet and testnet sync beside ycash6, block by block (hash, value pools, ZIP-221 history root from Heartwood 1,100,003, `z_gettreestate` at sampled heights) | Y0–Y7 | byte-identical answers, zero rejected blocks, mainnet and testnet | harness / — / 1 + wall-clock | — | — |
+| W1-Y9 `relay-ycash` *(added 2026-11-02, KF-07)* | the pre-Vault Ycash mempool relay policy in place of ZIP-317 on a Ycash network: min relay fee (`GetFeeForRelay` + `PerSaplingOutputFees`), the unpaid-action limit (`SIZE_MAX` by default, `tx_unpaid_action_limit`), standardness (`accept_non_standard`; none on default regtest), expiring-soon refusal; `ycash_relay::mempool_checks` and `storage/ycash_policy.rs` (mapping M24-47) | Y1, Y6 | verdict equality with ycashd on a scripted provocation set (72 verdicts) in the default, `standard` and `zip317` configurations; Zcash ZIP-317 path unchanged with the feature off | 300–500 / 400 / 1½ | — | — |
 
 **W1 exit gate (lane E):**
 - Ycash block vectors parse and validate, including the negative solution-size cases;
@@ -1304,15 +1307,75 @@ here is copied.
 ## 9. Findings log
 
 Every surprise found while porting gets a row here **and** a mapping §24 row before it is fixed
-(the ycash6 port's discipline).
+(the ycash6 port's discipline). A row whose mapping column says "none" is a coordinator decision, a
+process or environment finding, or a defect with no kogany-side trap. Commits are kogany
+`vaults/kogany-compat` unless another repository is named ("fork" = `zakura-common-ycash`).
 
-| # | Wave/chunk | Finding | Resolution | Commit | Mapping row |
-|---|---|---|---|---|---|
-| | | | | | |
+| # | Date | Wave/chunk | Finding | Resolution | Commit | Mapping row |
+|---|---|---|---|---|---|---|
+| KF-01 | 2026-11-02 | all (coordinator) | The pure crates (`kogany-pq`, `kogany-vault`, the `kogany-yellowback` math, params, codecs, attestations and state) depend on no Zakura crate, so they can be built before their waves' entry gates | Developed ahead of their waves; the hook chunks kept the plan's layering and order | — | none |
+| KF-02 | 2026-11-02 | W0-b | The `[patch.crates-io]` must cover the whole closure: 25 crates at one rev, or path dependencies inside the git repository duplicate 21 crates; `udon`/`bento` were published from other commits | Patch at fork base `bdbca121628d` (`verify_crates_io`: 25 crates reproduce); `udon`/`bento` stay on crates.io through a `[patch]` of the fork URL | `7924d1627` (tag `kogany-baseline`) | M24-42 |
+| KF-03 | 2026-11-02 | W0-c | Zakura has 40 workflow files; editing the ones K-15 turns off would conflict on every upstream sync | 7 kept and trimmed in `on:`, 1 reusable, 32 byte for byte and disabled in the Actions settings from `.github/kogany-workflows.txt`, 5 of ours; `qa/kogany_audit.py workflows` blocks unclassified files | `7924d1627` | M24-43 |
+| KF-04 | 2026-11-02 | W1-Y1 | The fork's `TestNetwork` heights are the old testnet's (661,610 …); a `ycash` build still carries Zcash's checkpoints | kogany's tables are authoritative; the fork's `TestNetwork` is to be corrected (open); the Zcash checkpoints fail safe above about 569,686 until W1-Y4 | `679d3870b` | M24-44 |
+| KF-05 | 2026-11-02 | W1-Y1 | Regtest with Canopy at 1 applies the Ycash rules from height 1 | The mixed harness schedules the Ycash upgrade at 1 on ycashd too | `679d3870b` | M24-6 (note) |
+| KF-06 | 2026-11-02 | W1-Y6 | `CoinbasePlan` knew only funding streams and the lockbox; `DefaultRoots` assumed NU5 | YDF output under `cfg(ycash)`; before NU5 the default commitment is the ZIP-221 history root | `5f38ea2aa` | M24-45 |
+| KF-07 | 2026-11-02 | W1-Y6 → W1-Y9 (coordinator) | The pre-Vault Ycash mempool relay policy (fee, standardness, expiry) was missing: Zakura applies ZIP-317 | New chunk **W1-Y9 `relay-ycash`** (§3 W1 table); merged with 72 verdicts against ycashd. Open items go to W6-a, W6-c, W7-e, W8 | `e62179e97` | M24-47 |
+| KF-08 | 2026-11-02 | W2-a | Vault's position differs between librustzcash6 (after Nu6_2) and the fork (before Nu5, K-1) | Recorded; only the branch ID `0x6d5b7a31` crosses lines | fork `7534e26c` | M24-3 (note) |
+| KF-09 | 2026-11-02 | W2-b | Whether an upgrade is scheduled was not observable; ycashd accepts Vault below Canopy | `is_kogany_upgrade_scheduled`; `is_vault_active` the only Vault question (grep guard); kogany refuses Vault below Canopy (no network uses it); the Y1 `nu6testnet` snapshot leak fixed | `f1d8220fd` | M24-48 |
+| KF-10 | 2026-11-02 | W2-b | `old-consensus-branch-id` is DoS 10 in ycashd, grace then cooldown in Zakura | The reject class is equal; recorded | `f1d8220fd` | M24-8 (note) |
+| KF-11 | 2026-11-02 | W2-b | `Version::min_remote_for_height` panics if the advertised version is below an upgrade's minimum | W1-Y5 must raise the Ycash minima (open, Y5 in flight) | `f1d8220fd` | M24-49 |
+| KF-12 | 2026-11-02 | W3-a | Upstream `test_vectors` assert that 0xc0–0xc2 decode as `Bad::Unknown`; `Code::to_asm` prints `[error]` for them | Kept as `Bad::Unknown`, evaluated under `Flags::Vault` in `PossiblyBad::eval`; W7 display uses `VaultOp::name` | fork `2773f4a4` | M24-50 |
+| KF-13 | 2026-11-02 | W3-b | Vendored PQ C symbols could collide with other C linked into kogany | `-D` renames to `kogany_pq_*` at compile time, no file edited, `SHA256SUMS` equal to ycash6's | `b90fc9b19` | M24-25 (note) |
+| KF-14 | 2026-11-02 | W3-c (F-1) | `pqFalconHeight` is a regtest parameter in ycash6; kogany has none on regtest | Regtest Falcon height needed by the harness (open); a threshold-1 unlock leaving a signature on the stack kept as in ycash6 | `9498671a5` | M24-51 |
+| KF-15 | 2026-11-02 | W3-c (F-2) | A missing set-state snapshot and an empty one mean opposite things | `None` fails closed; an empty `SetState` releases every set; never defaulted | `9498671a5` | M24-52 |
+| KF-16 | 2026-11-02 | W3-d | BIP68 has no Zakura equivalent | `sequence_locks.rs` from `Utxo.height` at `validate_and_commit` and the mempool branch; reject classes mapped | `9d470fb7c` | M24-53 |
+| KF-17 | 2026-11-02 | W3-e | The solver's `ScriptKind` has no PQ form; the ycash6 fuzz corpora hold no `TX_PQPKH` seed | `YcashScriptKind` + `PqKeyId`; seed gap recorded; 3,735 verdicts replay | `709195d08` | M24-54 |
+| KF-18 | 2026-11-02 | W3-e | `zcash_script` classes P2PK by length; ycash6 requires a valid header | W6-a switches `are_inputs_standard` (open) | `709195d08` | M24-55 |
+| KF-19 | 2026-11-02 | W3-e / W4-a | The C++ act `Writer` writes an invalid `CPubKey` as zeros; kogany kept the raw bytes | Fixed in W4-a: the round trip refuses such an act | `c23455a3e` | M24-56 |
+| KF-20 | 2026-11-02 | W4-a | No template, act or recoverable-signature path in `zcash_script`/`zakura-script` | Standalone `kogany-vault` crate; parse = skeleton + fields + range + rebuild-compare | `c23455a3e` | M24-57 |
+| KF-21 | 2026-11-02 | W4-b (coordinator) | The gate's premise was wrong: the nine pinned files carry no vault statehash. The C++ KV overlay + `MakeUndo` + undo DB has no Zakura counterpart | Fixtures recorded once from ycashd (`vault_rpc`, `vault_slashing`) accepted as the comparison, outside `PIN`; statehash equal on both. `apply_block` returns a typed delta; `StateHash` from canonical encodings | `7a23a09da` | M24-58 |
+| KF-22 | 2026-11-02 | W4-c | Storage layout and commit path | Four canonical-keyed column families, transition in `prepare_block_batch` (never failing), `UpdateWith<VaultDelta>`, format 30.1.0, `rollback` refusing past Vault | `4b8c75d3a` | M24-59 |
+| KF-23 | 2026-11-02 | W5-a | `arith_uint256` wraps and throws; `ProtocolFeeUnits` overflows outside its domain; version bytes are a C++ vector | `U256` with `wrapping_*`/`checked_*`, `ceil_div` → `Option`, `i128` saturating, `Option<[u8; 2]>` | `f546b4803` | M24-60 |
+| KF-24 | 2026-11-02 | W5-b | Two bond parsers with different strictness; flat `Payload`; `MatchPQChannel` consensus-reachable | Both parsers kept; Rust enum with equal encodable set; `MatchPQChannel` in `codecs::script`, reused by W6-a | `f30918149` | M24-61 |
+| KF-25 | 2026-11-02 | W5-c | `ModuleContext::moduleCache` | The module holds a `&dyn SigCache` (`&self`); HALT bits in `attest::price`; record decoders stricter on status bytes | `9316a0c9d` | M24-62 |
+| KF-26 | 2026-11-02 | W5-d1 (coordinator) | `ProcessTx`/`EvaluateBlock` share branches between the part-1 and part-2 acts, so the plan's split does not cut cleanly; the YED `StateView` undo has no Zakura counterpart | W5-d1 ported the whole `ProcessTx`/`EvaluateBlock`; W5-d2 is the test port plus five helpers. Typed `BTreeMap<YedKey, YedRecord>` with per-tx overlay and `YedDelta`; golden chain replays to `ee6a9f15…`, pq chain to `9bc637c4…` | `980a6c342` | M24-58 |
+| KF-27 | 2026-11-02 | W1-Y6, W7-d | `getblockchaininfo` shapes: `chain` = "test" on regtest, regtest retargeting, `chainwork` the integer 0, `generate` with a `tm…` miner address | Y6 fixed `chain` and reports `bits`/target at the PoW limit; the rest goes to W7-c (in flight); chain-viz blocked until then | `5f38ea2aa`, `ebde83aa7` | M24-46 |
+| KF-28 | 2026-11-02 | W7-a, W7-b | Upstream `rpc_trait!` is `pub(crate)` and its blanket impl breaks the orphan rule; the local macro warns on argument-less traits | `kogany_rpc_trait!` wrapper and `kogany_extension` dispatcher; wallet fields omitted (K-3); owner filter `pqkeyid` only; authproxy content type fixed | `c8d74c30e`, `5b31db972` | M24-63 |
+| KF-29 | 2026-11-02 | W7-b | ycashd's `EnsureIndex` liveness answer and arity order; `json!` key order | `YedReadState::snapshot() == Ok(None)` → `-32601 "Yellowback is not active"`; arity before liveness on both lines; `serde_json` `preserve_order`; 27 methods pass `Contract.check` against the mock | `5b31db972` | M24-64 |
+| KF-30 | 2026-11-02 | W7-b, W7-d | Wallet-context methods have no wallet in kogany | The 25 `yed_*` wallet methods answer `-32601` naming `yewd`; the 22 vault wallet methods still answer the generic `-32601` (proposal: `VaultWalletRefusal` dispatch, open) | `5b31db972` | M24-65 |
+| KF-31 | 2026-11-02 | W7-d | `MockYedState` answers `yed_gettag` with `-8` for real blocks | Prototype artefact; goes away with the real index (W5-e/W5-f) | `ebde83aa7` | none |
+| KF-32 | 2026-11-02 | W1-Y7, S1 | "addnode to node 1" picks the stock node; six scripts assert exact peer counts; `invalidateblock` reaches one node; no mock clock in Zakura; `ycashd -disablewallet` never reports `fullyNotified` and mines only with `-mineraddress` + `-minetolocalwallet=0` (F-S1-2); authproxy refused `application/json; charset=utf-8` | `kogany_peer = USER`; those scripts stay off the mixed shard; mirroring opt-in; `yewd -initwallet` first; content type fixed | ycash6 `f4967b0d7` | M24-66 |
+| KF-33 | 2026-11-02 | S0 | The ycash6 `node-bin` artifact the `yewd` CI job consumes by `PIN` lives 3 days; `yew` `ci.yml` lacked `vaults/kogany-compat`; `yewd/Cargo.lock` not scanned by secops OSV/audit | Branch anchor fixed; a durable binary and the lockfile scan are open | yew `5773061` | M24-67 |
+| KF-34 | 2026-11-02 | S1 (F-S1-3, F-S1-4) | K-23 (a) deviation: lightwalletd-dd would need `-insightexplorer`, and yew-core's `Wallet`/`Shielded` hold the seed, breaking K-24; `canNotice` is always false | S1 reads blocks over node JSON-RPC (recorded deviation, for the lead architect to accept or amend K-23); `canNotice` needs a node read or S3 (open) | yew `3679eff` | M24-68 |
+| KF-35 | 2026-11-02 | S1 (F-S1-5) | Carrier, expired and cancel `txlog` rows not yet produced | Left for S2 | yew `3679eff` | none |
+| KF-36 | 2026-11-02 | cxx-fixes (with W1-Y6, S1 F-S1-1) | C++ defects: one contract error-table row for three identifiers; `-lightwalletd` without `-insightexplorer` segfaults (ycash6 pin finding 7); `z_validateaddress` crashes without a wallet; `opReturnIndex` undocumented | Fixed on both lines: raisers per identifier, the insight DB opened, the null-wallet path guarded, `opReturnIndex` documented; kogany's contract copy regenerated | ycash6 `eac62c942`, ycash-dd `93a23da20`, kogany `080dc1426` | M24-69 |
+| KF-37 | 2026-11-02 | cxx-fixes | ycash-dd's vendored `hyper` 0.14.2 differs from `Cargo.lock`'s 0.14.12, so an offline build fails | Open: needs a depends refresh on ycash-dd | — | none |
+| KF-38 | 2026-11-02 | V5-spec | `SET_EQUIVOCATION` is digest-agnostic, so re-signing a prevout across v4 → v5 convicts; the ycash6 lineage had no ZIP-244 vectors at Ycash branch IDs | The activating upgrade must choose a grace window, a no-re-sign policy or version-separated messages (`docs/spec/vault-signing-message-v5.md` §4.4, §7.1); `vault_v5_dormant_tests` is the first such vector set | workspace `e6e3eae`, ycash6 `e5dac3a30` | M24-70 |
+| KF-39 | 2026-11-02 | W1-Y8 (coordinator) | The mainnet DNS seed `seed.ycash.xyz` is dead | The sync node runs with `addnode lite.ycash.xyz:8833` (`/YcashCpp:4.5.0/`), also the P2P source of Y1–Y3's 18 mainnet coinbases (`PROVENANCE.json`) | — | M24-71 |
+| KF-40 | 2026-11-02 | all (coordinator) | Three `zakura-network` listener tests (`peer_set::initialize::tests::vectors::listener_*zcashd_compat*`) bind a non-127.0.0.1 loopback alias and panic on macOS | Environment-only: they fail identically on the untouched `kogany-legacy`; ignored locally, not a regression | — | none |
+| KF-41 | 2026-11-02 | W4-c, W7-b (coordinator) | Shared-workspace collisions: scratchpad files overwritten, stale `rmeta` reused in the shared target dir, a binary from another worktree | The three hygiene rules below, now in `wt/COORDINATION.md` | — | none |
+
+**Shared-workspace hygiene (2026-11-02).** Up to ten agents share one machine, one scratchpad and
+one Cargo target directory for the upstream crates; three lessons came from it.
+1. *Scratchpad subdirectories.* The scratchpad's top level is shared by every agent, and files there
+   were overwritten by another agent's files of the same name. Each agent works in its own
+   subdirectory, `<scratchpad>/<name>/`.
+2. *Touch the sources before building in the shared target.* A freshly checked-out worktree has
+   older modification times than the artefacts another worktree left in
+   `wt/.targets/kogany-shared`, so cargo reused stale `rmeta` for the `kogany-*` crates. After a
+   checkout, `find crates/kogany-* -name "*.rs" -exec touch {} +` before building.
+3. *Copy a binary only after the build exits 0.* A failed or interrupted build leaves the previous
+   binary in the shared target, which may be another worktree's (`zakurad --version` from the shared
+   target was not the worktree's own). Copy or run a binary from the shared target only after the
+   build that produced it has exited 0 in the same shell, and confirm its version.
 
 ---
 
 ## 10. Mapping §24 rows to add — "kogany (Zakura) port"
+
+*Pasted into `docs/mapping.md` §24 by W0-a. The rows found while porting (M24-42 onward) and the
+"Port (2026-11-02)" notes on M24-3, M24-6, M24-8 and M24-25 live in `docs/mapping.md` §24 only; this
+section stays the survey-time record.*
 
 Ready to paste as `docs/mapping.md` §24. The traps from all five surveys, deduplicated, in rule-4
 form. Columns:
