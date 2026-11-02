@@ -69,8 +69,8 @@ ref/librustzcash6:
 ref/zakura:
   role: reference
   url: https://github.com/zakura-core/zakura.git
-  branch: main               # zakura-core's main on 2026-11-02, past v1.7.0 (the lead architect's choice: the commit kogany was forked at)
-  commit: 2b062412c5
+  branch: main               # main @ b44ec121d, v1.8.0-rc1 lineage, 2026-11-02 (re-pinned from 2b062412c5, the commit kogany was forked at, by the sync-zakura-20261102 upstream sync)
+  commit: b44ec121d
   what: Zakura, a consensus-compatible Zcash full node in Rust (forked from Zebra), pristine baseline for kogany
 
 ref/lightwalletd:
@@ -129,10 +129,10 @@ kogany:
   role: fork
   url: https://github.com/boyfromcave/kogany.git
   upstream: https://github.com/zakura-core/zakura.git
-  branch: upgrade/vault       # the vault network upgrade line, cut at the pin (2026-11-01); nothing on it yet
+  branch: upgrade/vault       # the vault network upgrade line, cut at the first pin 2b062412c5 (2026-11-01); kogany work lands on vaults/kogany-compat (kogany plan §4.2 rule 0)
   base: kogany-legacy
-  base-commit: 2b062412c5    # = ref/zakura pin
-  what: working fork of Zakura, the third node line (Rust, Zebra lineage): the Yellowback overlay is to be ported onto it; until then upgrade/vault = kogany-legacy
+  base-commit: b44ec121d     # = ref/zakura pin (main @ b44ec121d, v1.8.0-rc1 lineage, 2026-11-02)
+  what: working fork of Zakura, the third node line (Rust, Zebra lineage): the Yellowback overlay is ported onto it on vaults/kogany-compat, which merged the Zakura upstream range 2b062412c5..b44ec121d on 2026-11-02
 
 # The common fork (kogany plan K-2, O2): one feature-gated (`ycash`) fork of zakura-core/common,
 # carrying the zakura-protocol/-primitives/-address/-transparent/-equihash crates and
