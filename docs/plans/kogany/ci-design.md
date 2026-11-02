@@ -50,11 +50,11 @@ commit"; inside a repository it is "artifact of the same run".
   boyfromcave/zakura-common-ycash (the fork, K-2; not yet on GitHub)
         │ git rev in kogany's [patch.crates-io]
         ▼
-  kogany  ── build ──▶ zakurad-bin ───────────────┬──────────────────────┬──────────────┐
+  kogany  ── build ──▶ koganyd-bin ───────────────┬──────────────────────┬──────────────┐
         │                                         │ KOGANY_COMMIT        │ kogany_ref   │ (in-run)
         │                                         ▼                      ▼              ▼
         │                         ycash6 yellowback-tests:        yolo ci.yml       kogany legs:
-        │                           zakurad ──▶ mixed (5 groups)  regtest (kogany)  client-legs,
+        │                           koganyd ──▶ mixed (5 groups)  regtest (kogany)  client-legs,
         │                                    └▶ mixed tier                          kogany-regtest,
         │                                                                           mixed-regtest*,
   ycash6 ── build ──▶ node-bin ──┬──▶ unit, functional (column 1), mixed (column 2)  sidecar*, parity*
@@ -67,7 +67,7 @@ commit"; inside a repository it is "artifact of the same run".
                     └──▶ kogany parity (S5, a pinned yew commit)
 ```
 
-Read top to bottom, the order a fresh change flows: the fork rev → kogany → zakurad-bin → the
+Read top to bottom, the order a fresh change flows: the fork rev → kogany → koganyd-bin → the
 mixed shards and the clients; ycash6 → node-bin → yew's gates and the clients; yew → yewd-bin →
 the pair shard and the parity leg. A change on one line reaches another only when that line's pin
 is bumped, so each repository's gate is reproducible from its own tree.
@@ -79,13 +79,26 @@ is bumped, so each repository's gate is reproducible from its own tree.
 | Artifact | Producer (job) | Content | Built on | Retention | Consumers (lookup) |
 |---|---|---|---|---|---|
 | `node-bin` | ycash6 `yellowback-tests.yml` `build` (push, pull_request, dispatch tiers `push`/`all`/`bin`/`mixed`) | `node-bin.tgz`: `src/ycashd`, `src/ycash-cli`, `src/ycash-tx`, `src/test/test_bitcoin`, `qa/pull-tester/tests_config.ini` (tar keeps the mode bits) | ubuntu-22.04 (glibc 2.35; runs on 24.04) | **30 days** outside pull requests, 3 on a pull request | same run: `unit`, `functional`, `mixed`, `yewd-pair`; yew `yewd-node` at `yewd/PIN`'s ycash6 commit; yolo `regtest` (newest run of the node branch, or a given run id); kogany's legs at their ycash6 pin |
-| `zakurad-bin` | kogany (the `ci-kogany` chunk names the workflow; consumers search **every** workflow's runs at the commit) | `zakurad-bin.tgz`: `zakurad` and `zakurad-bin.json` (`repository`, `commit`, `binary`, `features: ["ycash"]`, `profile: "dev"`, `runner`, `librocksdb`, `rustc`, `producer`) | ubuntu-24.04; links the runner's `librocksdb` (kogany's `setup-zakura-build`), so a consumer runs on ubuntu-24.04 with `librocksdb-dev` installed and checks `ldd` | 30 days outside pull requests | ycash6 `zakurad` (at `KOGANY_COMMIT`); yolo `regtest` kogany entry (at `kogany_ref`). Fallback in both: a build at the pinned commit (ycash6 caches the binary by commit) |
+| `koganyd-bin` | kogany `kogany-bin.yml`, job `koganyd-bin` (`zakurad-bin` before kogany `dd834da8b`; consumers search **every** workflow's runs at the commit) | `koganyd-bin.tgz`: `koganyd` and `koganyd-bin.json` (`repository`, `commit`, `binary`, `features: ["ycash"]`, `profile: "dev"`, `runner`, `librocksdb`, `rustc`, `producer`) | ubuntu-24.04; links the runner's `librocksdb` (kogany's `setup-zakura-build`), so a consumer runs on ubuntu-24.04 with `librocksdb-dev` installed and checks `ldd` | 30 days outside pull requests | ycash6 `koganyd` (at `KOGANY_COMMIT`); yolo `regtest` kogany entry (at `kogany_ref`); the kogany legs of chain-viz, hawkeye, x402-ycash and lightwalletd-dd (at `KOGANY_REF`). Fallback in all: a build at the pinned commit, `--bin koganyd` (ycash6 caches the binary by commit) |
 | `yewd-bin` | yew `ci.yml` `yewd-bin` (push, pull_request, dispatch) | `yewd-bin.tgz`: `yewd`, `yewd-signer` (yewd starts the signer from its own directory), `yewd-bin.json` | ubuntu-24.04, dev profile (dependencies at opt-level 3) | 30 days outside pull requests | same run: `yewd-gates`; ycash6 `yewd` (at `YEW_COMMIT`; fallback: a build at the commit, cached by commit); kogany `parity` (S5) |
 | `sidecars` | ycash6 `sidecars` | `sidecars.tgz`: yolo (`--features regtest`), chain-viz at `YOLO_COMMIT`, `CHAINVIZ_COMMIT` | ubuntu-22.04 | 30 / 3 | same run only: `functional`, `mixed` (attest group) |
 | `yewd-node` | yew `yewd-node` | `yewd-node.tgz`: `ycashd`, `ycash-cli` from the pinned `node-bin` | — (a copy) | 30 / 3 | same run only: `yewd-gates` |
-| `zakurad-bin`, `yewd-bin` (copies) | ycash6 `zakurad`, `yewd` | the resolved producer artifact, or the fallback build (same layout and JSON) | ubuntu-24.04 | 30 / 3 | same run only: `mixed`, `yewd-pair` |
+| `koganyd-bin`, `yewd-bin` (copies) | ycash6 `koganyd`, `yewd` | the resolved producer artifact, or the fallback build (same layout and JSON) | ubuntu-24.04 | 30 / 3 | same run only: `mixed`, `yewd-pair` |
 
-**Why "any workflow" for `zakurad-bin` and `yewd-bin`.** kogany's CI is being split into several
+**The rename (`zakurad-bin` → `koganyd-bin`).** The Yellowback lead architect decided on
+2026-11-02 that the Ycash node's binary is `koganyd` (`cargo build -p zakura --bin koganyd
+--features ycash`, user agent `/koganyd:<version>/`). From kogany `dd834da8b` on, kogany publishes
+`koganyd-bin` (job `koganyd-bin` of `kogany-bin.yml`) holding `koganyd-bin.tgz` with `koganyd` and
+`koganyd-bin.json` (`"binary": "koganyd"`); a `--features ycash` build's `zakurad` refuses to run
+(exit 2). It is the one breaking change of the contract: a consumer pinned at or after that
+commit downloads `koganyd-bin`, falls back to `--bin koganyd` and runs `target/debug/koganyd`; one
+pinned before it would need `zakurad-bin` and `zakurad`. Every consumer moved its pin to
+`dd834da8b` with the rename (ycash6 `KOGANY_COMMIT`, yolo `kogany_ref`, the four client legs'
+`KOGANY_REF`), so none takes the old name any more. The client legs' scripts read `KOGANYD` and
+still accept `ZAKURAD` (and their rigs `--zakurad`) as the old names. kogany's own note:
+`.github/README-kogany.md`, "Cross-line contract".
+
+**Why "any workflow" for `koganyd-bin` and `yewd-bin`.** kogany's CI is being split into several
 workflows (`kogany-audit.yml`, `kogany-build.yml`, …); a consumer that named one workflow file
 would break on the next split. The artifact name is the contract; the lookup is
 `gh run list -R <repo> -c <commit>` over trusted events, then `gh run download -n <name>`.
@@ -98,7 +111,7 @@ would break on the next split. The artifact name is the contract; the lookup is
   unexpired `node-bin` with more than 7 days left. A tip that stops moving therefore always has a
   fresh `node-bin`. **The 30-day pin rule:** a consumer pin (`yewd/PIN`, yolo's node branch) names a
   branch-tip commit and is bumped before its artifact expires; yew's `yewd-node` warns at 7 days left.
-- *Cheap* (`zakurad-bin` about 30–60 min cold, `yewd-bin` about 10 min): the consumer falls back
+- *Cheap* (`koganyd-bin` about 30–60 min cold, `yewd-bin` about 10 min): the consumer falls back
   to a build at the pinned commit, and ycash6 caches the built binary under a key that is the
   commit itself, so a pin never sees a stale binary and never rebuilds while the cache entry lives.
 
@@ -117,12 +130,13 @@ the `GH_TOKEN` lines (§9 item 10).
 
 | Consumer | Pin | Names | Bumped |
 |---|---|---|---|
-| ycash6 `yellowback-tests.yml` | `KOGANY_COMMIT` (env) | kogany commit (now `f299e69a4`, vaults/kogany-compat at W6-b) | by PR with each wave whose gate the mixed shards test |
+| ycash6 `yellowback-tests.yml` | `KOGANY_COMMIT` (env) | kogany commit (now `dd834da8b`, vaults/kogany-compat at the koganyd identity) | by PR with each wave whose gate the mixed shards test |
 | ycash6 `yellowback-tests.yml` | `YEW_COMMIT` (env) | yew commit (now `85aec6f`, S3) | by PR with each S stage |
-| ycash6 `yellowback-tests.yml` | `KOGANY_LIVE` (env) | the kogany chunks whose zakurad.toml rows are live (`W1-Y1,W2-b`; W5-f is the harness default) | with `KOGANY_COMMIT` |
+| ycash6 `yellowback-tests.yml` | `KOGANY_LIVE` (env) | the kogany chunks whose koganyd.toml rows are live (`W1-Y1,W2-b`; W5-f is the harness default) | with `KOGANY_COMMIT` |
 | yew | `yewd/PIN` `ycash6` line | ycash6 commit whose `node-bin` and `qa/` the gates use | **must move to a ycash6 `vaults/kogany-compat` commit with the YEWD_BIN harness and a CI run** (today it names `65cb4ae0f`, before the harness: the S1–S3 gates cannot run there; §8) |
-| yolo | matrix `kogany_ref` | kogany commit (now `34bdc272`, W8-a/b + W6-a) | by PR with W8 |
+| yolo | matrix `kogany_ref` | kogany commit (now `dd834da8b`, the koganyd identity) | by PR with W8 |
 | yolo | matrix `of_record` (kogany entry) | ycash6 branch whose newest trusted `node-bin` is taken (`vaults/kogany-compat`) | — |
+| chain-viz, hawkeye, x402-ycash `ci.yml`; lightwalletd-dd `yellowback-tests.yml` | `KOGANY_REF` (env, the kogany leg) | kogany commit (now `dd834da8b`, the koganyd identity) | with the kogany behaviour the leg checks |
 | kogany | `LWD_REV`, `CHAINVIZ_REV` (client-legs) | lightwalletd-dd, chain-viz commits | the `ci-kogany` chunk |
 | kogany | (proposed) a ycash6 pin for mixed-regtest / sidecar / parity, and a yew pin for parity | §7 | the `ci-kogany` chunk |
 
@@ -138,7 +152,7 @@ the `GH_TOKEN` lines (§9 item 10).
 | `unit`, `functional <suite> <n>/<of>`, `audit`, `agent`, `python`, `lint`, `sidecars` | push tier | in `push tier` | — | one job / one shard |
 | `push tier` (`gate`) | push tier | the required check | unchanged | — |
 | `bin-refresh` (matrix: two branches) | schedule (from the default branch) | — | — | one branch |
-| `zakurad` | mixed tier | in `mixed tier` | — | the resolve |
+| `koganyd` | mixed tier | in `mixed tier` | — | the resolve |
 | `yewd` | mixed tier | no (feeds `yewd-pair`) | — | the resolve |
 | `mixed <group>` (node, vault, yed, fees, attest) | mixed tier | its `gate` step only; `report` scripts never fail the job | per script, `qa/kogany-mixed-shards.txt` `report` → `gate` at the script's wave gate | one group |
 | `yewd pair (report-only)` | mixed tier | no (`continue-on-error`) | contracts at S4, the 48 scripts at S5 (they move to kogany's `parity` nightly) | the job |
@@ -194,7 +208,7 @@ still outside both scans (not in this chunk's scope; §8).
 | `regtest (ycash-dd)`, `regtest (ycash6)` | yes, nightly dispatch | — |
 | `regtest (kogany)` | report-only (`continue-on-error`) | blocking at the W8 gate |
 
-The kogany entry takes `zakurad-bin` at `kogany_ref` when kogany publishes one and builds zakurad
+The kogany entry takes `koganyd-bin` at `kogany_ref` when kogany publishes one and builds koganyd
 otherwise (the build is today's only path: kogany publishes nothing yet). Its ycash6 nodes come
 from `vaults/kogany-compat`'s newest trusted `node-bin`.
 
@@ -202,12 +216,12 @@ from `vaults/kogany-compat`'s newest trusted `node-bin`.
 
 kogany's own legs are plan §5's table. What the other repositories need from kogany's CI:
 
-1. **Publish `zakurad-bin`** exactly as §3 states (name, tar layout, JSON keys, ubuntu-24.04,
+1. **Publish `koganyd-bin`** exactly as §3 states (name, tar layout, JSON keys, ubuntu-24.04,
    30 days outside pull requests), from a job of its own (so a failed check never blocks the
    artifact and the artifact never re-runs with a check), on pushes to `vaults/kogany-compat` and
    `upgrade/vault` and on dispatch.
 2. **mixed-regtest leg** (plan §5): checkout ycash6 at a pinned commit, take that commit's
-   `node-bin`, use this run's own `zakurad`, and run `python3 qa/kogany_mixed_shards.py run <group>
+   `node-bin`, use this run's own `koganyd`, and run `python3 qa/kogany_mixed_shards.py run <group>
    --state gate|report` from the ycash6 checkout, one job per group, so kogany's PRs are tested
    against the same shard lists as ycash6's.
 3. **sidecar** (W9-a) and **parity** (S5) nightlies: the same pattern with the ycash6 test rig and
@@ -216,9 +230,9 @@ kogany's own legs are plan §5's table. What the other repositories need from ko
 ### lightwalletd-dd and chain-viz (read-only here)
 
 Neither lists `vaults/kogany-compat` in its push or pull-request branches, and neither has a kogany
-leg: kogany's `client-legs` job runs both, unmodified, at pinned commits against a regtest zakurad
+leg: kogany's `client-legs` job runs both, unmodified, at pinned commits against a regtest koganyd
 (W7-d). For W9-c the client agents add `vaults/kogany-compat` to the branch list and a report-only
-`node_line: kogany` entry consuming `zakurad-bin` as yolo's does (§8).
+`node_line: kogany` entry consuming `koganyd-bin` as yolo's does (§8).
 
 ---
 
@@ -226,10 +240,10 @@ leg: kogany's `client-legs` job runs both, unmodified, at pinned commits against
 
 | Failure | Re-run | Inputs it reuses |
 |---|---|---|
-| one functional shard, one mixed group | that job ("Re-run failed jobs") | this run's `node-bin`, `zakurad-bin`, `sidecars` (30 days) |
+| one functional shard, one mixed group | that job ("Re-run failed jobs") | this run's `node-bin`, `koganyd-bin`, `sidecars` (30 days) |
 | the yewd pair shard | that job | this run's `node-bin`, `yewd-bin` |
 | one yewd stage gate | that job | this run's `yewd-bin`, `yewd-node` |
-| zakurad / yewd resolution | that job; its dependants follow | the producer's artifact or the cache keyed by the pin |
+| koganyd / yewd resolution | that job; its dependants follow | the producer's artifact or the cache keyed by the pin |
 | ycash6 `build` | the build (then everything after it) | ccache, depends caches |
 | a stale cross-repository artifact | not a re-run: bump the pin, or dispatch tier `bin` on the ycash6 branch | — |
 
@@ -253,15 +267,15 @@ run is the evidence.
 
 1. **The fork repository does not exist on GitHub** (`boyfromcave/zakura-common-ycash`). Every build
    of kogany outside this machine fails at dependency resolution: kogany's own CI, ycash6's
-   `zakurad` fallback, yolo's kogany entry. This is why the mixed tier is behind `KOGANY_MIXED`.
+   `koganyd` fallback, yolo's kogany entry. This is why the mixed tier is behind `KOGANY_MIXED`.
 2. **`yewd/PIN` names ycash6 `65cb4ae0f`**, which predates the `YEWD_BIN` harness and the
    `-disablewallet` fixes (KF-36); the S1–S3 gates need a ycash6 `vaults/kogany-compat` commit.
    Bump it to the first `vaults/kogany-compat` commit with a ycash6 CI run once this design is merged
    and ycash6's Actions run there (the coordinator's or the yewd agents' change).
-3. **`zakurad-bin` is a proposal** until the `ci-kogany` chunk publishes it; the consumers fall
+3. **`koganyd-bin` is a proposal** until the `ci-kogany` chunk publishes it; the consumers fall
    back to a build, so nothing waits on it.
-4. **ubuntu-22.04 vs 24.04.** ycash6 builds on 22.04; zakurad links the runner's librocksdb, so a
-   24.04 zakurad does not run on 22.04 (glibc 2.39, `librocksdb.so.8.9`). The mixed jobs run on
+4. **ubuntu-22.04 vs 24.04.** ycash6 builds on 22.04; koganyd links the runner's librocksdb, so a
+   24.04 koganyd does not run on 22.04 (glibc 2.39, `librocksdb.so.8.9`). The mixed jobs run on
    24.04 (ycashd from 22.04 runs there) and check `ldd` first.
 5. **`semgrep.yml` runs on a push to every branch** but `semgrep/**`, in every repository of the
    shared security-CI design, so a push of a `kc/*` branch starts a Semgrep run once Actions are on.
@@ -296,7 +310,7 @@ Nothing here was changed by this chunk. In order:
    - Artifact and log retention: **at least 30 days** (the public-repository default is 90). Below
      30, the artifact contracts of §3 break silently.
 3. **kogany:** follow `.github/README-kogany.md` (the `ci-kogany` chunk), its off-set disabled in the
-   same session; then confirm one push run publishes `zakurad-bin`.
+   same session; then confirm one push run publishes `koganyd-bin`.
 4. **ycash6:** set the repository variable **`KOGANY_MIXED` = `true`** (Settings → Secrets and
    variables → Actions → Variables) once item 1 is done. Until then the mixed tier is skipped.
 5. **ycash6 rulesets on `vaults/kogany-compat`:** required check `push tier`; add **`mixed tier`** at
@@ -314,7 +328,7 @@ Nothing here was changed by this chunk. In order:
    each repository; nothing new for this design.
 10. **If a producer repository becomes private:** a fine-grained token with Actions: read on
     ycash6, kogany and yew, as a secret of each consumer, in place of `github.token` in the
-    `GH_TOKEN` lines of ycash6 `zakurad`/`yewd`, yew `yewd-node`, yolo `regtest`.
+    `GH_TOKEN` lines of ycash6 `koganyd`/`yewd`, yew `yewd-node`, yolo `regtest`.
 11. **Cache budget:** the 10 GB per-repository cache is not grown by this design (kogany's target
     directory is never cached outside kogany; ycash6 caches only the two small binaries by pin).
 
@@ -328,7 +342,7 @@ python3 qa/test_kogany_mixed_shards.py -v            # manifest complete, runner
 python3 qa/kogany_mixed_shards.py check
 python3 qa/kogany_mixed_shards.py run vault --state report --dry-run
 (cd qa/rpc-tests && python3 -m unittest test_framework.test_kogany)
-# a real mixed group (needs a ycash6 build and a zakurad):
-KOGANY_BIN=<zakurad> KOGANY_LIVE=W1-Y1,W2-b python3 qa/kogany_mixed_shards.py run vault --state report
+# a real mixed group (needs a ycash6 build and a koganyd):
+KOGANY_BIN=<koganyd> KOGANY_LIVE=W1-Y1,W2-b python3 qa/kogany_mixed_shards.py run vault --state report
 # every repository: actionlint (from the repository root) and zizmor --offline .github/
 ```
