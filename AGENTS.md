@@ -30,7 +30,7 @@ yellowback-workspace/
 │   ├── lightwalletd/ READ-ONLY. yodl/lightwalletd (zcash/lightwalletd 0.4.6 + Ycash regex), master @ 187a26765e (no tag)
 │   ├── ycash6/      READ-ONLY. miodragpop/ycash, ycashd 6.20.0 (Zcash 6.x lineage), dev-rebase-6.20.0 @ 040894344b (no tag)
 │   ├── librustzcash6/ READ-ONLY. miodragpop/librustzcash, the patched librustzcash ref/ycash6's Cargo.toml pins, ycashd-v6.20.0 @ ec525fae82 (no tag)
-│   ├── zakura/      READ-ONLY. zakura-core/zakura, a Zcash full node in Rust (Zebra lineage), main @ 2b062412c5 (past v1.7.0)
+│   ├── zakura/      READ-ONLY. zakura-core/zakura, a Zcash full node in Rust (Zebra lineage), main @ b44ec121d (v1.8.0-rc1 lineage, 2026-11-02; first pinned at 2b062412c5)
 │   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
@@ -38,7 +38,7 @@ yellowback-workspace/
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
-├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= 2b062412c5) — just forked, no overlay yet, see "The third node line" below
+├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= b44ec121d); the overlay is ported on `vaults/kogany-compat`, see "The third node line" below
 ├── zakura-common-ycash/ WORKING FORK of zakura-core/common (the common fork, kogany plan K-2): the zakura-* librustzcash crates and
 │                    zakura-zcash-script behind kogany's `[patch.crates-io]`. branch `upgrade/vault`, off `zakura-common-ycash-legacy`
 │                    (= the W0-b base commit, repos.yaml); kogany work on `vaults/kogany-compat`
@@ -115,9 +115,13 @@ a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is alread
 
 **The third node line: `kogany`** (lead architect, 2026-11-01). `kogany` is the Ycash developers' GitHub fork of
 Zakura (`ref/zakura`: zakura-core's consensus-compatible Zcash full node in Rust, forked from
-Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; the lead architect's choice, the commit the fork
-was taken at). `kogany-legacy` is that pin (**never commit to it**) and `upgrade/vault` was cut
-from it; nothing is ported yet, so `make diff` shows no delta. It is a third codebase lineage
+Zebra), pinned at zakura `main` @ `b44ec121d` (v1.8.0-rc1 lineage, 2026-11-02). The
+fork was taken at `2b062412c5` (past v1.7.0; the lead architect's choice, 2026-11-01); the
+pin moved to `b44ec121d` with the upstream sync `sync-zakura-20261102` (kogany plan §4.2 rule 7), which
+merged `2b062412c5..b44ec121d` (20 commits) into `vaults/kogany-compat`. `kogany-legacy` is that pin
+(**never commit to it**; only the rule-1 re-pin moves it) and `upgrade/vault` was cut from the first
+pin and carries nothing yet; the overlay is ported on `vaults/kogany-compat` (rule 2), so `make diff`
+(which reads `upgrade/vault`) shows no delta until the first wave-gate merge. It is a third codebase lineage
 (Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
 `docs/mapping.md` gets a section for it before the first port, and the four-part check (rule 4)
 applies as on the other lines. Until it carries the overlay, the both-lines rules above (one
@@ -133,7 +137,9 @@ locks (kogany plan W0-b). Zakura's own `AGENTS.md` / `CLAUDE.md` /
 file, this file wins (rule 8 above all). **Its GitHub Actions stay off** except the
 lead architect's allowlist (K-15, 2026-11-01): six trimmed upstream workflows, the workspace security
 CI and `kogany-yellowback.yml`; every other upstream workflow is moved to
-`.github/workflows-disabled/` (kogany plan §5, W0-c), and jobs are enabled one at a time.
+`.github/workflows-off/`, where it cannot run (kogany plan §5, W0-c), and jobs are enabled one at a
+time. Actions were turned on for the fork on 2026-11-02, for the kogany workflows only, by the
+procedure in kogany's `.github/README-kogany.md` ("Turning Actions on"); the off set stays off.
 
 ## Rules
 
