@@ -449,6 +449,17 @@ rejected then).
 8. **Default retention for infra-pruned kogany** (not lightwalletd backends): Zakura's 10,000, or 34,560
    (30 days). *Recommended: 34,560.*
 
+## 6a. Decisions taken (the Yellowback lead architect, 2026-11-02)
+
+1. **(b)**: the height floor replaces the 01/N-1 refusal on ycash6 and ycash-dd together, before the release that sets the mainnet height.
+2. **Margin: `MIN_BLOCKS_TO_KEEP` (288) below `H_V`**, as a constant. Rationale recorded: the arming window and attestor bonds live at or after `H_V` (bond UTXOs are in the chainstate, which pruning never touches), so the margin is comfort, not correctness.
+3. Fix the `-prune` help text on both lines.
+4. **kogany Pruned allowed** with Zakura's 10,000-block floor and no `H_V` floor; Archive stays the default. A pruned kogany still enforces Vault and Yellowback in full (consensus reads the block in hand, the UTXO set, the retained hash index and the vault/YED state database).
+5. The K-14 coupling becomes a mapping §24 row.
+6. A pruned kogany bundle beside the archive one as `kogany-state/2`; a pruned `ycash-state` flavour only on demand.
+7. ycash-infra keeps at least two archive nodes per line as seeds; lightwalletd-dd backends stay archive.
+8. Infra-pruned kogany retention: **34,560 blocks (30 days)**.
+
 ## 7. Proposed plan chunks
 
 | Chunk | Repo(s) | Scope | Gate | Size |
