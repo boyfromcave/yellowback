@@ -7,7 +7,7 @@ Zakura (a Rust Zcash full node from the Zebra lineage) that becomes the third Yc
 
 - [`coordination-handoff.md`](coordination-handoff.md) — how a coordination agent runs the plan with parallel agents: start-up, state at handoff (2026-11-02), operating model, dependency graph and batches, gates.
 
-- [`ci-design.md`](ci-design.md) — the cross-line CI: the dependency graph across ycash6, kogany, yew and yolo, the artifact contracts (`node-bin`, `zakurad-bin`, `yewd-bin`; 30 days, pinned commits), what blocks and when it flips, re-run granularity, and the GitHub settings for the lead architect.
+- [`ci-design.md`](ci-design.md) — the cross-line CI: the dependency graph across ycash6, kogany, yew and yolo, the artifact contracts (`node-bin`, `koganyd-bin`, `yewd-bin`; 30 days, pinned commits), what blocks and when it flips, re-run granularity, and the GitHub settings for the lead architect.
 
 Surveys (2026-11-01, inputs to the plan):
 
