@@ -3,8 +3,9 @@
 `boyfromcave/kogany` is a GitHub fork of `zakura-core/zakura`. GitHub copied every upstream branch
 into the fork when it was created, so the fork carries **617 remote branches** (603 on 2026-11-01), of which only 51
 are ours (3 branches of record, 48 `kc/*`). This document classifies them all, proposes a KEEP list for the Yellowback lead
-architect's review, and gives the commands to delete the rest by hand. Nothing has been deleted:
-this is the inventory only.
+architect's review, and gives the commands to delete the rest by hand. **The deletion pass was
+run on 2026-11-02** at the lead architect's request: 613 branches deleted, and `git ls-remote --heads
+origin` now lists exactly `kc/w9-mixed`, `kogany-legacy`, `upgrade/vault` and `vaults/kogany-compat`.
 
 Snapshot: `git -C kogany fetch origin --prune` and `git ls-remote --heads` of both
 `boyfromcave/kogany` and `zakura-core/zakura` on 2026-11-01 22:24 PST. Integration tip
