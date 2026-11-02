@@ -134,6 +134,21 @@ kogany:
   base-commit: 2b062412c5    # = ref/zakura pin
   what: working fork of Zakura, the third node line (Rust, Zebra lineage): the Yellowback overlay is to be ported onto it; until then upgrade/vault = kogany-legacy
 
+# The common fork (kogany plan K-2, O2): one feature-gated (`ycash`) fork of zakura-core/common,
+# carrying the zakura-protocol/-primitives/-address/-transparent/-equihash crates and
+# crates/zcash_script (zakura-zcash-script). kogany pins it by exact rev in [patch.crates-io], as
+# ycash6 pins librustzcash6. Its baseline is the upstream commit that reproduces the crates.io
+# releases kogany locks (W0-b `fork-verify`); there is no ref/ checkout of it: the baseline is
+# read with `git -C zakura-common-ycash show zakura-common-ycash-legacy:<path>`.
+zakura-common-ycash:
+  role: fork
+  url: https://github.com/boyfromcave/zakura-common-ycash.git
+  upstream: https://github.com/zakura-core/common.git
+  branch: upgrade/vault       # the vault network upgrade line; kogany work lands on vaults/kogany-compat (kogany plan §4.2 rule 0)
+  base: zakura-common-ycash-legacy
+  base-commit: TODO-W0-b      # TODO(W0-b fork-verify): the zakura-core/common commit the fork is cut at; filled by the coordinator
+  what: working fork of zakura-core/common (the zakura-* librustzcash crates and zakura-zcash-script) behind kogany's [patch.crates-io]; with the `ycash` feature off the crates are upstream's
+
 yew:
   role: app
   url: https://github.com/boyfromcave/yew.git

@@ -39,6 +39,9 @@ yellowback-workspace/
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
 ├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= 2b062412c5) — just forked, no overlay yet, see "The third node line" below
+├── zakura-common-ycash/ WORKING FORK of zakura-core/common (the common fork, kogany plan K-2): the zakura-* librustzcash crates and
+│                    zakura-zcash-script behind kogany's `[patch.crates-io]`. branch `upgrade/vault`, off `zakura-common-ycash-legacy`
+│                    (= the W0-b base commit, repos.yaml); kogany work on `vaults/kogany-compat`
 │                    (the branches above are the branches of record; the line being built is `upgrade/vault` — rule 2)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `upgrade/vault` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `upgrade/vault` — plan docs/plans/role-pool-regtest-plan.md
@@ -63,7 +66,7 @@ yellowback-workspace/
 │   ├── ideation/    README only: experimental ideas live on `ideation/*` branches, never on main
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12, v2/v3 §13–§14, lightwalletd
 │                       §15, YEW §16, yolo §17, chain-viz §18, v4.5.0→6.20.0 port §19, x402 §20,
-│                       hardening §21, vault upgrade §22). READ IT FIRST.
+│                       hardening §21, vault upgrade §22, kogany (Zakura) port §24). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), pull.sh (`make pull`), repos.sh, repo-status.sh,
 │                    extract-spec.sh + extract_spec.py (`make spec`), check-ref-pins.sh (CI: pins vs upstream)
@@ -98,6 +101,9 @@ the gate-passing release, plan P8; testnet is unreachable), and regtest/devnet a
 `-nuparams=6d5b7a31:<h>`. Both lines carry the same branch ID (`0x6d5b7a31`) and parameters
 and must stay in step: **a shared Yellowback defect or rule change is made on both lines together** —
 the primitive, the module and the branch ID are one change on both —
+(the shared-defect rule, kogany plan K-19: the C++ lines together; `librustzcash6`, the common fork
+`zakura-common-ycash` and `kogany` follow in the same change set from W2 on, once they implement the
+affected layer, and record it in the kogany plan's findings log until then)
 and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402) are tested against both.
 `ycash6` builds against `librustzcash6`: `ref/ycash6/Cargo.toml` `[patch.crates-io]` pins every
 `zcash_*` crate to `miodragpop/librustzcash` rev `ec525fae`, which is exactly `ref/librustzcash6`.
@@ -116,11 +122,18 @@ from it; nothing is ported yet, so `make diff` shows no delta. It is a third cod
 `docs/mapping.md` gets a section for it before the first port, and the four-part check (rule 4)
 applies as on the other lines. Until it carries the overlay, the both-lines rules above (one
 change on every line, the shared branch ID, clients tested against each line) do not yet include
-it, and `make spec` / the release train do not cover it. Zakura's own `AGENTS.md` / `CLAUDE.md` /
+it (beyond the shared-defect rule's W2 clause above), and `make spec` / the release train do not
+cover it; kogany becomes a qualified line only at the end of its plan's W9, by the lead architect's
+sign-off (K-19). Its crate fork is **`zakura-common-ycash`** (K-2: one feature-gated fork of
+`zakura-core/common`, `ycash` cargo feature; with the feature off the crates are upstream's), pinned
+by exact `git` rev in kogany's `[patch.crates-io]` as `ycash6` pins `librustzcash6`; its baseline
+`zakura-common-ycash-legacy` is the upstream commit that reproduces the crates.io releases kogany
+locks (kogany plan W0-b). Zakura's own `AGENTS.md` / `CLAUDE.md` /
 `.claude/` ship in the tree and describe upstream's conventions; where they conflict with this
-file, this file wins (rule 8 above all). **Its GitHub Actions stay off**: GitHub has not enabled
-the upstream workflows on the fork (53 of them: tests, deploys, scheduled jobs), and they must
-not be enabled until the Yellowback lead architect decides which ones the fork runs.
+file, this file wins (rule 8 above all). **Its GitHub Actions stay off** except the
+lead architect's allowlist (K-15, 2026-11-01): six trimmed upstream workflows, the workspace security
+CI and `kogany-yellowback.yml`; every other upstream workflow is moved to
+`.github/workflows-disabled/` (kogany plan §5, W0-c), and jobs are enabled one at a time.
 
 ## Rules
 
@@ -134,7 +147,7 @@ The file you want is under `ycash-dd/`.
 To re-pin deliberately (rare): `chmod -R u+w ref/<repo>` → checkout → `chmod -R a-w ref/<repo>`,
 and update the pins recorded in this file and in `docs/mapping.md`.
 
-### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/`, and for the third node line in `kogany/` — on `upgrade/vault`; the branches of record are `feature/yellowback-price-attest` and, on the 6.20.0 line, `feature/yellowback`.
+### 2. All work happens in `ycash-dd/`, `yecwallet-dd/` and `lightwalletd-dd/` — and, for the 6.20.0 node line, in `ycash6/` and `librustzcash6/`, and for the third node line in `kogany/` and `zakura-common-ycash/` — on `upgrade/vault`; the branches of record are `feature/yellowback-price-attest` and, on the 6.20.0 line, `feature/yellowback`.
 
 **`upgrade/vault` is the line being built** (owner, 2026-10-06; `docs/plans/yellowback-upgrade-plan.md`):
 the integration branch in `ycash-dd`, `ycash6`, `librustzcash6` and every client repo (YecWallet,
@@ -148,7 +161,11 @@ ycash-ops from `main`), where the kogany node, the Zakura library fork, `yewd` a
 kogany-related change in the C++ lines and the clients land; it merges back into `upgrade/vault`
 only at the wave gates of `docs/plans/kogany/kogany-yellowback-plan.md` (§4.2 rule 0). Main trees
 stay on `upgrade/vault`; kogany agents work in `wt/kc-<name>` on `kc/<name>` off
-`vaults/kogany-compat`.
+`vaults/kogany-compat`. The branch names are the same in `kogany` and in the common fork
+`zakura-common-ycash`: `upgrade/vault` is the branch of record (`repos.yaml`), `vaults/kogany-compat`
+the integration branch, `kc/<name>` the agent branches, and `kogany-legacy` /
+`zakura-common-ycash-legacy` the untouchable baselines (`kogany-baseline` is the tag the kogany CI
+audit measures the consensus delta against, kogany plan W0-d).
 **In-term claims are on `upgrade/vault`** (owner, 2026-10-09): `upgrade/vault` was fast-forwarded to
 `upgrade/vault-in-term` in ycash-dd, ycash6, lightwalletd-dd, yecwallet-dd, chain-viz and yew
 (`docs/plans/yellowback-in-term-claims-plan.md`). `upgrade/vault-in-term` is kept as a record — never
@@ -180,7 +197,7 @@ measure, not a gate. **On `harden/yellowback` the zero-delta rule stands**: froz
 declared once, in `repos.yaml`; `make status` fails if a fork is not on it.
 
 `ycash-legacy` and `yecwallet-legacy` are the pristine v4.5.0 baselines, `lightwalletd-legacy`
-is upstream `master` at the pin, and `ycash6-legacy` / `librustzcash6-legacy` are the v6.20.0 pins and `kogany-legacy` the Zakura pin — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
+is upstream `master` at the pin, and `ycash6-legacy` / `librustzcash6-legacy` are the v6.20.0 pins and `kogany-legacy` the Zakura pin (`zakura-common-ycash-legacy` the common fork's base) — **never commit to them.** They exist so you can always `git diff <legacy>...feature/yellowback-price-attest` to see
 the entire fork delta (`make diff` shows both). `feature/digidollar` in both forks is the retired federation
 prototype (plan §0, 2026-09-10), kept only as a record: never commit to it and never build on it;
 `make log` may list both. Keep those diffs reviewable. Node code goes in `ycash-dd`
@@ -188,8 +205,10 @@ only; wallet code goes in `yecwallet-dd` only; light-client server code goes in 
 only; the `yed_*` RPC surface — plus, on `upgrade/vault`, the vault primitive's `set_*` and
 `vault_*` RPCs (`doc/vault-rpc.md`) — is the sole interface between the node and either client
 (plan §4.7; upgrade plan §9). The bridge daemon uses only those plus stock RPCs.
-Mobile-wallet (YEW) client code goes in `yew/` only — its own repository on `main`, not a fork,
-so it has no `-legacy` baseline — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
+Mobile-wallet (YEW) client code — the YEW core and its shells: `app`, `web`, `yewd` (the YEW core as a
+daemon, the kogany wallet sidecar, `yew/yewd/`; kogany plan K-22) — goes in `yew/` only — its own
+repository on `main`, not a fork, so it has no `-legacy` baseline (and `yewd` has no `repos.yaml`
+row of its own) — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
 gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
 Pool software goes in `yolo/` only — also its own repository on `main` (`ref/yolo` is the Perl
 reference it rewrites) — and the node's stock mining RPCs (`getblocktemplate`, `submitblock`,
@@ -350,10 +369,10 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its twenty-three clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty-four clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
-make diff       # fork deltas: each of the six forks vs its -legacy baseline
+make diff       # fork deltas: each of the seven forks vs its -legacy baseline
 make log        # commits on each fork branch beyond its baseline
 make spec       # regenerate the spec + RPC contract copies from the plans (make spec-check verifies)
 ```
