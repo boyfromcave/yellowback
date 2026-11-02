@@ -177,7 +177,8 @@ THE FEES LINE  (the quantum line after the D-Q-23/24/25 fee change, docs/plans/y
          `source` is the in-term contract's, unchanged.
   Trees  as the quantum line, with 8 in place of 7: a node tree whose doc is below rpcversion 8 and a client tree whose
          contract copy states a lower rpcversion are skipped by --check-fees and said so; --write-fees writes every
-         tree named.
+         tree named.  The kogany tree (EXTRACT_SPEC_KOGANY_DIR) gets ycash6's three copies, as in WRITES, whenever ycash6's
+         tree is on the fees line: skipped (default tree) or an error (named tree) without crates/kogany-rpc.
 
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR / EXTRACT_SPEC_KOGANY_DIR
@@ -961,6 +962,12 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
             checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
                        (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
                         contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
+            if line == "fees":
+                # kogany carries ycash6's fees-line copies byte for byte (WRITES; same skip-if-no-crate rule)
+                kogany, kogany_skipped = kogany_outputs(checks[-2][1], checks[-1][1])
+                checks += kogany
+                if kogany_skipped:
+                    skipped.append(kogany_skipped)
     if write:
         for s_ in skipped:
             print("%s: skipped %s" % (wr, s_))
