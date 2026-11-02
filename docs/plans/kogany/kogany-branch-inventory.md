@@ -1,8 +1,8 @@
-# kogany branch inventory (2026-11-01)
+# kogany branch inventory (2026-11-01, counts revised 2026-11-02)
 
 `boyfromcave/kogany` is a GitHub fork of `zakura-core/zakura`. GitHub copied every upstream branch
-into the fork when it was created, so the fork carries **603 remote branches**, of which only 37
-are ours. This document classifies all 603, proposes a KEEP list for the Yellowback lead
+into the fork when it was created, so the fork carries **617 remote branches** (603 on 2026-11-01), of which only 51
+are ours (3 branches of record, 48 `kc/*`). This document classifies them all, proposes a KEEP list for the Yellowback lead
 architect's review, and gives the commands to delete the rest by hand. Nothing has been deleted:
 this is the inventory only.
 
@@ -12,18 +12,24 @@ Snapshot: `git -C kogany fetch origin --prune` and `git ls-remote --heads` of bo
 made in a scratch bare repository (kogany's object store as an alternate, upstream fetched into
 it), so the kogany clone's refs and configuration were not touched.
 
+Revision 2026-11-02: the counts, the KEEP table and the expected dry-run output below were
+re-taken after the day's merges (`git ls-remote --heads origin`, 617 heads; integration tip
+`vaults/kogany-compat` = `9c40d252f`). The inherited-branch classes are unchanged: no `kc/*` was
+deleted and no inherited branch moved. **Re-pin `kogany-legacy` to `b44ec121d` first** (the Zakura
+sync of 2026-11-02, AGENTS.md rule 1), then run the deletion pass; the script keeps it either way.
+
 ## 1. Summary
 
 | Class | Count | Disposition |
 |---|---:|---|
 | Branches of record (`kogany-legacy`, `upgrade/vault`, `vaults/kogany-compat`) | 3 | KEEP |
-| `kc/*` agent branches still in flight | 1 | KEEP until merged (`kc/module-register`) |
-| `kc/*` agent branches already merged into `vaults/kogany-compat` | 33 | DELETE |
+| `kc/*` agent branches still in flight | 1 | KEEP until merged (`kc/w9-mixed`) |
+| `kc/*` agent branches already merged into `vaults/kogany-compat` | 47 | DELETE |
 | Inherited upstream branch, tip equal to upstream's | 547 | DELETE |
 | Inherited upstream branch, tip behind upstream's | 14 | DELETE |
 | Inherited upstream branch, tip has commits upstream lacks | 0 | none |
 | Stale inherited branch (deleted upstream since the fork) | 5 | DELETE |
-| **Total** | **603** | **4 KEEP, 599 DELETE** |
+| **Total** | **617** | **4 KEEP, 613 DELETE** |
 
 GitHub's default branch is `upgrade/vault` (`git -C kogany remote show origin` → `HEAD branch:
 upgrade/vault`), as the plan says, so no inherited branch is needed as a default-branch fallback.
@@ -37,17 +43,16 @@ of the Ycash developers'.
 | Branch | Tip | Reason |
 |---|---|---|
 | `upgrade/vault` | `2b062412c` | The line of record and GitHub's default branch (AGENTS.md rule 2); receives `vaults/kogany-compat` at the wave gates. |
-| `vaults/kogany-compat` | `f299e69a4` | The kogany integration branch (plan §4.2 rule 0); every `kc/*` merges here. |
-| `kogany-legacy` | `2b062412c` | The pristine Zakura pin (= `ref/zakura`, `repos.yaml` `base-commit`); `make diff` and every frozen-delta measure compare against it. Never committed to. |
-| `kc/module-register` | `8f60e514b` | In flight: 13 commits not yet in `vaults/kogany-compat`. The coordinator deletes it after its merge (coordination handoff §4). |
-| `kc/ci-kogany` | (not pushed) | In flight, local only today (its worktree `wt/kc-ci-kogany` sits at the integration tip). Once pushed it is kept until merged, then deleted like the others. |
+| `vaults/kogany-compat` | `9c40d252f` | The kogany integration branch (plan §4.2 rule 0); every `kc/*` merges here. |
+| `kogany-legacy` | `2b062412c` (to be re-pinned to `b44ec121d`) | The pristine Zakura pin (= `ref/zakura`, `repos.yaml` `base-commit`); `make diff` and every frozen-delta measure compare against it. Never committed to. |
+| `kc/w9-mixed` | `0d036908d` | In flight (W9-b, the full mixed suite): not yet in `vaults/kogany-compat`. The coordinator deletes it after its merge (coordination handoff §4). Every other `kc/*` (47) is merged. |
 
 Tags: keep them all. `kogany-baseline` (`7924d1627`, W0-b and W1-Y0, an ancestor of the
 integration tip) is ours and is the plan's W0 tag (handoff §4, wave gates). The other 39 tags
 (`v1.0.0` … `v1.7.0`, release candidates included) are Zakura release tags and point at the same
 commits as upstream's; they cost nothing, are not branches, and are useful when reading upstream
-history. Upstream has one tag the fork lacks, `v1.8.0-rc1`; it is not needed until a rule 7 sync
-re-pins past it.
+history. Upstream has one tag the fork lacks, `v1.8.0-rc1`; the rule 7 sync of 2026-11-02 (`b44ec121d`,
+that lineage) landed, so fetch it with the re-pin.
 
 ### Why neither `main` is kept
 
@@ -68,11 +73,11 @@ re-pins past it.
 | Branch | State against `origin/vaults/kogany-compat` |
 |---|---|
 | `kogany-legacy`, `upgrade/vault` | `2b062412c` (the pin); `upgrade/vault` has received nothing yet |
-| `vaults/kogany-compat` | `f299e69a4` |
-| `kc/module-register` | **in flight** (13 commits ahead) |
-| `kc/bip68`, `kc/coinbase-tag`, `kc/fee-policy`, `kc/fork-protocol`, `kc/harness-state`, `kc/kogany-mines`, `kc/kogany-pq`, `kc/kogany-vault`, `kc/kogany-yed-math`, `kc/p2p`, `kc/pqpkh-fuzz`, `kc/relay-ycash`, `kc/rpc-artifacts`, `kc/rpc-dispatch`, `kc/rpc-parity`, `kc/rpc-stock`, `kc/rpc-ycash`, `kc/rpc-yed`, `kc/script-plumb`, `kc/set-state`, `kc/snapshot-hook`, `kc/standardness`, `kc/state-mint`, `kc/state-release`, `kc/sync-gate`, `kc/tip-recheck`, `kc/vault-epoch`, `kc/vault-storage`, `kc/w0-scaffold`, `kc/w1-profile`, `kc/yed-attest`, `kc/yed-codecs`, `kc/yed-index` | **merged** (tip is an ancestor of the integration tip), 33 branches |
+| `vaults/kogany-compat` | `9c40d252f` |
+| `kc/w9-mixed` | **in flight** (W9-b) |
+| `kc/bip68`, `kc/ci-kogany`, `kc/coinbase-tag`, `kc/fee-policy`, `kc/fork-protocol`, `kc/fork-sync-rc4`, `kc/harness-state`, `kc/kogany-mines`, `kc/kogany-pq`, `kc/kogany-vault`, `kc/kogany-version`, `kc/kogany-yed-math`, `kc/koganyd-docker`, `kc/koganyd-image`, `kc/live-reads`, `kc/mempool-fixes`, `kc/module-register`, `kc/p2p`, `kc/pqpkh-fuzz`, `kc/pruned`, `kc/relay-ycash`, `kc/repin-b44ec121d`, `kc/rpc-artifacts`, `kc/rpc-dispatch`, `kc/rpc-parity`, `kc/rpc-stock`, `kc/rpc-ycash`, `kc/rpc-yed`, `kc/script-plumb`, `kc/set-state`, `kc/snapshot-hook`, `kc/standardness`, `kc/state-mint`, `kc/state-release`, `kc/sync-gate`, `kc/sync-resume`, `kc/sync-zakura-20261102`, `kc/tip-recheck`, `kc/vault-epoch`, `kc/vault-storage`, `kc/w0-scaffold`, `kc/w1-profile`, `kc/w9-review`, `kc/ycash-identity`, `kc/yed-attest`, `kc/yed-codecs`, `kc/yed-index` | **merged** (tip is an ancestor of the integration tip), 47 branches |
 
-The 33 merged `kc/*` branches are the ones the coordinator should have deleted after each merge
+The 47 merged `kc/*` branches are the ones the coordinator should have deleted after each merge
 (handoff §4, "Delete the `kc/` branch after the merge") but could not: the session's permission
 classifier blocks remote branch deletion. They go in the same pass as the inherited branches. The
 local `kc/*` branches and their `wt/kc-*` worktrees are the coordinator's to remove afterwards;
@@ -160,8 +165,8 @@ grep -c '^KEEP' /tmp/kogany-branches.txt; grep -c '^DELETE' /tmp/kogany-branches
 grep '^KEEP' /tmp/kogany-branches.txt
 ```
 
-Expected today: 4 KEEP (`kogany-legacy`, `upgrade/vault`, `vaults/kogany-compat`,
-`kc/module-register`) and 599 DELETE. If the numbers differ, read the list before going on.
+Expected (2026-11-02): 4 KEEP (`kogany-legacy`, `upgrade/vault`, `vaults/kogany-compat`,
+`kc/w9-mixed`) and 613 DELETE; once `kc/w9-mixed` is merged, 3 KEEP and 614 DELETE. If the numbers differ, read the list before going on.
 
 **Delete** (50 refs per push; review `/tmp/kogany-branches.txt` first):
 
