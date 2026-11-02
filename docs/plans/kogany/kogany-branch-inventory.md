@@ -45,7 +45,7 @@ of the Ycash developers'.
 |---|---|---|
 | `upgrade/vault` | `2b062412c` | The line of record and GitHub's default branch (AGENTS.md rule 2); receives `vaults/kogany-compat` at the wave gates. |
 | `vaults/kogany-compat` | `9c40d252f` | The kogany integration branch (plan §4.2 rule 0); every `kc/*` merges here. |
-| `kogany-legacy` | `2b062412c` (to be re-pinned to `b44ec121d`) | The pristine Zakura pin (= `ref/zakura`, `repos.yaml` `base-commit`); `make diff` and every frozen-delta measure compare against it. Never committed to. |
+| `kogany-legacy` | `b44ec121d` (re-pin by the lead architect; documents already say so) | The pristine Zakura pin (= `ref/zakura`, `repos.yaml` `base-commit`); `make diff` and every frozen-delta measure compare against it. Never committed to. |
 | `kc/w9-mixed` | `0d036908d` | In flight (W9-b, the full mixed suite): not yet in `vaults/kogany-compat`. The coordinator deletes it after its merge (coordination handoff §4). Every other `kc/*` (47) is merged. |
 
 Tags: keep them all. `kogany-baseline` (`7924d1627`, W0-b and W1-Y0, an ancestor of the
