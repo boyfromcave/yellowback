@@ -5,6 +5,8 @@ Zakura (a Rust Zcash full node from the Zebra lineage) that becomes the third Yc
 
 - [`kogany-yellowback-plan.md`](kogany-yellowback-plan.md) — **the plan** (revision 3, 2026-11-01): **all 26 decisions locked by the lead architect 2026-11-01; the sidecar is `yewd` inside `yew`** (`yew/yewd/`, a third shell on the YEW core beside `app` and `web`, not a new repository). Decisions (lead architect) K-1…K-26, waves W0–W9 with chunks and gates, and the **parity sidecar track S0–S5** (§3b): the product is kogany plus a separate wallet process on yew-core that answers the ycashd wallet RPCs, with a signer boundary, gated on the wallet RPC contracts and the 48 wallet-needing scripts. Budgets, CI, estimate, risks, mapping §24 rows. Revision 1 (same day) had the wallet on a ycash6 sidecar only; that sidecar remains the test rig.
 
+- [`coordination-handoff.md`](coordination-handoff.md) — how a coordination agent runs the plan with parallel agents: start-up, state at handoff (2026-11-02), operating model, dependency graph and batches, gates.
+
 Surveys (2026-11-01, inputs to the plan):
 
 - [`surveys/a-zakura-architecture.md`](surveys/a-zakura-architecture.md) — lane A: Zakura's validation layers, upgrade model, script crate, state and mempool, and the Yellowback hook table.
