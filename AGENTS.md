@@ -107,9 +107,9 @@ and the clients (YecWallet, lightwalletd, the devnet, yolo, chain-viz, YEW, x402
 `boyfromcave/librustzcash6` at `eeb7740d`. On `harden/yellowback` it stays a zero-delta fork. (It is
 a separate repo, not a GitHub fork, because `boyfromcave/librustzcash` is already an older fork.)
 
-**The third node line: `kogany`** (owner, 2026-11-01). `kogany` is the owner's GitHub fork of
+**The third node line: `kogany`** (lead architect, 2026-11-01). `kogany` is the Ycash developers' GitHub fork of
 Zakura (`ref/zakura`: zakura-core's consensus-compatible Zcash full node in Rust, forked from
-Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; owner's choice, the commit the fork
+Zebra), pinned at zakura `main` @ `2b062412c5` (past v1.7.0; the lead architect's choice, the commit the fork
 was taken at). `kogany-legacy` is that pin (**never commit to it**) and `upgrade/vault` was cut
 from it; nothing is ported yet, so `make diff` shows no delta. It is a third codebase lineage
 (Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
@@ -120,7 +120,7 @@ it, and `make spec` / the release train do not cover it. Zakura's own `AGENTS.md
 `.claude/` ship in the tree and describe upstream's conventions; where they conflict with this
 file, this file wins (rule 8 above all). **Its GitHub Actions stay off**: GitHub has not enabled
 the upstream workflows on the fork (53 of them: tests, deploys, scheduled jobs), and they must
-not be enabled until the owner decides which ones the fork runs.
+not be enabled until the Yellowback lead architect decides which ones the fork runs.
 
 ## Rules
 
@@ -142,6 +142,13 @@ lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch o
 `repos.yaml` records it and the main trees check it out (since 2026-10-06), so `make status` and
 `make pull` track it and integration happens in the main trees. Agents work in `wt/<name>` on
 `up/<name>` off `upgrade/vault`; the coordinator merges.
+**The kogany work is on `vaults/kogany-compat`** (lead architect, 2026-11-01): `upgrade/vault` is
+stable, so every writable repository carries `vaults/kogany-compat` (cut from `upgrade/vault`;
+ycash-ops from `main`), where the kogany node, the Zakura library fork, `yewd` and every
+kogany-related change in the C++ lines and the clients land; it merges back into `upgrade/vault`
+only at the wave gates of `docs/plans/kogany/kogany-yellowback-plan.md` (§4.2 rule 0). Main trees
+stay on `upgrade/vault`; kogany agents work in `wt/kc-<name>` on `kc/<name>` off
+`vaults/kogany-compat`.
 **In-term claims are on `upgrade/vault`** (owner, 2026-10-09): `upgrade/vault` was fast-forwarded to
 `upgrade/vault-in-term` in ycash-dd, ycash6, lightwalletd-dd, yecwallet-dd, chain-viz and yew
 (`docs/plans/yellowback-in-term-claims-plan.md`). `upgrade/vault-in-term` is kept as a record — never

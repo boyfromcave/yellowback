@@ -69,7 +69,7 @@ ref/librustzcash6:
 ref/zakura:
   role: reference
   url: https://github.com/zakura-core/zakura.git
-  branch: main               # zakura-core's main on 2026-11-02, past v1.7.0 (owner's choice: the commit kogany was forked at)
+  branch: main               # zakura-core's main on 2026-11-02, past v1.7.0 (the lead architect's choice: the commit kogany was forked at)
   commit: 2b062412c5
   what: Zakura, a consensus-compatible Zcash full node in Rust (forked from Zebra), pristine baseline for kogany
 
@@ -194,4 +194,4 @@ ycash-ops:
   url: https://github.com/boyfromcave/ycash-ops.git
   branch: main                # GitHub default; it has no upgrade/vault branch yet
   private: true               # the one private repository: needs access, clone over SSH
-  what: ycash-ops, the owner's private operations repository: the GitHub Actions that deploy and run the testnets (and, after P8, mainnet) on AWS from ycash-infra's public recipes; holds no account identifiers (those live in GitHub environment secrets)
+  what: ycash-ops, the Ycash contributors' private operations repository: the GitHub Actions that deploy and run the testnets (and, after P8, mainnet) on AWS from ycash-infra's public recipes; holds no account identifiers (those live in GitHub environment secrets)
