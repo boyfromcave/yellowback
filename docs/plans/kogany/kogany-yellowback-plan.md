@@ -72,14 +72,14 @@ K-10, K-11, K-12; K-20 and K-21 decided in rev 2; K-22 … K-26 pending.)*
 
 | Wave | Content | State | Gate seen green |
 |---|---|---|---|
-| W0 | scaffolding: fork repos, baseline tag, CI allowlist, security CI, audit legs, crate verification | [ ] not started | — |
-| W1 | Ycash network on Zakura (Y0–Y8): branch IDs, Equihash (192,7), YDF, checkpoints, P2P, RPC answers, sync | [ ] not started | — |
-| W2 | Vault epoch: `NetworkUpgrade::Vault`, `0x6d5b7a31`, v4-only, U-26 builder, vectors pinned | [ ] not started | — |
-| W3 | script and PQ: CSV 0xb2, 0xc0, 0xc1, 0xc2, BIP68, SLH-DSA/Falcon verification | [ ] not started | — |
-| W4 | the vault primitive: templates, acts, set state, storage, snapshot, reorg | [ ] not started | — |
-| W5 | the YED rule module: math, params, codecs, attestations, state, index | [ ] not started | — |
+| W0 | scaffolding: fork repos, baseline tag, CI allowlist, security CI, audit legs, crate verification | [x] done 2026-11-02 (W0-a..d merged; fork base `bdbca121628d`; tag `kogany-baseline` = kogany `7924d1627`) | local: lint, audit legs, zakura-chain tests, cargo deny/vet; GitHub Actions still off |
+| W1 | Ycash network on Zakura (Y0–Y8): branch IDs, Equihash (192,7), YDF, checkpoints, P2P, RPC answers, sync | [~] Y0 merged (fork `1dd25c9d`); Y1–Y3 `kc/w1-profile`, Y7 harness `kc/harness` in flight; mainnet sync node started 2026-11-02 | — |
+| W2 | Vault epoch: `NetworkUpgrade::Vault`, `0x6d5b7a31`, v4-only, U-26 builder, vectors pinned | [~] W2-c vectors pinned (`4c82f1f74`); W2-a `kc/fork-protocol` in flight | — |
+| W3 | script and PQ: CSV 0xb2, 0xc0, 0xc1, 0xc2, BIP68, SLH-DSA/Falcon verification | [~] W3-a merged (fork `2773f4a4`), W3-b merged (`b90fc9b19`); W3-c/d/e not started | W3-a 29 tests, upstream vectors unchanged; W3-b 17 tests debug+release |
+| W4 | the vault primitive: templates, acts, set state, storage, snapshot, reorg | [~] W4-a merged (`c23455a3e`); W4-b `kc/set-state` in flight | W4-a: every vault_vectors template/act case, debug+release+ci-tests |
+| W5 | the YED rule module: math, params, codecs, attestations, state, index | [~] W5-a merged (`f546b4803`); W5-b `kc/yed-codecs` in flight | W5-a: 67 math cases debug+release+ci-tests; params checked against params.cpp |
 | W6 | relay policy and mempool | [ ] not started | — |
-| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract; rev 2: W7-e reject-reason parity and regtest `setmocktime` for the sidecar | [ ] not started | — |
+| W7 | read RPCs (`vault_*`, `set_*`, `yed_*`), `rpcversion` 8 contract; rev 2: W7-e reject-reason parity and regtest `setmocktime` for the sidecar | [~] W7-a prototype `kc/rpc-dispatch` in flight | — |
 | W8 | mining: template filter, coinbase tag | [ ] not started | — |
 | W9 | wallet via the ycash6 sidecar test rig, full mixed matrix, client legs, demonstration; rev 2: the third matrix column comes from S5 | [ ] not started | — |
 
@@ -88,13 +88,13 @@ around W5/W6 and cannot finish before W7.
 
 | Chunk | Content | State | Gate seen green |
 |---|---|---|---|
-| S0 | the `yewd` shell inside `yew` (`yew/yewd/`: crate layout, build beside the app and web shells, CI job `yewd`), façade skeleton (forwarding, auth, method table), harness mode `YEWD_BIN`, contract suites pointed at it | [ ] not started | — |
+| S0 | the `yewd` shell inside `yew` (`yew/yewd/`: crate layout, build beside the app and web shells, CI job `yewd`), façade skeleton (forwarding, auth, method table), harness mode `YEWD_BIN`, contract suites pointed at it | [x] merged yew `5773061` 2026-11-02; YEWD_BIN wiring and the n/47 baseline move to the harness chunk | check-yewd.sh, 22 tests, regtest round trip vs ycashd |
 | S1 | wallet state and sync on yew-core against kogany: transparent, Sapling, PQ keys, YED tokens, vaults and intents; sync barrier, reorgs | [ ] not started | — |
 | S2 | builders and the signer boundary: yew-core builders mapped to the build RPCs; new set/act, generic vault and cancel builders; the signer process | [ ] not started | — |
 | S3 | roles: attestor `attest` mode, Hawkeye member, x402 `rpcWalletSigner` (yolo's payout needs no wallet) | [ ] not started | — |
 | S4 | façade complete: the 47 RPCs plus the stock wallet set, error and arity parity, auth, process lifecycle | [ ] not started | — |
 | S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [ ] not started | — |
-| V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [ ] not started | — |
+| V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [x] merged 2026-11-02 (workspace `e6e3eae`, ycash6 `e5dac3a30`): `docs/spec/vault-signing-message-v5.md` | zip244.py vs 10 upstream vectors; vault_v5_dormant_tests 137 assertions |
 
 **Branches.** Integration branch `upgrade/vault` in `kogany` and in the common fork (K-2); agents
 work in `wt/<chunk>` on `up/<chunk>` off `upgrade/vault`; the coordinator merges. No commit to

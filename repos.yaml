@@ -146,7 +146,7 @@ zakura-common-ycash:
   upstream: https://github.com/zakura-core/common.git
   branch: upgrade/vault       # the vault network upgrade line; kogany work lands on vaults/kogany-compat (kogany plan §4.2 rule 0)
   base: zakura-common-ycash-legacy
-  base-commit: TODO-W0-b      # TODO(W0-b fork-verify): the zakura-core/common commit the fork is cut at; filled by the coordinator
+  base-commit: bdbca121628d # zakura-core/common "prepare Common 5.0.0-rc.2" (#661): reproduces every crates.io crate kogany locks file for file (W0-b)
   what: working fork of zakura-core/common (the zakura-* librustzcash crates and zakura-zcash-script) behind kogany's [patch.crates-io]; with the `ycash` feature off the crates are upstream's
 
 yew:
