@@ -104,7 +104,7 @@ as the backend (KF-68); the kogany-backend runs are S5's.
 | S2 | builders and the signer boundary | [x] merged yew `cd72fb4` 2026-11-02 | 40 of 47; 28 build RPCs on chain with `statehash`/`yed_getstatehash` equal at every checkpoint; `vault_vectors` acts, set signatures, `ownerSpends` byte for byte in the signer; the refusal tests |
 | S3 | roles: attestor `attest` mode, cancel cosign, imported keys (Hawkeye member and x402 run through S4's stock set) | [x] merged yew `85aec6f` 2026-11-02 | 47 of 47; ycash6's attestor and cancel role scripts unchanged on pairs; 18 attestation vectors byte for byte |
 | S4 | façade complete: the 47 RPCs plus the stock wallet set, error and arity parity, auth, process lifecycle | [x] merged yew `da37a53` 2026-11-02 | both contract suites pass unchanged with every node a pair (2 and 6 pairs); 144 arity checks, 85 help texts, 33 errors, 13 raw-helper answers equal ycashd's; `yellowback_sapling.py` on pairs |
-| S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [~] `kc/yewd-s5` (yew, ycash6): round 14 (2026-11-03) = 48/49 pair column, 46/49 pair-mixed (`yew/yewd/qa/s5_parity.py`; the two mixed `join_network` failures predate the sync fixes s5-k11/k12); round 15 in progress (two clean rounds after F-S5-19, the `getblocktemplate` `depends` fix for a chained mint transfer) | round 14: 48/49 pair, 46/49 pair-mixed |
+| S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [~] `kc/yewd-s5` (yew, ycash6): round 18 (2026-11-04, kogany `9210a87fd`, run alone; rounds 16/17 void, port collisions) = 47/49, 47/49 pair column, 49/49, 48/49 pair-mixed (`yew/yewd/qa/s5_parity.py`). The mixed column reached a clean round; the two pair-column rows are explained by a harness fix merged after the run began (s5-k19, ycash6 `6d1db1873`) and by machine hygiene (a stale regtest node), not by koganyd; a confirming round 19 on the merged harness is planned once the stale nodes are gone. Follow-up PR kogany#4 (s5-k16/k17: F-S5-21, F-S5-22) is the last code to merge before the K-19 sign-off | round 18: 47/49 pair, 49/49 pair-mixed |
 | V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [x] merged 2026-11-02 (workspace `e6e3eae`, ycash6 `e5dac3a30`): `docs/spec/vault-signing-message-v5.md` | zip244.py vs 10 upstream vectors; vault_v5_dormant_tests 137 assertions |
 
 **Branches.** Integration branch `vaults/kogany-compat` in `kogany`, in the common fork (K-2; on GitHub
@@ -116,7 +116,7 @@ since 2026-11-02, KF-78) and in every repository the kogany work touches (§4.2 
 `cfe4605`, ycash-infra `c6647c4`, workspace `f1baa26`. In flight: `kc/w9-mixed` (W9-b), `kc/yewd-s5` (S5),
 `kc/sync-zakura-20261102`.
 
-**Wave gate (2026-11-03).** All 13 wave-gate PRs are open; ycash-dd#156 merged 2026-11-03. Merge order:
+**Wave gate (2026-11-03/04).** All 13 wave-gate PRs merged 2026-11-03/04 (steps 1–7). Merge order:
 ycash-dd, common fork #2, ycash6 #79, kogany #1, yew #16, the client repositories, workspace #32.
 Still open after the gate: [ ] 7 green nightlies of yew `yewd-parity.yml`; [ ] the hawkeye rig race (the
 rig kills ycashd 0.7 s after its last block); [ ] YEW's t-address prefix mismatch against koganyd;
