@@ -10,6 +10,7 @@
     { "name": "ycash6",        "path": "ycash6" },
     { "name": "librustzcash6", "path": "librustzcash6" },
     { "name": "kogany",        "path": "kogany" },
+    { "name": "zakura-common-ycash", "path": "zakura-common-ycash" },
     { "name": "yew",           "path": "yew" },
     { "name": "yolo",          "path": "yolo" },
     { "name": "chain-viz",     "path": "chain-viz" },

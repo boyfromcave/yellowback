@@ -35,10 +35,10 @@ status: ## git status for the workspace and every repo in repos.yaml: fetches or
 status-short: ## Same as status, without the per-file listing
 	@scripts/repo-status.sh --short && scripts/extract-spec.sh --check
 
-spec: ## Regenerate docs/spec/yellowback-spec.md, the fork copy and both rpc-contract copies from the plan
+spec: ## Regenerate docs/spec/yellowback-spec.md, the fork copy and both rpc-contract copies from the plan; kogany/doc gets ycash6's copies (EXTRACT_SPEC_KOGANY_DIR)
 	@scripts/extract-spec.sh
 
-spec-check: ## Fail if any generated spec/contract copy is stale vs the plan (run by `make status`)
+spec-check: ## Fail if any generated spec/contract copy is stale vs the plan, kogany/doc's included (run by `make status`)
 	@scripts/extract-spec.sh --check
 
 spec-check-upgrade: ## Same for the upgrade/vault line's copies only, in the main trees (EXTRACT_SPEC_*_DIR override; trees not on the upgrade line skipped)

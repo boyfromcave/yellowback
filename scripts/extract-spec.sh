@@ -5,6 +5,8 @@
 #
 # Usage: scripts/extract-spec.sh            write every copy         (`make spec`)
 #        scripts/extract-spec.sh --check    exit 1 when any is stale  (`make spec-check`, run by `make status`)
+#                                           (both include kogany's doc/ copies of ycash6's spec and contracts
+#                                           when the kogany tree serves the RPCs; EXTRACT_SPEC_KOGANY_DIR override)
 #        scripts/extract-spec.sh --check-workspace   only the copies in this repo (the workspace CI, which has no clones)
 #        scripts/extract-spec.sh --check-upgrade     the upgrade/vault line's copies in the main trees
 #                                                    (`make spec-check-upgrade`; trees that do not exist are skipped)
