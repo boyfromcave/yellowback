@@ -9,7 +9,7 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: b40ed161617e2811a1f226ce15f10a6e2e495273  # ycash6#85 head; replace with its merge commit before tagging
+  commit: a44066d206b3d72a676d25d60ef7af00a979e30e  # ycash6#85 head; replace with its merge commit before tagging
   tag: v6.22.0-beta1
 ycash-dd:
   commit: 7b197225406d3fa012de23ce216c504f13147a18
