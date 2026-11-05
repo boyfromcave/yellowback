@@ -401,7 +401,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - Cost: seeds about $78 a month (2 hosts × 3 networks); EKS about $660–680 a month while up
 
 ### Round 3 in flight (2026-10-29): parallel helpers, one branch and PR per repo each
-- [~] **N2 tooling**: draft PRs ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). **PR CI green on both lines** after three fix rounds, including the functional `testnet_ceremony.py` (the full regtest rehearsal: prefix bundle and restore, the fork block, the set, the house seats, maturity, an rc1-like node agreeing) and `ycash_bootstrap.py`. The fixes: find the set transaction through the blocks, not the wallet; a bond locktime of tip + 1, not 0; CodeQL file permissions; gitleaks.
+- [x] **N2 tooling**: **merged 2026-11-04** as ycash6#70 and ycash-dd#147 (branch `claude/n2-tooling`; no `src/` change). **PR CI green on both lines** after three fix rounds, including the functional `testnet_ceremony.py` (the full regtest rehearsal: prefix bundle and restore, the fork block, the set, the house seats, maturity, an rc1-like node agreeing) and `ycash_bootstrap.py`. The fixes: find the set transaction through the blocks, not the wallet; a bond locktime of tip + 1, not 0; CodeQL file permissions; gitleaks.
   - devnet join mode: `yellowback-devnet up --network testnet-yb-*`; regtest unchanged; profiles `contrib/yellowback/profiles/*.toml`.
   - `contrib/testnet/ceremony/ceremony`: steps check → fork → vault → set → seats → mature → record; the record `ycash-ceremony/1`; `rehearse` on regtest, the entry point rc-qualify calls.
   - `ycash-bootstrap`: the prefix pinned to `testnet-prefix-v1`'s `SHA256SUMS`, an optional minisign check, the `ycash-state/1` state path; `YCASHD_BOOTSTRAP` in the image.
@@ -414,7 +414,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
   - alerts (PrometheusRule).
   - Owner decisions open: T-9 (keys in the chart; the faucet and the GitHub publish token wait on it), T-3 (one status host or one per network).
   - Open question: do ycash6 and ycash-dd report the same `utxo_hash_serialized`?
-- [~] **N4 release-candidate CI**: draft PRs ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); **PR CI green on all three** after one fix round (the Ycash notice on `version.h`, no `ycash6` in `src/`, an action pin's version comment, test-file permissions); `rc-qualify` itself first runs at an rc tag:
+- [x] **N4 release-candidate CI**: **merged 2026-11-04** as ycash6#69, ycash-dd#146, yellowback#25 (branch `claude/n4-rc-ci`); **PR CI green on all three** after one fix round (the Ycash notice on `version.h`, no `ycash6` in `src/`, an action pin's version comment, test-file permissions); `rc-qualify` itself first runs at an rc tag:
   - release rules by stage (beta, rc, final; R7 per testnet profile; slow may have a height without a set, T-15);
   - protocol version 270013 → 270200 (T-8);
   - a release `sign` job: SBOM, SHA256SUMS, provenance, keyless cosign;
@@ -425,7 +425,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - These stay off the seeds code (`infra/testnet-seeds`, `node-image.yml`) and ycash-ops while the owner tests the first deploy; each merges when the owner chooses
 
 ### Testnet miners on Vast.ai (revision 5, owner 2026-11-01)
-- [x] T-21 decided: GPU miners rented on Vast.ai (crypto-funded credit), driven from `ycash-ops`; no `-gen` miners on AWS or EKS; yolo pools stay on AWS
+- [x] T-21 decided: GPU miners rented on Vast.ai (crypto-funded credit), driven from `ycash-ops`; no `-gen` miners on AWS or EKS; yolo pools stay on AWS. Plan revision 5 merged as yellowback#29 (2026-11-04)
 - [~] Public half, ycash-infra branch `claude/vast-miners` (`baa85a1`, `cd101ff`, `b8b2a5a`, `5bfc250`; no PR yet):
   - `images/miner`: no miner binary in the image (`buildpack-deps:noble-curl` by digest); the entrypoint downloads lolMiner 1.98a (SHA-256 `0b807829…`) at start, checks it, runs `EQUI192_7` / `ZcashPoW`; miniZ optional and refused until pinned; `miner-image.yml`;
   - `scripts/vast-fleet.py` (per-network `miner`, miniZ only with its pins, a miner whose miner or pool changed is replaced) with a stand-in Vast API (`scripts/tests/fake_vast.py`) and 26 unit tests; the entrypoint's test against a stand-in curl (match runs, mismatch and no network refuse, miniZ refused without pins); `make miners-test` and a CI job;
@@ -438,6 +438,22 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [ ] Coordinator: merge both PRs; run `miner-image`; owner makes the `ycash-miner` package public; the digest and the pools' stratum endpoints into `miners/fleet.json`; re-pin `miners/infra.ref` (or drop it) once the fleet is on ycash-infra's `upgrade/vault`
 - [ ] Where the yolo pools run on AWS (the seed hosts or `charts/ycash-testnet`), one per network and two on slow, with `--payout` and without `--password`
 - [ ] First live run: `up`, blocks on fast and slow, `status` cost within the table above
+
+### Round 4 (2026-11-04 .. 2026-11-05): the shadow fork merged (`yellowback-testnet-shadow-fork-plan.md`)
+- [x] Session-leftover PRs merged 2026-11-04: hawkeye#35, wyec#9, x402-ycash#14, ycash-ops#3, librustzcash6#21 (supersedes #20: six killing tests for the vault consensus mutants, an exclusion for the one equivalent mutant)
+- [x] **H_S = 3,079,999** (2026-11-04): hash `000005030be4763e433447000ef6b98c7ce310a8b0b7bb50f1a6aca3d31e4bef`, Sapling root `50113dd6b7a7b3661f3070a0c7c40298f0c242cbf06b176b0f9d64e4cde946ec`; confirmed independently by a ycash6 state snapshot and a kogany archive at the same height
+- [x] **`mainnet-prefix-v1`** harvested locally from a synced mainnet ycashd (2026-11-04):
+  - export of 3,080,000 blocks in 22 min; cross-check against koganyd restored from the kogany archive at nine heights 2,300,000..H_S; pack and verify;
+  - import checks on both lines reached H_S with the same best hash and UTXO hash `58b9a13c47dc011d…` (24,008,592 outputs);
+  - published to `https://ycash-contributors-object-store.s3.amazonaws.com/snapshots/prefix/mainnet-prefix-v1/`, `SHA256SUMS` pin `456e820511ade7d9ffd8db41b168ee6063050bb05e2af6a651072bbfb74eecd3`, signed, 310 objects public
+- [x] `testnet-prefix-v1` published to the same store the same way, `SHA256SUMS` pin `c7b55a2a6770df8108d910572cca2dbf643a0418eb0b2d556879928a43cbc403`
+- [x] **WP-1 / WP-2 merged 2026-11-05**: librustzcash6#19 (`d384b90d4`), ycash6#73 (`06c148851`), ycash-dd#151 (`7b1972254`); H_S and its checkpoint compiled in; release guard R8 refuses a tag without them
+- [x] ycash-infra: the prefix-frame image built and published (`sha256:23fbcb4e…a27e3`); `prefixRestore` on for fast (#26, #28), slow and legacy (#30); `import.sh` bash 3.2 fix (#27); kogany regtest RPC port 18832 (#29)
+- [ ] AWS bring-up (ycash-ops `docs/aws-setup.md` §1–7, §13) and the first deploy
+- [ ] The Vast account, the miners and the yolo pools
+- [ ] `seedctl --network` for the shadow profiles; `snapshotter.minHeight` for slow and legacy
+- [ ] The two G-9 reviews (N1, and the shadow fork's WP-1 / WP-2), owed before rc1
+- [ ] rc1 tag
 
 ### Findings this round (they amend the plan text)
 - **F-T1 (import agent, cited in `bundles/prefix/import/README.md`).** Neither node line

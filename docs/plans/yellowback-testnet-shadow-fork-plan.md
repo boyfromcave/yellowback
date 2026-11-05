@@ -106,7 +106,7 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
 ### S0. Decide
 - [x] The shadow fork for slow and legacy, with replay-safe branch IDs (owner, 2026-10-31)
 - [x] fast stays on the Zcash testnet history
-- [ ] **H_S**, the last copied mainnet block: a recent height of the form k × 10,000 − 1 (for example
+- [x] **H_S = 3,079,999** (2026-11-04; hash `000005030be4…6aca3d31e4bef`, Sapling root `50113dd6…cde946ec`; confirmed by a ycash6 state snapshot and a kogany archive), the last copied mainnet block: a recent height of the form k × 10,000 − 1 (for example
   3,089,999) at least 1,000 blocks below the tip when the harvest runs, so every history chunk holds
   exactly 10,000 blocks and the split is at the round k × 10,000. It is fixed by the harvest and compiled into the release;
   `UPGRADE_SHADOW` activates at H_S + 1.
@@ -124,12 +124,12 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   larger consensus change (not made). Because mining will be sparse, **every slow and legacy node runs
   with `-maxtipage=999999999`**, so the chain can sit idle for days and mining resumes whenever a
   miner returns (testnet plan §2.3; ycash-infra#19).
-- [ ] **Merge timing:** WP-1 merges only once H_S is known; merging turns slow and legacy into the
+- [x] **Merge timing:** (H_S known; WP-1 merged 2026-11-05) WP-1 merges only once H_S is known; merging turns slow and legacy into the
   shadow profiles, which have no blocks of their own until then.
-- [ ] **Where the harvest runs:** EC2 from `ycash-ops`, or a self-hosted runner.
+- [x] **Where the harvest runs:** EC2 from `ycash-ops`, or a self-hosted runner. Done locally from a synced mainnet ycashd (2026-11-04).
 
 ### S1. Node changes (both lines + librustzcash6)
-- [~] WP-1 and WP-2 written: draft PRs ycash6#73, ycash-dd#151, librustzcash6#19 (`UPGRADE_SHADOW`,
+- [x] WP-1 and WP-2 **merged 2026-11-05**: ycash6#73 (`06c148851`), ycash-dd#151 (`7b1972254`), librustzcash6#19 (`d384b90d4`) (`UPGRADE_SHADOW`,
   per-network branch IDs, slow and legacy on mainnet's parameters, the difficulty reset, the Rust
   network parameters, the RPCs, R8 in the release guard). ycash6 pins librustzcash6 at the branch
   commit for CI; it moves to the merged commit later. CI is the first full build
@@ -139,27 +139,27 @@ Status: `[x]` done, `[~]` in progress, `[ ]` not started.
   accept it. It must merge, and the node image be rebuilt, before fast goes live
 - [ ] Tests: replay rejected both ways; slow's Vault ID is not mainnet's; slow and legacy equal
   mainnet up to H_S; the difficulty reset
-- [ ] librustzcash6 PR, then the ycash6 pin bump (WP-3), then the YEW and x402 pins (WP-3b)
-- [ ] PRs on both lines; CI green; **two independent reviews (G-9)**; merge
+- [~] librustzcash6 PR (#19 merged 2026-11-05), then the ycash6 pin bump (WP-3), then the YEW and x402 pins (WP-3b)
+- [~] PRs on both lines; CI green; **two independent reviews (G-9)**; merge. Merged 2026-11-05; the G-9 reviews are still owed
 
 ### S2. Harvest Ycash mainnet history
-- [~] `mainnet-prefix.yml`, `mainnet-prefix-import.yml`, `run-local-mainnet.sh` (the EC2 path) and their
+- [x] `mainnet-prefix.yml`, `mainnet-prefix-import.yml`, `run-local-mainnet.sh` (the EC2 path) and their
   offline tests (69 green); the network `ycash-mainnet` in the prefix format, 10,000-block chunks,
   mainnet's 18 checkpoints vendored, the second-node cross-check and the tree state at H_S
-- [ ] Run it: sync mainnet with ycashd, export 0..H_S, verify, pack; publish `mainnet-prefix-v1`
+- [x] Run it (2026-11-04; 3,080,000 blocks exported in 22 min, cross-checked against koganyd at nine heights 2,300,000..H_S; `SHA256SUMS` pin `456e8205…74eecd3`, signed, on the contributors object store): sync mainnet with ycashd, export 0..H_S, verify, pack; publish `mainnet-prefix-v1`
   (signed with the owner's minisign key from `ycash-ops`)
-- [ ] Import checks: both node lines take the bundle under mainnet's parameters and reach H_S with
+- [x] Import checks (2026-11-04: identical best hash, UTXO hash `58b9a13c47dc011d…`, 24,008,592 outputs): both node lines take the bundle under mainnet's parameters and reach H_S with
   the same hash
 
 ### S3. Bootstrap and infrastructure
-- [ ] `ycash-bootstrap`, `seedctl` and the testnet chart use `mainnet-prefix-v1` for slow and
+- [~] (ycash-infra#26..#30: prefix-frame image, `prefixRestore` on for all three; `seedctl --network` open) `ycash-bootstrap`, `seedctl` and the testnet chart use `mainnet-prefix-v1` for slow and
   legacy, framed with their own magic (`d4`, `d5`)
 - [ ] Seed data volumes resized (about 300 GB per host); imports one network at a time; the cost
   estimate updated
-- [ ] State bundles for slow and legacy at a post-split height
+- [ ] State bundles for slow and legacy at a post-split height (`snapshotter.minHeight` open)
 
 ### S4. A release candidate that carries the shadow fork
-- [ ] H_S and the checkpoint at H_S compiled in; the release guard checks them
+- [x] H_S and the checkpoint at H_S compiled in; the release guard checks them (R8; 2026-11-05)
 - [ ] `rc-qualify` runs the replay test (a C++ test under slow's and mainnet's parameters)
 
 ### S5. Launch slow and legacy on the shadow fork
