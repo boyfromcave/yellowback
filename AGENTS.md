@@ -38,10 +38,10 @@ yellowback-workspace/
 ├── lightwalletd-dd/ WORKING FORK of lightwalletd. branch `feature/yellowback-price-attest`, off `lightwalletd-legacy` (= 187a26765e)
 ├── ycash6/          WORKING FORK of the v6.20.0 node. branch `feature/yellowback`, off `ycash6-legacy` (= 040894344b) — the v6 port, see "Two node lines" below
 ├── librustzcash6/   WORKING FORK of the patched librustzcash. branch `feature/yellowback`, off `librustzcash6-legacy` (= ec525fae82)
-├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= b44ec121d); the overlay is ported on `vaults/kogany-compat`, see "The third node line" below
+├── kogany/          WORKING FORK of Zakura, THE THIRD NODE LINE. branch `upgrade/vault`, off `kogany-legacy` (= b44ec121d); the overlay was ported on `vaults/kogany-compat` until the W9 gate (retired 2026-11-05), see "The third node line" below
 ├── zakura-common-ycash/ WORKING FORK of zakura-core/common (the common fork, kogany plan K-2): the zakura-* librustzcash crates and
 │                    zakura-zcash-script behind kogany's `[patch.crates-io]`. branch `upgrade/vault`, off `zakura-common-ycash-legacy`
-│                    (= the W0-b base commit, repos.yaml); kogany work on `vaults/kogany-compat`
+│                    (= the W0-b base commit, repos.yaml); kogany work on `upgrade/vault` (`vaults/kogany-compat` retired 2026-11-05)
 │                    (the branches above are the branches of record; the line being built is `upgrade/vault` — rule 2)
 ├── yew/             THE MOBILE WALLET (YEW), its own repo, branch `upgrade/vault` — plan docs/plans/yellowback-wallet-plan.md
 ├── yolo/            THE POOL SOFTWARE (yolo in Rust), its own repo, branch `upgrade/vault` — plan docs/plans/role-pool-regtest-plan.md
@@ -118,10 +118,10 @@ Zakura (`ref/zakura`: zakura-core's consensus-compatible Zcash full node in Rust
 Zebra), pinned at zakura `main` @ `b44ec121d` (v1.8.0-rc1 lineage, 2026-11-02). The
 fork was taken at `2b062412c5` (past v1.7.0; the lead architect's choice, 2026-11-01); the
 pin moved to `b44ec121d` with the upstream sync `sync-zakura-20261102` (kogany plan §4.2 rule 7), which
-merged `2b062412c5..b44ec121d` (20 commits) into `vaults/kogany-compat`. `kogany-legacy` is that pin
+merged `2b062412c5..b44ec121d` (20 commits) into the then integration branch `vaults/kogany-compat`. `kogany-legacy` is that pin
 (**never commit to it**; only the rule-1 re-pin moves it) and `upgrade/vault` was cut from the first
-pin and carries nothing yet; the overlay is ported on `vaults/kogany-compat` (rule 2), so `make diff`
-(which reads `upgrade/vault`) shows no delta until the first wave-gate merge. It is a third codebase lineage
+pin; the overlay was ported on `vaults/kogany-compat` and reached `upgrade/vault` with the W9 wave-gate
+merge (kogany#1, #4), so `make diff` (which reads `upgrade/vault`) shows it; new work lands on `upgrade/vault` (rule 2). It is a third codebase lineage
 (Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
 `docs/mapping.md` gets a section for it before the first port, and the four-part check (rule 4)
 applies as on the other lines. Until it carries the overlay, the both-lines rules above (one
@@ -161,15 +161,13 @@ lightwalletd, YEW, yolo, chain-viz, x402-ycash), and the GitHub default branch o
 `repos.yaml` records it and the main trees check it out (since 2026-10-06), so `make status` and
 `make pull` track it and integration happens in the main trees. Agents work in `wt/<name>` on
 `up/<name>` off `upgrade/vault`; the coordinator merges.
-**The kogany work is on `vaults/kogany-compat`** (lead architect, 2026-11-01): `upgrade/vault` is
-stable, so every writable repository carries `vaults/kogany-compat` (cut from `upgrade/vault`;
-ycash-ops from `main`), where the kogany node, the Zakura library fork, `yewd` and every
-kogany-related change in the C++ lines and the clients land; it merges back into `upgrade/vault`
-only at the wave gates of `docs/plans/kogany/kogany-yellowback-plan.md` (§4.2 rule 0). Main trees
-stay on `upgrade/vault`; kogany agents work in `wt/kc-<name>` on `kc/<name>` off
-`vaults/kogany-compat`. The branch names are the same in `kogany` and in the common fork
-`zakura-common-ycash`: `upgrade/vault` is the branch of record (`repos.yaml`), `vaults/kogany-compat`
-the integration branch, `kc/<name>` the agent branches, and `kogany-legacy` /
+**The kogany work targets `upgrade/vault`** (lead architect, 2026-11-05): from 2026-11-01 it was
+integrated on `vaults/kogany-compat`, merged back at the wave gates, and the W9 gate merge (kogany#1, #4)
+left the two branches identical, so the hop is retired. Kogany-related PRs in every repository target
+`upgrade/vault` directly; agents may still work in `wt/kc-<name>` on `kc/<name>`, cut from
+`upgrade/vault`. `vaults/kogany-compat` is kept in every repository as a record — never commit to it.
+The branch names are the same in `kogany` and in the common fork `zakura-common-ycash`:
+`upgrade/vault` is the branch of record (`repos.yaml`) and the integration branch, and `kogany-legacy` /
 `zakura-common-ycash-legacy` the untouchable baselines (`kogany-baseline` is the tag the kogany CI
 audit measures the consensus delta against, kogany plan W0-d).
 **In-term claims are on `upgrade/vault`** (owner, 2026-10-09): `upgrade/vault` was fast-forwarded to

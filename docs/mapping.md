@@ -23,7 +23,7 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | Working fork (v6.20.0 node) | `ycash6` | branch `feature/yellowback` off `ycash6-legacy` (= `ref/ycash6`) — the v6 port, §19 | `040894344b` |
 | Zakura (zakura-core) | `ref/zakura` | `main` @ commit (2026-11-02; a Zcash full node in Rust, Zebra lineage; v1.8.0-rc1 lineage, pinned by commit by the lead architect's choice; first pinned at `2b062412c5`, re-pinned after the upstream sync of 2026-11-02, §24) | `b44ec121d` |
 | Working fork (patched librustzcash) | `librustzcash6` | branch `feature/yellowback` off `librustzcash6-legacy` (= `ref/librustzcash6`); zero-delta until the port needs it | `ec525fae82` |
-| Working fork (Zakura, the third node line) | `kogany` | branch `upgrade/vault` off `kogany-legacy` (= `ref/zakura`); kogany work on `vaults/kogany-compat`; crosswalk §24 | `b44ec121d` |
+| Working fork (Zakura, the third node line) | `kogany` | branch `upgrade/vault` off `kogany-legacy` (= `ref/zakura`); kogany work on `upgrade/vault` (`vaults/kogany-compat` until 2026-11-05, a record); crosswalk §24 | `b44ec121d` |
 | Working fork (zakura-core/common, the common fork) | `zakura-common-ycash` | branch `upgrade/vault` off `zakura-common-ycash-legacy` (the W0-b base; no `ref/` checkout); kogany pins it by rev in `[patch.crates-io]`, §24 | TODO (W0-b) |
 | yolo pool (Perl, yecdev) | `ref/yolo` | `main` @ commit (2020-12-17; no tag) — reference for the Rust `yolo/`, §17 | `c9c155c6` |
 
