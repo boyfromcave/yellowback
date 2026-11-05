@@ -107,9 +107,9 @@ as the backend (KF-68); the kogany-backend runs are S5's.
 | S5 | parity gate: both contract suites and the 48 wallet scripts green on kogany + sidecar; three-way W9 matrix | [~] `kc/yewd-s5` (yew, ycash6): round 18 (2026-11-04, kogany `9210a87fd`, run alone; rounds 16/17 void, port collisions) = 47/49, 47/49 pair column, 49/49, 48/49 pair-mixed (`yew/yewd/qa/s5_parity.py`). The mixed column reached a clean round; the two pair-column rows are explained by a harness fix merged after the run began (s5-k19, ycash6 `6d1db1873`) and by machine hygiene (a stale regtest node), not by koganyd; a confirming round 19 on the merged harness is planned once the stale nodes are gone. Follow-up PR kogany#4 (s5-k16/k17: F-S5-21, F-S5-22) is the last code to merge before the K-19 sign-off | round 18: 47/49 pair, 49/49 pair-mixed |
 | V5-spec | K-21: dormant ZIP-244 vault-message section and vectors from ycash6's dormant v5 code (no consensus change) | [x] merged 2026-11-02 (workspace `e6e3eae`, ycash6 `e5dac3a30`): `docs/spec/vault-signing-message-v5.md` | zip244.py vs 10 upstream vectors; vault_v5_dormant_tests 137 assertions |
 
-**Branches.** Integration branch `vaults/kogany-compat` in `kogany`, in the common fork (K-2; on GitHub
+**Branches.** Integration branch `upgrade/vault` since 2026-11-05 (§4.2 rule 0; `vaults/kogany-compat` until the W9 gate, now a record) in `kogany`, in the common fork (K-2; on GitHub
 since 2026-11-02, KF-78) and in every repository the kogany work touches (§4.2 rule 0); agents work in
-`wt/kc-<name>` on `kc/<name>` off `vaults/kogany-compat`; the coordinator merges. No commit to
+`wt/kc-<name>` on `kc/<name>` off `upgrade/vault`; the coordinator merges. No commit to
 `kogany-legacy` or the fork's `-legacy` baseline, ever. Integration heads at this update: kogany
 `18650e75c`, fork `e5515523` (kogany pins `1e6d6aa4`), ycash6 `fb22e4528`, ycash-dd `b74546671`, yew
 `da37a53`, lightwalletd-dd `384e112`, chain-viz `a6fe219`, hawkeye `114b5ae`, x402-ycash `f0ac37a`, yolo
@@ -997,20 +997,14 @@ more than 25 % stops for a findings row and a coordinator decision before it mer
 
 ### 4.2 Working rules
 
-0. **Where the work lives: `vaults/kogany-compat`** (lead architect, 2026-11-01). `upgrade/vault`
-   is stable and must stay so. Every writable repository in the workspace carries an integration
-   branch `vaults/kogany-compat`, cut from `upgrade/vault` on 2026-11-01 (ycash-ops from `main`),
-   and all kogany work — the node, the Zakura library fork, `yewd`, the mixed-line harness in the
-   C++ lines' `qa/`, client changes, this plan's status block and the mapping §24 rows — lands
-   there. It merges back into `upgrade/vault` only at a wave gate the plan names, by a reviewed
-   PR per repository, never the other way round except to refresh the branch (`upgrade/vault` →
-   `vaults/kogany-compat` merges are routine and may be done by the coordinator). The main trees
-   stay on `upgrade/vault`; agents work in `wt/kc-<name>` worktrees on `kc/<name>` off
-   `vaults/kogany-compat`, and the coordinator merges into `vaults/kogany-compat`. `repos.yaml`
-   keeps `upgrade/vault` as the branch of record. (The name was first proposed as
-   `dev/kogany-compat-vaults`; it was renamed because `boyfromcave/ycash6` holds a stale `dev`
-   branch, and git cannot hold `dev` and `dev/…` in one repository — the `dev/` trap AGENTS.md
-   records.)
+0. **Where the work lives: `upgrade/vault`** (lead architect, 2026-11-05; KF-101). From 2026-11-01
+   to the W9 wave gate all kogany work landed on an integration branch `vaults/kogany-compat` in every
+   writable repository and merged into `upgrade/vault` only at the wave gates; the W9 gate merge
+   (kogany#1, #4) left the branches identical, and the hop is retired. Kogany-related PRs in every
+   repository now target `upgrade/vault` directly, by reviewed PR; agents work in `wt/kc-<name>`
+   worktrees on `kc/<name>` cut from `upgrade/vault`. `vaults/kogany-compat` stays in every
+   repository as a record and is never committed to again. `repos.yaml` keeps `upgrade/vault` as
+   the branch of record.
 
 1. **Where code goes.** New behaviour goes in new crates: `kogany-pq`, `kogany-vault`,
    `kogany-yellowback`, `kogany-rpc`. They use the `kogany-` prefix so `git grep` separates ours
@@ -1452,6 +1446,7 @@ process or environment finding, or a defect with no kogany-side trap. Commits ar
 | KF-98 | 2026-11-02 | koganyd image | The entrypoint's `ZAKURA_STATE__CACHE_DIR` / `ZAKURA_RPC__COOKIE_DIR` defaults (`~/.cache/zakura`) override koganyd's own default and a config file's `cache_dir` | `~/.cache/kogany` when the image ships koganyd | `0f7daa742` | M24-104 |
 | KF-99 | 2026-11-02 | koganyd image (ycash-infra) | The chart gave koganyd Zcash testnet's P2P port 18233, which koganyd refuses | Ycash regtest's 18344 (ycash-infra `50f745e`) | ycash-infra `01f4b58` | M24-105 |
 | KF-100 | 2026-11-02 | re-pin (coordinator; docs) | AGENTS.md named the off-workflow directory `.github/workflows-disabled/`; kogany's is `.github/workflows-off/` | Corrected with the re-pin's AGENTS.md change; Actions recorded as on for the kogany workflows since 2026-11-02 | workspace `kc/repin-docs` | none |
+| KF-101 | 2026-11-05 | W9 gate (lead architect) | The W9 wave-gate merge (kogany#1, #4) left `vaults/kogany-compat` identical to `upgrade/vault`; the hop no longer isolates anything | Hop retired: kogany-related PRs target `upgrade/vault` directly (`kc/<name>` cut from it); `vaults/kogany-compat` kept everywhere as a record, never committed to (§4.2 rule 0, AGENTS.md rule 2) | workspace `up/retire-compat` | none |
 
 **Shared-workspace hygiene (2026-11-02).** Up to ten agents share one machine, one scratchpad and
 one Cargo target directory for the upstream crates; three lessons came from it.
