@@ -1,0 +1,34 @@
+release:
+  version: 6.22.0-beta1
+  rpcversion: 8
+  workspace: fc182ffe325e7c047a92530b45e0aeea88d85fa0
+testnet:
+  fast-vault-height: 510400
+  fast-set-id: none
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: b40ed161617e2811a1f226ce15f10a6e2e495273  # ycash6#85 head; replace with its merge commit before tagging
+  tag: v6.22.0-beta1
+ycash-dd:
+  commit: 7b197225406d3fa012de23ce216c504f13147a18
+  tag: vault-params/v6.22.0-beta1
+librustzcash6:
+  commit: d384b90d47aca1c70f972089841e24cd0211937a
+lightwalletd-dd:
+  commit: 93aec31b8c2a87a7cfe5aaa9b7dfe5ca01c072e1
+yecwallet-dd:
+  commit: 679e832f53c4b979700a83ef0de7fa61e9c5cbb2
+yew:
+  commit: 7a4a95c150fbacda1152b68c44f197a939fd9e2d
+yolo:
+  commit: fcb5a9e24d1494ed75ca7bad6a2b5d7336dcaab5
+chain-viz:
+  commit: 3c54bf2caac2710fce3d6416d744f75eff64fd71
+x402-ycash:
+  commit: cdfdfd84c4c022b9a09aef47d85984a4484f00fb
+hawkeye:
+  commit: 4f34fdf2a574e3fce28fb42d7b4dcb1569f3e208
+wyec:
+  commit: e9ea41aa185c348c4f6c72085b18bff8eda49bb5
