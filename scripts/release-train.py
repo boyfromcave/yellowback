@@ -94,7 +94,7 @@ def parse_flat(text, where):
         line = raw.rstrip()
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        m = re.match(r"^([A-Za-z0-9][A-Za-z0-9_.-]*):\s*(#.*)?$", line)
+        m = re.match(r"^([A-Za-z0-9][A-Za-z0-9_./-]*):\s*(#.*)?$", line)
         if m:
             section = m.group(1)
             if section in out:
