@@ -37,3 +37,6 @@ __pycache__/
 
 # git worktrees of the forks, used by parallel agent sessions (created with `git -C ycash-dd worktree add ../wt/<name>`).
 /wt/
+
+# The RPC docs site, built by `make rpc-docs` (published by .github/workflows/rpc-docs.yml).
+/rpc-docs/_site/
