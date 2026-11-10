@@ -3,17 +3,120 @@
   "domain": "rpc.ycash.team",
   "repository": "https://github.com/boyfromcave/yellowback/tree/upgrade/vault/rpc-docs",
   "channels": {},
-  "sections": [
+  "receive": [
     {
-      "id": "post-quantum",
-      "title": "Post-quantum",
-      "intro": "Post-quantum keys and addresses (SLH-DSA-SHA2-128s and FN-DSA-512): the wallet RPCs that create, import and recognise them, and the vault and YED RPCs that take a post-quantum owner or holder.",
-      "methods": [
-        "getnewaddress", "z_importpqkey", "validateaddress", "vault_getnewowner", "yed_getnewaddress",
-        "vault_lock", "vault_list", "vault_release", "vault_ownerspend",
-        "yed_mint", "yed_send", "yed_estimatesend", "yed_listtokens"
+      "id": "yec",
+      "coin": "YEC",
+      "lead": "These addresses receive the coin, YEC.",
+      "types": [
+        {
+          "id": "yec-p2pkh",
+          "name": "Transparent, ECC",
+          "support": "supported",
+          "summary": "A traditional P2PKH address. A payment to it is visible on chain. Use it where a shielded address cannot go.",
+          "use": {
+            "method": "z_getaddressforaccount",
+            "steps": [
+              {"method": "z_getnewaccount", "cli": "ycash-cli z_getnewaccount"},
+              {"method": "z_getaddressforaccount", "cli": "ycash-cli z_getaddressforaccount <account> '[\"p2pkh\"]'"}
+            ]
+          },
+          "deprecated": {
+            "method": "getnewaddress",
+            "steps": [{"method": "getnewaddress", "cli": "ycash-cli getnewaddress"}],
+            "why": "Zcash replaced getnewaddress with unified-address accounts. Ycash still answers it, unless the node is started with -allowdeprecated=none, so software built against the older API keeps working. The address is the same transparent type. The first argument, if you pass one, must be the empty string."
+          }
+        },
+        {
+          "id": "yec-sapling",
+          "name": "Sapling",
+          "support": "supported",
+          "summary": "A shielded Sapling address. Ask for the sapling receiver on its own. Sprout addresses are refused once Canopy is active.",
+          "use": {
+            "method": "z_getaddressforaccount",
+            "steps": [
+              {"method": "z_getnewaccount", "cli": "ycash-cli z_getnewaccount"},
+              {"method": "z_getaddressforaccount", "cli": "ycash-cli z_getaddressforaccount <account> '[\"sapling\"]'"}
+            ]
+          },
+          "deprecated": {
+            "method": "z_getnewaddress",
+            "steps": [{"method": "z_getnewaddress", "cli": "ycash-cli z_getnewaddress sapling"}],
+            "why": "Zcash replaced z_getnewaddress with the same unified-address accounts. With no argument it happens to return a Sapling address, and the node says not to rely on that. Ycash still answers it unless -allowdeprecated=none."
+          }
+        },
+        {
+          "id": "yec-pq",
+          "name": "Post-quantum",
+          "support": "supported",
+          "summary": "Receives plain YEC at a 53-character address: sq… on mainnet, tq… on testnet, rq… on regtest. sendtoaddress and sendmany spend it. No z_* call pays or spends it. The vault upgrade must be active at the next block, and the wallet must be unlocked.",
+          "use": {
+            "method": "getnewaddress",
+            "steps": [
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\""},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\""}
+            ],
+            "note": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s. Unified addresses have no post-quantum receiver, so this is the supported call even though getnewaddress is on the deprecated-RPC list. The first argument is the empty string."
+          }
+        }
       ]
     },
+    {
+      "id": "yed",
+      "coin": "YED",
+      "lead": "These addresses hold YED. Yellowback is the system; YED is the unit. The node must have the vault upgrade and a YED attestor set configured.",
+      "types": [
+        {
+          "id": "yed-default",
+          "name": "Default holder",
+          "support": "supported",
+          "summary": "Follows the holder policy: a transparent P2PKH address until Falcon is active, then a post-quantum FN-DSA-512 address.",
+          "use": {
+            "method": "yed_getnewaddress",
+            "steps": [{"method": "yed_getnewaddress", "cli": "ycash-cli yed_getnewaddress"}]
+          }
+        },
+        {
+          "id": "yed-p2pkh",
+          "name": "Transparent, ECC",
+          "support": "supported",
+          "summary": "A P2PKH holder key from the wallet keypool, recorded in the address book. Use it when the holder has to be a traditional ECC key.",
+          "use": {
+            "method": "yed_getnewaddress",
+            "steps": [{"method": "yed_getnewaddress", "cli": "ycash-cli yed_getnewaddress \"p2pkh\""}]
+          }
+        },
+        {
+          "id": "yed-pq",
+          "name": "Post-quantum",
+          "support": "supported",
+          "summary": "A 53-character post-quantum holder key. FN-DSA-512 once Falcon is active, SLH-DSA-SHA2-128s before that.",
+          "use": {
+            "method": "yed_getnewaddress",
+            "steps": [{"method": "yed_getnewaddress", "cli": "ycash-cli yed_getnewaddress \"pq\" \"savings\""}],
+            "note": "The second argument is an address-book label. It is stored with the address in wallet.dat."
+          }
+        }
+      ]
+    }
+  ],
+  "otherKeys": [
+    {
+      "id": "vault-owner",
+      "name": "Vault owner",
+      "support": "supported",
+      "summary": "The post-quantum key that owns a vault. It is not an address for receiving YEC or YED. Pass the result to vault_lock, or leave the owner out and vault_lock draws one itself.",
+      "use": {
+        "method": "vault_getnewowner",
+        "steps": [
+          {"method": "vault_getnewowner", "cli": "ycash-cli vault_getnewowner"},
+          {"method": "vault_getnewowner", "cli": "ycash-cli vault_getnewowner 2"}
+        ],
+        "note": "Scheme 1, the default, is SLH-DSA-SHA2-128s. Scheme 2 is FN-DSA-512, and only once Falcon is active. yed_getnewaddress \"pqowner\" derives the same kind of key and does not put it in the address book."
+      }
+    }
+  ],
+  "sections": [
     {
       "id": "vault",
       "title": "Vault primitive",
