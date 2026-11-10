@@ -1,0 +1,60 @@
+z_sendmany "fromaddress" [{"address":... ,"amount":...},...] ( minconf ) ( fee ) ( privacyPolicy )
+
+Send a transaction with multiple recipients. Amounts are decimal numbers with at
+most 8 digits of precision. Change generated from one or more transparent
+addresses flows to a new transparent address, while change generated from a
+legacy Sapling address returns to itself. When sending from a unified address,
+change is returned to the internal-only address for the associated unified account.
+When spending coinbase UTXOs, only shielded recipients are permitted and change is not allowed;
+the entire value of the coinbase UTXO(s) must be consumed.
+
+Arguments:
+1. "fromaddress"         (string, required) The transparent or shielded address to send the funds from.
+                           The following special strings are also accepted:
+                               - "ANY_TADDR": Select non-coinbase UTXOs from any transparent addresses belonging to the wallet.
+                                              Use z_shieldcoinbase to shield coinbase UTXOs from multiple transparent addresses.
+                           If a unified address is provided for this argument, the TXOs to be spent will be selected from those
+                           associated with the account corresponding to that unified address, from value pools corresponding
+                           to the receivers included in the UA.
+2. "amounts"             (array, required) An array of json objects representing the amounts to send.
+    [{
+      "address":address  (string, required) The address is a taddr, zaddr, or Unified Address
+      "amount":amount    (numeric, required) The numeric amount in YEC is the value
+      "memo":memo        (string, optional) If the address is a zaddr, raw data represented in hexadecimal string format. If
+                           the output is being sent to a transparent address, it’s an error to include this field.
+    }, ... ]
+3. minconf               (numeric, optional, default=10) Only use funds confirmed at least this many times.
+4. fee                   (numeric, optional, default=null) The fee amount in YEC to attach to this transaction. The default behavior
+                         is the fee for the active -feepolicy: the Ycash per-Sapling-output
+                         fee (peroutput, the default), or ZIP 317 (zip317).
+5. privacyPolicy         (string, optional, default="LegacyCompat") Policy for what information leakage is acceptable.
+                         One of the following strings:
+                               - "FullPrivacy": Only allow fully-shielded transactions (involving a single shielded value pool).
+                               - "LegacyCompat": If the transaction involves any Unified Addresses, this is equivalent to
+                                 "FullPrivacy". Otherwise, this is equivalent to "AllowFullyTransparent".
+                               - "AllowRevealedAmounts": Allow funds to cross between shielded value pools, revealing the amount
+                                 that crosses pools.
+                               - "AllowRevealedRecipients": Allow transparent recipients. This also implies revealing
+                                 information described under "AllowRevealedAmounts".
+                               - "AllowRevealedSenders": Allow transparent funds to be spent, revealing the sending
+                                 addresses and amounts. This implies revealing information described under "AllowRevealedAmounts".
+                               - "AllowFullyTransparent": Allow transaction to both spend transparent funds and have
+                                 transparent recipients. This implies revealing information described under "AllowRevealedSenders"
+                                 and "AllowRevealedRecipients".
+                               - "AllowLinkingAccountAddresses": Allow selecting transparent coins from the full account,
+                                 rather than just the funds sent to the transparent receiver in the provided Unified Address.
+                                 This implies revealing information described under "AllowRevealedSenders".
+                               - "NoPrivacy": Allow the transaction to reveal any information necessary to create it.
+                                 This implies revealing information described under "AllowFullyTransparent" and
+                                 "AllowLinkingAccountAddresses".
+
+Result:
+"operationid"          (string) An operationid to pass to z_getoperationstatus to get the result of the operation.
+
+Examples:
+> ycash-cli z_sendmany "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" '[{"address": "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq", "amount": 5.0}]'
+> ycash-cli z_sendmany "ANY_TADDR" '[{"address": "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", "amount": 2.0}]'
+> ycash-cli z_sendmany "ANY_TADDR" '[{"address": "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", "amount": 2.0}]' 1 null 'AllowFullyTransparent'
+> ycash-cli z_sendmany "ANY_TADDR" '[{"address": "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", "amount": 2.0}]' 1 0.00001000
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_sendmany", "params": ["s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", [{"address": "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq", "amount": 5.0}]] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,26 @@
+getcompactblock "hash_or_height"
+
+Returns the compact representation of a block as a hex-encoded
+`cash.z.wallet.sdk.rpc.CompactBlock` protobuf (compact_formats.proto),
+ready for consumption by a lightwalletd-style backend. The embedded
+chainMetadata carries the Sapling and Orchard commitment tree sizes.
+
+WARNING: getcompactblock is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -compactblocks
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+compactblocks=1
+
+Arguments:
+1. "hash_or_height"     (string, required) The block hash or height
+
+Result:
+"data"                  (string) the hex-encoded serialized CompactBlock
+
+Examples:
+> ycash-cli getcompactblock 12800
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getcompactblock", "params": ["00000000febc373a1da2bd9f887b105ad79ddc26ac26c2b28652d64e5207c5b5"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

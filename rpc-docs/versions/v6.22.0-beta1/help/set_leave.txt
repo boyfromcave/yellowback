@@ -1,0 +1,10 @@
+set_leave "setid" ( "memberkey" )
+
+Leave a set (owner 2026-10-11, the bond exit delay): broadcast the SET_REMOVE of an ACTIVE member key of this
+wallet (default: the first one), signed by that key alone, without burn. The member is REMOVED from the block it
+confirms in, and its bond becomes spendable the set's maturity later (bad-vault-bond-locked before).
+
+Result: {"txid", "memberkey", "exitheight" (the next block), "bondspendableat"}
+> ycash-cli set_leave "setid"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_leave", "params": ["setid"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

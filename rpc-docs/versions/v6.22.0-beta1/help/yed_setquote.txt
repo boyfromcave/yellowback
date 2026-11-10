@@ -1,0 +1,4 @@
+yed_setquote priceMicroUsd sourceMask
+
+Store the miner's quote (0 clears it) with receivedAt = now (MINER-1). Allowed while unhealthy.
+

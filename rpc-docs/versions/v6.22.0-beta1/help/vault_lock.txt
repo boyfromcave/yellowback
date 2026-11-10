@@ -1,0 +1,14 @@
+vault_lock {params}
+
+Lock amount in a vault V (plan §15.3) funded by this wallet, and broadcast it. Both sets must be confirmed.
+
+Arguments:
+1. params (object, required) {"tag": "4 chars or 8 hex", "setid", "cancelsetid" (default setid),
+        "delay": 1..65535, "ownerheight": n, "appheight": n (default 0 = no APP branch; only on a tag a module governs), "amount",
+        "owner": pqkeyid (66 hex, scheme || keyhash), a PQ address or {"scheme": n, "keyhash": "64 hex"}
+        (default: a new SLH-DSA key of this wallet, as vault_getnewowner)}
+
+Result: {"txid", "vout", "outpoint", "script", "owner"}
+> ycash-cli vault_lock '{"tag":"TEST","setid":"..","delay":10,"ownerheight":1000,"amount":5}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_lock", "params": [{...}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

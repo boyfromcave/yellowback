@@ -1,0 +1,7 @@
+vault_list ( {"tag":"..","setid":"..","owner":"..","kind":"vault|intent","mine":true} )
+
+The unspent vault (V) and intent (I) outputs confirmed since activation, from the vault database's index,
+optionally filtered by tag, setid (matches setid or cancelsetid), owner (pqkeyid or PQ address), kind, or owner key in this wallet.
+> ycash-cli vault_list '{"setid":".."}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_list", "params": [{}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,27 @@
+listreceivedbyaccount ( minconf includeempty includeWatchonly )
+
+listreceivedbyaccount is DEPRECATED and will be removed in a future release.
+
+
+List balances by account. Ycash emulates a single default account, so the
+result is a one-element array describing the wallet's total transparent receipts.
+
+Arguments:
+1. minconf          (numeric, optional, default=1) Minimum confirmations.
+2. includeempty     (bool, optional, default=false) Included for compatibility; ignored.
+3. includeWatchonly (bool, optional, default=false) Included for compatibility; ignored.
+
+Result:
+[
+  {
+    "account":"accountname",  (string) the account name (always "")
+    "amount": x.xxx,           (numeric) total amount received
+    "amountZat": xxxx          (numeric) the amount in yoshis
+    "confirmations": n         (numeric) confirmations of the most recent contributing transaction
+  }
+]
+
+Examples:
+> ycash-cli listreceivedbyaccount 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "listreceivedbyaccount", "params": [6, true, true] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,17 @@
+yed_claim "vaultTxid" ( "to" "bundleHex" wait minOutZat maxBurnCents )
+
+Claim somebody's underwater vault (yed_listclaimable): the claim-path spend at or past claimHeight, burning the
+vault's debt from this wallet's YED, paying the enforcement fee from the collateral and the rest to "to".
+Refused unless an enforcing miner would accept it (mempool-check-failed:<verdict>). v3: the carrier step first
+(selector = the vault outpoint), the attestor fee when armed, and the RED-5 residual to the vault owner when due;
+claimPath is the RED-4 clause that opened the claim ("a" combined price, "b" the emergency notice).
+Refused (vault-spend-pending) while a spend of the vault is already in the mempool, before the carrier step.
+
+Arguments: as yed_redeem, then "bundleHex" and wait as yed_mint, then minOutZat (numeric, optional, default 0 =
+no bound): refuse (claim-out-below-min) before anything is signed when the collateral reaching "to" (the
+collateral less the enforcement fee, the attestor fee and the RED-5 residual) would be below this many zatoshi,
+then maxBurnCents (numeric, optional, default 0 = no bound): refuse (claim-burn-above-max) before anything is
+signed when the YED the claim burns (the vault's debt plus any sub-dollar remainder) would exceed this many cents.
+Result: yed_redeem's fields plus { "carrierTxid", "pending", "refHeight", "xClaim", "aClaim", "pClaim", "pEmerg", "claimPath",
+        "bundleSeqs", "attestFeeZat", "attestPayee", "residualZat" }
+

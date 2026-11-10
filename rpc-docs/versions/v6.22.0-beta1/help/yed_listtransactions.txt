@@ -1,0 +1,12 @@
+yed_listtransactions ( count skip )
+
+This wallet's Yellowback history from the index, newest first: type is mint, send, receive, burn, redeem,
+claim (this wallet claimed, incl. its own vault), claimed (an own vault was claimed), claim_release / claim_cancel
+(the intent of this wallet's claim released / cancelled), claim_released / claim_cancelled (the same, on an own
+vault someone else claimed), sweep (an own vault swept), carrier (an own carrier its main transaction has not
+completed: pending, lapsed or swept; plan A6), plus
+own transactions with a payload that expired unmined ("expired": true, verdict "expired", typed by the payload:
+mint, send, redeem, claim, register, notice, equivocation, revive, cancel). time is the block time (UTC seconds;
+null without a block). A two-step action's rows share carrierTxid and mainTxid ("" on other rows); carrierOutcome
+is pending, completed (the main transaction spent the carrier), lapsed (its window passed) or swept.
+

@@ -1,0 +1,28 @@
+z_getpaymentdisclosure "txid" js_index output_index ("message") 
+
+Generate a payment disclosure for a given joinsplit output. This only supports Sprout.
+
+EXPERIMENTAL, DEPRECATED FEATURE
+
+WARNING: z_getpaymentdisclosure is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -paymentdisclosure
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+paymentdisclosure=1
+
+Arguments:
+1. "txid"            (string, required) 
+2. js_index          (numeric, required) 
+3. output_index      (numeric, required) 
+4. "message"         (string, optional) 
+
+Result:
+"paymentdisclosure"  (string) Hex data string, with "zpd:" prefix.
+
+Examples:
+> ycash-cli z_getpaymentdisclosure 96f12882450429324d5f3b48630e3168220e49ab7b0f066e5c2935a6b88bb0f2 0 0 "refund"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getpaymentdisclosure", "params": ["96f12882450429324d5f3b48630e3168220e49ab7b0f066e5c2935a6b88bb0f2", 0, 0, "refund"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

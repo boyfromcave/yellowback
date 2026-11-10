@@ -1,0 +1,21 @@
+getreceivedbyaccount "account" ( minconf )
+
+getreceivedbyaccount is DEPRECATED and will be removed in a future release.
+
+
+Returns the total amount received by addresses in the account. For the
+default account "" this sums all transparent receipts across the wallet.
+Any non-empty account returns 0.
+
+Arguments:
+1. "account"  (string, required) Account name. Only "" returns nonzero results.
+2. minconf    (numeric, optional, default=1) Minimum confirmations.
+
+Result:
+amount   (numeric) The total amount in YEC received for this account.
+
+Examples:
+> ycash-cli getreceivedbyaccount ""
+> ycash-cli getreceivedbyaccount "" 6
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getreceivedbyaccount", "params": ["", 6] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

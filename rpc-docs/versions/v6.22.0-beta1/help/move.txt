@@ -1,0 +1,10 @@
+move "fromaccount" "toaccount" amount ( minconf "comment" )
+
+move is DEPRECATED and will be removed in a future release.
+
+
+Move a specified amount between accounts in the wallet. Ycash does not
+maintain separate per-account balances (the accounts API is emulated as a
+single default bucket), so this RPC has no honest implementation and
+always returns an error. Use sendtoaddress for on-chain transfers.
+

@@ -1,0 +1,6 @@
+set_list
+
+Every signer set, with its parameters and status at the next block (no member list; see set_getinfo).
+> ycash-cli set_list 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_list", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

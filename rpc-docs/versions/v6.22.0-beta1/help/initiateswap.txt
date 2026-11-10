@@ -1,0 +1,28 @@
+initiateswap "fundingaddress" "recipientaddress" amount locktime ( "secret" )
+
+Initiate an atomic swap by creating an HTLC contract.
+Locks funds claimable by the recipient with the secret, or refundable
+by the initiator after the locktime expires.
+
+Arguments:
+1. "fundingaddress"    (string, required) Existing wallet address with sufficient balance
+2. "recipientaddress"  (string, required) The Ycash address of the recipient
+3. amount              (numeric, required) The amount in YEC to lock
+4. locktime            (numeric, required) Absolute locktime (block height < 500000000 or Unix timestamp >= 500000000)
+5. "secret"            (string, optional) 32-byte secret in hex (generated if not provided)
+
+Result:
+{
+  "contract": "hex",
+  "contractP2SH": "address",
+  "contractTxid": "hex",
+  "contractVout": n,
+  "secret": "hex",
+  "secretHash": "hex",
+  "refundLocktime": n
+}
+
+Examples:
+> ycash-cli initiateswap "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" 1.0 1500000
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "initiateswap", "params": ["s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", 1.0, 1500000] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

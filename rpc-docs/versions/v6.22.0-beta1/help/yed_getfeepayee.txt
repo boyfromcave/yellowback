@@ -1,0 +1,6 @@
+yed_getfeepayee refHeight ( "selectorHex" )
+
+E(refHeight) (FEE-2) and the FEE-W default choice for the selector. The fee itself is a dollar amount of the
+vault's debt at its mint price (FEE-1', rpcversion 8): yed_estimatefee / yed_estimatecollateral quote a mint's,
+yed_estimateredeem and yed_listclaimable a spend's.
+

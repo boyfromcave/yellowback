@@ -1,0 +1,20 @@
+getmempoolinfo
+
+Returns details on the active state of the TX memory pool.
+
+Result:
+{
+  "size": xxxxx                (numeric) Current tx count
+  "bytes": xxxxx               (numeric) Sum of all tx sizes
+  "usage": xxxxx               (numeric) Total memory usage for the mempool
+  "fullyNotified": true|false  (boolean, regtest only)
+                               Whether the node has finished notifying all
+                               listeners/tests about every transaction currently
+                               in the mempool. This key is returned only when the
+                               node is running in regtest.
+}
+
+Examples:
+> ycash-cli getmempoolinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getmempoolinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

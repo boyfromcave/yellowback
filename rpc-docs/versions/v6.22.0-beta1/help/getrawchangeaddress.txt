@@ -1,0 +1,17 @@
+getrawchangeaddress
+
+getrawchangeaddress is DEPRECATED and will be removed in a future release.
+
+
+Returns a new transparent Ycash address for receiving change.
+This is for use with raw transactions, NOT normal use. Additionally,
+the resulting address does not correspond to the "change" HD derivation
+path.
+
+Result:
+"address"    (string) The transparent address
+
+Examples:
+> ycash-cli getrawchangeaddress 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getrawchangeaddress", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

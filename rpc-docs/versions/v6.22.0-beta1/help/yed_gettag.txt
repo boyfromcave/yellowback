@@ -1,0 +1,4 @@
+yed_gettag "height|blockhash"
+
+Decode the coinbase tag (TAG-1..5) of a stored block; all digits => a height on the active chain. Allowed while unhealthy.
+

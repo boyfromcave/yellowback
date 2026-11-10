@@ -1,0 +1,262 @@
+== Addressindex ==
+getaddressbalance {"addresses": ["taddr", ...]}
+getaddressdeltas {"addresses": ["taddr", ...], ("start": n), ("end": n), ("chainInfo": true|false)}
+getaddressfirstlastheight "address"
+getaddressmempool {"addresses": ["taddr", ...]}
+getaddresstxids {"addresses": ["taddr", ...], ("start": n), ("end": n)}
+getaddressutxos {"addresses": ["taddr", ...], ("chainInfo": true|false)}
+
+== Atomicswap ==
+auditswap "contract" "contracttxid" vout
+claimswap "contract" "contracttxid" vout "secret" ( "recipientaddress" )
+deleteswap "swapid"
+getswapsecret "swapid"
+initiateswap "fundingaddress" "recipientaddress" amount locktime ( "secret" )
+initiateswapfromhash "fundingaddress" "recipientaddress" amount locktime "secrethash"
+listatomicswaps ( "status" )
+monitorswap "swapid"
+participateswap "contract" "contracttxid" vout "counterpartyaddress" ( "label" )
+refundswap "contract" "contracttxid" vout ( "refundaddress" )
+
+== Blockchain ==
+exportchain ( "filename" )
+getbestblockhash
+getblock "hash|height" ( verbosity )
+getblockchaininfo
+getblockcount
+getblockdeltas "blockhash"
+getblockhash index
+getblockhashes high low ( {"noOrphans": true|false, "logicalTimes": true|false} )
+getblockheader "hash" ( verbose )
+getchaintips
+getcompactblock "hash_or_height"
+getcompactblockrange start count
+getdifficulty
+getexportchainstatus
+getmempoolinfo
+getrawmempool ( verbose )
+getspentinfo {"txid": "txidhex", "index": n}
+gettxout "txid" n ( includemempool )
+gettxoutproof ["txid",...] ( blockhash )
+gettxoutsetinfo
+verifychain ( checklevel numblocks )
+verifytxoutproof "proof"
+z_getsubtreesbyindex "pool" start_index ( limit )
+z_gettreestate "hash|height"
+
+== Control ==
+getexperimentalfeatures
+getinfo
+getmemoryinfo
+help ( "command" )
+setlogfilter "directives"
+stop
+
+== Disclosure ==
+z_getpaymentdisclosure "txid" js_index output_index ("message") 
+z_validatepaymentdisclosure "paymentdisclosure"
+
+== Generating ==
+generate numblocks
+getgenerate
+setgenerate generate ( genproclimit )
+
+== Mining ==
+getblocksubsidy height
+getblocktemplate ( "jsonrequestobject" )
+getlocalsolps
+getmininginfo
+getnetworkhashps ( blocks height )
+getnetworksolps ( blocks height )
+prioritisetransaction <txid> <priority delta> <fee delta>
+submitblock "hexdata" ( "jsonparametersobject" )
+
+== Network ==
+addnode "node" "add|remove|onetry"
+clearbanned
+disconnectnode "node" 
+getaddednodeinfo dns ( "node" )
+getconnectioncount
+getdeprecationinfo
+getnettotals
+getnetworkinfo
+getpeerinfo
+listbanned
+ping
+setban "ip(/netmask)" "add|remove" (bantime) (absolute)
+
+== Rawtransactions ==
+createrawtransaction [{"txid":"id","vout":n},...] {"address":amount,...} ( locktime ) ( expiryheight )
+decoderawtransaction "hexstring"
+decodescript "hex"
+fundrawtransaction "hexstring" includeWatching
+getrawtransaction "txid" ( verbose "blockhash" )
+sendrawtransaction "hexstring" ( allowhighfees allowyedburn )
+signrawtransaction "hexstring" ( [{"txid":"id","vout":n,"scriptPubKey":"hex","redeemScript":"hex"},...] ["privatekey1",...] sighashtype )
+
+== Util ==
+createmultisig nrequired ["key",...]
+validateaddress "ycashaddress"
+verifymessage "ycashaddress" "signature" "message"
+z_validateaddress "address"
+
+== Vault ==
+set_acknowledgerestore
+set_buildact "type" {params}
+set_create {params}
+set_equivocation {proof}
+set_getinfo "setid" ( height )
+set_heartbeat "setid" ( "memberkey" )
+set_importsigned [{"setid", "prevout", "role", "sighash"}, ...]
+set_join "setid" bondamount bondlocktime ( "memberkey" )
+set_leave "setid" ( "memberkey" )
+set_list
+set_listsigned
+set_sendact "hex" ( {"dryrun":bool, "allowinputs":["txid:n",...], "allowoutflow":n} )
+set_signact "hex" ( "setid" )
+set_signcancel "hex" ( {"acknowledgerestore": true} )
+set_signunlock "hex" ( {"acknowledgerestore": true} )
+vault_app "outpoint" ( [{"address"|"script": .., "amount": x}, ...] )
+vault_buildcancel "intentoutpoint" ( rebuild )
+vault_buildunlock "outpoint" [{"address"|"script": .., "amount": x}, ...] ( rebuild )
+vault_decodescript "hex"
+vault_getinfo
+vault_getnewowner ( scheme )
+vault_list ( {"tag":"..","setid":"..","owner":"..","kind":"vault|intent","mine":true} )
+vault_lock {params}
+vault_ownerspend "outpoint" "address"
+vault_refee "hex"
+vault_release "intentoutpoint" ( "address"|"script" )
+vault_send "hex" ( {"dryrun":bool, "allowinputs":["txid:n",...], "allowoutflow":n} )
+
+== Wallet-legacy ==
+getaccount "ycashaddress"
+getaccountaddress "account"
+getaddressesbyaccount "account"
+getreceivedbyaccount "account" ( minconf )
+listaccounts ( minconf includeWatchonly )
+listreceivedbyaccount ( minconf includeempty includeWatchonly )
+move "fromaccount" "toaccount" amount ( minconf "comment" )
+sendfrom "fromaccount" "toycashaddress" amount ( minconf "comment" "comment-to" )
+setaccount "ycashaddress" "account"
+
+== Wallet ==
+addmultisigaddress nrequired ["key",...] ( "" )
+backupwallet "destination"
+dumpprivkey "t-addr"
+encryptwallet "passphrase"
+getbalance ( "(dummy)" minconf includeWatchonly inZat asOfHeight )
+getnewaddress ( "" "type" )
+getrawchangeaddress
+getreceivedbyaddress "zcashaddress" ( minconf inZat asOfHeight )
+gettransaction "txid" ( includeWatchonly verbose asOfHeight )
+getunconfirmedbalance
+getwalletinfo ( asOfHeight )
+importaddress "address" ( "label" rescan p2sh )
+importprivkey "zcashprivkey" ( "label" rescan )
+importpubkey "pubkey" ( "label" rescan )
+importwallet "filename"
+keypoolrefill ( newsize )
+listaddresses
+listaddressgroupings ( asOfHeight )
+listlockunspent
+listreceivedbyaddress ( minconf includeempty includeWatchonly addressFilter includeImmatureCoinbase asOfHeight )
+listsinceblock ( "blockhash" target-confirmations includeWatchonly includeRemoved includeChange asOfHeight )
+listtransactions ( "dummy" count from includeWatchonly asOfHeight)
+listunspent ( minconf maxconf ["address",...] includeUnsafe queryOptions asOfHeight )
+lockunspent unlock [{"txid":"txid","vout":n},...]
+sendmany "" {"address":amount,...} ( minconf "comment" ["address",...] )
+sendtoaddress "zcashaddress" amount ( "comment" "comment-to" subtractfeefromamount )
+settxfee amount
+signmessage "t-addr" "message"
+walletconfirmbackup "emergency recovery phrase" ( acknowledge_imports )
+z_converttex ( "transparentaddress" )
+z_exportivk "zaddr"
+z_exportkey "zaddr"
+z_exportviewingkey "zaddr"
+z_exportwallet "filename"
+z_getaddressforaccount account ( ["receiver_type", ...] diversifier_index )
+z_getalldiversifiedaddresses "zaddr"
+z_getbalance "address" ( minconf inZat )
+z_getbalanceforaccount account ( minconf asOfHeight )
+z_getbalanceforviewingkey "fvk" ( minconf asOfHeight )
+z_getmigrationstatus ( asOfHeight )
+z_getnewaccount
+z_getnewaddress ( type )
+z_getnewdiversifiedaddress "zaddr"
+z_getnotescount ( minconf asOfHeight )
+z_getoperationresult (["operationid", ... ]) 
+z_getoperationstatus (["operationid", ... ]) 
+z_gettotalbalance ( minconf includeWatchonly )
+z_importivk "ivk" "zaddr" ( rescan startHeight )
+z_importkey "zkey" ( rescan startHeight )
+z_importpqkey "pqseed" ( rescan "label" )
+z_importviewingkey "vkey" ( rescan startHeight )
+z_importwallet "filename"
+z_listaccounts
+z_listaddresses ( includeWatchonly )
+z_listoperationids
+z_listreceivedbyaddress "address" ( minconf asOfHeight )
+z_listunifiedreceivers unified_address
+z_listunspent ( minconf maxconf includeWatchonly ["zaddr",...] asOfHeight )
+z_mergetoaddress ["fromaddress", ... ] "toaddress" ( fee ) ( transparent_limit ) ( shielded_limit ) ( memo ) ( privacyPolicy )
+z_sendmany "fromaddress" [{"address":... ,"amount":...},...] ( minconf ) ( fee ) ( privacyPolicy )
+z_setmigration enabled
+z_shieldcoinbase "fromaddress" "tozaddress" ( fee ) ( limit ) ( memo ) ( privacyPolicy )
+z_viewtransaction "txid"
+zcbenchmark benchmarktype samplecount
+zcsamplejoinsplit
+
+== Yellowback ==
+yed_addattestation "hex"
+yed_buildbundle refHeight "selectorHex"
+yed_buildcancel "intentoutpoint" ( ["cosig",...] )
+yed_claim "vaultTxid" ( "to" "bundleHex" wait minOutZat maxBurnCents )
+yed_claimnotice "vaultTxid" ( "bundleHex" wait )
+yed_decodepayload "hex"
+yed_estimatecollateral cents lockBlocks ( priceMicroUsd )
+yed_estimatefee mintedCents ( priceMicroUsd )
+yed_estimateredeem "vaultTxid"
+yed_estimatesend {"yedaddress":cents,...}|cents
+yed_getactivation
+yed_getattestations
+yed_getbalance
+yed_getblockverdict "blockhash"
+yed_getfeepayee refHeight ( "selectorHex" )
+yed_gethistory from to
+yed_getinfo
+yed_getnewaddress ( "type" "label" )
+yed_getnotice "vaultTxid"
+yed_getprice ( height )
+yed_getselection refHeight "selectorHex"
+yed_getstatehash ( height )
+yed_getstats
+yed_gettag "height|blockhash"
+yed_gettxinfo "txid"
+yed_getvault "txid"
+yed_listaddresses ( includeEmpty )
+yed_listattestors ( height )
+yed_listclaimable ( count skip )
+yed_listminers ( height window )
+yed_listpositions ( "status" )
+yed_listtokens ["address",...] ( minHeight count skip )
+yed_listtransactions ( count skip )
+yed_listunspent
+yed_listvaults ( "status" count skip )
+yed_lockcoins
+yed_mint cents lockBlocks ( "from" "bundleHex" wait maxCollateralZat )
+yed_redeem "vaultTxid" ( "to" )
+yed_registerattestor bondYec lockBlocks ( flags )
+yed_reportequivocation "attestationHexA" "attestationHexB" ( wait )
+yed_revive seq priceMicroUsd
+yed_send "yedaddress" cents
+yed_sendmany {"yedaddress":cents,...}
+yed_setquote priceMicroUsd sourceMask
+yed_signattestation seq priceMicroUsd ( citedHeight )
+yed_signcancelcosign "intentoutpoint" ( priceMicroUsd seq )
+yed_sweepcarriers
+yed_unlockcoin "txid" n "acknowledgement"
+yed_validateaddress "address"
+yed_validaterawtransaction "hex"
+yed_verifyindex
+yed_withdrawbond seq ( "to" )

@@ -1,0 +1,18 @@
+settxfee amount
+
+settxfee is DEPRECATED and will be removed in a future release.
+It is strongly recommended to use the default ZIP 317 fee, which is not
+expressible using settxfee.
+
+Set the preferred transaction fee rate per 1000 bytes. This is only used by legacy transaction creation APIs (sendtoaddress, sendmany, and fundrawtransaction). Overwrites the paytxfee parameter.
+
+Arguments:
+1. amount         (numeric, required) The transaction fee rate in YEC per 1000 bytes rounded to the nearest 0.00000001
+
+Result
+true|false        (boolean) Returns true if successful
+
+Examples:
+> ycash-cli settxfee 0.00001
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "settxfee", "params": [0.00001] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

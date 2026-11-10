@@ -1,0 +1,47 @@
+getblockhashes high low ( {"noOrphans": true|false, "logicalTimes": true|false} )
+
+Returns array of hashes of blocks within the timestamp range provided,
+
+greater or equal to low, less than high.
+
+WARNING: getblockhashes is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+1. high                            (numeric, required) The newer block timestamp
+2. low                             (numeric, required) The older block timestamp
+3. options                         (string, optional) A json object
+    {
+      "noOrphans": true|false      (boolean) will only include blocks on the main chain
+      "logicalTimes": true|false   (boolean) will include logical timestamps with hashes
+    }
+
+Result:
+[
+  "xxxx"                   (hex string) The block hash
+]
+or
+[
+  {
+    "blockhash": "xxxx"    (hex string) The block hash
+    "logicalts": n         (numeric) The logical timestamp
+  }
+]
+
+Examples:
+> ycash-cli getblockhashes 1558141697 1558141576
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getblockhashes", "params": [1558141697, 1558141576] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+> ycash-cli getblockhashes 1558141697 1558141576 '{"noOrphans":false, "logicalTimes":true}'
+

@@ -1,0 +1,46 @@
+z_getbalanceforaccount account ( minconf asOfHeight )
+
+Returns the account's spendable balance for each value pool ("transparent", "sapling", and "orchard").
+Arguments:
+1. account      (numeric) The account number.
+2. minconf      (numeric, optional, default=1) Only include transactions confirmed at least this many times.
+3. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+                    `minconf` must be at least 1 when `asOfHeight` is provided.
+
+Result:
+{
+  "pools": {
+    "transparent": {
+        "valueZat": amount   (numeric) The amount held by this account in the transparent value pool
+    "},
+    "sapling": {
+        "valueZat": amount   (numeric) The amount held by this account in the Sapling value pool
+    "},
+    "orchard": {
+        "valueZat": amount   (numeric) The amount held by this account in the Orchard value pool
+    "}
+  "},
+  "minimum_confirmations": n (numeric) The given minconf argument
+}
+Result amounts are in units of yoshis.
+Pools for which the balance is zero are not shown.
+
+Examples:
+
+The per-pool amount received by account 4 with at least 1 block confirmed
+> ycash-cli z_getbalanceforaccount 4
+
+The per-pool amount received by account 4 with at least 5 block confirmations
+> ycash-cli z_getbalanceforaccount 4 5
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getbalanceforaccount", "params": [4 5] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

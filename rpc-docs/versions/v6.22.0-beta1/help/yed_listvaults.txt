@@ -1,0 +1,6 @@
+yed_listvaults ( "status" count skip )
+
+Vaults in outpoint order, optionally filtered by status (ACTIVE|CLAIMING|CLOSED|CLAIMED; VOID is accepted and never matches since the vault upgrade); paged (default count 100).
+Index-wide: every indexed Yellowback vault, whoever owns it (a node-context call; no wallet needed). The wallet's own
+vaults are yed_listpositions.
+

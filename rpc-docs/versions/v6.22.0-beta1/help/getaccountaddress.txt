@@ -1,0 +1,19 @@
+getaccountaddress "account"
+
+getaccountaddress is DEPRECATED and will be removed in a future release.
+
+
+Returns the current address for receiving payments to this account. Ycash
+emulates a single default account (""); other account names are rejected.
+Each call generates a fresh transparent address (no per-account memory).
+
+Arguments:
+1. "account"  (string, required) Must be "".
+
+Result:
+"ycashaddress"   (string) A new transparent Ycash address.
+
+Examples:
+> ycash-cli getaccountaddress ""
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaccountaddress", "params": [""] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

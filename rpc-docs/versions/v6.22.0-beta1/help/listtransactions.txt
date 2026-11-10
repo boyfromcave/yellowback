@@ -1,0 +1,67 @@
+listtransactions ( "dummy" count from includeWatchonly asOfHeight)
+
+Returns up to 'count' of the most recent transactions associated with legacy transparent
+addresses of this wallet, skipping the first 'from' transactions.
+
+This API does not provide any information about transactions containing shielded inputs
+or outputs, and should only be used in circumstances where it is necessary to interoperate
+with legacy Bitcoin infrastructure. Use z_listreceivedbyaddress to obtain information about
+the wallet's shielded transactions.
+
+Arguments:
+1. (dummy)        (string, optional) If set, should be "*" for backwards compatibility.
+2. count          (numeric, optional, default=10) The number of transactions to return
+3. from           (numeric, optional, default=0) The number of transactions to skip
+4. includeWatchonly (bool, optional, default=false) Include transactions to watchonly addresses (see 'importaddress')
+5. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+[
+  {
+    "address":"zcashaddress",    (string) The Ycash address of the transaction. Not present for 
+                                                move transactions (category = move).
+    "category":"send|receive",   (string) The transaction category. 'send' and 'receive' transactions are 
+                                              associated with an address, transaction id and block details
+    "status" : "mined|waiting|expiringsoon|expired",    (string) The transaction status, can be 'mined', 'waiting', 'expiringsoon' 
+                                                                    or 'expired'. Available for 'send' and 'receive' category of transactions.
+    "amount": x.xxx,          (numeric) The amount in YEC. This is negative for the 'send' category, and for the
+                                         'move' category for moves outbound. It is positive for the 'receive' category,
+                                         and for the 'move' category for inbound funds.
+    "amountZat": x.xxx,       (numeric) The amount in yoshis. Negative and positive are the same as 'amount' field.
+    "vout" : n,               (numeric) the vout value
+    "fee": x.xxx,             (numeric) The amount of the fee in YEC. This is negative and only available for the 
+                                         'send' category of transactions.
+    "confirmations": n,       (numeric) The number of confirmations for the transaction. Available for 'send' and 
+                                         'receive' category of transactions.
+    "blockhash": "hashvalue", (string) The block hash containing the transaction. Available for 'send' and 'receive'
+                                          category of transactions.
+    "blockindex": n,          (numeric) The block index containing the transaction. Available for 'send' and 'receive'
+                                          category of transactions.
+    "txid": "transactionid", (string) The transaction id. Available for 'send' and 'receive' category of transactions.
+    "time": xxx,              (numeric) The transaction time in seconds since epoch (midnight Jan 1 1970 GMT).
+    "timereceived": xxx,      (numeric) The time received in seconds since epoch (midnight Jan 1 1970 GMT). Available 
+                                          for 'send' and 'receive' category of transactions.
+    "comment": "...",       (string) If a comment is associated with the transaction.
+    "size": n,                (numeric) Transaction size in bytes
+  }
+]
+
+Examples:
+
+List the most recent 10 transactions in the systems
+> ycash-cli listtransactions 
+
+List transactions 100 to 120
+> ycash-cli listtransactions "*" 20 100
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "listtransactions", "params": ["*", 20, 100] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

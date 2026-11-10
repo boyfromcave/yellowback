@@ -1,0 +1,13 @@
+vault_getnewowner ( scheme )
+
+A new post-quantum vault owner key of this wallet (quantum plan §4.6; quantum spec ruling C-4), derived from
+the wallet's HD seed. Pass it as vault_lock's owner (or lock without one: vault_lock draws one itself).
+
+Arguments:
+1. scheme (numeric, optional, default 1) 1 = SLH-DSA-SHA2-128s; 2 = FN-DSA-512, only once Falcon is active
+
+Result: {"scheme": n, "keyhash": "64 hex (the bytes V pushes)", "owner": pqkeyid (66 hex, scheme || keyhash),
+         "address": "the PQ Yellowback address (53 characters)"}
+> ycash-cli vault_getnewowner 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_getnewowner", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

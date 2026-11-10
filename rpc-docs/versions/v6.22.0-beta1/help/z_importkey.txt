@@ -1,0 +1,36 @@
+z_importkey "zkey" ( rescan startHeight )
+
+Adds a zkey (as returned by z_exportkey) to your wallet.
+Import of Orchard keys is not supported.
+
+Arguments:
+1. "zkey"             (string, required) The zkey (see z_exportkey)
+2. rescan             (string, optional, default="whenkeyisnew") Rescan the wallet for transactions - can be "yes", "no" or "whenkeyisnew"
+3. startHeight        (numeric, optional, default=0) Block height to start rescan from
+
+Note: This call can take a long time to complete if rescan is true.
+
+Result:
+{
+  "address_type" : "xxxx",                 (string) "sprout" or "sapling"
+  "type" : "xxxx",                         (string) "sprout" or "sapling" (DEPRECATED, legacy attribute)
+  "address" : "address|DefaultAddress",    (string) The address corresponding to the spending key (for Sapling, this is the default address).
+}
+
+Examples:
+
+Export a zkey
+> ycash-cli z_exportkey "myaddress"
+
+Import the zkey with rescan
+> ycash-cli z_importkey "mykey"
+
+Import the zkey with partial rescan
+> ycash-cli z_importkey "mykey" whenkeyisnew 30000
+
+Re-import the zkey with longer partial rescan
+> ycash-cli z_importkey "mykey" yes 20000
+
+As a JSON-RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_importkey", "params": ["mykey", "no"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

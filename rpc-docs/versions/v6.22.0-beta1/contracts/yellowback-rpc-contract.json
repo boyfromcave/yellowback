@@ -1,0 +1,1742 @@
+{
+  "errors": {
+    "attest-bad-sig": {
+      "raisedBy": [
+        "yed_addattestation"
+      ],
+      "when": "the compact signature does not verify under attestorPubKey(seq) with this chain's blockHash(citedHeight), **or is high-S** (R17): flip a byte; or sign with s un-normalised"
+    },
+    "attest-key-not-held": {
+      "raisedBy": [
+        "yed_signattestation",
+        "yed_revive",
+        "yed_withdrawbond"
+      ],
+      "when": "the wallet does not hold the key the command needs: sign for a seq registered by another node"
+    },
+    "attest-malformed": {
+      "raisedBy": [
+        "yed_addattestation",
+        "yed_reportequivocation"
+      ],
+      "when": "not 74 bytes of hex (RPC_INVALID_PARAMETER)"
+    },
+    "attest-not-eligible": {
+      "raisedBy": [
+        "yed_addattestation"
+      ],
+      "when": "the record is EJECTED or WITHDRAWN (S4: PENDING, ELIGIBLE and DORMANT are pooled): feed an attestation of an ejected seq"
+    },
+    "attest-range": {
+      "raisedBy": [
+        "yed_addattestation",
+        "yed_signattestation",
+        "yed_revive"
+      ],
+      "when": "priceMicroUsd outside [PRICE_MIN, PRICE_MAX]"
+    },
+    "attest-stale": {
+      "raisedBy": [
+        "yed_addattestation",
+        "yed_signattestation"
+      ],
+      "when": "citedHeight ≤ tip − REF_LAG − ATTEST_MAX_AGE, above the tip, or below startHeight: feed one citing tip − 20 on regtest"
+    },
+    "attest-unknown-seq": {
+      "raisedBy": [
+        "yed_addattestation",
+        "yed_signattestation",
+        "yed_withdrawbond",
+        "yed_revive"
+      ],
+      "when": "no Attestors record with that seq: yed_addattestation of an attestation signed for seq 999"
+    },
+    "bad-address": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "the address is not an s1…/sm… or ys1… address of this network (a yb… YED address, a Sprout address, nonsense), or its Sapling spending key is not in this wallet: pass a yed_getnewaddress result as from"
+    },
+    "bad-mint-amount": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "cents outside [MIN_MINT, MAX_MINT]"
+    },
+    "bad-xfer-amount": {
+      "raisedBy": [
+        "yed_send",
+        "yed_sendmany"
+      ],
+      "when": "an amount outside [MIN_OUTPUT, MAX_OUTPUT]"
+    },
+    "bond-below-min": {
+      "raisedBy": [
+        "yed_registerattestor"
+      ],
+      "when": "bondYec < the module's floor for a join in the next block (params.attest.bondMinZat, D-Q-30; 5 YEC on regtest with no vaults): register with 4"
+    },
+    "bond-locked": {
+      "raisedBy": [
+        "yed_withdrawbond"
+      ],
+      "when": "still a member, a frozen bond, or within BOND_MATURITY of leaving (the bond exit delay): withdraw right after registering"
+    },
+    "bond-spent": {
+      "raisedBy": [
+        "yed_withdrawbond"
+      ],
+      "when": "the bond outpoint is already spent (bondSpentHeight set): withdraw twice"
+    },
+    "bundle-insufficient": {
+      "raisedBy": [
+        "yed_buildbundle",
+        "yed_estimatecollateral",
+        "yed_mint",
+        "yed_claim",
+        "yed_claimnotice"
+      ],
+      "when": "armed and fewer than M_SELECT of selected(R, selector) have a usable attestation in the pool; also a given bundleHex that fails BUNDLE-1 at R (the message ends with the BUNDLE-1 reason). Message grammar: bundle-insufficient: <count> of <selected> selected attestors have a fresh attestation; missing seq <a,b,…> — the GUI reads the two numbers. Provoke: arm, feed one attestor only"
+    },
+    "bundle-malformed": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_claim",
+        "yed_claimnotice"
+      ],
+      "when": "bundleHex is not \"YA\" ‖ 0x01 ‖ count ‖ count × 74 bytes (RPC_INVALID_PARAMETER)"
+    },
+    "cancel-cosign-malformed": {
+      "raisedBy": [
+        "yed_buildcancel"
+      ],
+      "when": "a cosigs entry that is not 69 bytes of hex or does not recover over this intent's cancel; one whose key is not a current member of the attestor set: the entry is dropped"
+    },
+    "cancel-cosign-needed": {
+      "raisedBy": [
+        "yed_buildcancel"
+      ],
+      "when": "fewer co-signatures of distinct current members than cancelsRequired (the cancel-limit design, CAN-2; RPC_INVALID_PARAMETER, before any transaction). Message grammar: cancel-cosign-needed: this cancel needs <n> co-signature(s) of distinct current members (cancelsRequired), <m> given: call it with no cosigs"
+    },
+    "cancel-cosign-not-member": {
+      "raisedBy": [
+        "yed_buildcancel"
+      ],
+      "when": "a cosigs entry that is not 69 bytes of hex or does not recover over this intent's cancel; one whose key is not a current member of the attestor set: the entry is dropped"
+    },
+    "cancel-statement-claimable": {
+      "raisedBy": [
+        "yed_buildcancel",
+        "yed_signcancelcosign"
+      ],
+      "when": "the statement's price says the vault was claimable at the claim's refHeight (C4b): co-sign at the vault's underwaterAt − 1"
+    },
+    "carrier-record-failed": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_claim",
+        "yed_claimnotice",
+        "yed_reportequivocation"
+      ],
+      "when": "the carrier record could not be written to <datadir>/yellowback/carriers.dat, which is written **before** the carrier is committed (cf. DigiByte v9.26.7 38895edb): nothing was sent. A record whose commit then fails is removed again. Provoke with an unwritable <datadir>/yellowback"
+    },
+    "carrier-timeout": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_claim",
+        "yed_claimnotice",
+        "yed_reportequivocation"
+      ],
+      "when": "wait = true and the carrier did not confirm within -yellowbackcarriertimeout seconds (default 600, max 3600); the carrier stays outstanding and is swept once its window lapses"
+    },
+    "carrier-wait-busy": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_claim",
+        "yed_claimnotice",
+        "yed_reportequivocation"
+      ],
+      "when": "wait = true while half of -rpcthreads (at least one) wait=true calls are already waiting for a carrier (RPC_WALLET_ERROR, before any transaction): retry or pass wait = false"
+    },
+    "change-floor": {
+      "raisedBy": [
+        "yed_send",
+        "yed_sendmany",
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "no selection leaves YED change of 0 or ≥ MIN_OUTPUT (H2; a REDEEM or CLAIM burns a sub-dollar remainder instead, H4, so it reaches this only when even that is impossible): send cents − 50 from a single cents output. The message is structured and always has this shape: change-floor: <requested> cents cannot be sent from these coins without change below the $1.00 minimum output; nearest workable amounts: below <n\\"
+    },
+    "claim-burn-above-max": {
+      "raisedBy": [
+        "yed_claim"
+      ],
+      "when": "maxBurnCents > 0 and the YED the claim burns (the vault's mintedCents at preflight; the exact burn, the debt plus any H4 sub-dollar remainder, at build) exceeds it (hardening H-9.3; RPC_WALLET_ERROR; nothing signed): pass maxBurnCents = 1"
+    },
+    "claim-not-underwater": {
+      "raisedBy": [
+        "yed_claim"
+      ],
+      "when": "RED-4 would fail at the reference snapshot (the price did not fall)"
+    },
+    "claim-not-yet": {
+      "raisedBy": [
+        "yed_claim"
+      ],
+      "when": "tip below the vault's appHeight (refHeight + 1 since IT-1; claimHeight for a vault minted before the in-term rule)"
+    },
+    "claim-out-below-min": {
+      "raisedBy": [
+        "yed_claim"
+      ],
+      "when": "minOutZat > 0 and what reaches the destination (the claimant intent: the collateral less the RED-5 residual, U-23; the exact collateralOut at build) is below it (RPC_WALLET_ERROR; nothing signed): pass minOutZat = collateralZat"
+    },
+    "claim-unconfirmed": {
+      "raisedBy": [
+        "yed_signcancelcosign"
+      ],
+      "when": "the claim is still in the mempool (co-sign only a confirmed claim, design A-6)"
+    },
+    "collateral-above-max": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "maxCollateralZat > 0 and the collateral vout[0] the mint needs exceeds it — at preflight (before the carrier) and again when the MINT is built on the confirmed carrier (RPC_WALLET_ERROR; nothing signed): pass maxCollateralZat = 1"
+    },
+    "equivocation-guard": {
+      "raisedBy": [
+        "yed_signattestation",
+        "yed_revive",
+        "yed_signcancelcosign"
+      ],
+      "when": "attest-signed.dat holds a signature for (seq, citedHeight) at a different price (S16): sign twice for one height at two prices, also across a restart. Since the cancel-limit review it is looked up **by key**: a signature at that height under any seq the key ever held counts (a member that left and rejoined with the same hot key; EQV-1 binds the key). Message grammar: equivocation-guard: seq <n> already signed <p₀> for height <h>, or equivocation-guard: this key already signed <p₀> for height <h> under seq <n>"
+    },
+    "expiring-too-soon": {
+      "raisedBy": [
+        "every builder"
+      ],
+      "when": "the index is far enough behind the chain that R + REF_WINDOW would expire the transaction at once, or the index has not reached startHeight + REF_LAG"
+    },
+    "fee-no-eligible-payee": {
+      "raisedBy": [
+        "yed_getfeepayee"
+      ],
+      "when": "E(refHeight) empty (FEE-0; not an error for the wallet, which omits the output): a refHeight below the first quote tag"
+    },
+    "index-below-start": {
+      "raisedBy": [
+        "every builder"
+      ],
+      "when": "the index is far enough behind the chain that R + REF_WINDOW would expire the transaction at once, or the index has not reached startHeight + REF_LAG"
+    },
+    "insufficient-yec": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_send",
+        "yed_sendmany",
+        "yed_claim"
+      ],
+      "when": "the wallet (or the named from address) cannot cover collateral + fees from confirmed, unlocked outputs or notes (YED never pays the network fee): yed_mint … <an empty s1… address>"
+    },
+    "insufficient-yed": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim",
+        "yed_send",
+        "yed_sendmany"
+      ],
+      "when": "wallet YED below the burn or amount (the spendable YED: tokens an own unconfirmed transaction spends do not count)"
+    },
+    "invalid-address": {
+      "raisedBy": [
+        "yed_listtokens"
+      ],
+      "when": "a string that is neither a YED, a transparent P2PKH nor a plain-YEC post-quantum address of this network"
+    },
+    "keypool-empty": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_send",
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "no fresh key could be drawn (keypoolrefill); on 6.20.0 only the CReserveKey change paths can raise it (see yed_getnewaddress)"
+    },
+    "lock-below-min": {
+      "raisedBy": [
+        "yed_registerattestor"
+      ],
+      "when": "lockBlocks < BOND_MIN_LOCK (0 since the bond exit delay: a negative lockBlocks), or the resulting bondLocktime ≥ LOCKTIME_THRESHOLD"
+    },
+    "mempool-check-failed:<verdict>": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "MempoolCheck returned the named RED verdict (K7); provoke with a redemption whose reference snapshot has no pClaim where the claim path is chosen (vault-claim-not-underwater)"
+    },
+    "mint-bad-lock": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_estimatecollateral"
+      ],
+      "when": "lockBlocks outside every class, or lockHeight + GRACE ≥ LOCKTIME_THRESHOLD"
+    },
+    "mint-supply-cap": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "the wallet's dry run of MINT-1..10 refused the built mint under MINT-6 (a mint raced it to the cap after the mintpol-cap gate; RPC_VERIFY_REJECTED); yellowback_void_mint.py shows the consensus verdict"
+    },
+    "mint-unsatisfiable": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_estimatecollateral"
+      ],
+      "when": "requiredZat > MAX_MONEY (K14): MAX_MINT cents at priceMicroUsd = PRICE_MIN"
+    },
+    "mint-vault-share": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "the wallet's dry run refused the built mint under MINT-6b (D-Q-23a): its debt exceeds max(maxVaultShareBps of the MINT-6 cap, vaultShareFloorCents) (params.supplyCap.maxVaultCents); silent while the cap is undefined (regtest's supplyCapBps 0), so provoke on a network parameter set with a cap (RPC_VERIFY_REJECTED)"
+    },
+    "mint10-diverged": {
+      "raisedBy": [
+        "yed_estimatecollateral",
+        "yed_mint"
+      ],
+      "when": "armed and \\"
+    },
+    "mintpol-cap": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1, one per halt bit and the cap: mint before activation; with no quote tags in the windows; with the global ratio below GLOBAL_RATIO_HALT_BPS and the class's base ratio below RECAP_RATIO_BPS (W16, IT-5: only a class whose base ratio reaches it mints through a global-ratio halt — class C with the in-term parameter set; the message names the classes that can); with P_fast/P_slow diverging by more than DIVERGENCE_BPS; with -yellowbacksupplycapbps low and supply at the cap — counting the MINT payloads already in this node's mempool toward it (audit C-3; the message then says \"after N cents of mints in the mempool\"). W20, IT-5 (replacing H-10's class-A rule): above the cap only a class whose base ratio is at or over RECAP_RATIO_BPS mints (class C with the in-term parameter set); the message says whether it can. **Residual race:** MINT-6 is judged at inclusion against live totals, so a competing mint this node has not seen (or one paying more) can still land first and make a mint that passed the gate confirm VOID; the collateral is then released by yed_redeem at lockHeight, no YED is issued and the fee is not refunded. Keep well inside the headroom when the cap is nearly reached."
+    },
+    "mintpol-divergence": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1, one per halt bit and the cap: mint before activation; with no quote tags in the windows; with the global ratio below GLOBAL_RATIO_HALT_BPS and the class's base ratio below RECAP_RATIO_BPS (W16, IT-5: only a class whose base ratio reaches it mints through a global-ratio halt — class C with the in-term parameter set; the message names the classes that can); with P_fast/P_slow diverging by more than DIVERGENCE_BPS; with -yellowbacksupplycapbps low and supply at the cap — counting the MINT payloads already in this node's mempool toward it (audit C-3; the message then says \"after N cents of mints in the mempool\"). W20, IT-5 (replacing H-10's class-A rule): above the cap only a class whose base ratio is at or over RECAP_RATIO_BPS mints (class C with the in-term parameter set); the message says whether it can. **Residual race:** MINT-6 is judged at inclusion against live totals, so a competing mint this node has not seen (or one paying more) can still land first and make a mint that passed the gate confirm VOID; the collateral is then released by yed_redeem at lockHeight, no YED is issued and the fee is not refunded. Keep well inside the headroom when the cap is nearly reached."
+    },
+    "mintpol-global-ratio": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1, one per halt bit and the cap: mint before activation; with no quote tags in the windows; with the global ratio below GLOBAL_RATIO_HALT_BPS and the class's base ratio below RECAP_RATIO_BPS (W16, IT-5: only a class whose base ratio reaches it mints through a global-ratio halt — class C with the in-term parameter set; the message names the classes that can); with P_fast/P_slow diverging by more than DIVERGENCE_BPS; with -yellowbacksupplycapbps low and supply at the cap — counting the MINT payloads already in this node's mempool toward it (audit C-3; the message then says \"after N cents of mints in the mempool\"). W20, IT-5 (replacing H-10's class-A rule): above the cap only a class whose base ratio is at or over RECAP_RATIO_BPS mints (class C with the in-term parameter set); the message says whether it can. **Residual race:** MINT-6 is judged at inclusion against live totals, so a competing mint this node has not seen (or one paying more) can still land first and make a mint that passed the gate confirm VOID; the collateral is then released by yed_redeem at lockHeight, no YED is issued and the fee is not refunded. Keep well inside the headroom when the cap is nearly reached."
+    },
+    "mintpol-no-price": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1, one per halt bit and the cap: mint before activation; with no quote tags in the windows; with the global ratio below GLOBAL_RATIO_HALT_BPS and the class's base ratio below RECAP_RATIO_BPS (W16, IT-5: only a class whose base ratio reaches it mints through a global-ratio halt — class C with the in-term parameter set; the message names the classes that can); with P_fast/P_slow diverging by more than DIVERGENCE_BPS; with -yellowbacksupplycapbps low and supply at the cap — counting the MINT payloads already in this node's mempool toward it (audit C-3; the message then says \"after N cents of mints in the mempool\"). W20, IT-5 (replacing H-10's class-A rule): above the cap only a class whose base ratio is at or over RECAP_RATIO_BPS mints (class C with the in-term parameter set); the message says whether it can. **Residual race:** MINT-6 is judged at inclusion against live totals, so a competing mint this node has not seen (or one paying more) can still land first and make a mint that passed the gate confirm VOID; the collateral is then released by yed_redeem at lockHeight, no YED is issued and the fee is not refunded. Keep well inside the headroom when the cap is nearly reached."
+    },
+    "mintpol-not-active": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1, one per halt bit and the cap: mint before activation; with no quote tags in the windows; with the global ratio below GLOBAL_RATIO_HALT_BPS and the class's base ratio below RECAP_RATIO_BPS (W16, IT-5: only a class whose base ratio reaches it mints through a global-ratio halt — class C with the in-term parameter set; the message names the classes that can); with P_fast/P_slow diverging by more than DIVERGENCE_BPS; with -yellowbacksupplycapbps low and supply at the cap — counting the MINT payloads already in this node's mempool toward it (audit C-3; the message then says \"after N cents of mints in the mempool\"). W20, IT-5 (replacing H-10's class-A rule): above the cap only a class whose base ratio is at or over RECAP_RATIO_BPS mints (class C with the in-term parameter set); the message says whether it can. **Residual race:** MINT-6 is judged at inclusion against live totals, so a competing mint this node has not seen (or one paying more) can still land first and make a mint that passed the gate confirm VOID; the collateral is then released by yed_redeem at lockHeight, no YED is issued and the fee is not refunded. Keep well inside the headroom when the cap is nearly reached."
+    },
+    "mintpol-unarmed": {
+      "raisedBy": [
+        "yed_mint"
+      ],
+      "when": "MINTPOL-1 for H-1: yed_getinfo.mintRequiresArmed is true and the reference height R is not ARMED, so the mint would confirm VOID with mint-halted-unarmed (MINT-4); provoke on regtest with -yellowbackmintrequiresarmed before arming"
+    },
+    "no-payout-address": {
+      "raisedBy": [
+        "yed_setquote"
+      ],
+      "when": "the node has no payout key and so can emit no tag (no -yellowbackpayoutaddress and no P2PKH -mineraddress)"
+    },
+    "not-a-yellowback-address": {
+      "raisedBy": [
+        "yed_send",
+        "yed_sendmany",
+        "yed_validateaddress"
+      ],
+      "when": "the recipient is not a yb…/yt…/yr… address of this network: pass an s1…/sm… address"
+    },
+    "not-dormant": {
+      "raisedBy": [
+        "yed_revive"
+      ],
+      "when": "the record's status is not DORMANT: revive an ELIGIBLE attestor"
+    },
+    "not-equivocation": {
+      "raisedBy": [
+        "yed_reportequivocation"
+      ],
+      "when": "any EQV-1 condition fails — different seqs, different citedHeights, equal prices, a bad signature, a seq whose bond is spent or already frozen (P4-b), or a citedHeight whose hash is not in the index (two sides of a fork): report the same attestation twice"
+    },
+    "notice-not-underwater": {
+      "raisedBy": [
+        "yed_claimnotice"
+      ],
+      "when": "collateralZat · pEmerg ≥ mintedCents · EMERGENCY_RATIO_BPS · COIN under this node's bundle, or the snapshot at R is not armed: notice on a healthy vault"
+    },
+    "notice-standing": {
+      "raisedBy": [
+        "yed_claimnotice"
+      ],
+      "when": "a Notices record for the vault exists with tip − notice.height ≤ EMERGENCY_NOTICE_TTL (NOT-1's no-reset clause): post twice"
+    },
+    "price-required": {
+      "raisedBy": [
+        "yed_signcancelcosign"
+      ],
+      "when": "no priceMicroUsd given and the guard holds no price of this key for the claim's refHeight"
+    },
+    "quote-out-of-range": {
+      "raisedBy": [
+        "yed_setquote"
+      ],
+      "when": "price outside [PRICE_MIN, PRICE_MAX] and not 0"
+    },
+    "too-many-addresses": {
+      "raisedBy": [
+        "yed_listtokens"
+      ],
+      "when": "an empty array, or more than 100 addresses"
+    },
+    "too-many-coins": {
+      "raisedBy": [
+        "yed_mint",
+        "yed_send",
+        "yed_sendmany",
+        "yed_claim",
+        "yed_claimnotice",
+        "yed_reportequivocation"
+      ],
+      "when": "covering the YEC the transaction needs would take more than 400 plain YEC inputs or 75,000 estimated bytes of them even largest-first (the selector goes smallest-first and falls back to largest-first when that would cross either cap; cf. DigiByte v9.26.7 b54e3861). Message grammar: too-many-coins: covering <amount> YEC would take more than 400 coins (or 75000 bytes of inputs); combine small coins first by sending them to yourself, then retry: a wallet of 1,000 pool payouts of 0.00001 YEC funding a 0.005 YEC fee"
+    },
+    "too-many-inputs": {
+      "raisedBy": [
+        "yed_send",
+        "yed_redeem",
+        "yed_claim",
+        "yed_mint"
+      ],
+      "when": "more than 250 YED inputs / more than 20 Sapling notes would be spent: consolidate first"
+    },
+    "too-many-notes": {
+      "raisedBy": [
+        "yed_send",
+        "yed_redeem",
+        "yed_claim",
+        "yed_mint"
+      ],
+      "when": "more than 250 YED inputs / more than 20 Sapling notes would be spent: consolidate first"
+    },
+    "unlock-acknowledgement-missing": {
+      "raisedBy": [
+        "yed_unlockcoin"
+      ],
+      "when": "the third argument is not exactly I understand this burns YED"
+    },
+    "vault-locked": {
+      "raisedBy": [
+        "yed_redeem"
+      ],
+      "when": "tip below the vault's ownerHeight (refHeight + 1 since IT-1; lockHeight for a VOID vault and a vault minted before the in-term rule)"
+    },
+    "vault-not-active": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "a CLOSED or CLAIMED vault (a VOID vault is releasable by yed_redeem, L14); yed_getvault reports any status and refuses only vault-not-found"
+    },
+    "vault-not-found": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim",
+        "yed_getvault"
+      ],
+      "when": "an unknown txid"
+    },
+    "vault-not-owned": {
+      "raisedBy": [
+        "yed_redeem"
+      ],
+      "when": "another wallet's vault (a claim is anyone's: yed_claim never checks the owner)"
+    },
+    "vault-spend-pending": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim",
+        "yed_estimateredeem"
+      ],
+      "when": "a transaction in this node's mempool already spends the vault (yed_getvault.spendPending; the message names its txid); checked before any coin is selected (cf. DigiByte v9.26.7 00136af6): yed_redeem twice before a block"
+    },
+    "vault-value-too-small": {
+      "raisedBy": [
+        "yed_redeem",
+        "yed_claim"
+      ],
+      "when": "the vault does not cover the network fee (at the floor rate on the owner path) plus the enforcement fee (cannot happen for a vault MINT-5 accepted)"
+    },
+    "verdict-parent-not-tip": {
+      "raisedBy": [
+        "yed_getblockverdict"
+      ],
+      "when": "the block's parent is not the index tip and the block is not a rejected child of it (N12): pass the tip's grandparent"
+    },
+    "wallet-locked": {
+      "raisedBy": [
+        "every signing command; on 6.20.0 also `yed_getnewaddress` and every fresh-key draw"
+      ],
+      "when": "the wallet is encrypted and locked (walletpassphrase first); the stock EnsureWalletIsUnlocked message may precede it"
+    },
+    "yed-burn-refused": {
+      "raisedBy": [
+        "`sendrawtransaction` (the stock RPC)"
+      ],
+      "when": "with -yellowback, a raw transaction that spends a Tokens outpoint of this wallet without a payload that reassigns it (no payload, or a TRANSFER that assigns nothing): pass allowyedburn = true to send it anyway"
+    },
+    "yed-locked-outpoint": {
+      "raisedBy": [
+        "`lockunspent` (the stock RPC)"
+      ],
+      "when": "lockunspent false\\"
+    },
+    "yellowback-unhealthy": {
+      "raisedBy": [
+        "every gated command"
+      ],
+      "when": "the index is unhealthy (unhealthyReason follows); provoke with -yellowbacktestfault=storage:commit then any non-allow-listed command. Also the storage boundary of yed_addattestation and yed_buildbundle (audit A-3): a storage exception under either marks the index unhealthy and the call fails with yellowback-unhealthy: storage failure in AddAttestation: … / … in BuildBundle: …"
+    }
+  },
+  "rpcversion": 8,
+  "source": {
+    "plan": "docs/plans/yellowback-v2-development-plan.md",
+    "planInTerm": "docs/plans/yellowback-in-term-claims-plan.md",
+    "planUpgrade": "docs/plans/yellowback-upgrade-plan.md",
+    "planV3": "docs/plans/yellowback-v3-development-plan.md",
+    "revision": 6,
+    "revisionInTerm": 1,
+    "revisionV3": 4,
+    "rpcdoc": "ycash6/doc/yellowback-rpc.md",
+    "section": "4.5",
+    "sectionInTerm": "4.1",
+    "sectionUpgrade": "15.10"
+  },
+  "yed_addattestation": {
+    "args": "<hex>",
+    "returns": {
+      "accepted": true,
+      "citedHeight": 329,
+      "poolSize": 9,
+      "priceMicroUsd": 1985000,
+      "replaced": false,
+      "seq": 1
+    }
+  },
+  "yed_buildbundle": {
+    "args": "<refHeight> <selectorHex>",
+    "returns": {
+      "aClaim": 1995000,
+      "aMint": 1985000,
+      "armed": true,
+      "count": 2,
+      "hex": "594101020100e84a1e0049010000…",
+      "missing": [
+        3
+      ],
+      "refHeight": 329,
+      "selected": [
+        2,
+        1,
+        3
+      ],
+      "selector": "",
+      "seqs": [
+        1,
+        2
+      ]
+    }
+  },
+  "yed_buildcancel": {
+    "args": "<intentOutpoint> [cosigs]",
+    "returns": {
+      "cancelsRequired": 1,
+      "cancelsetid": "755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e",
+      "carrierTxid": "c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1c1a1",
+      "cosigners": [
+        0
+      ],
+      "deadline": 980,
+      "hex": "0400008085202f89...",
+      "intentconfirmed": true,
+      "refund": {
+        "cents": 100000,
+        "script": "76a914a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d488ac",
+        "vout": 1
+      },
+      "required": 1
+    }
+  },
+  "yed_claim": {
+    "args": "<vaultTxid> [to] [bundleHex] [wait] [minOutZat] [maxBurnCents]",
+    "returns": {
+      "aClaim": 395000,
+      "attestFeeZat": 125944584,
+      "attestPayee": "smExampleBondAddress11111111111111111",
+      "bundleSeqs": [
+        1,
+        2
+      ],
+      "burnedCents": 100000,
+      "carrierTxid": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+      "claimPath": "a",
+      "collateralOut": 251889169000,
+      "earlyRedeemFeeZat": 0,
+      "extraBurnCents": 0,
+      "feeZat": 629722922,
+      "pClaim": 400000,
+      "pEmerg": null,
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "pending": false,
+      "refHeight": 405,
+      "residualZat": 0,
+      "to": "smExampleTransparentTwin111111111111",
+      "txid": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d",
+      "xClaim": 400000
+    }
+  },
+  "yed_claimnotice": {
+    "args": "<vaultTxid> [bundleHex] [wait]",
+    "returns": {
+      "aClaim": 1800000,
+      "bundleSeqs": [
+        1,
+        2
+      ],
+      "carrierTxid": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+      "emergencyOpenAt": 342,
+      "pEmerg": 1800000,
+      "pending": false,
+      "refHeight": 338,
+      "txid": "8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5",
+      "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0",
+      "xClaim": 1900000
+    }
+  },
+  "yed_decodepayload": {
+    "args": "<hex>",
+    "returns": {
+      "attestFeeVout": 4,
+      "cents": 100000,
+      "feeVout": 3,
+      "lockHeight": 377,
+      "ownerHash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      "ownerScheme": 1,
+      "reason": "",
+      "refHeight": 329,
+      "termClass": "A",
+      "type": "mint",
+      "valid": true,
+      "version": 4
+    }
+  },
+  "yed_estimatecollateral": {
+    "args": "<cents> <lockBlocks> [priceMicroUsd]",
+    "returns": {
+      "aMint": 1985000,
+      "armed": true,
+      "attestFeeZat": 251889169,
+      "baseRatioBps": 50000,
+      "bundleSeqs": [
+        1,
+        2
+      ],
+      "claimHeight": 401,
+      "divergenceBps": 25,
+      "lockHeight": 377,
+      "minRatioBps": 50000,
+      "mintBlocked": false,
+      "mintBlockedReason": "",
+      "pMint": 1985000,
+      "protocolFeeCents": 1000,
+      "protocolFeeZat": 503778338,
+      "refHeight": 329,
+      "requiredZat": 251889169000,
+      "requiredZatFloored": 251889169000,
+      "sigmaMultBps": 10000,
+      "source": "a",
+      "termClass": "A",
+      "xMint": 1990000
+    }
+  },
+  "yed_estimatefee": {
+    "args": "<mintedCents> [priceMicroUsd]",
+    "returns": {
+      "attestFeeZat": 125000000,
+      "feeCents": 100,
+      "feeZat": 250000000,
+      "pMint": 400000
+    }
+  },
+  "yed_estimateredeem": {
+    "args": "<vaultTxid>",
+    "returns": {
+      "burnedCents": 100000,
+      "canRedeem": true,
+      "collateralZat": 251889169000,
+      "early": true,
+      "earlyRedeemFeeBps": 500,
+      "earlyRedeemFeeCents": 5000,
+      "earlyRedeemFeeZat": 2518891688,
+      "error": "",
+      "feeZat": 3022670026,
+      "height": 360,
+      "lockHeight": 377,
+      "pMint": 1985000,
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "protocolFeeCents": 1000,
+      "protocolFeeZat": 503778338,
+      "status": "ACTIVE",
+      "termClass": "A",
+      "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0"
+    }
+  },
+  "yed_estimatesend": {
+    "args": "<{yedaddress: cents, …}|cents>",
+    "returns": {
+      "alternatives": null,
+      "amountCents": 4000,
+      "changeCents": 6000,
+      "error": "",
+      "inputs": [
+        {
+          "cents": 10000,
+          "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+          "vout": 1
+        }
+      ],
+      "networkFeeZat": 12500000,
+      "recipients": 1,
+      "selectedCents": 10000,
+      "spendableCents": 10000,
+      "stage": "greedy",
+      "workable": true
+    }
+  },
+  "yed_getactivation": {
+    "args": "",
+    "returns": {
+      "activationHeight": 103,
+      "attestorSetId": "5e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e75",
+      "branchId": "6d5b7a31",
+      "claimDelay": 10,
+      "height": 331,
+      "name": "Vault",
+      "status": "active"
+    }
+  },
+  "yed_getattestations": {
+    "args": "",
+    "returns": [
+      {
+        "citedHeight": 329,
+        "fresh": true,
+        "hex": "0100e84a1e00490100002b3c…",
+        "priceMicroUsd": 1985000,
+        "receivedHeight": 331,
+        "seated": true,
+        "seq": 1
+      }
+    ]
+  },
+  "yed_getbalance": {
+    "args": "",
+    "returns": {
+      "confirmedCents": 100000,
+      "height": 331,
+      "spendableCents": 100000,
+      "unconfirmedCents": 0
+    }
+  },
+  "yed_getblockverdict": {
+    "args": "<blockhash>",
+    "returns": {
+      "blockInvalid": true,
+      "reason": "vault-spend-short-burn:6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+      "transactions": [
+        {
+          "closedVaults": [
+            {
+              "txid": "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b",
+              "vout": 0
+            }
+          ],
+          "feeZat": 629722922,
+          "path": "owner",
+          "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+          "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+          "type": "redeem",
+          "verdict": "vault-spend-short-burn",
+          "yedIn": 50000,
+          "yedOut": 0
+        }
+      ],
+      "verdict": "vault-spend-short-burn"
+    }
+  },
+  "yed_getfeepayee": {
+    "args": "<refHeight> [selectorHex]",
+    "returns": {
+      "default": {
+        "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+        "weight": 19800
+      },
+      "eligible": [
+        "smQvTmAz2ExamplePayoutAddress1111111"
+      ],
+      "policy": {
+        "accuracyWindow": 24,
+        "penaltyBlocks": 12,
+        "tiltBps": 10000
+      },
+      "preferred": "smQvTmAz2ExamplePayoutAddress1111111"
+    }
+  },
+  "yed_gethistory": {
+    "args": "<from> <to>",
+    "returns": [
+      {
+        "blockHash": "0f3a9c1e5b7d2a4c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f",
+        "collateralZat": 62500000000,
+        "globalRatioBps": 49750,
+        "globalRatioDenominator": "openDebt",
+        "haltMask": [],
+        "height": 331,
+        "issuedZat": 1656250000000,
+        "openDebtCents": 250000,
+        "pClaim": 2000000,
+        "pFast": 2000000,
+        "pMid": 2000000,
+        "pMint": 1990000,
+        "pSlow": 1990000,
+        "quote": true,
+        "sigmaMultBps": 10000,
+        "supplyCents": 250000,
+        "tagged": true
+      }
+    ]
+  },
+  "yed_getinfo": {
+    "args": "",
+    "returns": {
+      "attest": {
+        "armHeight": 308,
+        "armed": true,
+        "carrierMode": "scriptsig",
+        "poolFresh": 3,
+        "poolSize": 9,
+        "required": true,
+        "seatedCount": 3,
+        "status": "ARMED",
+        "triggerHeight": 300
+      },
+      "blockhash": "0f3a9c1e5b7d2a4c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f",
+      "chainHeight": 331,
+      "enabled": true,
+      "healthy": true,
+      "height": 331,
+      "lockedOutputs": 2,
+      "miner": {
+        "eligible": true,
+        "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+        "quoteAgeSeconds": 12,
+        "quoteKind": "quote",
+        "registered": true
+      },
+      "mintRequiresArmed": false,
+      "network": "regtest",
+      "params": {
+        "addressVersion": "2002",
+        "attest": {
+          "ageCap": 64,
+          "armDelay": 8,
+          "armMin": 3,
+          "attestFeeBps": 2500,
+          "attestMaxAge": 8,
+          "bondMaturity": 8,
+          "bondMinCapZat": 1000000000,
+          "bondMinFloorZat": 500000000,
+          "bondMinLock": 0,
+          "bondMinZat": 500000000,
+          "bondShareBps": 500,
+          "bundleMax": 6,
+          "carrierMode": "scriptsig",
+          "carrierValueZat": 10000,
+          "divergeBpsAttest": 1500,
+          "dormancyBlocks": 16,
+          "dormancyCheck": 4,
+          "dormancyMinBundles": 2,
+          "emergencyNoticeTtl": 64,
+          "emergencyPersist": 4,
+          "emergencyRatioBps": 10500,
+          "evictMarginBps": 500,
+          "foundingWindow": 16,
+          "kSlack": 1,
+          "mSelect": 2,
+          "mintPayloadVersion": 4,
+          "nSlots": 5,
+          "payloadVersion": 3,
+          "pinDeltaBps": 500,
+          "pinMinBundles": 2,
+          "pinMinTags": 2,
+          "pinWindow": 16,
+          "qHighBps": 6667,
+          "qLowBps": 3333,
+          "required": true,
+          "residualMinZat": 100000,
+          "seatAgeCap": 420480,
+          "seatAgeUnit": 1152,
+          "seatMarginBps": 500,
+          "seats": 15
+        },
+        "attestorSetId": "5e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e75",
+        "claimDelay": 10,
+        "claimThresholdBps": 12500,
+        "classes": [
+          {
+            "baseRatioBps": 30000,
+            "class": "A",
+            "earlyRedeemFeeBps": 500,
+            "maxBlocks": 96,
+            "minBlocks": 48
+          }
+        ],
+        "earlyRedeemFeeBps": [
+          500,
+          250,
+          100
+        ],
+        "feeZat": 1000,
+        "fees": {
+          "earlyRedeemFeeBps": [
+            500,
+            250,
+            100
+          ],
+          "network": {
+            "fallbackZatPerKB": 100,
+            "flatZat": 1000,
+            "floorZatPerKB": 5000,
+            "maxTxFeeZat": 10000000,
+            "plain": {
+              "usdPerKBMicro": 20000,
+              "zatPerKB": 5000000
+            },
+            "priceMicroUsd": 400000,
+            "priceSource": "tip",
+            "yellowback": {
+              "maxTxFeeCeilingZat": 1000000000,
+              "maxTxFeeUsdMicro": 2000000,
+              "maxTxFeeZat": 500000000,
+              "usdPerKBMicro": 50000,
+              "zatPerKB": 12500000
+            }
+          },
+          "protocol": {
+            "attestFeeBps": 5000,
+            "bands": [
+              {
+                "bps": 100,
+                "uptoCents": 100000
+              },
+              {
+                "bps": 50,
+                "uptoCents": 1000000
+              },
+              {
+                "bps": 10,
+                "uptoCents": null
+              }
+            ],
+            "floorCents": 100,
+            "priceSource": "pMint"
+          }
+        },
+        "globalRatioDenominator": "openDebt",
+        "globalRatioHaltBps": 25000,
+        "grace": 24,
+        "inTermClaims": true,
+        "maxMintCents": 10000000,
+        "minFill": {
+          "fast": 4,
+          "mid": 16,
+          "slow": 43
+        },
+        "payeeWindow": 10,
+        "policy": {
+          "accuracyWindow": 24,
+          "penaltyBlocks": 12,
+          "preferredAttestor": null,
+          "preferredPayee": null,
+          "tiltBps": 10000
+        },
+        "pq": {
+          "falconActive": false,
+          "falconHeight": -1,
+          "feeRateZatPerKB": 100,
+          "plainAddressVersion": "4c51",
+          "schemes": [
+            1
+          ]
+        },
+        "pqAddressVersion": "5710",
+        "recapRatioBps": 50000,
+        "refLag": 2,
+        "refWindow": 40,
+        "sigmaMultMaxBps": 10000,
+        "sigmaRefBps": 0,
+        "startHeight": 103,
+        "supplyCap": {
+          "capCents": 74074068,
+          "circulatingZat": 1234567800000000,
+          "issuedBeforeStartZat": 1200000000000000,
+          "maxVaultCents": 7407406,
+          "maxVaultShareBps": 1000,
+          "priceMicroUsd": 400000,
+          "vaultShareFloorCents": 1000000
+        },
+        "supplyCapBps": 0,
+        "tokenValueZat": 10000,
+        "windows": {
+          "fast": 8,
+          "mid": 24,
+          "slow": 64
+        }
+      },
+      "protectedByIndex": true,
+      "rebuilt": false,
+      "rpcversion": 8,
+      "startHeight": 103,
+      "supplyCapReached": false,
+      "unhealthyReason": "",
+      "upgrade": {
+        "activationHeight": 103,
+        "attestorSetId": "5e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e75",
+        "branchId": "6d5b7a31",
+        "claimDelay": 10,
+        "height": 331,
+        "name": "Vault",
+        "status": "active"
+      }
+    }
+  },
+  "yed_getnewaddress": {
+    "args": "[type]",
+    "returns": "yrExampleOwnerAddress111111111111111"
+  },
+  "yed_getnotice": {
+    "args": "<vaultTxid>",
+    "returns": {
+      "emergencyOpenAt": 342,
+      "expiresAt": 402,
+      "found": true,
+      "height": 340,
+      "pEmerg": 1800000,
+      "refHeight": 338,
+      "txid": "8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5",
+      "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0"
+    }
+  },
+  "yed_getprice": {
+    "args": "[height]",
+    "returns": {
+      "armed": true,
+      "attestStatus": "ARMED",
+      "fill": {
+        "fast": {
+          "minFill": 4,
+          "quoteTags": 8,
+          "window": 8
+        },
+        "mid": {
+          "minFill": 16,
+          "quoteTags": 24,
+          "window": 24
+        },
+        "slow": {
+          "minFill": 43,
+          "quoteTags": 60,
+          "window": 64
+        }
+      },
+      "height": 331,
+      "pClaim": 2000000,
+      "pFast": 2000000,
+      "pMid": 2000000,
+      "pMint": 1990000,
+      "pSlow": 1990000,
+      "pinnedKeys": [
+        "smQvTmAz2ExamplePayoutAddress1111111"
+      ],
+      "pinnedSeqs": [
+        3
+      ],
+      "seated": [
+        1,
+        2,
+        3
+      ],
+      "tag": {
+        "found": true,
+        "kind": "quote",
+        "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+        "priceMicroUsd": 2000000,
+        "sourceMask": 3,
+        "version": 1
+      },
+      "xClaim": 2000000,
+      "xMint": 1990000
+    }
+  },
+  "yed_getselection": {
+    "args": "<refHeight> <selectorHex>",
+    "returns": {
+      "armed": true,
+      "fallback": false,
+      "kSlack": 1,
+      "mSelect": 2,
+      "pool": [
+        1,
+        2,
+        3
+      ],
+      "reachable": 2,
+      "refHeight": 329,
+      "selected": [
+        {
+          "bondKeyAddress": "smExampleBondKeyAddr11111111111111111",
+          "poolFresh": true,
+          "seq": 2,
+          "status": "ELIGIBLE",
+          "weight": "31000000000"
+        }
+      ],
+      "selector": "",
+      "sumWeight": "93000000000"
+    }
+  },
+  "yed_getstatehash": {
+    "args": "[height]",
+    "returns": {
+      "blockhash": "0f3a9c1e5b7d2a4c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f",
+      "height": 331,
+      "statehash": "9b4e2f1c8d7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c"
+    }
+  },
+  "yed_getstats": {
+    "args": "",
+    "returns": {
+      "activeVaults": 3,
+      "claimedVaults": 0,
+      "closedVaults": 2,
+      "collateralZat": 62500000000,
+      "globalRatioBps": 49750,
+      "globalRatioDenominator": "openDebt",
+      "haltMask": [],
+      "height": 331,
+      "issuedZat": 1656250000000,
+      "mintableClasses": [
+        "A",
+        "B",
+        "C"
+      ],
+      "mintingAllowed": true,
+      "openDebtCents": 250000,
+      "pClaim": 2000000,
+      "pFast": 2000000,
+      "pMid": 2000000,
+      "pMint": 1990000,
+      "pSlow": 1990000,
+      "sigmaMultBps": 10000,
+      "supplyCapCents": null,
+      "supplyCents": 250000,
+      "unbackedCents": 0,
+      "voidVaults": 1
+    }
+  },
+  "yed_gettag": {
+    "args": "<height|blockhash>",
+    "returns": {
+      "found": true,
+      "kind": "quote",
+      "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+      "priceMicroUsd": 2000000,
+      "sourceMask": 3,
+      "version": 1
+    }
+  },
+  "yed_gettxinfo": {
+    "args": "<txid>",
+    "returns": {
+      "aClaim": 1995000,
+      "aMint": 1985000,
+      "assigned": [
+        {
+          "cents": 100000,
+          "vout": 1
+        }
+      ],
+      "attestFeeZat": 125944584,
+      "attestPayee": "smExampleBondAddress11111111111111111",
+      "bundleSeqs": [
+        1,
+        2
+      ],
+      "bundleSource": "scriptsig",
+      "burned": 0,
+      "carrierVin": 1,
+      "claimPath": "",
+      "closedVaults": [
+        {
+          "txid": "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b",
+          "vout": 0
+        }
+      ],
+      "expired": false,
+      "feeZat": 629722922,
+      "height": 332,
+      "notice": false,
+      "pClaim": 2000000,
+      "pMint": 1985000,
+      "path": "",
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "reopenedVaults": [],
+      "residualZat": 0,
+      "spentTokens": [
+        {
+          "txid": "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b",
+          "vout": 1
+        }
+      ],
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+      "type": "mint",
+      "verdict": "ok",
+      "xClaim": 2000000,
+      "xMint": 1990000,
+      "yedIn": 0,
+      "yedOut": 100000
+    }
+  },
+  "yed_getvault": {
+    "args": "<txid>",
+    "returns": {
+      "burnedCents": 0,
+      "cancelCount": 0,
+      "cancelQuietUntil": null,
+      "cancelsRequired": 1,
+      "claimHeight": 401,
+      "claimable": false,
+      "closeHeight": null,
+      "closingTxid": "",
+      "collateral": 2518.89169,
+      "collateralZat": 251889169000,
+      "emergencyOpenAt": null,
+      "feePaidZat": 503778338,
+      "lockHeight": 377,
+      "mintHeight": 332,
+      "mintedCents": 100000,
+      "noticeHeight": null,
+      "noticed": false,
+      "ownerAddress": "yb5u8LCGfU3hYYhhAqvYzR3ZQuNFEUWzx5dmLiGjPW8Gqto3xqqCc",
+      "ownerHash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      "ownerScheme": 1,
+      "pMint": 1985000,
+      "refHeight": 329,
+      "scriptPubKey": "045945440020755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e5a6d75765187637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e51c0677652876375027c01b1752102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac67765387637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755ec1692102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac675488029401b1686868",
+      "spendPending": false,
+      "status": "ACTIVE",
+      "termClass": "A",
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+      "unbacked": false,
+      "underwaterAt": 436700,
+      "voidReason": "",
+      "vout": 0
+    }
+  },
+  "yed_listaddresses": {
+    "args": "[includeEmpty]",
+    "returns": [
+      {
+        "address": "yrExampleOwnerAddress111111111111111",
+        "confirmedCents": 100000,
+        "label": "savings",
+        "lastUsed": 1792540800,
+        "txCount": 1
+      }
+    ]
+  },
+  "yed_listattestors": {
+    "args": "[height]",
+    "returns": [
+      {
+        "attestorPubKey": "03b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6071829304a5b6c7d8e9f0",
+        "bondAddress": "smExampleBondAddress11111111111111111",
+        "bondFrozen": false,
+        "bondKeyAddress": "smExampleBondKeyAddr11111111111111111",
+        "bondLocktime": 500,
+        "bondOutpoint": {
+          "txid": "7b2c3d4e5f60718293a4b5c6d7e8f9001a2b3c4d5e6f708192a3b4c5d6e7f809",
+          "vout": 0
+        },
+        "bondSpentHeight": null,
+        "bondZat": 1000000000,
+        "evicted": false,
+        "flags": {
+          "pool": false,
+          "tier": 0
+        },
+        "founding": true,
+        "lastAct": 281,
+        "lastBundleHeight": 330,
+        "pinned": false,
+        "poolFresh": true,
+        "registerHeight": 280,
+        "seatWeight": "65801000000000",
+        "seated": true,
+        "seatedSince": 300,
+        "seq": 1,
+        "status": "ELIGIBLE",
+        "statusHeight": 288,
+        "weight": "31000000000"
+      }
+    ]
+  },
+  "yed_listclaimable": {
+    "args": "[count] [skip]",
+    "returns": [
+      {
+        "attestFeeZat": 251889169,
+        "cancelCount": 0,
+        "cancelQuietUntil": null,
+        "cancelsRequired": 1,
+        "claimHeight": 401,
+        "claimPath": "a",
+        "claimable": true,
+        "collateralZat": 251889169000,
+        "emergencyOpenAt": null,
+        "feeZat": 503778338,
+        "lockHeight": 377,
+        "mintedCents": 100000,
+        "noticeHeight": null,
+        "noticed": false,
+        "ownerAddress": "yb5u8LCGfU3hYYhhAqvYzR3ZQuNFEUWzx5dmLiGjPW8Gqto3xqqCc",
+        "pClaim": 400000,
+        "pMint": 1985000,
+        "residualZat": 0,
+        "underwaterAt": 436700,
+        "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0"
+      }
+    ]
+  },
+  "yed_listminers": {
+    "args": "[height] [window]",
+    "returns": [
+      {
+        "accuracyBps": 9800,
+        "eligible": true,
+        "inBand": 8,
+        "lastQuote": 2000000,
+        "lastTagHeight": 331,
+        "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+        "penalizedUntil": 0,
+        "quoteTags": 4,
+        "quoted": 8,
+        "registered": true,
+        "share": 4000
+      }
+    ]
+  },
+  "yed_listpositions": {
+    "args": "[status]",
+    "returns": [
+      {
+        "burnedCents": 0,
+        "canClaim": false,
+        "canNotice": false,
+        "canRedeem": false,
+        "cancelCount": 0,
+        "cancelQuietUntil": null,
+        "cancelsRequired": 1,
+        "claimHeight": 401,
+        "claimable": false,
+        "closeHeight": null,
+        "closingTxid": "",
+        "collateral": 2518.89169,
+        "collateralZat": 251889169000,
+        "earlyRedeemFeeZat": 0,
+        "emergencyOpenAt": null,
+        "feePaidZat": 503778338,
+        "lockHeight": 377,
+        "mintHeight": 332,
+        "mintedCents": 100000,
+        "noticeHeight": null,
+        "noticed": false,
+        "ownerAddress": "yb5u8LCGfU3hYYhhAqvYzR3ZQuNFEUWzx5dmLiGjPW8Gqto3xqqCc",
+        "ownerHash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        "ownerScheme": 1,
+        "pMint": 1985000,
+        "refHeight": 329,
+        "scriptPubKey": "045945440020755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e5a6d75765187637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e51c0677652876375027c01b1752102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac67765387637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755ec1692102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac675488029401b1686868",
+        "spendPending": false,
+        "status": "ACTIVE",
+        "termClass": "A",
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "unbacked": false,
+        "underwaterAt": 436700,
+        "voidReason": "",
+        "vout": 0
+      }
+    ]
+  },
+  "yed_listtokens": {
+    "args": "<addresses> [minHeight] [count] [skip]",
+    "returns": [
+      {
+        "address": "yrExampleOwnerAddress111111111111111",
+        "cents": 100000,
+        "height": 332,
+        "transparentAddress": "smQvTmAz2ExamplePayoutAddress1111111",
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "valueZat": 10000,
+        "vout": 1
+      }
+    ]
+  },
+  "yed_listtransactions": {
+    "args": "[count] [skip]",
+    "returns": [
+      {
+        "amountCents": 100000,
+        "burned": 0,
+        "carrierOutcome": "completed",
+        "carrierTxid": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+        "confirmations": 1,
+        "expired": false,
+        "feeZat": 629722922,
+        "height": 332,
+        "mainTxid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "path": "",
+        "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+        "time": 1792540800,
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "type": "mint",
+        "unbacked": false,
+        "verdict": "ok",
+        "yedIn": 0,
+        "yedOut": 100000
+      }
+    ]
+  },
+  "yed_listunspent": {
+    "args": "",
+    "returns": [
+      {
+        "address": "yrExampleOwnerAddress111111111111111",
+        "cents": 100000,
+        "confirmations": 1,
+        "height": 332,
+        "locked": true,
+        "spentUnconfirmed": false,
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "valueZat": 10000,
+        "vout": 1
+      }
+    ]
+  },
+  "yed_listvaults": {
+    "args": "[status] [count] [skip]",
+    "returns": [
+      {
+        "burnedCents": 0,
+        "cancelCount": 0,
+        "cancelQuietUntil": null,
+        "cancelsRequired": 1,
+        "claimHeight": 401,
+        "claimable": false,
+        "closeHeight": null,
+        "closingTxid": "",
+        "collateral": 2518.89169,
+        "collateralZat": 251889169000,
+        "emergencyOpenAt": null,
+        "feePaidZat": 503778338,
+        "lockHeight": 377,
+        "mintHeight": 332,
+        "mintedCents": 100000,
+        "noticeHeight": null,
+        "noticed": false,
+        "ownerAddress": "yb5u8LCGfU3hYYhhAqvYzR3ZQuNFEUWzx5dmLiGjPW8Gqto3xqqCc",
+        "ownerHash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        "ownerScheme": 1,
+        "pMint": 1985000,
+        "refHeight": 329,
+        "scriptPubKey": "045945440020755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e5a6d75765187637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e51c0677652876375027c01b1752102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac67765387637520755e755e755e755e755e755e755e755e755e755e755e755e755e755e755e755ec1692102a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1ac675488029401b1686868",
+        "status": "ACTIVE",
+        "termClass": "A",
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "unbacked": false,
+        "underwaterAt": 436700,
+        "voidReason": "",
+        "vout": 0
+      }
+    ]
+  },
+  "yed_lockcoins": {
+    "args": "",
+    "returns": [
+      {
+        "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+        "vout": 1
+      }
+    ]
+  },
+  "yed_mint": {
+    "args": "<cents> <lockBlocks> [from] [bundleHex] [wait] [maxCollateralZat]",
+    "returns": {
+      "aMint": 1985000,
+      "attestFeeZat": 125944584,
+      "attestPayee": "smExampleBondAddress11111111111111111",
+      "bundleSeqs": [
+        1,
+        2
+      ],
+      "carrierTxid": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+      "claimHeight": 401,
+      "collateralZat": 251889169000,
+      "feeZat": 629722922,
+      "fundedFrom": "transparent",
+      "lockHeight": 377,
+      "ownerAddress": "yrExamplePQOwnerAddress11111111111111111111111111111",
+      "pMint": 1985000,
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "pending": false,
+      "refHeight": 329,
+      "source": "a",
+      "termClass": "A",
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+      "vault": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8:0",
+      "warning": "",
+      "xMint": 1990000
+    }
+  },
+  "yed_redeem": {
+    "args": "<vaultTxid> [to]",
+    "returns": {
+      "burnedCents": 100000,
+      "collateralOut": 248866488974,
+      "earlyRedeemFeeZat": 12594458450,
+      "extraBurnCents": 0,
+      "feeZat": 3022670026,
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "to": "smExampleTransparentTwin111111111111",
+      "txid": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d"
+    }
+  },
+  "yed_registerattestor": {
+    "args": "<bondYec> <lockBlocks> [flags]",
+    "returns": {
+      "attestorPubKey": "03b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6071829304a5b6c7d8e9f0",
+      "bondAddress": "smExampleBondAddress11111111111111111",
+      "bondKeyAddress": "smExampleBondKeyAddr11111111111111111",
+      "bondLocktime": 500,
+      "bondOutpoint": {
+        "txid": "7b2c3d4e5f60718293a4b5c6d7e8f9001a2b3c4d5e6f708192a3b4c5d6e7f809",
+        "vout": 0
+      },
+      "bondZat": 1000000000,
+      "flags": {
+        "pool": false,
+        "tier": 0
+      },
+      "maturesAt": 289,
+      "seq": null,
+      "txid": "7b2c3d4e5f60718293a4b5c6d7e8f9001a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "warning": ""
+    }
+  },
+  "yed_reportequivocation": {
+    "args": "<attestationHexA> <attestationHexB> [wait]",
+    "returns": {
+      "carrierTxid": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+      "citedHeight": 329,
+      "pending": false,
+      "priceA": 1985000,
+      "priceB": 2185000,
+      "refHeight": 331,
+      "seq": 4,
+      "txid": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d"
+    }
+  },
+  "yed_revive": {
+    "args": "<seq> <priceMicroUsd>",
+    "returns": {
+      "citedHeight": 329,
+      "hex": "0500e84a1e00490100002b3c…",
+      "priceMicroUsd": 1985000,
+      "seq": 5,
+      "txid": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d"
+    }
+  },
+  "yed_send": {
+    "args": "<yedaddress> <cents>",
+    "returns": {
+      "changeCents": 50000,
+      "expiryHeight": 371,
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8"
+    }
+  },
+  "yed_sendmany": {
+    "args": "<{yedaddress: cents, …}>",
+    "returns": {
+      "changeCents": 50000,
+      "expiryHeight": 371,
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8"
+    }
+  },
+  "yed_setquote": {
+    "args": "<priceMicroUsd> <sourceMask>",
+    "returns": {
+      "nextTag": {
+        "kind": "quote",
+        "payoutAddress": "smQvTmAz2ExamplePayoutAddress1111111"
+      },
+      "priceMicroUsd": 2000000,
+      "receivedAt": 1789000000,
+      "sourceMask": 3
+    }
+  },
+  "yed_signattestation": {
+    "args": "<seq> <priceMicroUsd> [citedHeight]",
+    "returns": {
+      "citedHeight": 329,
+      "hex": "0100e84a1e00490100002b3c…",
+      "priceMicroUsd": 1985000,
+      "reused": false,
+      "seq": 1
+    }
+  },
+  "yed_signcancelcosign": {
+    "args": "<intentOutpoint> [priceMicroUsd] [seq]",
+    "returns": {
+      "citedHeight": 978,
+      "cosig": "50c300001f5a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9001",
+      "priceMicroUsd": 50000,
+      "reused": false,
+      "seq": 0
+    }
+  },
+  "yed_sweepcarriers": {
+    "args": "",
+    "returns": {
+      "count": 0,
+      "outstanding": 1,
+      "reclaimedZat": 0,
+      "txid": ""
+    }
+  },
+  "yed_unlockcoin": {
+    "args": "<txid> <n> <acknowledgement>",
+    "returns": {
+      "cents": 10000,
+      "txid": "6a1f2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8",
+      "unlocked": true,
+      "vout": 1,
+      "wasYellowbackLocked": true
+    }
+  },
+  "yed_validateaddress": {
+    "args": "<address>",
+    "returns": {
+      "address": "yrExampleOwnerAddress111111111111111",
+      "ismine": true,
+      "isvalid": true,
+      "keyid": "1f2e3d4c5b6a79880706050403020100f1e2d3c4",
+      "reason": "",
+      "transparentAddress": "smExampleTransparentTwin111111111111",
+      "type": "p2pkh"
+    }
+  },
+  "yed_validaterawtransaction": {
+    "args": "<hex>",
+    "returns": {
+      "blockValid": true,
+      "burned": 100000,
+      "feeZat": 629722922,
+      "mempoolExpiryOk": true,
+      "path": "owner",
+      "payee": "smQvTmAz2ExamplePayoutAddress1111111",
+      "type": "redeem",
+      "unconfirmedInputs": [
+        {
+          "txid": "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b",
+          "vout": 1
+        }
+      ],
+      "valid": true,
+      "verdict": "ok",
+      "wouldBeRejected": false,
+      "yedIn": 100000,
+      "yedOut": 0
+    }
+  },
+  "yed_verifyindex": {
+    "args": "",
+    "returns": {
+      "healthy": true,
+      "height": 331,
+      "mismatches": [],
+      "ok": true,
+      "records": {
+        "activeVaults": 3,
+        "claimedVaults": 0,
+        "closedVaults": 2,
+        "collateralZat": 62500000000,
+        "openDebtCents": 1500000,
+        "supplyCents": 1500000,
+        "unbackedCents": 0,
+        "voidVaults": 0
+      },
+      "rulesVersion": 1,
+      "sets": [
+        {
+          "lockedValueZat": 62500000000,
+          "recordsZat": 62500000000,
+          "setid": "4c1d9b2e7a6f5e8d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d"
+        }
+      ],
+      "stored": {
+        "activeVaults": 3,
+        "claimedVaults": 0,
+        "closedVaults": 2,
+        "collateralZat": 62500000000,
+        "openDebtCents": 1500000,
+        "supplyCents": 1500000,
+        "unbackedCents": 0,
+        "voidVaults": 0
+      },
+      "tokens": 4,
+      "vaults": 5
+    }
+  },
+  "yed_withdrawbond": {
+    "args": "<seq> [to]",
+    "returns": {
+      "bondOut": 999990000,
+      "bondZat": 1000000000,
+      "seq": 1,
+      "to": "smExampleTransparentTwin111111111111",
+      "txid": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+z_listunifiedreceivers unified_address
+
+Returns a record of the individual receivers contained within the provided UA,
+keyed by receiver type. The UA may not have receivers for some receiver types,
+in which case those keys will be absent.
+
+Transactions that send funds to any of the receivers returned by this RPC
+method will be detected by the wallet as having been sent to the unified
+address.
+
+Arguments:
+1. unified_address (string) The unified address
+
+Result:
+{
+  "TRANSPARENT_TYPE": "address", (string) The legacy transparent address ("p2pkh" or "p2sh", never both)
+  "sapling": "address",          (string) The legacy Sapling address
+  "orchard": "address"           (string) A single-receiver Unified Address containing the Orchard receiver
+}
+
+Examples:
+> ycash-cli z_listunifiedreceivers 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_listunifiedreceivers", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

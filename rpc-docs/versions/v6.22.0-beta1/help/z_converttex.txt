@@ -1,0 +1,13 @@
+z_converttex ( "transparentaddress" )
+
+Converts a transparent Ycash address to a TEX address.
+
+Arguments:
+1. "transparentaddress" (string, required) 
+
+Result:
+"texaddress"    (string) The converted ZIP 320 (TEX) address
+
+Examples:
+> ycash-cli z_converttex "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw"
+

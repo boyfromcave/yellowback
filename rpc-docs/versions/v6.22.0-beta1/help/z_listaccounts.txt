@@ -1,0 +1,20 @@
+z_listaccounts
+
+Returns the list of accounts created with z_getnewaccount.
+
+Result:
+[
+   {
+     "account": "uint",           (uint) The account id
+     "addresses": [
+        {
+           "diversifier":  "uint",        (string) A diversifier used in the account
+           "ua":  "address",              (string) The unified address corresponding to the diversifier.
+        }
+     ]
+   }
+]
+
+Examples:
+> ycash-cli z_listaccounts 
+

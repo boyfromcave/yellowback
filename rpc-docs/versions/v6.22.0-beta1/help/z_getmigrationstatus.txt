@@ -1,0 +1,29 @@
+z_getmigrationstatus ( asOfHeight )
+Returns information about the status of the Sprout to Sapling migration.
+Note: A transaction is defined as finalized if it has at least ten confirmations.
+Also, it is possible that manually created transactions involving this wallet
+will be included in the result.
+
+Arguments:
+1. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+{
+  "enabled": true|false,                    (boolean) Whether or not migration is enabled
+  "destination_address": "zaddr",           (string) The Sapling address that will receive Sprout funds
+  "unmigrated_amount": nnn.n,               (numeric) The total amount of unmigrated YEC 
+  "unfinalized_migrated_amount": nnn.n,     (numeric) The total amount of unfinalized YEC 
+  "finalized_migrated_amount": nnn.n,       (numeric) The total amount of finalized YEC 
+  "finalized_migration_transactions": nnn,  (numeric) The number of migration transactions involving this wallet
+  "time_started": ttt,                      (numeric, optional) The block time of the first migration transaction as a Unix timestamp
+  "migration_txids": [txids]                (json array of strings) An array of all migration txids involving this wallet
+}
+

@@ -1,0 +1,44 @@
+z_gettreestate "hash|height"
+Return information about the given block's tree state.
+
+Arguments:
+1. "hash|height"          (string, required) The block hash or height. Height can be negative where -1 is the last known valid block
+
+Result:
+{
+  "hash": "hash",         (string) hex block hash
+  "height": n,              (numeric) block height
+  "time": n,                (numeric) block time: UTC seconds since the Unix 1970-01-01 epoch
+  "sprout": {
+    "skipHash": "hash",   (string) hash of most recent block with more information
+    "commitments": {
+      "finalRoot": "hex", (string)
+      "finalState": "hex" (string)
+    }
+  },
+  "sapling": {
+    "skipHash": "hash",   (string) hash of most recent block with more information
+    "commitments": {
+      "finalRoot": "hex", (string)
+                          NB: The serialized representation of this field returned by this method
+                              was byte-flipped relative to its representation in the `getrawtransaction`
+                              output in prior releases up to and including v5.2.0. This has now been
+                              rectified.
+      "finalState": "hex" (string)
+    }
+  },
+  "orchard": {
+    "skipHash": "hash",   (string) hash of most recent block with more information
+    "commitments": {
+      "finalRoot": "hex", (string)
+      "finalState": "hex" (string)
+    }
+  }
+}
+
+Examples:
+> ycash-cli z_gettreestate "00000000febc373a1da2bd9f887b105ad79ddc26ac26c2b28652d64e5207c5b5"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_gettreestate", "params": ["00000000febc373a1da2bd9f887b105ad79ddc26ac26c2b28652d64e5207c5b5"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+> ycash-cli z_gettreestate 12800
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_gettreestate", "params": [12800] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

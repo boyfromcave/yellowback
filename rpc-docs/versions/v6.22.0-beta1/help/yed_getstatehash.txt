@@ -1,0 +1,8 @@
+yed_getstatehash ( height )
+
+SHA-256 over the §3.6 preimage of every index table (TxLog and Undo excluded).
+If height is given it must equal the index height.
+
+Result:
+{ "height": n, "blockhash": "hex", "statehash": "hex" }
+

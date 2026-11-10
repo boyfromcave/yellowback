@@ -1,0 +1,43 @@
+z_listreceivedbyaddress "address" ( minconf asOfHeight )
+
+Return a list of amounts received by a zaddr belonging to the node's wallet.
+
+Arguments:
+1. "address"      (string) The shielded address.
+2. minconf        (numeric, optional, default=1) Only include transactions confirmed at least this many times.
+3. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+                    `minconf` must be at least 1 when `asOfHeight` is provided.
+
+Result (output indices for only one value pool will be present):
+[
+  {
+    "pool": "pool"                (string) one of ("transparent", "sprout", "sapling", "orchard")
+    "txid": "txid",               (string) the transaction id
+    "amount": xxxxx,              (numeric) the amount of value in the note
+    "amountZat" : xxxx            (numeric) The amount in yoshis
+    "memo": "hexmemo",            (string) hexadecimal string representation of memo field
+    "memoStr": "memo",            (string, optional) UTF-8 string representation of memo field (if it contains valid UTF-8).
+    "confirmations" : n,          (numeric) the number of confirmations
+    "blockheight": n,             (numeric) The block height containing the transaction
+    "blockindex": n,              (numeric) The block index containing the transaction.
+    "blocktime": xxx,             (numeric) The transaction time in seconds since epoch (midnight Jan 1 1970 GMT).
+    "jsindex" (sprout) : n,       (numeric) the joinsplit index
+    "jsoutindex" (sprout) : n,    (numeric) the output index of the joinsplit
+    "outindex" (sapling, orchard) : n, (numeric) the Sapling output index, or the Orchard action index
+    "change": true|false,         (boolean) true if the output was received to a change address
+  },
+...
+]
+
+Examples:
+> ycash-cli z_listreceivedbyaddress "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_listreceivedbyaddress", "params": ["ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

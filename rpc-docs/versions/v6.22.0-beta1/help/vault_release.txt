@@ -1,0 +1,12 @@
+vault_release "intentoutpoint" ( "address"|"script" )
+
+Release a matured intent to its recipient (RELEASE, selector 1, nSequence = delay; U-15: anyone may). The
+intent commits only SHA256 of the recipient script, so the recipient is the argument, or a script this node
+built the intent for, or a P2PKH / P2SH script of this wallet, or the TX_PQPKH script of a post-quantum key
+this wallet holds (the owner's residual, quantum spec F-3). An address may be sq…/tq…/rq…; a pqkeyid is refused
+(pass the address or the script). Fee from this wallet.
+
+Result: "txid"
+> ycash-cli vault_release "txid:0"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_release", "params": ["txid:0", "address"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

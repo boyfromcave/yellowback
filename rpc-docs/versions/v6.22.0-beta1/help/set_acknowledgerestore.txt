@@ -1,0 +1,12 @@
+set_acknowledgerestore
+
+Clear the restore marker (07/F-5, review S2): the operator confirms that this wallet's sign-once history
+(set_listsigned) is complete -- every set signature its member keys ever made is recorded here, because no
+other host, wallet copy or backup has signed with them since the history was taken. set_signunlock /
+set_signcancel then sign wherever the record allows. Imports never clear the marker. Imported keys that are
+not yet a set member stay pending: a later SET_JOIN of one sets the marker again.
+
+Result: {"restored" (false), "pendingkeys" (imported keys still watched for a SET_JOIN)}
+> ycash-cli set_acknowledgerestore 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_acknowledgerestore", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

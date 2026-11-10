@@ -1,0 +1,14 @@
+getexperimentalfeatures
+
+Returns enabled experimental features.
+
+Result:
+  [
+     "experimentalfeature"     (string) The enabled experimental feature
+     ,...
+  ],
+
+Examples:
+> ycash-cli getexperimentalfeatures 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getexperimentalfeatures", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

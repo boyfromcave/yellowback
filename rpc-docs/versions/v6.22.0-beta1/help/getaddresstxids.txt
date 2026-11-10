@@ -1,0 +1,52 @@
+getaddresstxids {"addresses": ["taddr", ...], ("start": n), ("end": n)}
+
+Returns the txids for given transparent addresses within the given (inclusive)
+
+block height range, default is the full blockchain.
+If start or end are not specified, they default to zero.
+If start is greater than the latest block height, it's interpreted as that height.
+
+If end is zero, it's interpreted as the latest block height.
+
+The returned txids are in the order they appear in blocks, which
+ensures that they are topologically sorted (i.e. parent txids
+appear before child txids).
+
+WARNING: getaddresstxids is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+{
+  "addresses":
+    [
+      "taddr"  (string) The base58check encoded address
+      ,...
+    ]
+  "start" (number, optional) The start block height
+  "end" (number, optional) The end block height
+}
+(or)
+"address"  (string) The base58check encoded address
+
+Result:
+[
+  "transactionid"  (string) The transaction id
+  ,...
+]
+
+Examples:
+> ycash-cli getaddresstxids '{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "start": 1000, "end": 2000}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddresstxids", "params": [{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "start": 1000, "end": 2000}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

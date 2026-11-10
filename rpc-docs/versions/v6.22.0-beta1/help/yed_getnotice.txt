@@ -1,0 +1,4 @@
+yed_getnotice "vaultTxid"
+
+The Notices record for the vault (NOT-1), or {found: false}. Refuses with vault-not-found.
+

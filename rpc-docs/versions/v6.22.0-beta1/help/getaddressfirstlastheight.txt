@@ -1,0 +1,32 @@
+getaddressfirstlastheight "address"
+
+Returns the first and last block height at which the given transparent address was seen.
+
+WARNING: getaddressfirstlastheight is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+"address"  (string) The base58check encoded address
+
+Result:
+{
+  "firstHeight"  (numeric) Block height when the address was first seen (0 if never)
+  "lastHeight"   (numeric) Block height when the address was last seen (0 if never)
+}
+
+Examples:
+> ycash-cli getaddressfirstlastheight "smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddressfirstlastheight", "params": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

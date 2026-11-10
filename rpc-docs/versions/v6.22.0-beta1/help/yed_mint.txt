@@ -1,0 +1,32 @@
+yed_mint cents lockBlocks ( "from" "bundleHex" wait maxCollateralZat )
+
+Mint YED: locks the required YEC collateral in a vault for lockBlocks blocks (the term class follows) and creates the YED.
+The collateral requirement, the enforcement fee and its payee are fixed at the reference height (index tip minus the
+mint lag) and known before signing. Back up wallet.dat afterwards: the vault owner is a fresh post-quantum (SLH-DSA)
+wallet key (quantum plan §4.3), the YED goes to a fresh holder key (P2PKH; a Falcon key from the Falcon height).
+v3 (W7): two transactions — the carrier funding transaction first (carrierTxid; its redeem script commits to the
+attestation bundle), then the MINT after one confirmation, spending the carrier as its last input. Before commit the
+wallet dry-runs MINT-1..10 with the bundle and refuses naming the rule.
+
+Arguments:
+1. cents       (numeric, required) amount of YED to mint, in cents
+2. lockBlocks  (numeric, required) lock length in blocks (class A, B or C by range)
+3. "from"      (string, optional) fund the collateral from this address: an s1... address (its confirmed
+               outputs only) or a ys1... address (its Sapling notes, spent in the same transaction; the change
+               returns to it). Default: any confirmed transparent output of the wallet.
+4. "bundleHex" (string, optional) the attestation bundle to commit to ("" = the node's pool)
+5. wait        (boolean, optional, default true) block until the MINT is committed; false returns after the
+               carrier broadcast with pending = true and the wallet finishes on the next block
+6. maxCollateralZat (numeric, optional, default 0 = no bound) refuse (collateral-above-max) before anything is
+               signed when the collateral vout[0] would exceed this many zatoshi; judged at preflight and again
+               when the MINT is built on the confirmed carrier (then the carrier lapses and is swept)
+
+wait=false and restarts: the pending completion lives in memory only. If the node restarts before the
+carrier confirms, nobody builds the MINT: the carrier (CARRIER_VALUE plus its fee) stays outstanding in
+carriers.dat until its window (REF_WINDOW blocks past refHeight) lapses and yed_sweepcarriers (also run at
+startup) reclaims it. Call yed_mint again after the restart; no YED was issued and no collateral was locked.
+At most half of -rpcthreads wait=true calls may wait at once (carrier-wait-busy otherwise).
+
+Result: { "txid", "vault", "ownerAddress", "termClass", "lockHeight", "claimHeight", "collateralZat", "feeZat", "payee", "fundedFrom",
+          "warning", "carrierTxid", "pending", "refHeight", "xMint", "aMint", "pMint", "source", "bundleSeqs", "attestFeeZat", "attestPayee" }
+

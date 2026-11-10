@@ -1,0 +1,4 @@
+yed_getblockverdict "blockhash"
+
+EvaluateBlock on a stored block whose parent is the index tip (N12): explains a rejection. Allowed while unhealthy.
+

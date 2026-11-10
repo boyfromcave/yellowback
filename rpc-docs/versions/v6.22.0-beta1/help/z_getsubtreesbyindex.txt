@@ -1,0 +1,34 @@
+z_getsubtreesbyindex "pool" start_index ( limit )
+Returns roots of subtrees of the given pool's note commitment tree. Each value returned
+in the `subtrees` field is the Merkle root of a subtree containing 2^16 leaves.
+
+WARNING: z_getsubtreesbyindex is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+1. "pool"        (string, required) The pool from which subtrees should be returned. Either "sapling" or "orchard".
+2. start_index   (numeric, required) The index of the first 2^16-leaf subtree to return.
+2. limit         (numeric, optional) The maximum number of subtree values to return.
+
+Result:
+{
+  "pool" : "sapling|orchard", (string) The shielded pool to which the subtrees belong
+  "start_index": n,      (numeric) The index of the first subtree
+  "subtrees": [          (array) A sequential list of complete subtrees
+    {
+      "root": "hash",    (string) Merkle root of the 2^16-leaf subtree
+      "end_height": n,   (numeric) height of the block containing the note that completed this subtree
+    }, ...
+  ]
+}
+
+Examples:
+> ycash-cli z_getsubtreesbyindex "sapling", 0
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getsubtreesbyindex", "params": ["orchard", 3, 7] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

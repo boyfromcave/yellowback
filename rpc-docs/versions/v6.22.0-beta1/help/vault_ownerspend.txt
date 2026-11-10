@@ -1,0 +1,10 @@
+vault_ownerspend "outpoint" "address"
+
+Spend a vault (or intent) with this wallet's owner key to address, less the fee: selector 2 (the OWNER branch,
+nLockTime = ownerheight) once the next block is past ownerheight, else selector 3 (OWNER-RELEASED) when the set
+is released (dormant or wound down, plan §3.7). An intent has only selector 3.
+
+Result: {"txid", "selector"}
+> ycash-cli vault_ownerspend "txid:0" "address"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_ownerspend", "params": ["txid:0", "address"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

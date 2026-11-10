@@ -1,0 +1,14 @@
+set_equivocation {proof}
+
+Submit a SET_EQUIVOCATION proof (anyone may): two set signatures by one member over two different spends of
+the same outpoint. The member is EJECTED and its bond frozen (plan §3.6).
+
+Arguments:
+1. proof (object, required) {"setid", "prevout": "txid:n" | {"txid","vout"}, "rolea": 1|2,
+         "sighasha": "32 raw bytes hex", "siga": "65 bytes hex", "roleb", "sighashb", "sigb"}
+         (set_signunlock / set_signcancel report each signature's sighash)
+
+Result: "txid"
+> ycash-cli set_equivocation '{"setid":"..","prevout":"txid:0","rolea":1,...}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_equivocation", "params": [{...}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

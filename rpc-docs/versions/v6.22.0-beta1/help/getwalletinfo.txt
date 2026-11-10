@@ -1,0 +1,43 @@
+getwalletinfo ( asOfHeight )
+Returns wallet state information.
+
+Arguments:
+1. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+{
+  "walletversion": xxxxx,     (numeric) the wallet version
+  "balance": xxxxxxx,         (numeric) the total confirmed transparent balance of the wallet in YEC
+  "unconfirmed_balance": xxx, (numeric, optional) the total unconfirmed transparent balance of the wallet in YEC.
+                              Not included if `asOfHeight` is specified.
+  "immature_balance": xxxxxx, (numeric) the total immature transparent balance of the wallet in YEC
+  "shielded_balance": xxxxxxx,  (numeric) the total confirmed shielded balance of the wallet in YEC
+  "shielded_unconfirmed_balance": xxx, (numeric, optional) the total unconfirmed shielded balance of the wallet in YEC.
+                              Not included if `asOfHeight` is specified.
+  "txcount": xxxxxxx,         (numeric) the total number of transactions in the wallet
+  "keypoololdest": xxxxxx,    (numeric) the timestamp (seconds since GMT epoch) of the oldest pre-generated key in the key pool
+  "keypoolsize": xxxx,        (numeric) how many new keys are pre-generated
+  "unlocked_until": ttt,      (numeric) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked
+  "paytxfee": x.xxxx,         (numeric) the preferred transaction fee rate used for transactions created by legacy APIs, set in YEC per 1000 bytes
+  "mnemonic_seedfp": "uint256", (string) the BLAKE2b-256 hash of the HD seed derived from the wallet's emergency recovery phrase
+  "legacy_seedfp": "uint256",   (string, optional) if this wallet was created prior to release 4.5.2, this will contain the BLAKE2b-256
+                                    hash of the legacy HD seed that was used to derive Sapling addresses prior to the 4.5.2 upgrade to mnemonic
+                                    emergency recovery phrases. This field was previously named "seedfp".
+  "has_external_imports": true,   (bool, optional) only present and true when the wallet contains keys imported from outside the ZIP-32
+                                    derivation tree (importprivkey, z_importkey, importwallet). When set, the recovery phrase alone is NOT
+                                    a complete backup. Back up wallet.dat or run z_exportwallet to capture the imported keys.
+  "external_imports_warning": "...", (string, optional) human-readable warning, only present when has_external_imports is true.
+}
+
+Examples:
+> ycash-cli getwalletinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getwalletinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

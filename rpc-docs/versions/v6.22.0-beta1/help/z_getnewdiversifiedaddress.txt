@@ -1,0 +1,15 @@
+z_getnewdiversifiedaddress "zaddr"
+
+Derives and adds to the wallet a new Sapling address that shares the
+same spending key as the given address (a new diversified address).
+
+Arguments:
+1. "zaddr"   (string, required) An existing Sapling address in the wallet
+
+Result:
+"zaddr"      (string) the newly derived diversified Sapling address
+
+Examples:
+> ycash-cli z_getnewdiversifiedaddress "ys1..."
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getnewdiversifiedaddress", "params": ["ys1..."] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,9 @@
+set_heartbeat "setid" ( "memberkey" )
+
+Broadcast a SET_HEARTBEAT for a current member key of this wallet (default: the first one), which sets its
+lastAct to the height it confirms at (the set's liveness, plan §3.7, U-19).
+
+Result: {"txid", "memberkey"}
+> ycash-cli set_heartbeat "setid"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_heartbeat", "params": ["setid"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

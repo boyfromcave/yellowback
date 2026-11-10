@@ -1,0 +1,13 @@
+yed_unlockcoin "txid" n "acknowledgement"
+
+Unlock one Yellowback-held outpoint (H5): the deliberate escape hatch, since lockunspent refuses to unlock one.
+The YED it carries is burned by the first transaction that spends it outside the overlay, and the next
+yed_lockcoins, reconciliation or restart locks it again.
+
+Arguments:
+1. "txid"             (string, required)
+2. n                   (numeric, required) the output index
+3. "acknowledgement"  (string, required) exactly "I understand this burns YED"
+
+Result: { "txid", "vout", "unlocked", "wasYellowbackLocked", "cents" }
+

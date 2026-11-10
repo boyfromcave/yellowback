@@ -1,0 +1,15 @@
+set_sendact "hex" ( {"dryrun":bool, "allowinputs":["txid:n",...], "allowoutflow":n} )
+
+Sign this wallet's inputs of an act transaction this wallet built (set_buildact, or set_join when it
+returned a hex) and broadcast it. Only coins that build chose are signed, and only for its outputs (act
+signatures added later still match). Any other spendable coin of this wallet is refused
+(vault-send-foreign-input) unless allowinputs names it, and nothing is signed. The wallet's net outflow
+above the fee cap is refused (vault-send-outflow) unless allowoutflow is at least that outflow. A
+SET_JOIN bond counts as this wallet's when it holds the member key. dryrun returns a preview and does
+not sign or broadcast.
+
+Result (dryrun false or omitted): "txid"
+Result (dryrun true): {"template":null, "act", "sign", "foreign", "outputs", "fee", "outflow", "wouldrefuse"}
+> ycash-cli set_sendact "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_sendact", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

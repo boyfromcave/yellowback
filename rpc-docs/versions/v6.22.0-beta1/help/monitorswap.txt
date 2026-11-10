@@ -1,0 +1,8 @@
+monitorswap "swapid"
+
+Return the current observed status of a single swap, including time-until-expiry
+and information about the spending transaction (if any).
+
+Arguments:
+1. "swapid"  (string, required) "<contractTxid>:<vout>"
+

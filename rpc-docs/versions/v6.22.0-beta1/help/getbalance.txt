@@ -1,0 +1,38 @@
+getbalance ( "(dummy)" minconf includeWatchonly inZat asOfHeight )
+
+Returns the wallet's available transparent balance. This total
+currently includes transparent balances associated with unified
+accounts. Prefer to use `z_getbalanceforaccount` instead.
+
+Arguments:
+1. (dummy)          (string, optional) Remains for backward compatibility. Must be excluded or set to "*" or "".
+2. minconf          (numeric, optional, default=0) Only include transactions confirmed at least this many times.
+3. includeWatchonly (bool, optional, default=false) Also include balance in watchonly addresses (see 'importaddress')
+4. inZat            (bool, optional, default=false) Get the result amount in yoshis (as an integer).
+5. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+                    `minconf` must be at least 1 when `asOfHeight` is provided.
+
+Result:
+amount              (numeric) The total amount in YEC(or yoshis if inZat is true) received.
+
+Bitcoin compatibility:
+Compatible with up to three arguments.
+Examples:
+
+The total amount in the wallet
+> ycash-cli getbalance *
+
+The total amount in the wallet at least 5 blocks confirmed
+> ycash-cli getbalance "*" 6
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getbalance", "params": ["*", 6] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

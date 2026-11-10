@@ -1,0 +1,14 @@
+yed_estimatesend {"yedaddress":cents,...}|cents
+
+Dry run of yed_send / yed_sendmany (H3): the YED inputs the floor-aware selector would spend, the change it
+would leave and, when the amount cannot be sent without change below the minimum output, the nearest workable
+amounts below and above it. Signs nothing, locks nothing, commits nothing, and never refuses for the amount.
+
+Arguments:
+1. recipients  (object or numeric, required) {"yedaddress": cents, ...} as yed_sendmany, or just the total cents
+
+Result: { "amountCents", "recipients", "workable", "stage", "inputs": [{"txid","vout","cents"}],
+          "selectedCents", "changeCents", "spendableCents", "networkFeeZat", "error", "alternatives" }
+networkFeeZat is the YEC network fee the send pays (YED cannot pay it), priced on the selected YED inputs as yed_send
+prices it (a post-quantum YEC funding coin can raise it); null when the amount is not workable.
+
