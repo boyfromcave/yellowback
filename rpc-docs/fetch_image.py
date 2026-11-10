@@ -130,7 +130,9 @@ def main(argv=None):
                         out = os.path.join(args.dest, os.path.basename(name))
                         with tar.extractfile(member) as src, open(out, "wb") as dst:
                             dst.write(src.read())
-                        os.chmod(out, 0o755)
+                        # Owner-only. The binary is run by this process and removed with the
+                        # temp directory; 0o755 is world-readable (CodeQL py/overly-permissive-file).
+                        os.chmod(out, 0o700)
                         found[name] = out
     missing = sorted(wanted - set(found))
     if missing:
