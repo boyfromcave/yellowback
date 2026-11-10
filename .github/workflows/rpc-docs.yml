@@ -1,0 +1,58 @@
+# rpc-docs: test and build the RPC documentation site from rpc-docs/, and on upgrade/vault publish it
+# to GitHub Pages, served at rpc.ycash.team (rpc-docs/README.md, "Hosting").
+#
+# In plain words: every change to the RPC docs is checked and built; once it is merged, the built
+# site goes live. Nothing here talks to a node or to AWS: the snapshots are committed, and the
+# domain is one DNS record in Route 53 pointing at GitHub Pages.
+name: rpc-docs
+
+on:
+  push:
+    branches: [ upgrade/vault ]
+    paths: [ 'rpc-docs/**', '.github/workflows/rpc-docs.yml' ]
+  pull_request:
+    paths: [ 'rpc-docs/**', '.github/workflows/rpc-docs.yml' ]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with: { python-version: '3.11' }
+      - name: Unit tests
+        run: python3 rpc-docs/test_rpc_docs.py -v
+      - name: Build the site
+        run: python3 rpc-docs/build.py --out "$RUNNER_TEMP/site"
+      - name: Upload the Pages artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/upgrade/vault'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/upgrade/vault'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
