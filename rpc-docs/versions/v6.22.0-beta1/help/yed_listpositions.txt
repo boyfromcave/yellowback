@@ -1,0 +1,8 @@
+yed_listpositions ( "status" )
+
+This wallet's vaults (owner key held): every yed_getvault field plus canRedeem (ACTIVE or VOID at or past
+the owner height: from the block after the mint, IT-1; for VOID the release), canClaim (claimable and the
+wallet holds the debt) and earlyRedeemFeeZat (what a redeem now adds to the pool fee before lockHeight, IT-9).
+spendPending is true while a mempool transaction spends the vault (spendTxid, present only then); canRedeem and
+canClaim are false while it is. canClaim reads the spendable YED (yed_getbalance.spendableCents).
+

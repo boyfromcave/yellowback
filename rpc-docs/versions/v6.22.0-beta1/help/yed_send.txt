@@ -1,0 +1,9 @@
+yed_send "yedaddress" cents
+
+Send YED to a Yellowback address. Refuses other addresses (not-a-yellowback-address) and change below $1.00 (change-floor).
+From the Falcon height (yed_getinfo.params.pq) YED goes to post-quantum (Falcon) holders only (TOK-PQ, bad-yed-holder).
+A YED transaction built before that height with a P2PKH token output and still unconfirmed when the tip reaches
+Falcon height - 1 is evicted from the mempool (it would be invalid in the next block): rebuild it.
+YED cannot pay the network fee: it is paid in YEC from this wallet's confirmed transparent coins (insufficient-yec
+without them); yed_estimatesend quotes it as networkFeeZat.
+

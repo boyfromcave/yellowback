@@ -1,0 +1,5 @@
+yed_validateaddress "address"
+
+Decode a Yellowback address; reports whether it is mine. Never throws for a bad address:
+isvalid is false and reason is "not-a-yellowback-address".
+

@@ -1,0 +1,26 @@
+signmessage "t-addr" "message"
+
+Sign a message with the private key of a t-addr
+
+Arguments:
+1. "t-addr"  (string, required) The transparent address to use to look up the private key.
+   that will be used to sign the message.
+2. "message" (string, required) The message to create a signature of.
+
+Result:
+"signature"  (string) The signature of the message encoded in base 64
+
+Examples:
+
+Unlock the wallet for 30 seconds
+> ycash-cli walletpassphrase "mypassphrase" 30
+
+Create the signature
+> ycash-cli signmessage "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" "my message"
+
+Verify the signature
+> ycash-cli verifymessage "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" "signature" "my message"
+
+As json rpc
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "signmessage", "params": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", "my message"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

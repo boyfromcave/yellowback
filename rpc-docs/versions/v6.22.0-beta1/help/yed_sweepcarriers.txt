@@ -1,0 +1,7 @@
+yed_sweepcarriers
+
+Reclaim every outstanding carrier of this wallet (carriers.dat, W7) whose window has lapsed into one output to a
+fresh own address. Also run at startup. Never refuses for nothing to do.
+
+Result: { "txid", "count", "reclaimedZat", "outstanding" }
+

@@ -1,0 +1,4 @@
+yed_addattestation "hex"
+
+Verify one 74-byte attestation against the tip and pool it (S4). RPC-auth only; never gated on the wallet.
+

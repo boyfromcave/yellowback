@@ -1,0 +1,9 @@
+yed_withdrawbond seq ( "to" )
+
+Spend the bond of an attestor whose bondPubKey this wallet holds (nLockTime = bondLocktime, the CLTV path), signed
+by hand. The bond exit delay (owner 2026-10-11): only a WITHDRAWN record (it left with set_leave, or was evicted) whose
+bond is not frozen, from statusHeight + the set's maturity (BOND_MATURITY); bond-locked before.
+Refused with attest-unknown-seq, attest-key-not-held, bond-locked, bond-spent, bad-address.
+
+Result: { "txid", "seq", "bondZat", "bondOut", "to" }
+

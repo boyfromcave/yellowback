@@ -1,0 +1,28 @@
+exportchain ( "filename" )
+
+Exports the active chain (genesis..tip) to a bootstrap.dat-format
+file usable with -loadblock to seed new nodes.
+
+This runs ASYNCHRONOUSLY: the call returns immediately and a
+background thread performs the dump. Poll getexportchainstatus for
+progress. cs_main is held only per 1000-block chunk, so the node
+keeps serving while the export runs. If the chain reorgs such that
+the tip snapshotted at start leaves the active chain, the export
+aborts (status FAILED) rather than producing a corrupt bootstrap.
+
+Arguments:
+1. "filename"  (string, optional, default=bootstrap.dat) Output file,
+                relative to the current working directory.
+
+Result:
+{
+  "started": true,
+  "filename": "...",
+  "target_height": n
+}
+
+Examples:
+> ycash-cli exportchain 
+> ycash-cli exportchain "mybootstrap.dat"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "exportchain", "params": ["mybootstrap.dat"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

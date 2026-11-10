@@ -1,0 +1,21 @@
+getaccount "ycashaddress"
+
+getaccount is DEPRECATED and will be removed in a future release.
+
+
+Returns the label associated with the given address (legacy "account"
+is just the address label). Returns the label if one is set, otherwise
+an empty string. NOTE: "" does NOT mean the wallet owns the address --
+a valid address the wallet does not own also returns "". Use
+validateaddress / getaddressesbyaccount to check ownership.
+
+Arguments:
+1. "ycashaddress"  (string, required) The Ycash address for label lookup.
+
+Result:
+"accountname"        (string) the address label, or "" if none.
+
+Examples:
+> ycash-cli getaccount "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaccount", "params": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,5 @@
+yed_buildbundle refHeight "selectorHex"
+
+The bundle this node would build for (refHeight, selector) from its pool (W6, W9); selectorHex is "" for a MINT,
+the 72-hex-character serialised vault outpoint for a REDEEM or CLAIM_NOTICE. Refuses with bundle-insufficient.
+

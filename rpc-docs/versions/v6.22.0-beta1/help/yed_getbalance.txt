@@ -1,0 +1,7 @@
+yed_getbalance
+
+Confirmed YED (from the index) and unconfirmed YED (mempool transactions that would assign YED to this wallet).
+spendableCents is confirmedCents less the YED this wallet's own unconfirmed transactions already spend: what
+yed_send, yed_redeem and yed_claim can use now (their change returns in unconfirmedCents).
+Result: { "confirmedCents": n, "spendableCents": n, "unconfirmedCents": n, "height": n }
+

@@ -1,0 +1,19 @@
+getexportchainstatus
+
+Returns the status of the most recent (or in-progress) exportchain.
+
+Result:
+{
+  "state": "idle|running|done|failed",
+  "filename": "...",
+  "height_done": n,
+  "height_target": n,
+  "percent": x.x,
+  "elapsed_seconds": n,
+  "message": "..."
+}
+
+Examples:
+> ycash-cli getexportchainstatus 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getexportchainstatus", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

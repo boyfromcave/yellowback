@@ -1,0 +1,8 @@
+yed_claimnotice "vaultTxid" ( "bundleHex" wait )
+
+Step 1 of the emergency claim (NOT-1): the carrier step (selector = the vault outpoint), then a transaction of own
+YEC plus the carrier carrying the CLAIM_NOTICE payload. Anyone may post a notice; it needs YEC, no YED. Refused
+with notice-standing, notice-not-underwater, bundle-insufficient, bundle-malformed.
+
+Result: { "txid", "carrierTxid", "pending", "vault", "refHeight", "xClaim", "aClaim", "pEmerg", "bundleSeqs", "emergencyOpenAt" }
+

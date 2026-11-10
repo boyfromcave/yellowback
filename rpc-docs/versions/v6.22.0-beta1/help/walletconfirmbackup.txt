@@ -1,0 +1,28 @@
+walletconfirmbackup "emergency recovery phrase" ( acknowledge_imports )
+
+CAUTION: This is an internal method that is not intended to be called directly by
+users. Please use the ycashd-wallet-tool utility (built or installed in the same directory
+as ycashd) instead. In particular, this method should not be used from ycash-cli, in order
+to avoid exposing the recovery phrase on the command line.
+
+Notify the wallet that the user has backed up the emergency recovery phrase,
+which can be obtained by making a call to z_exportwallet. The ycashd embedded wallet
+requires confirmation that the emergency recovery phrase has been backed up before it
+will permit new spending keys or addresses to be generated.
+
+If the wallet contains keys imported from outside the ZIP-32 derivation tree
+(see getwalletinfo.has_external_imports), the recovery phrase alone is not a
+complete backup. In that case this call requires the second argument
+`acknowledge_imports=true` to confirm the caller understands that wallet.dat
+or z_exportwallet must also be preserved.
+
+Arguments:
+1. "emergency recovery phrase" (string, required) The full recovery phrase returned as part
+   of the data returned by z_exportwallet. An error will be returned if the value provided
+   does not match the wallet's existing emergency recovery phrase.
+2. acknowledge_imports        (bool, optional, default=false) Must be true if the wallet
+   contains externally-imported keys; ignored otherwise.
+
+Examples:
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "walletconfirmbackup", "params": ["abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

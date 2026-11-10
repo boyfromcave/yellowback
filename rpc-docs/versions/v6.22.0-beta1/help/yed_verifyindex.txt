@@ -1,0 +1,16 @@
+yed_verifyindex
+
+The invariant audit the node runs at startup (cf. DigiByte v9.26.7 SupplyVerification): re-derives the Totals
+record from the stored Tokens and Vaults records (supplyCents = the sum of every unspent YED token; collateralZat
+and activeVaults from the ACTIVE vaults, collateralZat also from the CLAIMING ones, IT-6; each status count from
+its records; openDebtCents from the ACTIVE and CLAIMING vaults' mintedCents, and supplyCents <= openDebtCents, HALT-2),
+checks the tip snapshot against the Totals, and every signer set's lockedValue against its unspent
+V outputs in the vault set-state database. Reads every Tokens and Vaults record once. Writes nothing; a mismatch
+marks the index unhealthy (the node then stops at the next block): restart with -reindex-yellowback (Yellowback
+totals) or -reindex (a set's lockedValue). Answers on an unhealthy index too.
+
+Result:
+{ "height": n, "ok": true|false, "tokens": n, "vaults": n, "stored": {totals}, "records": {totals},
+  "sets": [ { "setid": "hex", "lockedValueZat": n, "recordsZat": n } ], "mismatches": [ "text", ... ],
+  "healthy": true|false, "rulesVersion": n }
+

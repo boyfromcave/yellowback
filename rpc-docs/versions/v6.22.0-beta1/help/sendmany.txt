@@ -1,0 +1,46 @@
+sendmany "" {"address":amount,...} ( minconf "comment" ["address",...] )
+
+Send to multiple transparent recipients, using funds from the legacy transparent
+value pool. Amounts are decimal numbers with at most 8 digits of precision.
+Payments sent using this API are visible on-chain and do not otherwise
+provide privacy protections; it should only be used in circumstances 
+where it is necessary to interoperate with legacy Bitcoin infrastructure.
+Prefer to use `z_sendmany` instead.
+
+
+Arguments:
+1. "dummy"               (string, required) Must be set to "" for backwards compatibility.
+2. "amounts"             (string, required) A json object with addresses and amounts
+    {
+      "address":amount   (numeric) The Ycash address is the key, the numeric amount in YEC is the value
+      ,...
+    }
+3. minconf                 (numeric, optional, default=1) Only use the balance confirmed at least this many times.
+4. "comment"             (string, optional) A comment
+5. subtractfeefromamount   (string, optional) A json array with addresses.
+                           The fee will be equally deducted from the amount of each selected address.
+                           Those recipients will receive less Ycash than you enter in their corresponding amount field.
+                           If no addresses are specified here, the sender pays the fee.
+    [
+      "address"            (string) Subtract fee from this address
+      ,...
+    ]
+
+Result:
+"transactionid"          (string) The transaction id for the send. Only 1 transaction is created regardless of 
+                                    the number of addresses.
+
+Examples:
+
+Send two amounts to two different addresses:
+> ycash-cli sendmany "" "{\"s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP\":0.01,\"s1j145WNXgjEkVRGKiYJHbLXwUYWUWw9rCH\":0.02}"
+
+Send two amounts to two different addresses setting the confirmation and comment:
+> ycash-cli sendmany "" "{\"s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP\":0.01,\"s1j145WNXgjEkVRGKiYJHbLXwUYWUWw9rCH\":0.02}" 6 "testing"
+
+Send two amounts to two different addresses, subtract fee from amount:
+> ycash-cli sendmany "" "{\"s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP\":0.01,\"s1j145WNXgjEkVRGKiYJHbLXwUYWUWw9rCH\":0.02}" 1 "" "[\"s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP\",\"s1j145WNXgjEkVRGKiYJHbLXwUYWUWw9rCH\"]"
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "sendmany", "params": ["", "{\"s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP\":0.01,\"s1j145WNXgjEkVRGKiYJHbLXwUYWUWw9rCH\":0.02}", 6, "testing"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

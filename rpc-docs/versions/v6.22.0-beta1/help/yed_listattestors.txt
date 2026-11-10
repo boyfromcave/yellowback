@@ -1,0 +1,5 @@
+yed_listattestors ( height )
+
+Every Attestors record (v3 §3.6) in seq order; seated/pinned/weight at height's snapshot (default the tip). Since P4-b
+a record mirrors one SET_JOIN to the attestor set (attestorPubKey = the member key; lastAct and bondFrozen are the set's).
+

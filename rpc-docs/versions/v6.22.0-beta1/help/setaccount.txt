@@ -1,0 +1,17 @@
+setaccount "ycashaddress" "account"
+
+setaccount is DEPRECATED and will be removed in a future release.
+
+
+Assigns the address to the given account. Ycash emulates a single default
+account, so only "" is accepted; the call is then a no-op that succeeds.
+Any non-empty account name returns an error.
+
+Arguments:
+1. "ycashaddress"  (string, required) The Ycash address to be associated with the account.
+2. "account"       (string, required) Must be "".
+
+Examples:
+> ycash-cli setaccount "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" ""
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "setaccount", "params": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", ""] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

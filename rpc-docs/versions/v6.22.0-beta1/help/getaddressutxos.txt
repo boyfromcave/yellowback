@@ -1,0 +1,65 @@
+getaddressutxos {"addresses": ["taddr", ...], ("chainInfo": true|false)}
+
+Returns all unspent outputs for an address.
+
+WARNING: getaddressutxos is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+{
+  "addresses":
+    [
+      "address"  (string) The base58check encoded address
+      ,...
+    ],
+  "chainInfo"  (boolean, optional, default=false) Include chain info with results
+}
+(or)
+"address"  (string) The base58check encoded address
+
+Result
+[
+  {
+    "address"  (string) The address base58check encoded
+    "txid"  (string) The output txid
+    "height"  (number) The block height
+    "outputIndex"  (number) The output index
+    "script"  (string) The script hex encoded
+    "satoshis"  (number) The number of yoshis of the output
+  }, ...
+]
+
+(or, if chainInfo is true):
+
+{
+  "utxos":
+    [
+      {
+        "address"     (string)  The address base58check encoded
+        "txid"        (string)  The output txid
+        "height"      (number)  The block height
+        "outputIndex" (number)  The output index
+        "script"      (string)  The script hex encoded
+        "satoshis"    (number)  The number of yoshis of the output
+      }, ...
+    ],
+  "hash"              (string)  The block hash
+  "height"            (numeric) The block height
+}
+
+Examples:
+> ycash-cli getaddressutxos '{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "chainInfo": true}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddressutxos", "params": [{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "chainInfo": true}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

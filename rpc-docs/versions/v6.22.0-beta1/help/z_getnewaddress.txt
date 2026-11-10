@@ -1,0 +1,22 @@
+z_getnewaddress ( type )
+
+z_getnewaddress is DEPRECATED and will be removed in a future release.
+
+
+Returns a new shielded address for receiving payments.
+
+With no arguments, this currently returns a Sapling address (but that
+should not be relied on).
+Generating a Sprout address is not allowed after Canopy has activated.
+
+Arguments:
+1. "type"         (string, optional, default="sapling") The type of address. One of ["sprout", "sapling"].
+
+Result:
+"zcashaddress"    (string) The new shielded address.
+
+Examples:
+> ycash-cli z_getnewaddress 
+> ycash-cli z_getnewaddress sapling
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getnewaddress", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

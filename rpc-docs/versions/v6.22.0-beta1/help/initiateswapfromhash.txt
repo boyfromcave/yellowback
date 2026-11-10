@@ -1,0 +1,14 @@
+initiateswapfromhash "fundingaddress" "recipientaddress" amount locktime "secrethash"
+
+Initiate an atomic swap using a known secret hash (when the counterparty generated the secret).
+
+Arguments:
+1. "fundingaddress"    (string, required) Existing wallet address with sufficient balance
+2. "recipientaddress"  (string, required) The Ycash address of the recipient
+3. amount              (numeric, required) The amount in YEC to lock
+4. locktime            (numeric, required) Absolute locktime (block height < 500000000 or Unix timestamp >= 500000000)
+5. "secrethash"        (string, required) 20-byte HASH160 of the secret, in hex
+
+Examples:
+> ycash-cli initiateswapfromhash "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" 1.0 1500000 "a1b2c3..."
+

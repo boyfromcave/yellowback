@@ -1,0 +1,18 @@
+set_join "setid" bondamount bondlocktime ( "memberkey" )
+
+Join a set with a bond P2SH(<bondlocktime> CLTV DROP <memberkey> CHECKSIG) of bondamount. The member's
+signature is added by this wallet, and the admission signatures it can add (the admit key, or current
+members' keys once the set has slashthreshold of them). If that completes the act it is broadcast;
+otherwise the hex is returned for set_signact on the other signers' nodes and set_sendact here. The unbroadcast
+build is remembered; set_sendact on this node signs only the coins it chose for those outputs.
+
+Arguments:
+1. "setid"      (string, required)
+2. bondamount   (numeric, required) at least the set's bondmin
+3. bondlocktime (numeric, required) a height >= next height + bondlockmin
+4. "memberkey"  (string, optional) a wallet public key (default: a new one)
+
+Result: {"txid" (when broadcast), "hex", "complete", "signatures", "required", "memberkey", "bondoutpoint"}
+> ycash-cli set_join "setid" 1 500
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_join", "params": ["setid", 1, 500] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

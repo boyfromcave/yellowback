@@ -1,0 +1,14 @@
+yed_getinfo
+
+Yellowback index status, the vault upgrade, miner state and parameters (doc/yellowback-rpc.md).
+Never refuses while the index is unhealthy.
+supplyCapReached (W20): true when the next mint of any class would exceed the supply cap at the tip
+snapshot (supplyCents + MIN_MINT > supplyCapCents); false when the cap is undefined. Above the cap only a
+class whose base ratio reaches params.recapRatioBps mints (IT-5: class C with the in-term parameter set;
+yed_getstats.mintableClasses).
+mintRequiresArmed (H-1): true when a mint whose reference height is not ARMED is invalid (mint-halted-unarmed).
+
+Examples:
+> ycash-cli yed_getinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "yed_getinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

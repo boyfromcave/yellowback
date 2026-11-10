@@ -1,0 +1,28 @@
+sendtoaddress "zcashaddress" amount ( "comment" "comment-to" subtractfeefromamount )
+
+Send an amount to a given transparent address. The amount is interpreted as a real number
+and is rounded to the nearest 0.00000001. This API will only select funds from the transparent
+pool, and all the details of the transaction, including sender, recipient, and amount will be
+permanently visible on the public chain. THIS API PROVIDES NO PRIVACY, and should only be
+used when interoperability with legacy Bitcoin infrastructure is required.
+
+Arguments:
+1. "zcashaddress"  (string, required) The transparent Ycash address to send to.
+2. "amount"      (numeric, required) The amount in YEC to send. eg 0.1
+3. "comment"     (string, optional) A comment used to store what the transaction is for. 
+                             This is not part of the transaction, just kept in your wallet.
+4. "comment-to"  (string, optional) A comment to store the name of the person or organization 
+                             to which you're sending the transaction. This is not part of the 
+                             transaction, just kept in your wallet.
+5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.
+                             The recipient will receive less Ycash than you enter in the amount field.
+
+Result:
+"transactionid"  (string) The transaction id.
+
+Examples:
+> ycash-cli sendtoaddress "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" 0.1
+> ycash-cli sendtoaddress "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" 0.1 "donation" "seans outpost"
+> ycash-cli sendtoaddress "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" 0.1 "" "" true
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "sendtoaddress", "params": ["s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", 0.1, "donation", "seans outpost"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,82 @@
+getblock "hash|height" ( verbosity )
+
+If verbosity is 0, returns a string that is serialized, hex-encoded data for the block.
+If verbosity is 1, returns an Object with information about the block.
+If verbosity is 2, returns an Object with information about the block and information about each transaction. 
+
+Arguments:
+1. "hash|height"          (string, required) The block hash or height. Height can be negative where -1 is the last known valid block
+2. verbosity              (numeric, optional, default=1) 0 for hex encoded data, 1 for a json object, and 2 for json object with transaction data
+
+Result (for verbosity = 0):
+"data"             (string) A string that is serialized, hex-encoded data for the block.
+
+Result (for verbosity = 1):
+{
+  "hash" : "hash",       (string) the block hash (same as provided hash)
+  "confirmations" : n,   (numeric) The number of confirmations, or -1 if the block is not on the main chain
+  "size" : n,            (numeric) The block size
+  "height" : n,          (numeric) The block height or index (same as provided height)
+  "version" : n,         (numeric) The block version
+  "merkleroot" : "xxxx", (string) The merkle root
+  "finalsaplingroot" : "xxxx", (string) The root of the Sapling commitment tree after applying this block
+  "finalorchardroot" : "xxxx", (string, optional) The root of the Orchard commitment tree after
+                               applying this block. Omitted for blocks prior to NU5 activation. This
+                               will be the null hash if this block has never been connected to a
+                               main chain.
+                               NB: The serialized representation of this field returned by this method
+                                   was byte-flipped relative to its representation in the `getrawtransaction`
+                                   output in prior releases up to and including v5.2.0. This has now been
+                                   rectified.
+  "tx" : [               (array of string) The transaction ids
+     "transactionid"     (string) The transaction id
+     ,...
+  ],
+  "time" : ttt,          (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)
+  "nonce" : n,           (numeric) The nonce
+  "bits" : "1d00ffff",   (string) The bits
+  "difficulty" : x.xxx,  (numeric) The difficulty
+  "chainSupply": {          (object) information about the total supply
+      "monitored": xx,           (boolean) true if the total supply is being monitored
+      "chainValue": xxxxxx,      (numeric, optional) total chain supply after this block, in YEC
+      "chainValueZat": xxxxxx,   (numeric, optional) total chain supply after this block, in yoshis
+      "valueDelta": xxxxxx,      (numeric, optional) change to the chain supply produced by this block, in YEC
+      "valueDeltaZat": xxxxxx,   (numeric, optional) change to the chain supply produced by this block, in yoshis
+  },
+  "valuePools": [            (array) information about each value pool
+      {
+          "id": "xxxx",            (string) name of the pool
+          "monitored": xx,           (boolean) true if the pool is being monitored
+          "chainValue": xxxxxx,      (numeric, optional) total amount in the pool, in YEC
+          "chainValueZat": xxxxxx,   (numeric, optional) total amount in the pool, in yoshis
+          "valueDelta": xxxxxx,      (numeric, optional) change to the amount in the pool produced by this block, in YEC
+          "valueDeltaZat": xxxxxx,   (numeric, optional) change to the amount in the pool produced by this block, in yoshis
+      }, ...
+  ],
+  "trees": {                 (object) information about the note commitment trees
+      "sapling": {             (object, optional)
+          "size": n,             (numeric) the total number of Sapling note commitments as of the end of this block
+      },
+      "orchard": {             (object, optional)
+          "size": n,             (numeric) the total number of Orchard note commitments as of the end of this block
+      },
+  },
+  "previousblockhash" : "hash",  (string) The hash of the previous block
+  "nextblockhash" : "hash"       (string) The hash of the next block
+}
+
+Result (for verbosity = 2):
+{
+  ...,                     Same output as verbosity = 1.
+  "tx" : [               (array of Objects) The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 "tx" result.
+         ,...
+  ],
+  ,...                     Same output as verbosity = 1.
+}
+
+Examples:
+> ycash-cli getblock "00000000febc373a1da2bd9f887b105ad79ddc26ac26c2b28652d64e5207c5b5"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getblock", "params": ["00000000febc373a1da2bd9f887b105ad79ddc26ac26c2b28652d64e5207c5b5"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+> ycash-cli getblock 12800
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getblock", "params": [12800] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

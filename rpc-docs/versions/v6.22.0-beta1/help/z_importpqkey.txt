@@ -1,0 +1,26 @@
+z_importpqkey "pqseed" ( rescan "label" )
+
+Adds one post-quantum key to the wallet from its 48-byte keygen seed (e.g. a vault owner or holder key made
+by another wallet such as YEW). The public key is re-derived from the seed. A key this wallet derives from its
+own HD seed keeps its index; any other key is stored without one (it never moves the wallet's issued index).
+The key's plain-YEC address (sq…/tq…/rq…) goes into the address book.
+
+Arguments:
+1. "pqseed"     (string, required) "<scheme>:<seed hex>", or dumpwallet's "<scheme>:<index>:<seed hex>"
+                (an optional "pqseed=" prefix is accepted), or a dump's whole "pqseed=… # owner=… addr=… yecaddr=…"
+                line. scheme 1 = SLH-DSA-SHA2-128s, 2 = FN-DSA-512. Both schemes take a 48-byte seed and the
+                scheme decides the key: the same seed under the other scheme is another key with another
+                address, so check the returned address is the one you expect. A whole dump line is checked:
+                when its owner=, addr= or yecaddr= does not name the seed's key, nothing is imported.
+2. rescan       (boolean, optional, default=true) Rescan the chain for the key's transactions
+3. "label"      (string, optional, default="") The address book label
+
+Result:
+{ "scheme": n, "keyhash": "hex", "pqkeyid": "hex (scheme || keyhash)", "address": "sq…",
+  "index": n|null (the HD index when the key is this wallet's own), "added": true|false (false: already held) }
+
+Examples:
+> ycash-cli z_importpqkey "1:<96 hex digits>"
+> ycash-cli z_importpqkey "1:<96 hex digits>" false
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_importpqkey", "params": ["1:<96 hex digits>", true] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,32 @@
+{
+  "title": "Ycash RPC",
+  "domain": "rpc.ycash.team",
+  "repository": "https://github.com/boyfromcave/yellowback/tree/upgrade/vault/rpc-docs",
+  "channels": {},
+  "sections": [
+    {
+      "id": "post-quantum",
+      "title": "Post-quantum",
+      "intro": "Post-quantum keys and addresses (SLH-DSA-SHA2-128s and FN-DSA-512): the wallet RPCs that create, import and recognise them, and the vault and YED RPCs that take a post-quantum owner or holder.",
+      "methods": [
+        "getnewaddress", "z_importpqkey", "validateaddress", "vault_getnewowner", "yed_getnewaddress",
+        "vault_lock", "vault_list", "vault_release", "vault_ownerspend",
+        "yed_mint", "yed_send", "yed_estimatesend", "yed_listtokens"
+      ]
+    },
+    {
+      "id": "vault",
+      "title": "Vault primitive",
+      "intro": "The vault network upgrade's lock/unlock primitive: attestor sets (set_*) and vaults (vault_*). Active from the Vault upgrade, consensus branch ID 6d5b7a31.",
+      "categories": ["Vault"],
+      "contract": "vault-rpc-contract.json"
+    },
+    {
+      "id": "yellowback",
+      "title": "Yellowback (YED)",
+      "intro": "Ycash Yellowback (YED), the rule module on the vault primitive: minting, sending and redeeming YED, price attestation and the Yellowback index. Registered on nodes with the vault upgrade and a YED attestor set configured.",
+      "categories": ["Yellowback"],
+      "contract": "yellowback-rpc-contract.json"
+    }
+  ]
+}

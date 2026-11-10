@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<meta name="description" content="$title: the Ycash node's JSON-RPC reference">
+$canonical
+<link rel="icon" href="${root}assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="${root}assets/site.css">
+<script src="${root}assets/site.js" defer></script>
+</head>
+<body class="layout-$layout" data-root="$root" data-page="$page" data-current="$current">
+<header class="top">
+  <a class="brand" href="$home"><img src="${root}assets/favicon.svg" alt="" width="28" height="28"><span>$site_title</span></a>
+  <nav class="top-links">
+    <a href="${root}versions.html">Versions</a>
+    <label class="picker"><span class="sr-only">Version</span>
+      <select class="version-picker" aria-label="Version">
+        $version_options
+      </select>
+    </label>
+  </nav>
+</header>
+$banner
+<div class="wrap">
+  <aside class="side">$nav</aside>
+  <main>$body</main>
+</div>
+<footer class="foot">
+  <p>Generated from each release's own <code>ycash-cli help</code> output and RPC contracts.
+  Source and procedure: <a href="$repository">rpc-docs</a>. Help text MIT, The Ycash and Zcash developers.</p>
+</footer>
+</body>
+</html>

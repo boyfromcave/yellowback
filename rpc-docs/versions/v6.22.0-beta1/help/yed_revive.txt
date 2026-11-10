@@ -1,0 +1,10 @@
+yed_revive seq priceMicroUsd
+
+Revive a DORMANT attestor whose member key this wallet holds (P4-b: a SET_HEARTBEAT of the member key to the
+attestor set; ATTESTOR_REVIVE is invalid). Also signs one attestation for citedHeight = tip - REF_LAG through the
+equivocation guard and returns it (feed it with yed_addattestation). The record is ELIGIBLE again at the SNAP of
+the heartbeat's block. Refused with attest-unknown-seq, not-dormant, attest-key-not-held, attest-range,
+equivocation-guard.
+
+Result: { "txid", "seq", "citedHeight", "priceMicroUsd", "hex" }
+

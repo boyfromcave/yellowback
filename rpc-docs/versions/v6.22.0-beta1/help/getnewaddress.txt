@@ -1,0 +1,28 @@
+getnewaddress ( "" "type" )
+
+getnewaddress is DEPRECATED and will be removed in a future release.
+
+
+Returns a new transparent Ycash address.
+Payments received by this API are visible on-chain and do not otherwise
+provide privacy protections; they should only be used in circumstances 
+where it is necessary to interoperate with legacy Bitcoin infrastructure.
+
+Arguments:
+1. (dummy)       (string, optional) DEPRECATED. If provided, it MUST be set to the empty string "". Passing any other string will result in an error.
+2. "type"        (string, optional, default "p2pkh") "p2pkh", or "pq": a post-quantum address
+                  (sq… mainnet, tq… testnet, rq… regtest; 53 characters) from the wallet's seed, FN-DSA-512 once
+                  Falcon is active at the next block, SLH-DSA-SHA2-128s before (the YED holder policy, as
+                  yed_getnewaddress "pq"); "pqslh": always SLH-DSA-SHA2-128s (larger spends, hash-based only).
+                  Needs the vault upgrade active at the next block and an unlocked wallet.
+                  A post-quantum address receives plain YEC; sendtoaddress/sendmany spend it (fee by size),
+                  the z_* operations never pay or spend it.
+
+Result:
+"zcashaddress"    (string) The new transparent Ycash address
+
+Examples:
+> ycash-cli getnewaddress 
+> ycash-cli getnewaddress "" "pq"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getnewaddress", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

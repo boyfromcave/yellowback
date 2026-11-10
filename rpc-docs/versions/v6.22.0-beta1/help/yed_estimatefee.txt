@@ -1,0 +1,7 @@
+yed_estimatefee mintedCents ( priceMicroUsd )
+
+FEE-1' (rpcversion 8, D-Q-23): the protocol fee of a debt of mintedCents, tiered by params.fees.protocol.bands with
+the floor, in cents (feeCents) and in zat (feeZat = ceil(fee x COIN / pMint)) at pMint = priceMicroUsd when given
+(PRICE_MIN..PRICE_MAX), else the cross-section xMint at R = tip - REF_LAG (a mint's; a redeem converts at the
+vault's own pMint, yed_getvault). attestFeeZat is AFEE-1''s half of feeZat. feeZat and attestFeeZat are null without a price.
+

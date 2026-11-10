@@ -1,0 +1,21 @@
+z_getnewaccount
+
+Prepares and returns a new account.
+
+Accounts are numbered starting from zero; this RPC method selects the next
+available sequential account number within the UA-compatible HD seed phrase.
+
+Each new account is a separate group of funds within the wallet, and adds an
+additional performance cost to wallet scanning.
+
+Use the z_getaddressforaccount RPC method to obtain addresses for an account.
+
+Result:
+{
+  "account": n,       (numeric) the new account number
+}
+
+Examples:
+> ycash-cli z_getnewaccount 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getnewaccount", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,18 @@
+yed_redeem "vaultTxid" ( "to" )
+
+Redeem an own vault in one step (V24). ACTIVE: burns exactly the vault's debt from this wallet's YED, pays the
+enforcement fee to an eligible pool and sends the rest of the collateral to "to"; refused unless an enforcing
+miner would accept it (mempool-check-failed:<verdict>). VOID: releases the collateral with no burn, no fee and
+no payload (L14). An ACTIVE vault redeems at any height after its mint (IT-1); before lockHeight the
+early-redeem fee earlyRedeemFeeBps[class] of the debt at the mint price is added to the pool fee (IT-9') -- quote it
+first with yed_estimateredeem. A VOID release needs the tip at its owner height (vault-locked). Refused
+(vault-spend-pending) while a spend of the vault is already in the mempool.
+
+Arguments:
+1. "vaultTxid"  (string, required) the mint transaction id (the vault is its output 0)
+2. "to"         (string, optional) where the collateral goes: an s1... address, or a ys1... address
+                  (paid as a Sapling output). Default: a fresh transparent address of this wallet.
+
+Result: { "txid", "burnedCents", "feeZat", "earlyRedeemFeeZat", "payee", "collateralOut", "to",
+          "extraBurnCents" }  (feeZat includes earlyRedeemFeeZat)
+

@@ -1,0 +1,24 @@
+sendfrom "fromaccount" "toycashaddress" amount ( minconf "comment" "comment-to" )
+
+sendfrom is DEPRECATED and will be removed in a future release.
+
+
+Sent an amount from the default account to a transparent address. Ycash
+emulates a single default account, so the first argument must be "".
+Any non-empty account is rejected.
+
+Arguments:
+1. "fromaccount"      (string, required) Must be "".
+2. "toycashaddress"   (string, required) The transparent Ycash address to send to.
+3. amount              (numeric, required) The amount in YEC to send.
+4. minconf             (numeric, optional, default=1) Minimum confirmations for inputs.
+5. "comment"          (string, optional) Stored in the wallet, not sent on chain.
+6. "comment-to"       (string, optional) Stored in the wallet, not sent on chain.
+
+Result:
+"transactionid"  (string) The transaction id.
+
+Examples:
+> ycash-cli sendfrom "" "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" 0.1
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "sendfrom", "params": ["", "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", 0.1] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

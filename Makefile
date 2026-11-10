@@ -68,6 +68,21 @@ spec-fees: ## Write the fees line's copies (the in-term spec; the quantum contra
 release-train-check: ## Check every releases/v*.yaml: shape, commits on upgrade/vault, tags, rpcversion, contract copies (testnet plan §5.4; OFFLINE=1: shape only)
 	@python3 scripts/release-train.py check $(if $(OFFLINE),,--online)
 
+rpc-docs: ## Build the RPC documentation site (rpc.ycash.team) into rpc-docs/_site from rpc-docs/versions/
+	@python3 rpc-docs/build.py
+
+rpc-docs-serve: rpc-docs ## Build the RPC docs and serve them on http://localhost:8001 (PORT=)
+	@python3 -m http.server $(or $(PORT),8001) --bind 127.0.0.1 -d rpc-docs/_site
+
+rpc-docs-test: ## The RPC docs generator's unit tests (offline)
+	@python3 rpc-docs/test_rpc_docs.py -v
+
+rpc-docs-capture: ## Snapshot a release's RPC help: VERSION=v6.22.0-rc1 and IMAGE=ghcr.io/... or BIN=<dir> COMMIT=<sha> (NODE_REPO=ycash6)
+	@test -n "$(VERSION)" || { echo "VERSION=vX.Y.Z[-betaN|-rcN] is required" >&2; exit 2; }
+	@python3 rpc-docs/capture.py "$(VERSION)" --node-repo "$(or $(NODE_REPO),ycash6)" \
+		$(if $(IMAGE),--image "$(IMAGE)",--bin-dir "$(BIN)") $(if $(COMMIT),--commit "$(COMMIT)") \
+		$(if $(MISMATCH),--allow-commit-mismatch "$(MISMATCH)")
+
 pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit
 	@printf '%-18s %-32s %s\n' workspace "$$(git rev-parse --abbrev-ref HEAD)" "$$(git rev-parse --short HEAD)"

@@ -1,0 +1,28 @@
+yed_buildcancel "intentoutpoint" ( ["cosig",...] )
+
+Build the attestor CANCEL of a YED claimant intent before it matures (U-23, CAN-1): vault_buildcancel's
+transaction -- the claimed vault re-created at vout[0] -- with the refund of the claim's burn at vout[1], a token
+carrier paying the holder the burned YED came from (yed_getvault.refundHolder), then this wallet's fee inputs and
+change (unsigned). Collect the attestor set's signature with set_signcancel, then vault_send. A cancel without
+the refund is invalid (intent-cancel-no-refund), which is why vault_buildcancel refuses a YED intent. A claim
+still in the mempool can be cancelled too once all its inputs are confirmed (the holder and the burn are read from
+them; refused while one is unconfirmed or the index lags the tip). The whole burn goes to the holder of the
+claim's lowest-index YED input. Called again for
+the same intent it returns the same transaction while its fee inputs are unspent (members sign once).
+CAN-2 + C4b (the cancel-limit design): the cancel must also carry at least cancelsRequired co-signatures
+(yed_getvault.cancelsRequired: 1 for a vault's first cancel, one more for each cancel within CANCEL_QUIET, at most
+CANCEL_SIGNERS_MAX), each a distinct current member's yed_signcancelcosign result. With fewer it is refused
+(cancel-cosign-needed, naming how many). With enough, a carrier holding them is broadcast (CARRIER_VALUE) and the
+cancel spends it as its last input, signed (the CANCEL_COSIGN marker is the last output, so the set signature's
+SIGHASH_ALL|ANYONECANPAY digest is the same whatever co-signatures arrive: members still sign once). Collect more
+than required when you can: consensus counts the distinct valid entries and ignores the rest, so spares keep the
+cancel valid when a co-signer leaves before it confirms or a reorg adds an earlier cancel. An entry this RPC can
+already see would not count (malformed, another intent, a repeat, not a current member, a price out of range or
+claimable) is dropped and named in warnings; the call is refused only when fewer than cancelsRequired remain.
+
+Result: vault_buildcancel's {"hex", "required", "cancelsetid", "deadline", "intentconfirmed"} plus
+"refund": {"vout": 1, "script" (hex), "cents" (the claim's whole burn, re-issued to that script)},
+"cancelsRequired", "cosigners" (seqs, carrier order), "carrierTxid", "warnings" (optional: the dropped entries)
+> ycash-cli yed_buildcancel "txid:0"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "yed_buildcancel", "params": ["txid:0"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

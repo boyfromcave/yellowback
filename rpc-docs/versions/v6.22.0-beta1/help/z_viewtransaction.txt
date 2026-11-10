@@ -1,0 +1,53 @@
+z_viewtransaction "txid"
+
+Get detailed shielded information about in-wallet transaction <txid>
+
+Arguments:
+1. "txid"    (string, required) The transaction id
+
+Result:
+{
+  "txid" : "transactionid",   (string) The transaction id
+  "spends" : [
+    {
+      "pool" : "sprout|sapling|orchard",      (string) The shielded value pool
+      "type" : "sprout|sapling|orchard",      (string) The shielded value pool (DEPRECATED legacy attribute)
+      "js" : n,                       (numeric, sprout) the index of the JSDescription within vJoinSplit
+      "jsSpend" : n,                  (numeric, sprout) the index of the spend within the JSDescription
+      "spend" : n,                    (numeric, sapling) the index of the spend within vShieldedSpend
+      "action" : n,                   (numeric, orchard) the index of the action within orchard bundle
+      "txidPrev" : "transactionid",   (string) The id for the transaction this note was created in
+      "jsPrev" : n,                   (numeric, sprout) the index of the JSDescription within vJoinSplit
+      "jsOutputPrev" : n,             (numeric, sprout) the index of the output within the JSDescription
+      "outputPrev" : n,               (numeric, sapling) the index of the output within the vShieldedOutput
+      "actionPrev" : n,               (numeric, orchard) the index of the action within the orchard bundle
+      "address" : "zcashaddress",     (string) The Ycash address involved in the transaction
+      "value" : x.xxx                 (numeric) The amount in YEC
+      "valueZat" : xxxx               (numeric) The amount in yoshis
+    }
+    ,...
+  ],
+  "outputs" : [
+    {
+      "pool" : "sprout|sapling|orchard",      (string) The shielded value pool
+      "type" : "sprout|sapling|orchard",      (string) The shielded value pool (DEPRECATED legacy attribute)
+      "js" : n,                       (numeric, sprout) the index of the JSDescription within vJoinSplit
+      "jsOutput" : n,                 (numeric, sprout) the index of the output within the JSDescription
+      "output" : n,                   (numeric, sapling) the index of the output within the vShieldedOutput
+      "action" : n,                   (numeric, orchard) the index of the action within the orchard bundle
+      "address" : "zcashaddress",     (string) The Ycash address involved in the transaction. Not included for change outputs.
+      "outgoing" : true|false         (boolean) True if the output is not for an address in the wallet
+      "walletInternal" : true|false   (boolean) True if this is a change output.
+      "value" : x.xxx                 (numeric) The amount in YEC
+      "valueZat" : xxxx               (numeric) The amount in yoshis
+      "memo" : "hexmemo",             (string) hexadecimal string representation of the memo field
+      "memoStr" : "memo",             (string, optional) UTF-8 string representation of memo field (if it contains valid UTF-8).
+    }
+    ,...
+  ],
+}
+
+Examples:
+> ycash-cli z_viewtransaction "1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_viewtransaction", "params": ["1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

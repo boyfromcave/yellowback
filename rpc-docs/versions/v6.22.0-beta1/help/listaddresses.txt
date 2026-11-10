@@ -1,0 +1,64 @@
+listaddresses
+
+Lists the addresses managed by this wallet by source, including 
+those generated from randomness by this wallet, Sapling addresses 
+generated from the legacy HD seed, imported watchonly transparent 
+addresses, shielded addresses tracked using imported viewing keys, 
+and addresses derived from the wallet's mnemonic seed for releases 
+version 4.7.0 and above. 
+
+REMINDER: It is recommended that you back up your wallet.dat file 
+regularly. If your wallet was created using zcashd version 4.7.0 
+or later and you have not imported externally produced keys, it only 
+necessary to have backed up the wallet's emergency recovery phrase.
+
+Result:
+[
+  {
+    "source": "imported|imported_watchonly|legacy_random|legacy_seed|mnemonic_seed"
+    "transparent": {
+      "addresses": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", ...],
+      "changeAddresses": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", ...]
+    },
+    "sprout": {
+      "addresses": ["ys1s7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlkngh9slya", ...]
+    },
+    "sapling": [ -- each element in this list represents a set of diversified addresses derived from a single IVK. 
+      {
+        "zip32KeyPath": "m/32'/133'/0'", -- optional field, not present for imported/watchonly sources,
+        "addresses": [
+          "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq",
+          ...
+        ]
+      },
+      ...
+    ],
+    "unified": [ -- each element in this list represents a set of diversified Unified Addresses derived from a single UFVK.
+      {
+        "account": 0,
+        "seedfp": "hexstring",
+        "addresses": [
+          {
+            "diversifier_index": 0,
+            "receiver_types": [
+              "sapling",
+               ...
+            ],
+            "address": "..."
+          },
+          ...
+        ]
+      },
+      ...
+    ],
+    ...
+  },
+  ...
+]
+In the case that a source does not have addresses for a value pool, the key
+associated with that pool will be absent.
+
+Examples:
+> ycash-cli listaddresses 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "listaddresses", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,21 @@
+{
+  "version": "v6.22.0-beta1",
+  "line": "ycash6",
+  "tag": "v6.22.0-beta1",
+  "tagCommit": "a44066d206b3d72a676d25d60ef7af00a979e30e",
+  "binary": {
+    "image": "ghcr.io/boyfromcave/ycashd:ycash6-a8120c787aa4",
+    "digest": "sha256:c252b249529b0e97b7cac8bce22283f29c5416092542e1ff7a79cf23d3986c50",
+    "platformDigest": "sha256:c252b249529b0e97b7cac8bce22283f29c5416092542e1ff7a79cf23d3986c50",
+    "platform": "linux/amd64",
+    "commit": "a8120c787aa4dccbaad7d69f94276c079f3c17b0",
+    "version": "Ycash Daemon version v6.22.0-beta2-unk"
+  },
+  "commitMismatch": "no image of the tag; a8120c787aa4 is the tag plus the 6.22.0-beta2 version bump and an enum rename in src/yellowback/txbuilder.cpp: git diff v6.22.0-beta1 a8120c787aa4 touches no src/rpc, src/wallet or doc/*-rpc-contract.json file",
+  "contracts": [
+    "doc/vault-rpc-contract.json",
+    "doc/yellowback-rpc-contract.json"
+  ],
+  "capturedAt": "2026-11-10T06:44:28Z",
+  "methods": 235
+}

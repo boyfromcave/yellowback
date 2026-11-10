@@ -1,0 +1,22 @@
+z_validatepaymentdisclosure "paymentdisclosure"
+
+Validates a payment disclosure. This only supports Sprout.
+
+EXPERIMENTAL, DEPRECATED FEATURE
+
+WARNING: z_validatepaymentdisclosure is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -paymentdisclosure
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+paymentdisclosure=1
+
+Arguments:
+1. "paymentdisclosure"     (string, required) Hex data string, with "zpd:" prefix.
+
+Examples:
+> ycash-cli z_validatepaymentdisclosure "zpd:706462ff004c561a0447ba2ec51184e6c204..."
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_validatepaymentdisclosure", "params": ["zpd:706462ff004c561a0447ba2ec51184e6c204..."] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+
