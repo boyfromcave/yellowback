@@ -1,0 +1,1874 @@
+From 2183b3461d2009906fbd72df5724f9bf5f9c24ae Mon Sep 17 00:00:00 2001
+From: boyfromcave <57612331+boyfromcave@users.noreply.github.com>
+Date: Sat, 7 Nov 2026 17:07:58 +0000
+Subject: [PATCH] Add the three Ycash testnet profiles
+
+testnet-yb-fast stays the Zcash-testnet re-fork and verifies blocks above
+its partial checkpoint list. testnet-yb-slow and testnet-legacy are shadow
+forks of mainnet through height 3,079,999, selected as TestnetSlow and
+TestnetLegacy, with ycash6's magics, ports, genesis, upgrades, PoW reset,
+checkpoints, and Yellowback columns.
+---
+ README.md                                     |  12 +-
+ crates/kogany-rpc/src/yed/live.rs             |  10 +-
+ crates/zakura-chain/src/block/commitment.rs   |  17 +-
+ crates/zakura-chain/src/history_tree.rs       |  14 +-
+ crates/zakura-chain/src/local_genesis.rs      |   6 +-
+ .../parameters/checkpoint/list/ycash_tests.rs |  34 +++-
+ crates/zakura-chain/src/parameters/network.rs |   6 +-
+ .../src/parameters/network/testnet.rs         |  16 ++
+ .../src/parameters/network_upgrade.rs         |  50 +++++-
+ .../src/parameters/vault_tests.rs             |   6 +-
+ crates/zakura-chain/src/parameters/ycash.rs   | 154 +++++++++++++++---
+ .../src/parameters/ycash/identity_tests.rs    |  18 +-
+ .../src/parameters/ycash/tests.rs             |  60 ++++++-
+ .../zakura-chain/src/parameters/ycash/ydf.rs  |   2 +
+ .../src/primitives/zcash_history.rs           |   9 +-
+ .../src/primitives/zcash_primitives.rs        |  13 +-
+ crates/zakura-chain/src/transaction.rs        |  38 ++++-
+ .../zakura-chain/src/transaction/arbitrary.rs |   4 +-
+ .../zakura-chain/src/transaction/sighash.rs   |  20 ++-
+ .../src/transaction/sighash/v4.rs             |   6 +-
+ crates/zakura-consensus/src/checkpoint.rs     |   6 -
+ .../zakura-consensus/src/primitives/halo2.rs  |   2 +-
+ crates/zakura-consensus/src/router.rs         |  14 +-
+ crates/zakura-consensus/src/transaction.rs    |   8 +-
+ .../src/transaction/check/ycash_standard.rs   |   2 +-
+ .../zakura-consensus/src/transaction/tests.rs |   1 +
+ .../src/transaction/tests/prop.rs             |   2 +-
+ .../src/transaction/vault_mempool.rs          |  16 +-
+ .../zakura-consensus/tests/nu7_diff_dump.rs   |   1 +
+ .../contextual/adjusted_difficulty.rs         |  62 +++++++
+ .../validation/contextual/tests/arithmetic.rs |  31 +++-
+ crates/zakura-network/src/config.rs           |  86 ++++++++--
+ .../src/protocol/external/types.rs            |   1 +
+ crates/zakura-network/src/ycash.rs            |  10 +-
+ crates/zakura-network/src/ycash/tests.rs      |  12 +-
+ .../src/zakura/testkit/cluster.rs             |   5 +-
+ .../types/get_block_template/proposal.rs      |   2 +-
+ crates/zakura-rpc/src/methods/types/ycash.rs  |  11 +-
+ .../src/methods/types/ycash/tests.rs          |   4 +
+ crates/zakura-script/src/lib.rs               |  15 ++
+ .../src/service/finalized_state/tests/prop.rs |   2 +
+ .../service/finalized_state/tests/rollback.rs |   1 +
+ .../finalized_state/vct_fast_sync_fixture.rs  |   1 +
+ .../service/finalized_state/zakura_db/yed.rs  |  11 +-
+ .../write/tests/full_state_coherence.rs       |   1 +
+ .../write/vct_authentication_sweep/tests.rs   |   1 +
+ 46 files changed, 663 insertions(+), 140 deletions(-)
+
+diff --git a/README.md b/README.md
+index 1341680ac..784f15cf6 100644
+--- a/README.md
++++ b/README.md
+@@ -100,7 +100,8 @@ Ycash ports by default; it never binds a Zcash port unless a config names one.
+ | --- | --- | --- | --- | --- |
+ | Mainnet | 8833 | 8832 | 8233 | 8232 |
+ | Testnet, `fast` profile (`network = "Testnet"`) | 18833 | 18832 | 18233 | 18232 |
+-| Testnet, `slow` profile | 18933 | 18932 | 18233 | 18232 |
++| Testnet, `slow` profile (`network = "TestnetSlow"`) | 18933 | 18932 | 18233 | 18232 |
++| Testnet, `legacy` profile (`network = "TestnetLegacy"`) | 19033 | 19032 | 18233 | 18232 |
+ | Regtest | 18344 | 18832 | 18344 | 18232 |
+ 
+ - The values equal ycashd's (`nDefaultPort`, `chainparamsbase.cpp`); the tests
+@@ -112,7 +113,7 @@ Ycash ports by default; it never binds a Zcash port unless a config names one.
+ - Regtest P2P 18344 is the one port Ycash shares with Zcash (zcashd's regtest port, kept by
+   ycashd). Regtest is local only; to run a Zcash regtest node beside it, give one of them
+   another `listen_addr`.
+-- ycashd's legacy `testnet3` (P2P 19033) is not a kogany network (decision K-10).
++- `network = "TestnetLegacy"` is testnet-legacy (P2P 19033, magic `f77962d5`), the shadow fork with no Vault activation. ycashd 4.5.0's testnet3 is not a kogany network.
+ - Zcash peers: Ycash shares Zcash's mainnet and regtest network magic, so kogany cannot tell
+   a Zcash peer by magic alone. It refuses a Zcash peer by protocol version (Ycash peers advertise
+   at least 270013) and refuses any peer address on a Zcash port (8233, 8232, 18233, 18232), so a
+@@ -132,6 +133,7 @@ with a Zcash network's on one host.
+ | Ycash mainnet (`Mainnet`) | 8833 | 8832 | `24e92764` | `main` | |
+ | Ycash testnet, `fast` profile (`Testnet`) | 18833 | 18832 | `f77962d3` | `test` | `fast` |
+ | Ycash testnet, `slow` profile (`TestnetSlow`) | 18933 | 18932 | `f77962d4` | `test` | `slow` |
++| Ycash testnet, `legacy` profile (`TestnetLegacy`) | 19033 | 19032 | `f77962d5` | `test` | `legacy` |
+ | Ycash regtest (`Regtest`) | 18344 | 18832 | `aae83f5f` | `regtest` | |
+ 
+ - The RPC server is off until `rpc.listen_addr` is set; the RPC ports above are the ones to set.
+@@ -144,9 +146,9 @@ with a Zcash network's on one host.
+   `ys…`, `ytestsapling…`, `yregtestsapling…`; post-quantum `sq…`, `tq…`, `rq…`; Yellowback (YED)
+   `yb…`, `yt…`, `yr…`. Coin type 347 on mainnet.
+ - DNS seed: `seed.ycash.xyz` on mainnet; the testnet has fixed seeds only.
+-- The legacy `testnet3` profile of ycashd is not one of kogany's networks (decision K-10).
+-- The `slow` profile is built in (`Network::new_ycash_testnet_slow`) but `kogany.toml` has no
+-  selector for it yet: `network = "Testnet"` is the `fast` profile.
++- ycashd 4.5.0's testnet3 is not one of kogany's networks.
++- `network = "Testnet"` is testnet-yb-fast. `network = "TestnetSlow"` and
++  `network = "TestnetLegacy"` are the shadow forks of mainnet through height 3,079,999.
+ 
+ ## Directories and files
+ 
+diff --git a/crates/kogany-rpc/src/yed/live.rs b/crates/kogany-rpc/src/yed/live.rs
+index d7c650377..cdd898a0b 100644
+--- a/crates/kogany-rpc/src/yed/live.rs
++++ b/crates/kogany-rpc/src/yed/live.rs
+@@ -897,8 +897,12 @@ where
+         };
+         let nu = NetworkUpgrade::current(network, height);
+         let tx = Arc::new(tx);
+-        let cached = match zakura_script::CachedFfiTransaction::new(tx.clone(), Arc::new(spent), nu)
+-        {
++        let cached = match zakura_script::CachedFfiTransaction::new_on(
++            network,
++            tx.clone(),
++            Arc::new(spent),
++            nu,
++        ) {
+             Ok(c) => c,
+             Err(e) => {
+                 return (
+@@ -908,7 +912,7 @@ where
+                         script_error_text(&e)
+                     )),
+                     unconfirmed,
+-                )
++                );
+             }
+         };
+         let context = zakura_script::ScriptContext::new(network.clone(), height, vault_state)
+diff --git a/crates/zakura-chain/src/block/commitment.rs b/crates/zakura-chain/src/block/commitment.rs
+index d22c61084..dd0585647 100644
+--- a/crates/zakura-chain/src/block/commitment.rs
++++ b/crates/zakura-chain/src/block/commitment.rs
+@@ -131,14 +131,18 @@ impl Commitment {
+             // activation bytes should still be used pre-NU5.
+             //
+             // See <https://zips.z.cash/zip-0221> and the [protocol specification §7.6](https://zips.z.cash/protocol/protocol.pdf).
+-            (Canopy | Vault, _) if Some(height) == Heartwood.activation_height(network) => {
++            (Canopy | Shadow | Vault, _)
++                if Some(height) == Heartwood.activation_height(network) =>
++            {
+                 if bytes == CHAIN_HISTORY_ACTIVATION_RESERVED {
+                     Ok(ChainHistoryActivationReserved)
+                 } else {
+                     Err(InvalidChainHistoryActivationReserved { actual: bytes })
+                 }
+             }
+-            (Heartwood | Canopy | Vault, _) => Ok(ChainHistoryRoot(ChainHistoryMmrRootHash(bytes))),
++            (Heartwood | Canopy | Shadow | Vault, _) => {
++                Ok(ChainHistoryRoot(ChainHistoryMmrRootHash(bytes)))
++            }
+             (Nu5 | Nu6 | Nu6_1 | Nu6_2 | Nu6_3 | Nu7, _) => Ok(ChainHistoryBlockTxAuthCommitment(
+                 ChainHistoryBlockTxAuthCommitmentHash(bytes),
+             )),
+@@ -373,7 +377,10 @@ pub enum CommitmentError {
+         actual: [u8; 32],
+     },
+ 
+-    #[error("invalid chain history activation reserved block commitment: expected all zeroes, actual: {:?}",  hex::encode(actual))]
++    #[error(
++        "invalid chain history activation reserved block commitment: expected all zeroes, actual: {:?}",
++        hex::encode(actual)
++    )]
+     InvalidChainHistoryActivationReserved { actual: [u8; 32] },
+ 
+     #[error(
+@@ -437,7 +444,9 @@ pub enum CommitmentError {
+     #[error("invalid pre-Nu6_3 ironwood transaction count: expected {expected}, actual: {actual}")]
+     InvalidPreNu6_3IronwoodTxCount { expected: u64, actual: u64 },
+ 
+-    #[error("missing required block height: block commitments can't be parsed without a block height, block hash: {block_hash:?}")]
++    #[error(
++        "missing required block height: block commitments can't be parsed without a block height, block hash: {block_hash:?}"
++    )]
+     MissingBlockHeight { block_hash: block::Hash },
+ 
+     #[error("provided bytes are not a valid sapling root")]
+diff --git a/crates/zakura-chain/src/history_tree.rs b/crates/zakura-chain/src/history_tree.rs
+index f47e4f157..7a6102ac2 100644
+--- a/crates/zakura-chain/src/history_tree.rs
++++ b/crates/zakura-chain/src/history_tree.rs
+@@ -136,10 +136,13 @@ impl NonEmptyHistoryTree {
+                 });
+             }
+             // Every history tree node commits to its network upgrade's branch ID.
+-            _ if network_upgrade.branch_id().is_none() => {
++            _ if network_upgrade.branch_id_on(network).is_none() => {
+                 return Err(HistoryTreeError::MissingBranchId { network_upgrade });
+             }
+-            NetworkUpgrade::Heartwood | NetworkUpgrade::Canopy | NetworkUpgrade::Vault => {
++            NetworkUpgrade::Heartwood
++            | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
++            | NetworkUpgrade::Vault => {
+                 let tree = Tree::<PreOrchard>::new_from_cache(
+                     network,
+                     network_upgrade,
+@@ -235,10 +238,13 @@ impl NonEmptyHistoryTree {
+             }
+             // Every history tree node commits to its network upgrade's branch ID.
+             // Builds without an NU7 branch ID reach this arm at NU7 activation.
+-            _ if network_upgrade.branch_id().is_none() => {
++            _ if network_upgrade.branch_id_on(network).is_none() => {
+                 return Err(HistoryTreeError::MissingBranchId { network_upgrade });
+             }
+-            NetworkUpgrade::Heartwood | NetworkUpgrade::Canopy | NetworkUpgrade::Vault => {
++            NetworkUpgrade::Heartwood
++            | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
++            | NetworkUpgrade::Vault => {
+                 let (tree, entry) = Tree::<PreOrchard>::new_from_parts(
+                     network,
+                     HistoryTreeBlockParts {
+diff --git a/crates/zakura-chain/src/local_genesis.rs b/crates/zakura-chain/src/local_genesis.rs
+index 35aaa9f50..a199bb212 100644
+--- a/crates/zakura-chain/src/local_genesis.rs
++++ b/crates/zakura-chain/src/local_genesis.rs
+@@ -410,7 +410,10 @@ fn configured_activation_heights(
+         return Err("latest_network_upgrade must be BeforeOverwinter or later".into());
+     }
+ 
+-    if latest_network_upgrade >= Overwinter && latest_network_upgrade.branch_id().is_none() {
++    if latest_network_upgrade != Shadow
++        && latest_network_upgrade >= Overwinter
++        && latest_network_upgrade.branch_id().is_none()
++    {
+         return Err("latest_network_upgrade must have a consensus branch ID".into());
+     }
+ 
+@@ -424,6 +427,7 @@ fn configured_activation_heights(
+         blossom: (latest_network_upgrade >= Blossom).then_some(activation_height),
+         heartwood: (latest_network_upgrade >= Heartwood).then_some(activation_height),
+         canopy: (latest_network_upgrade >= Canopy).then_some(activation_height),
++        shadow: (latest_network_upgrade == Shadow).then_some(activation_height),
+         // Vault is scheduled only explicitly (kogany plan §2.2), never as a later upgrade's
+         // implicit predecessor.
+         vault: (latest_network_upgrade == Vault).then_some(activation_height),
+diff --git a/crates/zakura-chain/src/parameters/checkpoint/list/ycash_tests.rs b/crates/zakura-chain/src/parameters/checkpoint/list/ycash_tests.rs
+index 7379d0794..da3f7acfe 100644
+--- a/crates/zakura-chain/src/parameters/checkpoint/list/ycash_tests.rs
++++ b/crates/zakura-chain/src/parameters/checkpoint/list/ycash_tests.rs
+@@ -73,10 +73,7 @@ fn ycash_mainnet_list_carries_the_pins() {
+ 
+ #[test]
+ fn ycash_testnet_lists_stop_at_the_shared_history() {
+-    for network in [
+-        Network::new_default_testnet(),
+-        Network::new_ycash_testnet_slow(),
+-    ] {
++    for network in [Network::new_default_testnet()] {
+         assert_pins(&network, TESTNET_PINS);
+         assert_below_vault(&network);
+         assert_eq!(
+@@ -88,6 +85,35 @@ fn ycash_testnet_lists_stop_at_the_shared_history() {
+     }
+ }
+ 
++#[test]
++fn ycash_shadow_lists_are_mainnet_through_the_split() {
++    use crate::parameters::ycash::{
++        SHADOW_ACTIVATION_HEIGHT, SHADOW_SPLIT_HASH, SHADOW_SPLIT_HEIGHT,
++    };
++    let mainnet = Network::Mainnet.checkpoint_list();
++    for network in [
++        Network::new_ycash_testnet_slow(),
++        Network::new_ycash_testnet_legacy(),
++    ] {
++        let list = network.checkpoint_list();
++        assert_eq!(list.hash(block::Height(0)), Some(network.genesis_hash()));
++        assert_eq!(network.genesis_hash(), Network::Mainnet.genesis_hash());
++        assert_eq!(list.max_height(), block::Height(SHADOW_SPLIT_HEIGHT));
++        assert_eq!(
++            list.hash(block::Height(SHADOW_SPLIT_HEIGHT)),
++            Some(SHADOW_SPLIT_HASH.parse().expect("hash"))
++        );
++        assert!(!network.ycash_checkpoint_list_is_partial());
++        for (height, hash) in mainnet.iter_cloned() {
++            if height.0 >= SHADOW_ACTIVATION_HEIGHT.0 {
++                assert_eq!(list.hash(height), None, "{height:?}");
++            } else if height.0 != SHADOW_SPLIT_HEIGHT {
++                assert_eq!(list.hash(height), Some(hash), "{height:?}");
++            }
++        }
++    }
++}
++
+ #[test]
+ fn ycash_regtest_list_is_never_partial() {
+     assert!(!Network::new_regtest(Default::default()).ycash_checkpoint_list_is_partial());
+diff --git a/crates/zakura-chain/src/parameters/network.rs b/crates/zakura-chain/src/parameters/network.rs
+index 56536f158..ad88a20e6 100644
+--- a/crates/zakura-chain/src/parameters/network.rs
++++ b/crates/zakura-chain/src/parameters/network.rs
+@@ -410,7 +410,11 @@ impl FromStr for Network {
+     fn from_str(string: &str) -> Result<Self, Self::Err> {
+         match string.to_lowercase().as_str() {
+             "mainnet" => Ok(Network::Mainnet),
+-            "testnet" => Ok(Network::new_default_testnet()),
++            "testnet" | "testnetfast" | "fast" => Ok(Network::new_default_testnet()),
++            #[cfg(feature = "ycash")]
++            "testnetslow" | "slow" => Ok(Network::new_ycash_testnet_slow()),
++            #[cfg(feature = "ycash")]
++            "testnetlegacy" | "legacy" => Ok(Network::new_ycash_testnet_legacy()),
+             _ => Err(InvalidNetworkError(string.to_owned())),
+         }
+     }
+diff --git a/crates/zakura-chain/src/parameters/network/testnet.rs b/crates/zakura-chain/src/parameters/network/testnet.rs
+index 8059ad7dc..5eeca7ae5 100644
+--- a/crates/zakura-chain/src/parameters/network/testnet.rs
++++ b/crates/zakura-chain/src/parameters/network/testnet.rs
+@@ -192,6 +192,7 @@ impl From<&BTreeMap<Height, NetworkUpgrade>> for ConfiguredActivationHeights {
+                 NetworkUpgrade::Blossom => &mut configured_activation_heights.blossom,
+                 NetworkUpgrade::Heartwood => &mut configured_activation_heights.heartwood,
+                 NetworkUpgrade::Canopy => &mut configured_activation_heights.canopy,
++                NetworkUpgrade::Shadow => &mut configured_activation_heights.shadow,
+                 NetworkUpgrade::Vault => &mut configured_activation_heights.vault,
+                 NetworkUpgrade::Nu5 => &mut configured_activation_heights.nu5,
+                 NetworkUpgrade::Nu6 => &mut configured_activation_heights.nu6,
+@@ -595,6 +596,11 @@ pub struct ConfiguredActivationHeights {
+     pub heartwood: Option<u32>,
+     /// Activation height for `Canopy` network upgrade.
+     pub canopy: Option<u32>,
++    /// Activation height for the testnet shadow fork (`UPGRADE_SHADOW`, H_S + 1).
++    ///
++    /// Only testnet-yb-slow and testnet-legacy set it. The branch id is per network, not this height.
++    #[serde(rename = "Shadow", default, skip_serializing_if = "Option::is_none")]
++    pub shadow: Option<u32>,
+     /// Activation height for the Ycash `Vault` network upgrade (branch ID `0x6d5b7a31`, ycashd's
+     /// `-nuparams=6d5b7a31:<h>`). Default `None`: Regtest never back-fills it.
+     #[serde(rename = "Vault", default, skip_serializing_if = "Option::is_none")]
+@@ -647,6 +653,7 @@ impl ConfiguredActivationHeights {
+             blossom,
+             heartwood,
+             canopy,
++            shadow,
+             vault,
+             pq_falcon,
+             nu5,
+@@ -673,6 +680,7 @@ impl ConfiguredActivationHeights {
+             blossom,
+             heartwood,
+             canopy,
++            shadow,
+             vault,
+             pq_falcon,
+             nu5,
+@@ -696,6 +704,7 @@ impl ConfiguredActivationHeights {
+             self.blossom,
+             self.heartwood,
+             self.canopy,
++            self.shadow,
+             self.vault,
+             self.nu5,
+             self.nu6,
+@@ -721,6 +730,7 @@ impl ConfiguredActivationHeights {
+             blossom: self.blossom.or(base.blossom),
+             heartwood: self.heartwood.or(base.heartwood),
+             canopy: self.canopy.or(base.canopy),
++            shadow: self.shadow.or(base.shadow),
+             vault: self.vault.or(base.vault),
+             pq_falcon: self.pq_falcon.or(base.pq_falcon),
+             nu5: self.nu5.or(base.nu5),
+@@ -995,6 +1005,7 @@ impl ParametersBuilder {
+             blossom,
+             heartwood,
+             canopy,
++            shadow,
+             vault,
+             pq_falcon,
+             nu5,
+@@ -1055,6 +1066,7 @@ impl ParametersBuilder {
+                 .chain(blossom.into_iter().map(|h| (h, Blossom)))
+                 .chain(heartwood.into_iter().map(|h| (h, Heartwood)))
+                 .chain(canopy.into_iter().map(|h| (h, Canopy)))
++                .chain(shadow.into_iter().map(|h| (h, Shadow)))
+                 .chain(vault.into_iter().map(|h| (h, Vault)))
+                 .chain(nu5.into_iter().map(|h| (h, Nu5)))
+                 .chain(nu6.into_iter().map(|h| (h, Nu6)))
+@@ -1991,6 +2003,10 @@ impl Network {
+             #[cfg(feature = "ycash")]
+             Network::Mainnet => &crate::parameters::ycash::ydf::MAINNET_FOUNDER_ADDRESSES,
+             #[cfg(feature = "ycash")]
++            Network::Testnet(_) if crate::parameters::ycash::is_shadow_network(self) => {
++                &crate::parameters::ycash::ydf::MAINNET_FOUNDER_ADDRESSES
++            }
++            #[cfg(feature = "ycash")]
+             Network::Testnet(_) => &crate::parameters::ycash::ydf::TESTNET_FOUNDER_ADDRESSES,
+             #[cfg(not(feature = "ycash"))]
+             Network::Mainnet => &mainnet::FOUNDER_ADDRESS_LIST,
+diff --git a/crates/zakura-chain/src/parameters/network_upgrade.rs b/crates/zakura-chain/src/parameters/network_upgrade.rs
+index afd5c2aa3..e97122d19 100644
+--- a/crates/zakura-chain/src/parameters/network_upgrade.rs
++++ b/crates/zakura-chain/src/parameters/network_upgrade.rs
+@@ -52,6 +52,13 @@ pub enum NetworkUpgrade {
+     Heartwood,
+     /// The Zcash protocol after the Canopy upgrade.
+     Canopy,
++    /// The testnet shadow-fork epoch (`UPGRADE_SHADOW`): Canopy's rules under a per-network
++    /// branch id (`ycash6` `SLOW_SHADOW_BRANCH_ID` / `LEGACY_SHADOW_BRANCH_ID`).
++    ///
++    /// Scheduled only on testnet-yb-slow and testnet-legacy, at H_S + 1. It has no single
++    /// branch id in [`CONSENSUS_BRANCH_IDS`]; [`ConsensusBranchId::current`] supplies the
++    /// network's id. A new epoch, so the history tree restarts here.
++    Shadow,
+     /// The Ycash vault upgrade (branch ID `0x6d5b7a31`): the vault lock/unlock primitive and the
+     /// YED rule module, on a Canopy-era (v4-only) chain.
+     ///
+@@ -93,6 +100,7 @@ const NETWORK_UPGRADES: &[NetworkUpgrade] = &[
+     Blossom,
+     Heartwood,
+     Canopy,
++    Shadow,
+     Vault,
+     Nu5,
+     Nu6,
+@@ -486,6 +494,12 @@ impl Network {
+     pub(crate) fn is_kogany_upgrade_scheduled(&self, nu: NetworkUpgrade) -> bool {
+         match nu {
+             Vault => self.vault_activation_height().is_some(),
++            // Only where the activation map lists it. The fallback in `activation_height`
++            // would otherwise read the next upgrade's height.
++            Shadow => self
++                .activation_map()
++                .values()
++                .any(|scheduled| *scheduled == Shadow),
+             Ycash => cfg!(feature = "ycash"),
+             _ => true,
+         }
+@@ -630,6 +644,18 @@ impl NetworkUpgrade {
+             .map(|&(_, branch_id)| branch_id)
+     }
+ 
++    /// The branch id of this upgrade on `network`.
++    ///
++    /// Shadow and slow's Vault are per network (`ycash6` `NetworkBranchId`). Every other
++    /// upgrade uses [`Self::branch_id`].
++    pub fn branch_id_on(&self, network: &Network) -> Option<ConsensusBranchId> {
++        #[cfg(feature = "ycash")]
++        if let Some(id) = crate::parameters::ycash::profile_branch_id(network, *self) {
++            return Some(id);
++        }
++        self.branch_id()
++    }
++
+     /// Returns the target block spacing for the network upgrade.
+     ///
+     /// Based on [`PRE_BLOSSOM_POW_TARGET_SPACING`] and
+@@ -639,7 +665,7 @@ impl NetworkUpgrade {
+             Genesis | BeforeOverwinter | Overwinter | Sapling | Ycash => {
+                 PRE_BLOSSOM_POW_TARGET_SPACING
+             }
+-            Blossom | Heartwood | Canopy | Vault | Nu5 | Nu6 | Nu6_1 | Nu6_2 | Nu6_3 => {
++            Blossom | Heartwood | Canopy | Shadow | Vault | Nu5 | Nu6 | Nu6_1 | Nu6_2 | Nu6_3 => {
+                 POST_BLOSSOM_POW_TARGET_SPACING.into()
+             }
+             Nu7 => POST_NU7_POW_TARGET_SPACING.into(),
+@@ -689,6 +715,22 @@ impl NetworkUpgrade {
+     ) -> Option<Duration> {
+         match (network, height) {
+             // TODO: Move `TESTNET_MINIMUM_DIFFICULTY_START_HEIGHT` to a field on testnet::Parameters (#8364)
++            (Network::Testnet(_params), height)
++                if {
++                    #[cfg(feature = "ycash")]
++                    {
++                        crate::parameters::ycash::is_shadow_network(network)
++                            && height.0 < crate::parameters::ycash::SHADOW_ACTIVATION_HEIGHT.0
++                    }
++                    #[cfg(not(feature = "ycash"))]
++                    {
++                        let _ = (network, height);
++                        false
++                    }
++                } =>
++            {
++                None
++            }
+             (Network::Testnet(_params), height)
+                 if height < TESTNET_MINIMUM_DIFFICULTY_START_HEIGHT =>
+             {
+@@ -745,7 +787,9 @@ impl NetworkUpgrade {
+     pub fn averaging_window(&self) -> usize {
+         match self {
+             Genesis | BeforeOverwinter | Overwinter | Sapling | Ycash | Blossom | Heartwood
+-            | Canopy | Vault | Nu5 | Nu6 | Nu6_1 | Nu6_2 | Nu6_3 => PRE_NU7_POW_AVERAGING_WINDOW,
++            | Canopy | Shadow | Vault | Nu5 | Nu6 | Nu6_1 | Nu6_2 | Nu6_3 => {
++                PRE_NU7_POW_AVERAGING_WINDOW
++            }
+             Nu7 => POST_NU7_POW_AVERAGING_WINDOW,
+ 
+             #[cfg(zcash_unstable = "zfuture")]
+@@ -830,6 +874,6 @@ impl ConsensusBranchId {
+     ///
+     /// Returns None if the network has no branch id at this height.
+     pub fn current(network: &Network, height: block::Height) -> Option<ConsensusBranchId> {
+-        NetworkUpgrade::current(network, height).branch_id()
++        NetworkUpgrade::current(network, height).branch_id_on(network)
+     }
+ }
+diff --git a/crates/zakura-chain/src/parameters/vault_tests.rs b/crates/zakura-chain/src/parameters/vault_tests.rs
+index ef9afd73b..eea96fa74 100644
+--- a/crates/zakura-chain/src/parameters/vault_tests.rs
++++ b/crates/zakura-chain/src/parameters/vault_tests.rs
+@@ -473,7 +473,9 @@ fn vault_takes_canopy_behaviour_in_every_match() {
+     assert_eq!(Vault.target_spacing(), Canopy.target_spacing());
+     assert_eq!(Vault.averaging_window(), Canopy.averaging_window());
+     assert_eq!(Vault.next_upgrade(), Some(Nu5));
+-    assert_eq!(Canopy.next_upgrade(), Some(Vault));
++    assert_eq!(Canopy.next_upgrade(), Some(Shadow));
++    assert_eq!(Shadow.next_upgrade(), Some(Vault));
++    assert_eq!(Shadow.target_spacing(), Canopy.target_spacing());
+     assert_eq!(
+         NetworkUpgrade::from(zcash_protocol::consensus::NetworkUpgrade::Vault),
+         Vault
+@@ -483,7 +485,7 @@ fn vault_takes_canopy_behaviour_in_every_match() {
+         Height::MAX
+     ));
+     // Ordinal gates read Vault as Canopy-era (K-1).
+-    assert!(Vault > Canopy && Vault < Nu5);
++    assert!(Shadow > Canopy && Shadow < Vault && Vault < Nu5);
+ 
+     // history_tree.rs `_ if branch_id().is_none()` (both trees) and header-chain
+     // `preparation.rs` `_ => u32::MAX`: Vault has a branch ID, so neither wildcard is reached.
+diff --git a/crates/zakura-chain/src/parameters/ycash.rs b/crates/zakura-chain/src/parameters/ycash.rs
+index eda3245a9..7f7961845 100644
+--- a/crates/zakura-chain/src/parameters/ycash.rs
++++ b/crates/zakura-chain/src/parameters/ycash.rs
+@@ -8,8 +8,9 @@
+ //!
+ //! The Vault upgrade is runtime-gated by its height ([`Network::is_vault_active`], W2-b): this
+ //! module only carries the heights ycashd compiles in. Ycash mainnet has none (set by the
+-//! gate-passing release, upgrade plan P8), the `fast` testnet profile has 510,400, the `slow`
+-//! profile none, and Regtest takes `Vault` from its configured activation heights.
++//! gate-passing release, upgrade plan P8), the `fast` testnet profile has 510,400, the shadow
++//! profiles (`slow`, `legacy`) have none until an rc sets slow's, and Regtest takes `Vault`
++//! from its configured activation heights.
+ //!
+ //! [`Network::is_vault_active`]: super::Network::is_vault_active
+ //!
+@@ -52,8 +53,10 @@ pub mod mainnet {
+         "0000014fbc5917ba8bcacf3336faf588d86b32443aa3a490a587af5750c77ec5";
+ }
+ 
+-/// Network upgrade activation heights on the re-forked Ycash testnet, shared by its `fast` and
+-/// `slow` profiles (decision K-10; the legacy testnet3 profile is dropped).
++/// Network upgrade activation heights on the re-forked Ycash testnet, the `fast` profile.
++///
++/// testnet-yb-slow and testnet-legacy are shadow forks of mainnet (`new_ycash_testnet_slow`,
++/// `new_ycash_testnet_legacy`), not this table.
+ ///
+ /// `ycash6 src/chainparams.cpp:429-459` (`CTestNetParams`): Zcash testnet history through
+ /// 510,247, the new fork block at 510,248, then Blossom, Heartwood and Canopy two blocks apart.
+@@ -101,10 +104,7 @@ pub(super) const MAINNET_ACTIVATION_HEIGHTS: &[(Height, NetworkUpgrade)] = &[
+     (mainnet::CANOPY, Canopy),
+ ];
+ 
+-/// Ycash testnet activation list, in height order: the default (`fast`) profile's. The `slow`
+-/// profile is the same without Vault ([`Network::new_ycash_testnet_slow`]).
+-///
+-/// [`Network::new_ycash_testnet_slow`]: super::Network::new_ycash_testnet_slow
++/// Ycash testnet activation list, in height order: the default (`fast`) profile's.
+ pub(super) const TESTNET_ACTIVATION_HEIGHTS: &[(Height, NetworkUpgrade)] = &[
+     (Height(0), Genesis),
+     (testnet::BEFORE_OVERWINTER, BeforeOverwinter),
+@@ -126,8 +126,10 @@ pub mod magics {
+ 
+     /// The re-forked Ycash testnet, `fast` profile (`testnet-yb-fast`).
+     pub const TESTNET_FAST: Magic = Magic([0xf7, 0x79, 0x62, 0xd3]);
+-    /// The re-forked Ycash testnet, `slow` profile (`testnet-yb-slow`).
++    /// testnet-yb-slow, the shadow fork of mainnet.
+     pub const TESTNET_SLOW: Magic = Magic([0xf7, 0x79, 0x62, 0xd4]);
++    /// testnet-legacy, the shadow fork of mainnet with no Vault activation.
++    pub const TESTNET_LEGACY: Magic = Magic([0xf7, 0x79, 0x62, 0xd5]);
+ }
+ 
+ /// Default P2P ports (`nDefaultPort`, `ycash6 src/chainparams.cpp:228,648,669,824`).
+@@ -138,6 +140,8 @@ pub mod ports {
+     pub const TESTNET_FAST: u16 = 18833;
+     /// Ycash testnet, `slow` profile.
+     pub const TESTNET_SLOW: u16 = 18933;
++    /// Ycash testnet, `legacy` profile.
++    pub const TESTNET_LEGACY: u16 = 19033;
+     /// Ycash regtest.
+     pub const REGTEST: u16 = 18344;
+ 
+@@ -149,6 +153,8 @@ pub mod ports {
+         pub const TESTNET_FAST: u16 = 18832;
+         /// Ycash testnet, `slow` profile.
+         pub const TESTNET_SLOW: u16 = 18932;
++        /// Ycash testnet, `legacy` profile.
++        pub const TESTNET_LEGACY: u16 = 19032;
+         /// Ycash regtest: the same as the `fast` testnet's, as in ycashd
+         /// (`ycash6 src/chainparamsbase.cpp:62,73`; `ref/ycash src/chainparamsbase.cpp:48,62`).
+         /// Two such nodes on one host need an explicit `rpc.listen_addr`, as two ycashd do.
+@@ -174,6 +180,86 @@ pub mod seeds {
+ pub mod names {
+     /// The `slow` Ycash testnet profile.
+     pub const TESTNET_SLOW: &str = "TestnetSlow";
++    /// The `legacy` Ycash testnet profile.
++    pub const TESTNET_LEGACY: &str = "TestnetLegacy";
++}
++
++/// Last Ycash mainnet block copied into testnet-yb-slow and testnet-legacy
++/// (`ycash6` `TESTNET_SHADOW_SPLIT_HEIGHT`).
++pub const SHADOW_SPLIT_HEIGHT: u32 = 3_079_999;
++
++/// `UPGRADE_SHADOW` activates at H_S + 1 on both shadow profiles.
++pub const SHADOW_ACTIVATION_HEIGHT: Height = Height(SHADOW_SPLIT_HEIGHT + 1);
++
++/// Block hash of H_S (`ycash6` `TESTNET_SHADOW_SPLIT_HASH`).
++pub const SHADOW_SPLIT_HASH: &str =
++    "000005030be4763e433447000ef6b98c7ce310a8b0b7bb50f1a6aca3d31e4bef";
++
++/// Ycash mainnet genesis, also the shadow forks' genesis (`ycash6` `CMainParams`).
++pub const MAINNET_GENESIS_HASH: &str =
++    "00040fe8ec8471911baa1db1266ea15dd06b4a8a5c453883c000b031973dce08";
++
++/// testnet-yb-slow shadow branch id (`SLOW_SHADOW_BRANCH_ID`).
++pub const SLOW_SHADOW_BRANCH_ID: u32 = 0x57a2_4d5d;
++/// testnet-yb-slow Vault branch id (`SLOW_VAULT_BRANCH_ID`).
++pub const SLOW_VAULT_BRANCH_ID: u32 = 0xe1f1_cc08;
++/// testnet-legacy shadow branch id (`LEGACY_SHADOW_BRANCH_ID`).
++pub const LEGACY_SHADOW_BRANCH_ID: u32 = 0x3570_6728;
++
++/// Whether `network` is testnet-yb-slow or testnet-legacy.
++pub fn is_shadow_network(network: &super::Network) -> bool {
++    let magic = network.magic();
++    magic == magics::TESTNET_SLOW || magic == magics::TESTNET_LEGACY
++}
++
++/// Whether `network` is the fast re-fork (`f77962d3`).
++pub fn is_fast_network(network: &super::Network) -> bool {
++    network.magic() == magics::TESTNET_FAST
++}
++
++/// Branch id override for this profile. `None` means the global [`NetworkUpgrade::branch_id`] table.
++pub fn profile_branch_id(
++    network: &super::Network,
++    upgrade: super::NetworkUpgrade,
++) -> Option<super::ConsensusBranchId> {
++    use super::NetworkUpgrade::*;
++    let magic = network.magic();
++    if magic == magics::TESTNET_SLOW {
++        return match upgrade {
++            Shadow => Some(super::ConsensusBranchId(SLOW_SHADOW_BRANCH_ID)),
++            Vault => Some(super::ConsensusBranchId(SLOW_VAULT_BRANCH_ID)),
++            _ => None,
++        };
++    }
++    if magic == magics::TESTNET_LEGACY {
++        return match upgrade {
++            Shadow => Some(super::ConsensusBranchId(LEGACY_SHADOW_BRANCH_ID)),
++            _ => None,
++        };
++    }
++    None
++}
++
++/// Mainnet checkpoints at heights below the shadow activation, plus the H_S pin.
++pub fn shadow_checkpoint_pairs() -> Vec<(Height, crate::block::Hash)> {
++    let mut items: Vec<(Height, crate::block::Hash)> = super::Network::Mainnet
++        .checkpoint_list()
++        .iter_cloned()
++        .filter(|(height, _)| height.0 < SHADOW_ACTIVATION_HEIGHT.0)
++        .collect();
++    let split_hash = SHADOW_SPLIT_HASH
++        .parse()
++        .expect("the H_S checkpoint hash parses");
++    if let Some(existing) = items
++        .iter_mut()
++        .find(|(height, _)| height.0 == SHADOW_SPLIT_HEIGHT)
++    {
++        existing.1 = split_hash;
++    } else {
++        items.push((Height(SHADOW_SPLIT_HEIGHT), split_hash));
++    }
++    items.sort_by_key(|(height, _)| height.0);
++    items
+ }
+ 
+ /// kogany's default file-system names (the identity table: `parameters/ycash/identity_tests.rs`).
+@@ -202,31 +288,49 @@ pub(super) fn testnet_default_port(params: &super::testnet::Parameters) -> u16 {
+         ports::REGTEST
+     } else if params.network_magic() == magics::TESTNET_SLOW {
+         ports::TESTNET_SLOW
++    } else if params.network_magic() == magics::TESTNET_LEGACY {
++        ports::TESTNET_LEGACY
+     } else {
+         ports::TESTNET_FAST
+     }
+ }
+ 
+ impl super::Network {
+-    /// Creates the re-forked Ycash testnet's `slow` profile: the `fast` profile's consensus
+-    /// values with the `slow` profile's magic and name (`CTestNetSlowParams`,
+-    /// `ycash6 src/chainparams.cpp:658-672`). The two profiles differ only in Vault parameters:
+-    /// the `slow` profile has no Vault height until its first rc (testnet plan T-15).
++    /// testnet-yb-slow: mainnet through H_S, then `UPGRADE_SHADOW` under `0x57a24d5d`.
++    /// Vault has no height until slow's rc (`CTestNetSlowParams`).
+     pub fn new_ycash_testnet_slow() -> Self {
+-        let heights = super::testnet::ConfiguredActivationHeights {
+-            vault: None,
+-            ..TESTNET_ACTIVATION_HEIGHTS
+-                .iter()
+-                .copied()
+-                .collect::<std::collections::BTreeMap<_, _>>()
+-                .into()
+-        };
++        Self::new_ycash_shadow(names::TESTNET_SLOW, magics::TESTNET_SLOW)
++    }
++
++    /// testnet-legacy: the same shadow fork under `0x35706728`, Vault never scheduled
++    /// (`CTestNetLegacyParams`).
++    pub fn new_ycash_testnet_legacy() -> Self {
++        Self::new_ycash_shadow(names::TESTNET_LEGACY, magics::TESTNET_LEGACY)
++    }
++
++    fn new_ycash_shadow(name: &str, magic: super::network::magic::Magic) -> Self {
++        use super::testnet::ConfiguredCheckpoints;
++        use super::NetworkUpgrade::*;
++        use crate::work::difficulty::ParameterDifficulty as _;
++        let mut heights: std::collections::BTreeMap<_, _> =
++            MAINNET_ACTIVATION_HEIGHTS.iter().copied().collect();
++        heights.insert(SHADOW_ACTIVATION_HEIGHT, Shadow);
++        let configured = super::testnet::ConfiguredActivationHeights::from(heights);
++        let limit = Self::Mainnet.target_difficulty_limit();
+         super::testnet::Parameters::build()
+-            .with_network_name(names::TESTNET_SLOW)
+-            .and_then(|builder| builder.with_network_magic(magics::TESTNET_SLOW))
+-            .and_then(|builder| builder.with_activation_heights(heights))
++            .with_network_name(name)
++            .and_then(|builder| builder.with_network_magic(magic))
++            .and_then(|builder| builder.with_genesis_hash(MAINNET_GENESIS_HASH))
++            .and_then(|builder| builder.with_activation_heights(configured))
++            .and_then(|builder| builder.with_target_difficulty_limit(limit))
++            .and_then(|builder| Ok(builder.with_max_block_time_start_height(Height(2))))
++            .and_then(|builder| {
++                builder.with_checkpoints(ConfiguredCheckpoints::HeightsAndHashes(
++                    shadow_checkpoint_pairs(),
++                ))
++            })
+             .and_then(|builder| builder.to_network())
+-            .expect("the hard-coded slow testnet profile is a valid configured testnet")
++            .expect("the hard-coded shadow testnet profile is a valid configured testnet")
+     }
+ }
+ 
+diff --git a/crates/zakura-chain/src/parameters/ycash/identity_tests.rs b/crates/zakura-chain/src/parameters/ycash/identity_tests.rs
+index 7f2636d33..235336bd8 100644
+--- a/crates/zakura-chain/src/parameters/ycash/identity_tests.rs
++++ b/crates/zakura-chain/src/parameters/ycash/identity_tests.rs
+@@ -168,11 +168,12 @@ fn inherited(a: &str, b: &str) -> bool {
+         .any(|&(x, y)| (x, y) == (a, b) || (x, y) == (b, a))
+ }
+ 
+-/// The networks kogany runs (decision K-10: mainnet, the two re-forked testnet profiles and
+-/// regtest; the `legacy` profile and testnet3 are not kogany's), with kogany's live values.
++/// The networks kogany runs: mainnet, the three public testnets (fast, slow, legacy) and
++/// regtest. ycashd 4.5.0's testnet3 is not one of them.
+ fn kogany_rows() -> Vec<(NetRow, Network)> {
+     let fast = Network::new_default_testnet();
+     let slow = Network::new_ycash_testnet_slow();
++    let legacy = Network::new_ycash_testnet_legacy();
+     let regtest = Network::new_regtest(Default::default());
+     let row = |network, class, net: &Network, rpc_port| NetRow {
+         network,
+@@ -210,6 +211,15 @@ fn kogany_rows() -> Vec<(NetRow, Network)> {
+             ),
+             slow.clone(),
+         ),
++        (
++            row(
++                "ycash-testnet-legacy",
++                Public,
++                &legacy,
++                ycash::ports::rpc::TESTNET_LEGACY,
++            ),
++            legacy.clone(),
++        ),
+         (
+             row("ycash-regtest", Local, &regtest, ycash::ports::rpc::REGTEST),
+             regtest.clone(),
+@@ -556,12 +566,14 @@ fn network_names_equal_ycashd() {
+             ("Mainnet", "mainnet", "main"),
+             ("Testnet", "testnet", "test"),
+             ("TestnetSlow", "testnetslow", "test"),
++            ("TestnetLegacy", "testnetlegacy", "test"),
+             ("Regtest", "regtest", "test"),
+         ]
+         .map(|(a, b, c)| (a.to_string(), b.to_string(), c.to_string()))
+     );
+     // `getblockchaininfo.chain` is `regtest` on Regtest (`zakura-rpc` `types::ycash::chain_name`).
+-    assert!(rows[3].1.is_regtest());
++    assert!(rows[4].1.is_regtest());
++    assert_eq!(rows[3].1.vault_activation_height(), None);
+     // Vault: none on mainnet and on the slow profile, 510,400 on the fast profile (ycashd's).
+     assert_eq!(rows[0].1.vault_activation_height(), None);
+     assert_eq!(
+diff --git a/crates/zakura-chain/src/parameters/ycash/tests.rs b/crates/zakura-chain/src/parameters/ycash/tests.rs
+index ae6d1e03f..739e5e534 100644
+--- a/crates/zakura-chain/src/parameters/ycash/tests.rs
++++ b/crates/zakura-chain/src/parameters/ycash/tests.rs
+@@ -20,15 +20,27 @@ const MAINNET_BANDS: &[(u32, u32)] = &[
+     (1_100_006, 0x19bd2d2f),
+ ];
+ 
+-/// As [`MAINNET_BANDS`], for the re-forked Ycash testnet's `slow` profile (`ycash6 src/chainparams.cpp:429-459`).
+-const TESTNET_BANDS: &[(u32, u32)] = &[
++/// testnet-yb-slow and testnet-legacy follow mainnet's bands through H_S, then their own
++/// shadow id (`ycash6` `NetworkBranchId` of `UPGRADE_SHADOW`).
++const SHADOW_SLOW_BANDS: &[(u32, u32)] = &[
+     (0, 0),
+-    (207_500, 0x5ba81b19),
+-    (280_000, 0x76b809bb),
+-    (510_248, 0x374d694f),
+-    (510_250, 0x8e471bd6),
+-    (510_252, 0x66314da3),
+-    (510_254, 0x19bd2d2f),
++    (347_500, 0x5ba81b19),
++    (419_200, 0x76b809bb),
++    (570_000, 0x374d694f),
++    (1_100_000, 0x8e471bd6),
++    (1_100_003, 0x66314da3),
++    (1_100_006, 0x19bd2d2f),
++    (3_080_000, super::SLOW_SHADOW_BRANCH_ID),
++];
++const SHADOW_LEGACY_BANDS: &[(u32, u32)] = &[
++    (0, 0),
++    (347_500, 0x5ba81b19),
++    (419_200, 0x76b809bb),
++    (570_000, 0x374d694f),
++    (1_100_000, 0x8e471bd6),
++    (1_100_003, 0x66314da3),
++    (1_100_006, 0x19bd2d2f),
++    (3_080_000, super::LEGACY_SHADOW_BRANCH_ID),
+ ];
+ 
+ fn branch_id_or_sprout(network: &Network, height: u32) -> u32 {
+@@ -80,7 +92,24 @@ fn testnet_profiles_branch_ids_match_ycashd_bands() {
+         TESTNET_FAST_BANDS,
+         2_000_000,
+     );
+-    assert_bands(&Network::new_ycash_testnet_slow(), TESTNET_BANDS, 2_000_000);
++    assert_bands(
++        &Network::new_ycash_testnet_slow(),
++        SHADOW_SLOW_BANDS,
++        4_000_000,
++    );
++    assert_bands(
++        &Network::new_ycash_testnet_legacy(),
++        SHADOW_LEGACY_BANDS,
++        4_000_000,
++    );
++    assert_eq!(
++        Network::new_ycash_testnet_slow().vault_activation_height(),
++        None
++    );
++    assert_eq!(
++        Network::new_ycash_testnet_legacy().vault_activation_height(),
++        None
++    );
+ }
+ 
+ #[test]
+@@ -182,6 +211,19 @@ fn ycash_identity_ports_magics_names() {
+ 
+     assert!(fast.is_default_testnet());
+     assert!(!slow.is_default_testnet());
++    let legacy = Network::new_ycash_testnet_legacy();
++    assert_eq!(legacy.default_port(), ports::TESTNET_LEGACY);
++    assert_eq!(params(&legacy).network_magic(), magics::TESTNET_LEGACY);
++    assert_eq!(legacy.genesis_hash(), Network::Mainnet.genesis_hash());
++    assert_eq!(slow.genesis_hash(), Network::Mainnet.genesis_hash());
++    assert_eq!(
++        "testnetslow".parse::<Network>().expect("slow").to_string(),
++        "TestnetSlow"
++    );
++    assert_eq!(
++        "legacy".parse::<Network>().expect("legacy").to_string(),
++        "TestnetLegacy"
++    );
+     assert_eq!(slow.to_string(), "TestnetSlow");
+     assert_eq!(slow.kind(), NetworkKind::Testnet);
+     assert_eq!(Network::Mainnet.bip70_network_name(), "main");
+diff --git a/crates/zakura-chain/src/parameters/ycash/ydf.rs b/crates/zakura-chain/src/parameters/ycash/ydf.rs
+index 360b2b14e..46aa0d071 100644
+--- a/crates/zakura-chain/src/parameters/ycash/ydf.rs
++++ b/crates/zakura-chain/src/parameters/ycash/ydf.rs
+@@ -251,6 +251,7 @@ pub fn ydf_mandate_end_height(network: &Network) -> Height {
+     match network {
+         Network::Mainnet => mandate_end::MAINNET,
+         Network::Testnet(params) if params.is_regtest() => mandate_end::REGTEST,
++        Network::Testnet(_) if super::is_shadow_network(network) => mandate_end::MAINNET,
+         Network::Testnet(_) => mandate_end::TESTNET,
+     }
+ }
+@@ -259,6 +260,7 @@ pub fn ydf_mandate_end_height(network: &Network) -> Height {
+ pub fn ydf_address_list(network: &Network) -> &'static [&'static str] {
+     match network {
+         Network::Mainnet => &MAINNET_YDF_ADDRESSES,
++        Network::Testnet(_) if super::is_shadow_network(network) => &MAINNET_YDF_ADDRESSES,
+         Network::Testnet(_) => &TESTNET_YDF_ADDRESSES,
+     }
+ }
+diff --git a/crates/zakura-chain/src/primitives/zcash_history.rs b/crates/zakura-chain/src/primitives/zcash_history.rs
+index 6120d2db9..0e6b9c54b 100644
+--- a/crates/zakura-chain/src/primitives/zcash_history.rs
++++ b/crates/zakura-chain/src/primitives/zcash_history.rs
+@@ -200,7 +200,7 @@ impl<V: Version> Tree<V> {
+         peaks: &BTreeMap<u32, Entry>,
+         extra: &BTreeMap<u32, Entry>,
+     ) -> Result<Self, io::Error> {
+-        let branch_id = network_upgrade.branch_id().ok_or_else(|| {
++        let branch_id = network_upgrade.branch_id_on(network).ok_or_else(|| {
+             io::Error::new(io::ErrorKind::InvalidInput, "missing consensus branch ID")
+         })?;
+         let mut peaks_vec = Vec::new();
+@@ -240,7 +240,7 @@ impl<V: Version> Tree<V> {
+             .coinbase_height()
+             .expect("block must have coinbase height during contextual verification");
+         let network_upgrade = NetworkUpgrade::current(network, height);
+-        if network_upgrade.branch_id().is_none() {
++        if network_upgrade.branch_id_on(network).is_none() {
+             return Err(io::Error::new(
+                 io::ErrorKind::InvalidInput,
+                 "missing consensus branch ID",
+@@ -265,7 +265,7 @@ impl<V: Version> Tree<V> {
+         parts: HistoryTreeBlockParts<'_>,
+     ) -> Result<(Self, Entry), io::Error> {
+         let network_upgrade = NetworkUpgrade::current(network, parts.height);
+-        if network_upgrade.branch_id().is_none() {
++        if network_upgrade.branch_id_on(network).is_none() {
+             return Err(io::Error::new(
+                 io::ErrorKind::InvalidInput,
+                 "missing consensus branch ID",
+@@ -409,7 +409,7 @@ impl Version for zakura_mmr_tree::V1 {
+         let header = parts.header;
+         let network_upgrade = NetworkUpgrade::current(network, height);
+         let branch_id = network_upgrade
+-            .branch_id()
++            .branch_id_on(network)
+             .expect("history trees only exist for network upgrades with a branch ID");
+         let block_hash = header.hash().0;
+         let time: u32 = header
+@@ -438,6 +438,7 @@ impl Version for zakura_mmr_tree::V1 {
+             // since the V1::NodeData is included inside the V2::NodeData.
+             NetworkUpgrade::Heartwood
+             | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
+             | NetworkUpgrade::Vault
+             | NetworkUpgrade::Nu5
+             | NetworkUpgrade::Nu6
+diff --git a/crates/zakura-chain/src/primitives/zcash_primitives.rs b/crates/zakura-chain/src/primitives/zcash_primitives.rs
+index 9ab2b6a94..d82ab99dc 100644
+--- a/crates/zakura-chain/src/primitives/zcash_primitives.rs
++++ b/crates/zakura-chain/src/primitives/zcash_primitives.rs
+@@ -254,7 +254,18 @@ impl PrecomputedTxData {
+         nu: NetworkUpgrade,
+         all_previous_outputs: Arc<Vec<transparent::Output>>,
+     ) -> Result<PrecomputedTxData, Error> {
+-        let tx = tx.to_librustzcash(nu)?;
++        let branch_id = nu.branch_id().ok_or(Error::InvalidConsensusBranchId)?;
++        Self::with_branch(tx, nu, branch_id, all_previous_outputs)
++    }
++
++    /// [`Self::new`] with the branch id signatures on this network commit to.
++    pub(crate) fn with_branch(
++        tx: &Transaction,
++        nu: NetworkUpgrade,
++        branch_id: crate::parameters::ConsensusBranchId,
++        all_previous_outputs: Arc<Vec<transparent::Output>>,
++    ) -> Result<PrecomputedTxData, Error> {
++        let tx = tx.to_librustzcash_with_branch(nu, branch_id)?;
+ 
+         let txid_parts = tx.deref().digest(zp_tx::txid::TxIdDigester);
+ 
+diff --git a/crates/zakura-chain/src/transaction.rs b/crates/zakura-chain/src/transaction.rs
+index e4a02b19a..4cd7ff73b 100644
+--- a/crates/zakura-chain/src/transaction.rs
++++ b/crates/zakura-chain/src/transaction.rs
+@@ -47,8 +47,8 @@ use crate::{
+     memory::{vec_capacity_bytes, AttributedMemorySize},
+     orchard,
+     parameters::{
+-        Network, NetworkUpgrade, OVERWINTER_VERSION_GROUP_ID, SAPLING_VERSION_GROUP_ID,
+-        TX_V5_VERSION_GROUP_ID,
++        ConsensusBranchId, Network, NetworkUpgrade, OVERWINTER_VERSION_GROUP_ID,
++        SAPLING_VERSION_GROUP_ID, TX_V5_VERSION_GROUP_ID,
+     },
+     primitives::{ed25519, Bctv14Proof, Groth16Proof},
+     sapling,
+@@ -428,6 +428,21 @@ impl Transaction {
+         sighash::SigHasher::new(self, nu, all_previous_outputs)
+     }
+ 
++    /// [`Self::sighasher`] using this network's branch id for `nu`.
++    ///
++    /// testnet-yb-slow and testnet-legacy commit to their own shadow and Vault ids.
++    pub fn sighasher_on(
++        &self,
++        network: &Network,
++        nu: NetworkUpgrade,
++        all_previous_outputs: Arc<Vec<transparent::Output>>,
++    ) -> Result<sighash::SigHasher, Error> {
++        let Some(branch_id) = nu.branch_id_on(network) else {
++            return Err(Error::InvalidConsensusBranchId);
++        };
++        sighash::SigHasher::with_branch(self, nu, branch_id, all_previous_outputs)
++    }
++
+     /// Compute the authorizing data commitment of this transaction as specified
+     /// in [ZIP-244].
+     ///
+@@ -1860,13 +1875,24 @@ impl Transaction {
+         &self,
+         nu: NetworkUpgrade,
+     ) -> Result<zcash_primitives::transaction::Transaction, crate::Error> {
+-        if self.network_upgrade().is_some_and(|tx_nu| tx_nu != nu) {
+-            return Err(crate::Error::InvalidConsensusBranchId);
+-        }
+-
+         let Some(branch_id) = nu.branch_id() else {
+             return Err(crate::Error::InvalidConsensusBranchId);
+         };
++        self.to_librustzcash_with_branch(nu, branch_id)
++    }
++
++    /// As [`Self::to_librustzcash`], with the branch id the signature commits to.
++    ///
++    /// Shadow-fork profiles use a per-network id (`NetworkUpgrade::branch_id_on`) rather than
++    /// the one id in the global table.
++    pub(crate) fn to_librustzcash_with_branch(
++        &self,
++        nu: NetworkUpgrade,
++        branch_id: ConsensusBranchId,
++    ) -> Result<zcash_primitives::transaction::Transaction, crate::Error> {
++        if self.network_upgrade().is_some_and(|tx_nu| tx_nu != nu) {
++            return Err(crate::Error::InvalidConsensusBranchId);
++        }
+ 
+         let Ok(branch_id) = consensus::BranchId::try_from(branch_id) else {
+             return Err(crate::Error::InvalidConsensusBranchId);
+diff --git a/crates/zakura-chain/src/transaction/arbitrary.rs b/crates/zakura-chain/src/transaction/arbitrary.rs
+index efe012699..b8cfc70bd 100644
+--- a/crates/zakura-chain/src/transaction/arbitrary.rs
++++ b/crates/zakura-chain/src/transaction/arbitrary.rs
+@@ -509,8 +509,7 @@ impl Transaction {
+                 )
+             });
+         assert_eq!(
+-            remaining_input_value,
+-            remaining_transaction_value,
++            remaining_input_value, remaining_transaction_value,
+             "fix_remaining_value and remaining_transaction_value calculated different remaining values"
+         );
+ 
+@@ -797,6 +796,7 @@ impl Arbitrary for Transaction {
+             | NetworkUpgrade::Blossom
+             | NetworkUpgrade::Heartwood
+             | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
+             | NetworkUpgrade::Vault => Self::v4_strategy(ledger_state),
+             NetworkUpgrade::Nu5
+             | NetworkUpgrade::Nu6
+diff --git a/crates/zakura-chain/src/transaction/sighash.rs b/crates/zakura-chain/src/transaction/sighash.rs
+index 928d145c6..27007c9ee 100644
+--- a/crates/zakura-chain/src/transaction/sighash.rs
++++ b/crates/zakura-chain/src/transaction/sighash.rs
+@@ -9,7 +9,7 @@ use zcash_transparent::sighash::SighashType;
+ 
+ use super::{zip244::Zip244SighashCache, Transaction};
+ 
+-use crate::parameters::NetworkUpgrade;
++use crate::parameters::{ConsensusBranchId, NetworkUpgrade};
+ use crate::{transparent, Error};
+ 
+ use crate::primitives::zcash_primitives::{sighash, sighash_v4_raw, PrecomputedTxData};
+@@ -175,11 +175,25 @@ impl SigHasher {
+         nu: NetworkUpgrade,
+         all_previous_outputs: Arc<Vec<transparent::Output>>,
+     ) -> Result<Self, Error> {
+-        let precomputed_tx_data = PrecomputedTxData::new(trans, nu, all_previous_outputs.clone())?;
++        let Some(branch_id) = nu.branch_id() else {
++            return Err(Error::InvalidConsensusBranchId);
++        };
++        Self::with_branch(trans, nu, branch_id, all_previous_outputs)
++    }
++
++    /// [`Self::new`] with an explicit consensus branch id.
++    pub fn with_branch(
++        trans: &Transaction,
++        nu: NetworkUpgrade,
++        branch_id: ConsensusBranchId,
++        all_previous_outputs: Arc<Vec<transparent::Output>>,
++    ) -> Result<Self, Error> {
++        let precomputed_tx_data =
++            PrecomputedTxData::with_branch(trans, nu, branch_id, all_previous_outputs.clone())?;
+ 
+         Ok(SigHasher {
+             precomputed_tx_data,
+-            v4: V4Sighash::new(trans, nu, &all_previous_outputs),
++            v4: V4Sighash::new(trans, branch_id, &all_previous_outputs),
+             zip244: Zip244SighashCache::new(trans, &all_previous_outputs),
+         })
+     }
+diff --git a/crates/zakura-chain/src/transaction/sighash/v4.rs b/crates/zakura-chain/src/transaction/sighash/v4.rs
+index 2e303f063..611725119 100644
+--- a/crates/zakura-chain/src/transaction/sighash/v4.rs
++++ b/crates/zakura-chain/src/transaction/sighash/v4.rs
+@@ -9,7 +9,7 @@ use zcash_transparent::sighash::{
+ 
+ use super::SigHash;
+ use crate::{
+-    parameters::{NetworkUpgrade, SAPLING_VERSION_GROUP_ID},
++    parameters::SAPLING_VERSION_GROUP_ID,
+     primitives::ZkSnarkProof,
+     sapling,
+     serialization::ZcashSerialize,
+@@ -164,10 +164,10 @@ impl V4Sighash {
+     /// Returns precomputed data for V4 transactions, and `None` for other versions.
+     pub(super) fn new(
+         transaction: &Transaction,
+-        network_upgrade: NetworkUpgrade,
++        branch_id: crate::parameters::ConsensusBranchId,
+         all_previous_outputs: &[transparent::Output],
+     ) -> Option<Self> {
+-        let consensus_branch_id = u32::from(network_upgrade.branch_id()?);
++        let consensus_branch_id = u32::from(branch_id);
+ 
+         match transaction {
+             Transaction::V4 {
+diff --git a/crates/zakura-consensus/src/checkpoint.rs b/crates/zakura-consensus/src/checkpoint.rs
+index d2af21673..b40dc0f1b 100644
+--- a/crates/zakura-consensus/src/checkpoint.rs
++++ b/crates/zakura-consensus/src/checkpoint.rs
+@@ -227,12 +227,6 @@ where
+     S: Service<zs::Request, Response = zs::Response, Error = BoxError> + Send + Clone + 'static,
+     S::Future: Send + 'static,
+ {
+-    /// kogany: the network this verifier checks blocks for (the router's partial-list arm).
+-    #[cfg(feature = "ycash")]
+-    pub(crate) fn network(&self) -> &Network {
+-        &self.network
+-    }
+-
+     /// Return a checkpoint verification service for `network`, using the
+     /// hard-coded checkpoint list, and the provided `state_service`.
+     ///
+diff --git a/crates/zakura-consensus/src/primitives/halo2.rs b/crates/zakura-consensus/src/primitives/halo2.rs
+index 3a12581e9..456440e7d 100644
+--- a/crates/zakura-consensus/src/primitives/halo2.rs
++++ b/crates/zakura-consensus/src/primitives/halo2.rs
+@@ -416,7 +416,7 @@ fn lazy_verifier_for(network_upgrade: NetworkUpgrade) -> &'static LazyLock<Verif
+         // history before NU6.2 verifies; routing them anywhere else cannot be
+         // correct.
+         Genesis | BeforeOverwinter | Overwinter | Sapling | Ycash | Blossom | Heartwood
+-        | Canopy | Vault | Nu5 | Nu6 | Nu6_1 => &VERIFIER_PRE_NU6_2,
++        | Canopy | Shadow | Vault | Nu5 | Nu6 | Nu6_1 => &VERIFIER_PRE_NU6_2,
+ 
+         // NU6.2 ships the fixed circuit and is the only upgrade that uses it:
+         // it is active from the NU6.2 activation height until NU6.3.
+diff --git a/crates/zakura-consensus/src/router.rs b/crates/zakura-consensus/src/router.rs
+index a28cf0f74..8e452ad2c 100644
+--- a/crates/zakura-consensus/src/router.rs
++++ b/crates/zakura-consensus/src/router.rs
+@@ -401,13 +401,9 @@ where
+             Some(height) if height <= self.max_checkpoint_height => {
+                 self.checkpoint.call(block).map_err(Into::into).boxed()
+             }
+-            // kogany: with a partial Ycash list (W1-Y4), a pre-Canopy block above its last
+-            // checkpoint can be neither checkpointed nor semantically verified (K-9): the
+-            // checkpoint verifier rejects it as `TooHigh`, rather than the state asserting.
+-            #[cfg(feature = "ycash")]
+-            Some(height) if height <= self.checkpoint.network().mandatory_checkpoint_height() => {
+-                self.checkpoint.call(block).map_err(Into::into).boxed()
+-            }
++            // kogany: a partial Ycash list stops at the shared prefix (fast: 510,247). Blocks
++            // above that list are verified semantically, including the re-fork before Canopy.
++            // A complete list already covers the mandatory checkpoint, so this arm is unused.
+             // This also covers blocks with no height, which the block verifier
+             // will reject immediately.
+             _ => self.block.call(request).map_err(Into::into).boxed(),
+@@ -689,8 +685,8 @@ pub fn init_checkpoint_list(config: Config, network: &Network) -> (Arc<Checkpoin
+         tracing::warn!(
+             max_checkpoint = ?list.max_height(),
+             mandatory_checkpoint = ?network.mandatory_checkpoint_height(),
+-            "the Ycash checkpoint list is partial: blocks above its last checkpoint and below \
+-             Canopy are rejected until a list reaching Canopy ships"
++            "the Ycash checkpoint list is partial: blocks above its last checkpoint are \
++             verified semantically, including the re-fork before Canopy"
+         );
+     }
+ 
+diff --git a/crates/zakura-consensus/src/transaction.rs b/crates/zakura-consensus/src/transaction.rs
+index b76ab7ce8..2cdfe33a9 100644
+--- a/crates/zakura-consensus/src/transaction.rs
++++ b/crates/zakura-consensus/src/transaction.rs
+@@ -664,7 +664,7 @@ where
+ 
+             let nu = req.upgrade(&network);
+             let cached_ffi_transaction =
+-                Arc::new(CachedFfiTransaction::new(tx.clone(), Arc::new(spent_outputs), nu).map_err(|_| TransactionError::UnsupportedByNetworkUpgrade(tx.version(), nu))?);
++                Arc::new(CachedFfiTransaction::new_on(&network, tx.clone(), Arc::new(spent_outputs), nu).map_err(|_| TransactionError::UnsupportedByNetworkUpgrade(tx.version(), nu))?);
+ 
+             tracing::trace!(?tx_id, "got state UTXOs");
+ 
+@@ -901,7 +901,9 @@ where
+         {
+             Ok(median_time_past)
+         } else {
+-            unreachable!("Request::BestChainNextMedianTimePast always responds with BestChainNextMedianTimePast")
++            unreachable!(
++                "Request::BestChainNextMedianTimePast always responds with BestChainNextMedianTimePast"
++            )
+         }
+     }
+ 
+@@ -1206,6 +1208,7 @@ where
+             | NetworkUpgrade::Blossom
+             | NetworkUpgrade::Heartwood
+             | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
+             | NetworkUpgrade::Vault
+             | NetworkUpgrade::Nu5
+             | NetworkUpgrade::Nu6
+@@ -1323,6 +1326,7 @@ where
+             | NetworkUpgrade::Blossom
+             | NetworkUpgrade::Heartwood
+             | NetworkUpgrade::Canopy
++            | NetworkUpgrade::Shadow
+             // kogany: v4 only under Vault (U-26, ycash6 `bad-vault-tx-version-group-id`).
+             | NetworkUpgrade::Vault => Err(TransactionError::UnsupportedByNetworkUpgrade(
+                 transaction.version(),
+diff --git a/crates/zakura-consensus/src/transaction/check/ycash_standard.rs b/crates/zakura-consensus/src/transaction/check/ycash_standard.rs
+index d580a9b69..10fd9f2a4 100644
+--- a/crates/zakura-consensus/src/transaction/check/ycash_standard.rs
++++ b/crates/zakura-consensus/src/transaction/check/ycash_standard.rs
+@@ -854,7 +854,7 @@ pub fn standard_script_check(
+             .iter()
+             .map(|o| Some(o.lock_script.as_raw_bytes())),
+     );
+-    let cached = zakura_script::CachedFfiTransaction::new(tx, spent_outputs, nu)
++    let cached = zakura_script::CachedFfiTransaction::new_on(network, tx, spent_outputs, nu)
+         .map_err(|error| (0, error))?;
+     let context =
+         zakura_script::ScriptContext::new(network.clone(), height, None).with_standard_policy();
+diff --git a/crates/zakura-consensus/src/transaction/tests.rs b/crates/zakura-consensus/src/transaction/tests.rs
+index 5008160ed..09859c115 100644
+--- a/crates/zakura-consensus/src/transaction/tests.rs
++++ b/crates/zakura-consensus/src/transaction/tests.rs
+@@ -4744,6 +4744,7 @@ fn v4_deprecation_boundary() {
+ fn configured_network_with_nu7(nu7: Option<Height>) -> Network {
+     Parameters::build()
+         .with_activation_heights(ConfiguredActivationHeights {
++            shadow: None,
+             ycash: None,
+             vault: None,
+             pq_falcon: None,
+diff --git a/crates/zakura-consensus/src/transaction/tests/prop.rs b/crates/zakura-consensus/src/transaction/tests/prop.rs
+index 19902fc0d..4e1f1115a 100644
+--- a/crates/zakura-consensus/src/transaction/tests/prop.rs
++++ b/crates/zakura-consensus/src/transaction/tests/prop.rs
+@@ -365,7 +365,7 @@ fn sanitize_transaction_version(
+             Genesis | BeforeOverwinter | Overwinter => {
+                 unreachable!("mock transparent transaction tests only use Sapling-onward heights")
+             }
+-            Sapling | Ycash | Blossom | Heartwood | Canopy | Vault => (4, 4),
++            Sapling | Ycash | Blossom | Heartwood | Canopy | Shadow | Vault => (4, 4),
+             Nu5 | Nu6 | Nu6_1 | Nu6_2 => (4, 5),
+             Nu6_3 => (4, 6),
+             Nu7 => (5, 5),
+diff --git a/crates/zakura-consensus/src/transaction/vault_mempool.rs b/crates/zakura-consensus/src/transaction/vault_mempool.rs
+index 6d022879c..bd91c673f 100644
+--- a/crates/zakura-consensus/src/transaction/vault_mempool.rs
++++ b/crates/zakura-consensus/src/transaction/vault_mempool.rs
+@@ -202,10 +202,10 @@ pub fn check_template_input(
+     let standard =
+         ScriptContext::new(network.clone(), height, Some(state.clone())).with_standard_policy();
+     let current = NetworkUpgrade::current(network, height);
+-    let current_branch = current.branch_id().map_or(0, u32::from);
++    let current_branch = current.branch_id_on(network).map_or(0, u32::from);
+     let previous = previous_epoch(network, height);
+     let previous_branch = previous
+-        .and_then(|nu| nu.branch_id())
++        .and_then(|nu| nu.branch_id_on(network))
+         .map_or(current_branch, u32::from);
+ 
+     let mut first_error = None;
+@@ -215,7 +215,12 @@ pub fn check_template_input(
+                 cached.is_valid_in(input_index, &standard)
+             } else {
+                 match previous.map(|nu| {
+-                    CachedFfiTransaction::new(tx.clone(), Arc::new(spent_outputs.clone()), nu)
++                    CachedFfiTransaction::new_on(
++                        network,
++                        tx.clone(),
++                        Arc::new(spent_outputs.clone()),
++                        nu,
++                    )
+                 }) {
+                     Some(Ok(cached_previous)) => {
+                         cached_previous.is_valid_in(input_index, &standard)
+@@ -276,14 +281,15 @@ pub fn non_mandatory_script_failure(
+             .map(|error| (input_index, error))
+     })?;
+     if let Some(previous) = previous_epoch(network, height) {
+-        let passes_previous = CachedFfiTransaction::new(
++        let passes_previous = CachedFfiTransaction::new_on(
++            network,
+             tx.clone(),
+             Arc::new(cached.all_previous_outputs().clone()),
+             previous,
+         )
+         .is_ok_and(|old| old.is_valid_in(input_index, &consensus).is_ok());
+         if passes_previous {
+-            let branch = |nu: NetworkUpgrade| nu.branch_id().map_or(0, u32::from);
++            let branch = |nu: NetworkUpgrade| nu.branch_id_on(network).map_or(0, u32::from);
+             return Some(TransactionError::OldConsensusBranchId {
+                 expected: branch(NetworkUpgrade::current(network, height)),
+                 found: branch(previous),
+diff --git a/crates/zakura-consensus/tests/nu7_diff_dump.rs b/crates/zakura-consensus/tests/nu7_diff_dump.rs
+index d7ac2b675..458e1799f 100644
+--- a/crates/zakura-consensus/tests/nu7_diff_dump.rs
++++ b/crates/zakura-consensus/tests/nu7_diff_dump.rs
+@@ -360,6 +360,7 @@ fn build_testnet(a: u32) -> Result<Network, String> {
+ fn build_regtest() -> Result<Network, String> {
+     let one = Some(1);
+     let heights = ConfiguredActivationHeights {
++        shadow: None,
+         before_overwinter: one,
+         overwinter: one,
+         sapling: one,
+diff --git a/crates/zakura-header-chain/src/validation/contextual/adjusted_difficulty.rs b/crates/zakura-header-chain/src/validation/contextual/adjusted_difficulty.rs
+index 5963ffed5..355d4cd52 100644
+--- a/crates/zakura-header-chain/src/validation/contextual/adjusted_difficulty.rs
++++ b/crates/zakura-header-chain/src/validation/contextual/adjusted_difficulty.rs
+@@ -185,6 +185,64 @@ impl AdjustedDifficulty {
+         self.network.clone()
+     }
+ 
++    /// Ycash's fork-window difficulty (`ycash6` `src/pow.cpp`): the fast profile resets to
++    /// the PoW limit across the Ycash activation and the next averaging window; mainnet and
++    /// the shadow forks scale that window by how late the block is; the shadow activation
++    /// itself resets to the PoW limit the same way.
++    #[cfg(feature = "ycash")]
++    fn ycash_fork_difficulty(&self) -> Option<CompactDifficulty> {
++        use zakura_chain::parameters::ycash::{self, is_fast_network, is_shadow_network};
++        let height = self.candidate_height.0;
++        let window = u32::try_from(self.averaging_window()).unwrap_or(17);
++        let limit = self.network.target_difficulty_limit().to_compact();
++        let in_window = |start: u32, inclusive_end: bool| {
++            let end = start.saturating_add(window);
++            height >= start
++                && if inclusive_end {
++                    height <= end
++                } else {
++                    height < end
++                }
++        };
++        if is_fast_network(&self.network) {
++            if let Some(start) = NetworkUpgrade::Ycash.activation_height(&self.network) {
++                if in_window(start.0, true) {
++                    return Some(limit);
++                }
++            }
++        }
++        if is_shadow_network(&self.network) && in_window(ycash::SHADOW_ACTIVATION_HEIGHT.0, true) {
++            return Some(limit);
++        }
++        let scaled = matches!(self.network, Network::Mainnet) || is_shadow_network(&self.network);
++        if scaled {
++            if let Some(start) = NetworkUpgrade::Ycash.activation_height(&self.network) {
++                if in_window(start.0, false) {
++                    let spacing = NetworkUpgrade::target_spacing_for_height(
++                        &self.network,
++                        self.candidate_height,
++                    );
++                    let gap = self.candidate_time - *self.relevant_times.first();
++                    let multiplier = if gap > spacing * 12 {
++                        Some(64u64)
++                    } else if gap > spacing * 6 {
++                        Some(128)
++                    } else if gap > spacing * 2 {
++                        Some(256)
++                    } else {
++                        None
++                    };
++                    if let Some(multiplier) = multiplier {
++                        let target = U256::from(self.network.target_difficulty_limit())
++                            / U256::from(multiplier);
++                        return ExpandedDifficulty::from(target).to_compact().into();
++                    }
++                }
++            }
++        }
++        None
++    }
++
+     /// Returns the averaging window selected by the candidate block's upgrade.
+     fn averaging_window(&self) -> usize {
+         NetworkUpgrade::averaging_window_for_height(&self.network, self.candidate_height)
+@@ -198,6 +256,10 @@ impl AdjustedDifficulty {
+     /// The difficulty calculation implements `ThresholdBits` from the Zcash specification and the Testnet
+     /// minimum difficulty adjustment from ZIPs 205 and 208.
+     pub fn expected_difficulty_threshold(&self) -> CompactDifficulty {
++        #[cfg(feature = "ycash")]
++        if let Some(threshold) = self.ycash_fork_difficulty() {
++            return threshold;
++        }
+         if NetworkUpgrade::is_testnet_min_difficulty_block(
+             &self.network,
+             self.candidate_height,
+diff --git a/crates/zakura-header-chain/src/validation/contextual/tests/arithmetic.rs b/crates/zakura-header-chain/src/validation/contextual/tests/arithmetic.rs
+index 96f5eb258..3e587a68d 100644
+--- a/crates/zakura-header-chain/src/validation/contextual/tests/arithmetic.rs
++++ b/crates/zakura-header-chain/src/validation/contextual/tests/arithmetic.rs
+@@ -1,7 +1,7 @@
+ use chrono::{DateTime, Duration};
+ use zakura_chain::{
+     block,
+-    parameters::testnet::Parameters,
++    parameters::{testnet::Parameters, Network},
+     work::difficulty::{ExpandedDifficulty, ParameterDifficulty as _, U256},
+ };
+ 
+@@ -36,3 +36,32 @@ fn custom_target_scaling_clamps_before_overflowing_u256() {
+         network.target_difficulty_limit().to_compact()
+     );
+ }
++
++/// The fast re-fork and the shadow split reset one averaging window to the PoW limit
++/// (`ycash6` `src/pow.cpp`).
++#[cfg(feature = "ycash")]
++#[test]
++fn ycash_fork_windows_reset_to_the_pow_limit() {
++    let hard = ExpandedDifficulty::from(U256::from(1u64)).to_compact();
++    let time = DateTime::from_timestamp(1_700_000_000, 0).expect("timestamp");
++    let context = vec![(hard, time); POW_ADJUSTMENT_BLOCK_SPAN];
++    let expect_limit = |network: &Network, previous: u32| {
++        let adjustment = AdjustedDifficulty::new_from_header_time(
++            time + Duration::seconds(75),
++            block::Height(previous),
++            network,
++            context.clone(),
++        )
++        .expect("context");
++        assert_eq!(
++            adjustment.expected_difficulty_threshold(),
++            network.target_difficulty_limit().to_compact(),
++            "{network} at {}",
++            previous + 1
++        );
++    };
++    let fast = Network::new_default_testnet();
++    expect_limit(&fast, 510_247);
++    expect_limit(&Network::new_ycash_testnet_slow(), 3_079_999);
++    expect_limit(&Network::new_ycash_testnet_legacy(), 3_079_999);
++}
+diff --git a/crates/zakura-network/src/config.rs b/crates/zakura-network/src/config.rs
+index 66fb9f7fe..446751f4c 100644
+--- a/crates/zakura-network/src/config.rs
++++ b/crates/zakura-network/src/config.rs
+@@ -1052,6 +1052,9 @@ impl DTestnetParameters {
+ #[serde(untagged)]
+ enum DNetwork {
+     DefaultForKind(NetworkKind),
++    /// `TestnetSlow` or `TestnetLegacy` (`ycash` feature). Serializes as that string.
++    #[cfg(feature = "ycash")]
++    YcashTestnet(String),
+     ConfiguredRegtest {
+         params: Box<DTestnetParameters>,
+ 
+@@ -1075,6 +1078,19 @@ impl<'de> Deserialize<'de> for DNetwork {
+             }
+ 
+             fn visit_str<E: de::Error>(self, kind: &str) -> Result<DNetwork, E> {
++                #[cfg(feature = "ycash")]
++                {
++                    use std::str::FromStr;
++                    if let Ok(network) = zakura_chain::parameters::Network::from_str(kind) {
++                        if network == zakura_chain::parameters::Network::new_ycash_testnet_slow() {
++                            return Ok(DNetwork::YcashTestnet("TestnetSlow".to_owned()));
++                        }
++                        if network == zakura_chain::parameters::Network::new_ycash_testnet_legacy()
++                        {
++                            return Ok(DNetwork::YcashTestnet("TestnetLegacy".to_owned()));
++                        }
++                    }
++                }
+                 NetworkKind::deserialize(kind.into_deserializer()).map(DNetwork::DefaultForKind)
+             }
+ 
+@@ -1250,25 +1266,45 @@ impl From<Config> for DConfig {
+             expose_peer_addresses,
+         }: Config,
+     ) -> Self {
+-        let dnetwork = match network.kind() {
+-            NetworkKind::Testnet => match network
+-                .parameters()
+-                .filter(|params| !params.is_default_testnet())
+-                .map(Into::into)
++        let dnetwork = if cfg!(feature = "ycash") && network == Network::new_ycash_testnet_slow() {
++            #[cfg(feature = "ycash")]
+             {
+-                Some(params) => DNetwork::ConfiguredTestnet(Box::new(params)),
+-                None => DNetwork::DefaultForKind(NetworkKind::Testnet),
+-            },
++                DNetwork::YcashTestnet("TestnetSlow".to_owned())
++            }
++            #[cfg(not(feature = "ycash"))]
++            {
++                unreachable!("the ycash profiles exist only in a ycash build")
++            }
++        } else if cfg!(feature = "ycash") && network == Network::new_ycash_testnet_legacy() {
++            #[cfg(feature = "ycash")]
++            {
++                DNetwork::YcashTestnet("TestnetLegacy".to_owned())
++            }
++            #[cfg(not(feature = "ycash"))]
++            {
++                unreachable!("the ycash profiles exist only in a ycash build")
++            }
++        } else {
++            match network.kind() {
++                NetworkKind::Testnet => match network
++                    .parameters()
++                    .filter(|params| !params.is_default_testnet())
++                    .map(Into::into)
++                {
++                    Some(params) => DNetwork::ConfiguredTestnet(Box::new(params)),
++                    None => DNetwork::DefaultForKind(NetworkKind::Testnet),
++                },
+ 
+-            NetworkKind::Regtest => match network.parameters().map(Into::into) {
+-                Some(params) => DNetwork::ConfiguredRegtest {
+-                    params: Box::new(params),
+-                    regtest: Some(true),
++                NetworkKind::Regtest => match network.parameters().map(Into::into) {
++                    Some(params) => DNetwork::ConfiguredRegtest {
++                        params: Box::new(params),
++                        regtest: Some(true),
++                    },
++                    None => DNetwork::DefaultForKind(NetworkKind::Regtest),
+                 },
+-                None => DNetwork::DefaultForKind(NetworkKind::Regtest),
+-            },
+ 
+-            other_kind => DNetwork::DefaultForKind(other_kind),
++                other_kind => DNetwork::DefaultForKind(other_kind),
++            }
+         };
+ 
+         DConfig {
+@@ -1336,6 +1372,16 @@ impl<'de> Deserialize<'de> for Config {
+             (DNetwork::DefaultForKind(NetworkKind::Testnet), None) => {
+                 Network::new_default_testnet()
+             }
++            #[cfg(feature = "ycash")]
++            (DNetwork::YcashTestnet(name), None) => match name.as_str() {
++                "TestnetSlow" => Network::new_ycash_testnet_slow(),
++                "TestnetLegacy" => Network::new_ycash_testnet_legacy(),
++                other => {
++                    return Err(de::Error::custom(format!(
++                        "unknown Ycash testnet profile {other}"
++                    )));
++                }
++            },
+             (DNetwork::DefaultForKind(NetworkKind::Regtest), Some(params)) => {
+                 params.reject_regtest_form_keys::<D::Error>()?;
+                 build_configured_regtest::<D>(params)?
+@@ -1352,7 +1398,10 @@ impl<'de> Deserialize<'de> for Config {
+             }
+         };
+ 
+-        let listen_addr = match listen_addr.parse::<SocketAddr>().or_else(|_| format!("{listen_addr}:{}", network.default_port()).parse()) {
++        let listen_addr = match listen_addr
++            .parse::<SocketAddr>()
++            .or_else(|_| format!("{listen_addr}:{}", network.default_port()).parse())
++        {
+             Ok(socket) => Ok(socket),
+             Err(_) => match listen_addr.parse::<IpAddr>() {
+                 Ok(ip) => Ok(SocketAddr::new(ip, network.default_port())),
+@@ -1363,7 +1412,10 @@ impl<'de> Deserialize<'de> for Config {
+         }?;
+ 
+         let external_socket_addr = if let Some(address) = &external_addr {
+-            match address.parse::<SocketAddr>().or_else(|_| format!("{address}:{}", network.default_port()).parse()) {
++            match address
++                .parse::<SocketAddr>()
++                .or_else(|_| format!("{address}:{}", network.default_port()).parse())
++            {
+                 Ok(socket) => Ok(Some(socket)),
+                 Err(_) => match address.parse::<IpAddr>() {
+                     Ok(ip) => Ok(Some(SocketAddr::new(ip, network.default_port()))),
+diff --git a/crates/zakura-network/src/protocol/external/types.rs b/crates/zakura-network/src/protocol/external/types.rs
+index 47abab033..e654a676a 100644
+--- a/crates/zakura-network/src/protocol/external/types.rs
++++ b/crates/zakura-network/src/protocol/external/types.rs
+@@ -116,6 +116,7 @@ impl Version {
+             (Mainnet, Heartwood) => 170_011,
+             (Testnet(_), Canopy) => 170_012,
+             (Mainnet, Canopy) => 170_013,
++            (_, Shadow) => 270_013,
+             // ycashd's `UPGRADE_VAULT.nProtocolVersion` on every network
+             // (`ycash6 src/chainparams.cpp:154,463,766`). Only a network that schedules Vault
+             // reaches it; W1-Y5 owns the rest of this table.
+diff --git a/crates/zakura-network/src/ycash.rs b/crates/zakura-network/src/ycash.rs
+index b8cb360a6..0e488f9be 100644
+--- a/crates/zakura-network/src/ycash.rs
++++ b/crates/zakura-network/src/ycash.rs
+@@ -74,8 +74,14 @@ pub(crate) fn min_specified_for_upgrade(
+     network_upgrade: NetworkUpgrade,
+ ) -> Version {
+     let is_regtest = matches!(network, Testnet(params) if params.is_regtest());
++    // Shadow forks inherit mainnet's per-upgrade versions (`CTestNetShadowParams : CMainParams`).
++    let version_network = if profile::is_shadow_network(network) {
++        &Mainnet
++    } else {
++        network
++    };
+ 
+-    Version(match (network, network_upgrade) {
++    Version(match (version_network, network_upgrade) {
+         (_, Genesis) | (_, BeforeOverwinter) => 170_002,
+         (Mainnet, Overwinter) => 170_005,
+         (Testnet(_), Overwinter) => 170_003,
+@@ -91,6 +97,8 @@ pub(crate) fn min_specified_for_upgrade(
+         (Mainnet, Canopy) => 270_013,
+         (Testnet(_), Canopy) if is_regtest => 170_012,
+         (Testnet(_), Canopy) => 270_012,
++        // `UPGRADE_SHADOW.nProtocolVersion` (`ycash6 src/chainparams.cpp`, CTestNetShadowParams).
++        (_, Shadow) => 270_013,
+         (Mainnet, Nu5) => 270_015,
+         (Testnet(_), Nu5) if is_regtest => 170_050,
+         (Testnet(_), Nu5) => 270_014,
+diff --git a/crates/zakura-network/src/ycash/tests.rs b/crates/zakura-network/src/ycash/tests.rs
+index 568fc07e2..c7f100570 100644
+--- a/crates/zakura-network/src/ycash/tests.rs
++++ b/crates/zakura-network/src/ycash/tests.rs
+@@ -75,10 +75,18 @@ fn version_table_is_ycashd_n_protocol_version() {
+         }
+     }
+ 
+-    // The slow testnet profile is a testnet like the fast one.
++    // Shadow forks use mainnet's Canopy version. The shadow upgrade itself is 270013.
+     assert_eq!(
+         min_specified_for_upgrade(&Network::new_ycash_testnet_slow(), NetworkUpgrade::Canopy),
+-        Version(270_012),
++        Version(270_013),
++    );
++    assert_eq!(
++        min_specified_for_upgrade(&Network::new_ycash_testnet_slow(), NetworkUpgrade::Shadow),
++        Version(270_013),
++    );
++    assert_eq!(
++        min_specified_for_upgrade(&Network::new_ycash_testnet_legacy(), NetworkUpgrade::Shadow),
++        Version(270_013),
+     );
+ }
+ 
+diff --git a/crates/zakura-network/src/zakura/testkit/cluster.rs b/crates/zakura-network/src/zakura/testkit/cluster.rs
+index cf924e4a0..75299e8a0 100644
+--- a/crates/zakura-network/src/zakura/testkit/cluster.rs
++++ b/crates/zakura-network/src/zakura/testkit/cluster.rs
+@@ -1150,6 +1150,7 @@ mod tests {
+                 blossom: Some(1),
+                 heartwood: Some(1),
+                 canopy: Some(1),
++                shadow: None,
+                 nu5: None,
+                 nu6: None,
+                 nu6_1: None,
+@@ -1935,7 +1936,7 @@ mod tests {
+                     ending @ (BlockSyncMessage::BlocksDone { .. }
+                     | BlockSyncMessage::RangeUnavailable { .. }) => return Ok((hashes, ending)),
+                     message => {
+-                        return Err(format!("unexpected message in {label}: {message:?}").into())
++                        return Err(format!("unexpected message in {label}: {message:?}").into());
+                     }
+                 }
+             }
+@@ -2067,7 +2068,7 @@ mod tests {
+                     } => return Ok::<_, BoxError>((start_height, count)),
+                     BlockSyncMessage::Status(_) => {}
+                     msg => {
+-                        return Err(format!("unexpected native block-sync message: {msg:?}").into())
++                        return Err(format!("unexpected native block-sync message: {msg:?}").into());
+                     }
+                 }
+             }
+diff --git a/crates/zakura-rpc/src/methods/types/get_block_template/proposal.rs b/crates/zakura-rpc/src/methods/types/get_block_template/proposal.rs
+index ce4e9e751..bf589fcdb 100644
+--- a/crates/zakura-rpc/src/methods/types/get_block_template/proposal.rs
++++ b/crates/zakura-rpc/src/methods/types/get_block_template/proposal.rs
+@@ -205,7 +205,7 @@ pub fn proposal_block_from_template(
+ 
+     let commitment_bytes = match NetworkUpgrade::current(net, height) {
+         // kogany: Vault keeps Canopy's ZIP-221 chain history root (kogany plan §2.1).
+-        NetworkUpgrade::Canopy | NetworkUpgrade::Vault => {
++        NetworkUpgrade::Canopy | NetworkUpgrade::Shadow | NetworkUpgrade::Vault => {
+             chain_history_root.bytes_in_serialized_order()
+         }
+         NetworkUpgrade::Nu5
+diff --git a/crates/zakura-rpc/src/methods/types/ycash.rs b/crates/zakura-rpc/src/methods/types/ycash.rs
+index eae72f70c..f76266c1c 100644
+--- a/crates/zakura-rpc/src/methods/types/ycash.rs
++++ b/crates/zakura-rpc/src/methods/types/ycash.rs
+@@ -43,11 +43,10 @@ pub fn chain_name(network: &Network) -> String {
+ }
+ 
+ /// The `testnetprofile` field of `getblockchaininfo`: on the Ycash testnets only, the profile
+-/// name ycashd compiles in (`strTestnetProfile`, `ycash6 src/chainparams.cpp:639,661`; the field
+-/// is pushed when it is not empty, `src/rpc/blockchain.cpp:1688-1689`). The `slow` profile is the
+-/// testnet with its magic ([`Network::new_ycash_testnet_slow`]); every other testnet, the default
+-/// one and a configured one, is the `fast` profile, as for its default port. kogany drops the
+-/// `legacy` profile (decision K-10). Absent on Mainnet and Regtest.
++/// name ycashd compiles in (`strTestnetProfile`; the field is pushed when it is not empty,
++/// `ycash6 src/rpc/blockchain.cpp`). `slow` and `legacy` are the shadow-fork magics; every other
++/// testnet, including the default `fast` profile and a configured one, is reported as `fast`.
++/// Absent on Mainnet and Regtest.
+ pub fn testnet_profile(network: &Network) -> Option<String> {
+     if !network.is_a_test_network() || network.is_regtest() {
+         return None;
+@@ -55,6 +54,8 @@ pub fn testnet_profile(network: &Network) -> Option<String> {
+     Some(
+         if network.magic() == magics::TESTNET_SLOW {
+             "slow"
++        } else if network.magic() == magics::TESTNET_LEGACY {
++            "legacy"
+         } else {
+             "fast"
+         }
+diff --git a/crates/zakura-rpc/src/methods/types/ycash/tests.rs b/crates/zakura-rpc/src/methods/types/ycash/tests.rs
+index 07401bb4f..aa5e5146c 100644
+--- a/crates/zakura-rpc/src/methods/types/ycash/tests.rs
++++ b/crates/zakura-rpc/src/methods/types/ycash/tests.rs
+@@ -157,6 +157,10 @@ fn testnet_profile_matches_ycashd() {
+         testnet_profile(&Network::new_ycash_testnet_slow()).as_deref(),
+         Some("slow")
+     );
++    assert_eq!(
++        testnet_profile(&Network::new_ycash_testnet_legacy()).as_deref(),
++        Some("legacy")
++    );
+ }
+ 
+ /// `Base58Check(version || payload)`, for building addresses in the tests below.
+diff --git a/crates/zakura-script/src/lib.rs b/crates/zakura-script/src/lib.rs
+index c49778ce0..133741f65 100644
+--- a/crates/zakura-script/src/lib.rs
++++ b/crates/zakura-script/src/lib.rs
+@@ -129,6 +129,21 @@ impl CachedFfiTransaction {
+         })
+     }
+ 
++    /// [`Self::new`] using `network`'s branch id for `nu` (shadow-fork profiles).
++    pub fn new_on(
++        network: &zakura_chain::parameters::Network,
++        transaction: Arc<zakura_chain::transaction::Transaction>,
++        all_previous_outputs: Arc<Vec<transparent::Output>>,
++        nu: NetworkUpgrade,
++    ) -> Result<Self, Error> {
++        let sighasher = transaction.sighasher_on(network, nu, all_previous_outputs.clone())?;
++        Ok(Self {
++            transaction,
++            all_previous_outputs,
++            sighasher,
++        })
++    }
++
+     /// Returns the transparent inputs for this transaction.
+     pub fn inputs(&self) -> &[transparent::Input] {
+         self.transaction.inputs()
+diff --git a/crates/zakura-state/src/service/finalized_state/tests/prop.rs b/crates/zakura-state/src/service/finalized_state/tests/prop.rs
+index 9f94602ac..7907e2e7b 100644
+--- a/crates/zakura-state/src/service/finalized_state/tests/prop.rs
++++ b/crates/zakura-state/src/service/finalized_state/tests/prop.rs
+@@ -300,6 +300,7 @@ fn v4_transaction_with_interstitial_anchor(old_anchor_tree: &SproutTree) -> Arc<
+ fn vct_test_network() -> Network {
+     ParametersBuilder::default()
+         .with_activation_heights(ConfiguredActivationHeights {
++            shadow: None,
+             ycash: None,
+             vault: None,
+             pq_falcon: None,
+@@ -423,6 +424,7 @@ fn all_upgrades_and_wrong_commitments_with_fake_activation_heights() -> Result<(
+ 
+     let network = ParametersBuilder::default()
+         .with_activation_heights(ConfiguredActivationHeights {
++            shadow: None,
+             ycash: None,
+             vault: None,
+             pq_falcon: None,
+diff --git a/crates/zakura-state/src/service/finalized_state/tests/rollback.rs b/crates/zakura-state/src/service/finalized_state/tests/rollback.rs
+index 2034cd49d..8e736f393 100644
+--- a/crates/zakura-state/src/service/finalized_state/tests/rollback.rs
++++ b/crates/zakura-state/src/service/finalized_state/tests/rollback.rs
+@@ -956,6 +956,7 @@ fn rollback_truncates_commitment_roots_above_the_target_tip() {
+ fn modern_rollback_network() -> Network {
+     TestnetParameters::build()
+         .with_activation_heights(ConfiguredActivationHeights {
++            shadow: None,
+             ycash: None,
+             vault: None,
+             pq_falcon: None,
+diff --git a/crates/zakura-state/src/service/finalized_state/vct_fast_sync_fixture.rs b/crates/zakura-state/src/service/finalized_state/vct_fast_sync_fixture.rs
+index 8c5245a85..f1459175e 100644
+--- a/crates/zakura-state/src/service/finalized_state/vct_fast_sync_fixture.rs
++++ b/crates/zakura-state/src/service/finalized_state/vct_fast_sync_fixture.rs
+@@ -110,6 +110,7 @@ impl VctFastSyncedChain {
+     pub fn generate() -> Self {
+         let network = ParametersBuilder::default()
+             .with_activation_heights(ConfiguredActivationHeights {
++                shadow: None,
+                 ycash: None,
+                 vault: None,
+                 pq_falcon: None,
+diff --git a/crates/zakura-state/src/service/finalized_state/zakura_db/yed.rs b/crates/zakura-state/src/service/finalized_state/zakura_db/yed.rs
+index 859444302..4333f7eaf 100644
+--- a/crates/zakura-state/src/service/finalized_state/zakura_db/yed.rs
++++ b/crates/zakura-state/src/service/finalized_state/zakura_db/yed.rs
+@@ -191,8 +191,11 @@ pub fn yed_network_params(
+         }
+         match network {
+             Network::Mainnet => kogany_yellowback::params::main_params(),
+-            // kogany has no testnet-yb-fast profile selector yet: the testnet column (mainnet's
+-            // values), as ycash6's testnet-yb-slow and testnet-legacy.
++            // testnet-yb-fast uses the scaled column. slow and legacy use mainnet's column;
++            // legacy never reaches here because Vault is unscheduled.
++            Network::Testnet(_) if zakura_chain::parameters::ycash::is_fast_network(network) => {
++                kogany_yellowback::params::test_fast_params()
++            }
+             Network::Testnet(_) => kogany_yellowback::params::test_params(),
+         }
+     };
+@@ -297,7 +300,9 @@ pub enum YedEvaluationFailed {
+     },
+ 
+     /// The stored tip was written under another `SCHEMA_VERSION` or network.
+-    #[error("the index was written under schema {stored_schema} on {stored_network:?}; this binary has schema {schema} on {network:?}")]
++    #[error(
++        "the index was written under schema {stored_schema} on {stored_network:?}; this binary has schema {schema} on {network:?}"
++    )]
+     Schema {
+         /// The stored tip's schema.
+         stored_schema: u32,
+diff --git a/crates/zakura-state/src/service/write/tests/full_state_coherence.rs b/crates/zakura-state/src/service/write/tests/full_state_coherence.rs
+index 8580614e8..64649decf 100644
+--- a/crates/zakura-state/src/service/write/tests/full_state_coherence.rs
++++ b/crates/zakura-state/src/service/write/tests/full_state_coherence.rs
+@@ -319,6 +319,7 @@ fn generated_nu5_graph_matches_full_state_before_finalization() {
+     fn network(checkpoint_blocks: Option<&[Arc<Block>]>) -> Network {
+         let builder = ParametersBuilder::default()
+             .with_activation_heights(ConfiguredActivationHeights {
++                shadow: None,
+                 ycash: None,
+                 vault: None,
+                 pq_falcon: None,
+diff --git a/crates/zakura-state/src/service/write/vct_authentication_sweep/tests.rs b/crates/zakura-state/src/service/write/vct_authentication_sweep/tests.rs
+index e4a25cb9b..8388aed23 100644
+--- a/crates/zakura-state/src/service/write/vct_authentication_sweep/tests.rs
++++ b/crates/zakura-state/src/service/write/vct_authentication_sweep/tests.rs
+@@ -103,6 +103,7 @@ fn empty_ironwood_root() -> ironwood::tree::Root {
+ fn parameters(checkpoint_blocks: Option<&[Arc<Block>]>) -> Network {
+     let builder = ParametersBuilder::default()
+         .with_activation_heights(ConfiguredActivationHeights {
++            shadow: None,
+             ycash: None,
+             vault: None,
+             pq_falcon: None,
+-- 
+2.43.0
+
