@@ -207,6 +207,18 @@ Listed roughly by operational impact.
   connected, so the notified sequence never catches up with the connected sequence. The signal is
   regtest-only, so mainnet impact is nil.
 
+### 3.8 Behaviour changes worth knowing (not defects)
+
+- `setmocktime` now requires the node to be started with a non-zero `-mocktime`
+  (`src/rpc/misc.cpp:519`). v4.5.0 switched clocks on the first call.
+- Under a fixed mock clock, transaction relay stops. The inventory trickle fires on
+  `nNextInvSend < nNow` (`src/main.cpp:9193-9197`, `nNow = GetTimeMicros()` at `:9085`), and that
+  is read from the node clock, which does not advance. Tests have to nudge the clock while mempools
+  converge.
+- `lockunspent`'s arity row `{{o, o}, {}}` (`src/rpc/common.h:174`, upstream `4ddf2a93d`) makes
+  both arguments required. As a result, the one-argument unlock-all branch in
+  `src/wallet/rpcwallet.cpp` (`params.size() == 1`) cannot be reached from RPC.
+
 ### 3.9 `getunconfirmedbalance` cannot be called (no argument-table row)
 
 > Added 2026-11-10, after this report was sent. Found on our 6.22.0-beta1 build; the cause is in the
@@ -222,7 +234,10 @@ Listed roughly by operational impact.
 - **Introduced:** Upstream zcashd `4ddf2a93d` ("Share RPC param table between client and server",
   Greg Pfeil, 2023-02-20). Before it, the client table listed only methods with non-string
   arguments and any other method went through; the shared table made a row mandatory, and this
-  no-argument method was never given one. zcashd likely has the same defect.
+  no-argument method was never given one. Upstream zcashd has the same defect at least up to
+  `b66266c31` (2026-06-02, the newest upstream zcashd commit in the history of this pin): the method is
+  registered, the table has no row and the server check is there. We did not check zcashd after that
+  commit.
 - **Same class:** `dumpwallet` (registered as `hidden`, `rpcwallet.cpp:6480`) has no row either.
   Upstream removed it in `265145145` and kept the handler as a tombstone that points callers to
   `z_exportwallet`; without a row the tombstone's message is never reached, and callers get the two
@@ -232,18 +247,6 @@ Listed roughly by operational impact.
   that compares every registered method with the table in both directions. We did both on our line
   (`boyfromcave/ycash6`, `src/wallet/test/rpc_table_tests.cpp`, with `dumpwallet` as the one
   allowlisted exception).
-
-### 3.8 Behaviour changes worth knowing (not defects)
-
-- `setmocktime` now requires the node to be started with a non-zero `-mocktime`
-  (`src/rpc/misc.cpp:519`). v4.5.0 switched clocks on the first call.
-- Under a fixed mock clock, transaction relay stops. The inventory trickle fires on
-  `nNextInvSend < nNow` (`src/main.cpp:9193-9197`, `nNow = GetTimeMicros()` at `:9085`), and that
-  is read from the node clock, which does not advance. Tests have to nudge the clock while mempools
-  converge.
-- `lockunspent`'s arity row `{{o, o}, {}}` (`src/rpc/common.h:174`, upstream `4ddf2a93d`) makes
-  both arguments required. As a result, the one-argument unlock-all branch in
-  `src/wallet/rpcwallet.cpp` (`params.size() == 1`) cannot be reached from RPC.
 
 ## 4. Inherited functional suite (pin + the three patches)
 
