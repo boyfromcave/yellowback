@@ -107,6 +107,20 @@ pre.diff .add { color: var(--mint); }
 pre.diff .del { color: var(--danger); }
 pre.diff .hunk { color: var(--ink-3); }
 .button { display: inline-block; padding: 5px 12px; border: 1px solid var(--gold-2); border-radius: 8px; text-decoration: none; font-size: 13px; }
+.card-addresses { border-color: var(--gold-2); }
+.support { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 650; vertical-align: middle; }
+.support-supported { background: color-mix(in srgb, var(--mint) 18%, transparent); color: var(--mint); }
+.support-deprecated { background: color-mix(in srgb, var(--orange) 18%, transparent); color: var(--orange); }
+.addr-type { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 18px; }
+.addr-type h3 { font-size: 18px; }
+.deprecated-call { margin: 10px 0 4px; padding: 10px 14px; border-left: 3px solid var(--orange); background: color-mix(in srgb, var(--orange) 8%, transparent); border-radius: 0 8px 8px 0; }
+.deprecated-call h4 { margin: 0 0 6px; font-size: 14px; }
+.note { color: var(--ink-2); }
+pre.cmd { background: var(--navy-1); }
+.addr-callout { margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--navy-1); }
+.addr-callout h2 { font-size: 16px; margin: 12px 0 6px; }
+.addr-callout h2:first-of-type { margin-top: 4px; }
+.callout-kicker { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .foot { border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; padding: 16px 24px 28px; text-align: center; }
 
 @media (max-width: 860px) {

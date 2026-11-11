@@ -332,6 +332,123 @@ def diff_line(line):
     return '<span class="%s">%s</span>' % (cls, esc(line)) if cls else esc(line)
 
 
+SUPPORT_LABEL = {"supported": "Supported", "deprecated": "Deprecated"}
+
+
+def support_badge(kind):
+    label = SUPPORT_LABEL.get(kind, kind)
+    return '<span class="support support-%s">%s</span>' % (esc(kind), esc(label))
+
+
+def cli_block(steps):
+    if not steps:
+        return ""
+    return '<pre class="cmd">%s</pre>' % "\n".join(esc(s.get("cli", "")) for s in steps)
+
+
+def block_mentions(block, name):
+    if not block:
+        return False
+    if block.get("method") == name:
+        return True
+    return any(s.get("method") == name for s in block.get("steps", []))
+
+
+def address_entries(config):
+    """(group or None, type) for every receive type and every non-receive key."""
+    out = []
+    for group in config.get("receive", []):
+        for kind in group.get("types", []):
+            out.append((group, kind))
+    for kind in config.get("otherKeys", []):
+        out.append((None, kind))
+    return out
+
+
+def entries_mentioning(config, name):
+    return [(g, t) for g, t in address_entries(config) if block_mentions(t.get("use"), name) or block_mentions(t.get("deprecated"), name)]
+
+
+def render_type_block(snap, group, kind):
+    coin = group["coin"] if group else ""
+    heading = "%s · %s" % (coin, kind["name"]) if coin else kind["name"]
+    anchor = kind["id"]
+    use = kind.get("use") or {}
+    dep = kind.get("deprecated") or {}
+    out = ['<section class="addr-type" id="%s">' % esc(anchor)]
+    out.append("<h3>%s %s</h3>" % (esc(heading), support_badge(kind.get("support", "supported"))))
+    out.append("<p>%s</p>" % esc(kind.get("summary", "")))
+    if use:
+        returns = use.get("method", "")
+        link = '<a href="%s.html"><code>%s</code></a>' % (esc(returns), esc(returns)) if returns in snap.help else "<code>%s</code>" % esc(returns)
+        out.append("<p>Call %s.</p>" % link)
+        out.append(cli_block(use.get("steps")))
+        if use.get("note"):
+            out.append('<p class="note">%s</p>' % esc(use["note"]))
+    if dep:
+        out.append('<div class="deprecated-call"><h4>Deprecated call</h4>')
+        out.append("<p>%s</p>" % esc(dep.get("why", "")))
+        out.append(cli_block(dep.get("steps")))
+        out.append("</div>")
+    out.append("</section>")
+    return "\n".join(out)
+
+
+def render_addresses_page(config, snap):
+    out = ['<h1>Addresses</h1>',
+           '<p class="lede">Create an address that can receive YEC, or one that can hold YED. '
+           'Each type is listed once. The call under the type is the one to use. A call marked '
+           'deprecated still works on this release, and the note says why it is deprecated.</p>',
+           '<p>If the wallet is encrypted, run <code>walletpassphrase</code> first.</p>']
+    for group in config.get("receive", []):
+        out.append('<section class="addr-coin" id="%s"><h2>Receive %s</h2><p>%s</p>'
+                   % (esc(group["id"]), esc(group["coin"]), esc(group.get("lead", ""))))
+        for kind in group.get("types", []):
+            out.append(render_type_block(snap, group, kind))
+        out.append("</section>")
+    others = config.get("otherKeys", [])
+    if others:
+        out.append('<section class="addr-coin" id="other-keys"><h2>Other keys</h2>'
+                   '<p>These calls create a key. The result is not an address for receiving YEC or YED.</p>')
+        for kind in others:
+            out.append(render_type_block(snap, None, kind))
+        out.append("</section>")
+    return "\n".join(out)
+
+
+def render_address_callout(config, snap, name):
+    hits = entries_mentioning(config, name)
+    if not hits:
+        return ""
+    out = ['<aside class="addr-callout"><p class="callout-kicker"><a href="addresses.html">Addresses</a></p>']
+    for group, kind in hits:
+        coin = group["coin"] if group else "Other keys"
+        use = kind.get("use") or {}
+        dep = kind.get("deprecated") or {}
+        if use.get("method") == name:
+            role = "returns this address"
+        elif dep.get("method") == name:
+            role = "is a deprecated way to create this address"
+        else:
+            role = "is one step in creating this address"
+        marks = support_badge(kind.get("support", "supported"))
+        if dep.get("method") == name and use.get("method") != name:
+            marks += ' <span class="support support-deprecated">Deprecated call</span>'
+        out.append('<h2 id="addr-%s">%s · %s %s</h2>' % (esc(kind["id"]), esc(coin), esc(kind["name"]), marks))
+        out.append("<p><code>%s</code> %s. %s <a href=\"addresses.html#%s\">Full steps</a>.</p>"
+                   % (esc(name), role, esc(kind.get("summary", "")), esc(kind["id"])))
+        if use.get("method") == name and use.get("note"):
+            out.append('<p class="note">%s</p>' % esc(use["note"]))
+        if dep.get("method") == name and use.get("method") != name:
+            out.append("<p>%s</p>" % esc(dep.get("why", "")))
+            prefer = use.get("method", "")
+            if prefer:
+                prefer_html = '<a href="%s.html"><code>%s</code></a>' % (esc(prefer), esc(prefer)) if prefer in snap.help else "<code>%s</code>" % esc(prefer)
+                out.append("<p>The call to use is %s.</p>" % prefer_html)
+    out.append("</aside>")
+    return "\n".join(out)
+
+
 # --- pages ------------------------------------------------------------------------------------
 
 class Site:
@@ -352,12 +469,16 @@ class Site:
             self.changes[v] = (prev, compute_changes(prev, self.snaps[v]))
 
     def sections_for(self, snap):
+        """Featured groups. A method is listed in the first section that names it, so the overview shows it once."""
         out = []
+        seen = set()
         for s in self.config.get("sections", []):
             if "methods" in s:
                 methods = [m for m in s["methods"] if m in snap.help]
             else:
                 methods = [m for cat, ms in snap.groups if cat in s.get("categories", []) for m in ms]
+            methods = [m for m in methods if m not in seen]
+            seen.update(methods)
             if methods:
                 out.append((s, methods))
         return out
@@ -395,8 +516,10 @@ class Site:
 
     def nav(self, snap, current=None):
         parts = ['<input type="search" class="filter" placeholder="Filter methods" aria-label="Filter methods">',
-                 '<ul class="nav-top"><li><a href="index.html">Overview</a></li><li><a href="changes.html">Changes</a></li>'
+                 '<ul class="nav-top"><li><a href="addresses.html"%s>Addresses</a></li>'
+                 '<li><a href="index.html">Overview</a></li><li><a href="changes.html">Changes</a></li>'
                  '<li><a href="contracts.html">Contracts</a></li></ul>']
+        parts[1] = parts[1] % (' aria-current="page"' if current == "addresses" else "")
         for cat, methods in snap.groups:
             parts.append('<details open><summary>%s</summary><ul>' % esc(cat))
             for m in methods:
@@ -415,8 +538,9 @@ class Site:
                 badges.append('<a class="badge badge-new" href="changes.html">new in %s</a>' % esc(snap.version))
             elif any(c[0] == name for c in changes["changed"]):
                 badges.append('<a class="badge badge-changed" href="changes.html#%s">changed in %s</a>' % (esc(name), esc(snap.version)))
-        return ('<h1 class="method">%s</h1><p class="badges">%s</p><pre class="help">%s</pre>\n%s'
-                % (esc(name), " ".join(badges), esc(snap.help[name]), render_contract_block(snap, name, "contracts.html")))
+        callout = render_address_callout(self.config, snap, name)
+        return ('<h1 class="method">%s</h1><p class="badges">%s</p>%s<pre class="help">%s</pre>\n%s'
+                % (esc(name), " ".join(badges), callout, esc(snap.help[name]), render_contract_block(snap, name, "contracts.html")))
 
     def index_body(self, snap):
         src = snap.source
@@ -429,8 +553,17 @@ class Site:
             facts.append('<a href="changes.html">%d added, %d removed, %d changed since %s</a>'
                          % (len(changes["added"]), len(changes["removed"]), len(changes["changed"]), esc(prev.version)))
         out.append('<p class="lede">The help text of every RPC as <code>ycashd</code> %s prints it, with the '
-                   'vault and Yellowback contracts beside it. %s.</p>' % (esc(snap.version), " &middot; ".join(facts)))
+                   'vault and Yellowback contracts beside it. %s. '
+                   '<a href="addresses.html">Addresses</a> says which call receives YEC and which holds YED.</p>'
+                   % (esc(snap.version), " &middot; ".join(facts)))
         out.append('<div class="cards">')
+        if self.config.get("receive"):
+            links = "".join('<li><a href="addresses.html#%s">Receive %s</a> <span class="muted">%s</span></li>'
+                            % (esc(g["id"]), esc(g["coin"]), esc(", ".join(t["name"] for t in g.get("types", []))))
+                            for g in self.config["receive"])
+            out.append('<section class="card card-addresses" id="addresses"><h2><a href="addresses.html">Addresses</a></h2>'
+                       '<p>One list of the address types this release can create, the call to use, and why a call is deprecated.</p>'
+                       '<ul class="methods">%s</ul></section>' % links)
         for s, methods in self.sections_for(snap):
             out.append('<section class="card" id="%s"><h2>%s</h2><p>%s</p><ul class="methods">%s</ul></section>'
                        % (esc(s["id"]), esc(s["title"]), esc(s.get("intro", "")),
@@ -455,6 +588,9 @@ class Site:
         prev, changes = self.changes[snap.version]
         self.write(prefix + "index.html", self.page(rel_dir, "Ycash %s RPC" % snap.version, self.index_body(snap), snap, label,
                                                    "index.html", self.nav(snap)))
+        self.write(prefix + "addresses.html", self.page(rel_dir, "Addresses, Ycash %s RPC" % snap.version,
+                                                       render_addresses_page(self.config, snap), snap, label,
+                                                       "addresses.html", self.nav(snap, "addresses")))
         self.write(prefix + "changes.html", self.page(rel_dir, "Changes in %s" % snap.version, render_changes_page(prev, snap, changes),
                                                      snap, label, "changes.html", self.nav(snap)))
         self.write(prefix + "contracts.html", self.page(rel_dir, "RPC contracts, %s" % snap.version, render_contracts_page(snap),

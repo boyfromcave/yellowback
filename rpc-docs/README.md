@@ -62,18 +62,19 @@ A channel page is a copy of its version's page, with a banner and a canonical li
 permanent `/<version>/` page, so deep links like `/rc/vault_lock.html` work. The version picker
 keeps the reader on the same method when switching versions.
 
+## Addresses
+
+`site.json` `receive` is the page at `/<version>/addresses.html`: one place that says which call
+creates an address for YEC and which creates one for YED, which address types are supported, and
+why a call is deprecated. A method is named there and also in its `help` category. It is not copied
+into a second category. `otherKeys` holds keys that are not receive addresses (the vault owner).
+
 ## Sections
 
 `site.json` `sections` defines the featured groups on each version's overview and the badges on
-method pages:
-
-- a section with `categories` takes every method in those `help` categories (`Vault`,
-  `Yellowback`);
-- a section with `methods` is a curated list (`post-quantum`: the post-quantum RPCs are spread
-  over the wallet, vault and Yellowback categories). A listed method a release does not have is
-  skipped for that release, so the list can name methods before or after they exist.
-
-The section definitions apply to every version.
+method pages. A section with `categories` takes every method in those `help` categories (`Vault`,
+`Yellowback`). A section with `methods` is a curated list; a listed method a release does not have
+is skipped for that release. A method belongs to one section, so the overview lists it once.
 
 ## Layout
 

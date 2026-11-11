@@ -21,7 +21,7 @@
         var version = m.channels[target] || target;
         var info = m.versions[version];
         var method = page.replace(/\.html$/, "");
-        var keep = page === "" || /^(index|changes|contracts)\.html$/.test(page) ||
+        var keep = page === "" || /^(index|changes|contracts|addresses)\.html$/.test(page) ||
           (info && info.methods.indexOf(method) >= 0);
         window.location.href = root + target + "/" + (keep && page ? page : "index.html");
       }).catch(function () {

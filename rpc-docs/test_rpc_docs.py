@@ -66,7 +66,7 @@ def make_site(root, sections=None, channels=None):
                    "channels": channels or {},
                    "sections": sections if sections is not None else [
                        {"id": "vault", "title": "Vault primitive", "intro": "x", "categories": ["Vault"]},
-                       {"id": "post-quantum", "title": "Post-quantum", "methods": ["vault_lock", "absent_method"]}]}, f)
+                       {"id": "post-quantum", "title": "Post-quantum", "methods": ["getinfo", "absent_method"]}]}, f)
 
 
 def read(root, rel):
@@ -154,8 +154,8 @@ class Site(unittest.TestCase):
         self.assertIn('href="contracts.html#shape-Recipient"', page)
         self.assertIn("unknown set", page)
         self.assertIn("<code>vault_lock</code> of &lt;a random id&gt;", page)
-        self.assertIn('class="badge badge-post-quantum"', page)
         self.assertIn('class="badge badge-vault"', page)
+        self.assertNotIn('class="badge badge-post-quantum"', page)
         self.assertIn('href="../assets/site.css"', page)
         self.assertIn('<link rel="canonical" href="https://rpc.example/v6.22.0-beta1/vault_lock.html">', page)
         self.assertNotIn("You are reading", page)
@@ -211,6 +211,42 @@ class Site(unittest.TestCase):
         self.build()
         self.assertIn("ships no RPC contracts", read(self.root, "v6.22.0/contracts.html"))
         self.assertIn("General release", read(self.root, "index.html"))
+
+
+class AddressGuide(unittest.TestCase):
+    def test_each_receive_call_is_listed_once_and_the_guide_names_the_call(self):
+        out = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, out)
+        build.Site(HERE, out).build()
+        index = read_at(out, "v6.22.0-beta1/index.html")
+        cards = index.split('<div class="cards">', 1)[1].split("<h2>All methods</h2>")[0]
+        self.assertEqual(cards.count('href="yed_getnewaddress.html"'), 1)
+        self.assertEqual(cards.count('href="getnewaddress.html"'), 0)
+        self.assertIn('href="addresses.html#yec"', cards)
+        self.assertIn('href="addresses.html#yed"', cards)
+        self.assertNotIn('id="post-quantum"', cards)
+        page = read_at(out, "v6.22.0-beta1/addresses.html")
+        for text in ("Receive YEC", "Receive YED", "Transparent, ECC", "Sapling", "Post-quantum",
+                     "pqslh", "z_getaddressforaccount", "yed_getnewaddress",
+                     "z_getnewaddress sapling", "unified-address accounts", "Vault owner",
+                     "not an address for receiving"):
+            self.assertIn(text, page, text)
+        self.assertIn("Deprecated", page)
+        gna = read_at(out, "v6.22.0-beta1/getnewaddress.html")
+        self.assertIn("returns this address", gna)
+        self.assertIn("deprecated way to create this address", gna)
+        self.assertIn("The call to use is", gna)
+        yed = read_at(out, "v6.22.0-beta1/yed_getnewaddress.html")
+        self.assertEqual(yed.count("returns this address"), 3)
+        self.assertNotIn("deprecated way", yed)
+        owner = read_at(out, "v6.22.0-beta1/vault_getnewowner.html")
+        self.assertIn("Other keys", owner)
+        self.assertIn("not an address for receiving", owner.lower())
+
+
+def read_at(root, rel):
+    with open(os.path.join(root, rel)) as f:
+        return f.read()
 
 
 class Capture(unittest.TestCase):
