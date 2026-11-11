@@ -1,7 +1,8 @@
 # Address interoperability plan
 
 Plan of record for the beta2 address work (Ycash 6.22 beta2, kogany 1.8.0-ycash beta2). Decisions
-D-1 … D-9 are the Yellowback lead architect's, 2026-11-10 and 2026-11-11 (§4). "beta2 item N" refers
+D-1 … D-9 are the Yellowback lead architect's, 2026-11-10; the order of work and the later
+decisions noted in §4 are of 2026-11-11. "beta2 item N" refers
 to the run's working list of beta2 fixes, kept outside the repository during the run; the items
 this plan depends on are restated where they are used.
 
@@ -13,11 +14,11 @@ Two requirements, both mandatory for beta2 (the Yellowback lead architect, 2026-
    from any of them, on every wallet the project ships.
 2. **See.** A user has an easy and accurate way to display the balance of every address type: a
    total split by type, a balance per address, and a list of the wallet's addresses of each type.
- Every such transaction is accepted, relayed and mined by
+Every such transaction is accepted, relayed and mined by
 every node implementation, and each direction is covered by a test that runs in CI.
 
 Address types: **ECC** (transparent P2PKH, `s1…`/`sm…`), **Sapling** (`ys1…`/`ytestsapling…`),
-**PQ** (post-quantum transparent, `sq…`/`tq…`/`rq…`, `TX_PQPKH`, in two schemes: SLH-DSA-SHA2-128s
+**PQ** (post-quantum transparent, `sq…`/`tq…`/`rq…` with the scheme letter of D-9 after it, `TX_PQPKH`, in two schemes: SLH-DSA-SHA2-128s
 and FN-DSA-512). Vault funding means the generic `vault_lock` and the Yellowback mint (`yed_mint`).
 
 Wallets: `ycashd` on both C++ lines (ycash-dd v4.5.0, ycash6 6.22) and `yewd` (the wallet half of
@@ -36,7 +37,7 @@ means a test exists in the tree.
 | PQ → Sapling | **refused** (PQ coins erased from `z_sendmany` inputs) | **refused** | **refused** (`zsend.rs:347`) | no rule against it; **no test** |
 | Sapling → `yed_mint` vault | yes, tested (`yellowback_sapling.py`) | yes, tested | yes (`zfund.rs`); **no test** | no rule against it; **no test** |
 | Sapling → `vault_lock` | **absent** (transparent coins only) | **absent** | **absent** | no rule against it; **no test** |
-| PQ → `vault_lock` | not confirmed | not confirmed | **excluded** (ECC coins only, `send.rs:782`) | not confirmed |
+| PQ → `vault_lock` | **excluded** (P2PKH coins only, `src/rpc/vault.cpp:744`) | **excluded** (P2PKH coins only, `src/rpc/vault.cpp:761`) | **excluded** (ECC coins only, `send.rs:782`) | no rule against it; **no test** |
 | ECC → `vault_lock` | yes, tested | yes, tested | yes, tested | yes, tested |
 | Sapling ↔ ECC | yes, tested | yes, tested | yes, tested | yes, tested |
 | Mine to a PQ address | refused at start-up | refused at start-up | n/a | n/a |
@@ -48,7 +49,7 @@ Facts behind the table:
   components are ignored (TX-0)"; `kogany/crates/kogany-vault/src/state/tx.rs:29`). Vault
   transactions are v4, so the ZIP-243 sighash that `OP_CHECKPQSIG` signs covers the Sapling parts.
 - **The ycash6 gap is a recorded decision, not an accident.** Quantum spec A-15
-  (`docs/plans/yellowback-quantum-spec.md:760`): the 6.x `WalletTxBuilder` has no PQ recipient
+  (`docs/plans/yellowback-quantum-spec.md`, item A-15): the 6.x `WalletTxBuilder` has no PQ recipient
   type, "leave it absent … record it as a 6-only limitation". This plan reverses A-15.
 - **The Sapling-funded mint is the precedent.** `yed_mint` takes a `ys1…` funding address and spends
   its notes in the minting transaction; `yed_redeem` pays a Sapling address
@@ -113,7 +114,7 @@ Decided by the Yellowback lead architect, 2026-11-10.
 | D-6 | `z_mergetoaddress` and `z_shieldcoinbase` | **`z_mergetoaddress` follows `z_sendmany`** (PQ source and destination). `z_shieldcoinbase` from PQ waits for D-7. |
 | D-7 | Mining to a PQ address | **Separate, later.** Not in this plan; decided after the address moves are done and tested. |
 | D-8 | YEW app and web screens | **Same release** as the core and yewd change (W3). |
-| D-9 | Make the scheme visible in the address prefix (L-5) | **Decided: yes.** YEC: `sqf…` FN-DSA-512 / `sqs…` SLH-DSA (test `tqf…` / `tqs…`, regtest `rqf…` / `rqs…`). YED: `ybf…` / `ybs…` on mainnet (Yellowback, Falcon / SLH); test `ytf…` / `yts…`, regtest `yrf…` / `yrs…`. The ECC YED address is unchanged: on mainnet it already renders `yb…` (35 characters, version `1F DD`, D-Q-21), so mainnet YED stays one `yb` family; it can never begin `ybf` or `ybs`. The existing 2 version bytes + scheme byte are read as one 3-byte version per scheme; length stays 53. Not a consensus change; every component changes together (W6). Version bytes in beta2 item 16, to be re-proved with `scripts/pq_addr_prefix.py` before use. |
+| D-9 | Make the scheme visible in the address prefix (L-5) | **Decided: yes.** YEC: `sqf…` FN-DSA-512 / `sqs…` SLH-DSA (test `tqf…` / `tqs…`, regtest `rqf…` / `rqs…`). YED: `ybf…` / `ybs…` on mainnet (Yellowback, Falcon / SLH); test `ytf…` / `yts…`, regtest `yrf…` / `yrs…`. The ECC YED address is unchanged: on mainnet it already renders `yb…` (35 characters, version `1F DD`, D-Q-21), so mainnet YED stays one `yb` family; it can never begin `ybf` or `ybs`. The existing 2 version bytes + scheme byte are read as one 3-byte version per scheme; length stays 53. Not a consensus change; every component changes together (W6). The twelve 3-byte versions are proved in quantum spec §4.1 (`scripts/pq_addr_prefix.py`). Two fields of `yed_getinfo` (`pqAddressVersion`, `pq.plainAddressVersion`) become objects keyed by scheme, so the RPC contract version goes from 8 to 9 (`docs/plans/yellowback-pq-prefix-rpc-delta.md`) and every client moves to 9. |
 
 ## 5. Work packages
 
@@ -122,7 +123,7 @@ Decided by the Yellowback lead architect, 2026-11-10.
 1. PQ recipient in `z_sendmany` and `z_mergetoaddress`: remove `RefusePQRecipient`
    (`src/wallet/rpcwallet.cpp:5511`, `:6128`); carry a PQ destination through `WalletTxBuilder` as a
    transparent output (`TransactionBuilder::AddTransparentOutput` already takes a script,
-   `src/transaction_builder.h:391`); apply `EnsurePQRecipientPayable`.
+   `src/transaction_builder.h`); apply `EnsurePQRecipientPayable`.
 2. PQ source: remove `RefusePQSource` for `z_sendmany` / `z_mergetoaddress`; select the address's
    PQ coins; sign PQ inputs under the next block's vault flags, reusing the signing path
    `sendtoaddress` uses (`src/wallet/wallet.cpp:6931`); fee by size as policy requires.
@@ -130,10 +131,12 @@ Decided by the Yellowback lead architect, 2026-11-10.
    (A-15 notes that the 6.x `IsChange` does not).
 4. `vault_lock` `"from"` (D-3), sharing `ParseAddressChoice` / `SelectSapling` with the mint builder.
 5. Balances and listings (beta2 item 15): `z_gettotalbalance` and `getwalletinfo` split `transparent`
-   into ECC and post-quantum (existing fields kept); `z_getbalance` takes a PQ address;
-   `listaddresses` lists PQ addresses with their scheme. Same on ycash-dd (W2) and yewd (W3).
-6. Argument-table rows for any changed arity (`src/rpc/common.h`; beta2 item 12's completeness
-   check must pass).
+   into ECC and post-quantum (existing fields kept); `z_getbalance` takes a PQ address, and refuses a
+   transparent or post-quantum address the wallet does not hold on both lines (decided 2026-11-11;
+   watch-only still answers); `listaddresses` lists PQ addresses with their scheme. Same on ycash-dd (W2) and yewd (W3).
+6. Argument-table rows for any changed arity (`src/rpc/common.h`). The unit suite that compares
+   every registered RPC with the table in both directions (`rpc_table_tests`, ycash6 #91) must pass:
+   a method without a row cannot be called at all on 6.x.
 
 ### W2. ycash-dd (v4.5.0 line)
 
@@ -154,7 +157,8 @@ W1 and W2 land together: same RPC shapes, same error strings, same test script.
 4. Gate (`core/src/gate.rs`): the `Shielded` path forbids `OP_RETURN` outputs and any transparent
    input, and `Shield` allows Sapling outputs only. Extend the paths for exactly the new shapes
    (Sapling spends with a vault-lock output; PQ inputs with Sapling outputs) and nothing wider.
-5. `getnewaddress` argument shape follows beta2 item 10.
+5. `getnewaddress` takes the address type as its first argument (`getnewaddress pq`, `pqslh`,
+   `p2pkh`), and `getnewaddress "" <type>` keeps working, as on the node lines.
 6. Fix the stale revision in the comment at `core/Cargo.toml:47`.
 7. App and web screens (D-8, same release): the send screen offers every source and destination
    type of the matrix, with the revealed-party notice beside a Sapling ↔ PQ move; the vault screen
@@ -182,12 +186,12 @@ No wallet change. Tests only, unless they find a defect:
 
 ### W6. Scheme-visible address prefixes (D-9)
 
-1. Re-prove the twelve 3-byte versions (beta2 item 16) with the search tool and its sampling check;
-   record them in the quantum spec §4 and `docs/mapping.md`.
+1. Done: the twelve 3-byte versions are proved by interval arithmetic and by sampling, and
+   recorded in quantum spec §4.1 and `docs/mapping.md`.
 2. Encode and decode by 3-byte version on both C++ lines (`src/key_io.cpp`, `PlainPQAddressVersion`;
    `yellowback/address.{h,cpp}` for the YED form), kogany (`zakura-chain`, `Address::PayToPqKeyHash`),
    yewd and the YEW core, lightwalletd (address regex), x402-ycash, chain-viz, hawkeye.
-3. The old `sq…`/`tq…`/`rq…` and `ye…`/`yt…`/`yr…` 53-character forms stop being produced. Decide in the
+3. The old `sq…`/`tq…`/`rq…` and `yb…`/`yt…`/`yr…` 53-character forms stop being produced. Decide in the
    PR whether they are still accepted on input for one release (testnet addresses exist since
    2026-11-10; no mainnet address can exist before the Vault height is set).
 4. Test vectors shared by every component: for each network, coin and scheme, a key hash and its
@@ -196,8 +200,11 @@ No wallet change. Tests only, unless they find a defect:
 
 ### Not in scope
 
-x402-ycash (it pays, it does not move a user's funds between types; its missing general PQ-input
-signer is noted for its own plan), mining to PQ and `z_shieldcoinbase` from PQ (D-7).
+x402-ycash beyond the prefix change of W6 (it pays, it does not move a user's funds between types;
+its missing general PQ-input signer is noted for its own plan), mining to PQ and `z_shieldcoinbase` from PQ (D-7). Handled in beta2 but outside this plan: the seed-restore
+defect (post-quantum keys not returned to the address book), the older wallet defects found in review
+(`sendtoaddress` signing under the node's locks, the `vault_lock` default path, `yed_mint` note
+locking), and the dependency-advisory work.
 
 ## 6. Test plan
 
@@ -279,5 +286,8 @@ touches the consensus paths, so G-9 applies only if step 1 finds a defect.
 ## 9. Done means
 
 Every cell of §2 reads "yes, tested" for ycash-dd, ycash6, yewd and kogany; the matrix runs in the CI
-of ycash-dd, ycash6, yew and kogany; the YEW app and web screens offer every move; the docs site shows the matrix with commands that were run
-against the release; the fastnet walkthrough is recorded.
+of ycash-dd, ycash6, yew and kogany; the sighash vectors with Sapling parts and a post-quantum input
+are shared by the C++ lines and kogany (W4.2); every component reads and writes post-quantum
+addresses by the 3-byte versions of D-9 from the one shared vectors file, at RPC contract version 9
+(W6); the YEW app and web screens offer every move; the docs site shows the matrix with commands
+that were run against the release; the fastnet walkthrough is recorded.
