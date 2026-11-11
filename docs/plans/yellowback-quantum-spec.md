@@ -138,7 +138,8 @@ Citations are `file:line`: **dd** is `wt/q-dd`, **6** is `wt/q6`. "dd=6" means t
 lines, so the line numbers are the same.
 
 Scratch tools, run with `.venv/bin/python`:
-- `wt/scratch/q-spec/pq_addr_prefix.py`: the Base58Check version search and its proof (§4).
+- `wt/scratch/q-spec/pq_addr_prefix.py`: the Base58Check version search and its proof (§4); superseded by
+  `scripts/pq_addr_prefix.py` in this repository (§4.1, D-9), which also writes the shared address vectors.
 - `wt/scratch/q-spec/pq_template_sizes.py`: V/I/PQPKH and scriptSig byte lengths (§1, §2).
 
 **Decisions this draft forces (details in §7):**
@@ -553,6 +554,67 @@ Integration:
   (`address.cpp:23`).
 - Callers to widen: `rpc/yellowback.cpp` dd `:236, :1189, :1229, :1281`; `rpc/yellowbackwallet.cpp` dd
   `:150-160, :206, :688, :700` (6 offsets: see §6).
+
+### 4.1 Scheme-visible prefixes (D-9, 2026-11-10) — supersedes the 2-byte versions above
+
+**Decision D-9** (the Yellowback lead architect, 2026-11-10; beta2 address plan W6): a post-quantum address shows its
+signature scheme in its prefix. Clean cut: the 2-byte version ‖ scheme byte form above (`4DD9`/`4F61`/`4C51` plain,
+`56AB`/`571E`/`5710` YED) is neither produced nor accepted (only the node wallet reads it, to load an address-book
+record or check a key-dump line written before D-9). The ECC YED address (35 characters, `addressVersion`) and every
+script are unchanged: this is a text encoding, not a consensus change; `CPQKeyID(scheme, keyHash)`, `TX_PQPKH`, the
+V/I owner slot and the address index key (Hash160(scheme ‖ keyHash)) do not move.
+
+**Method.** The address keeps its 39 bytes and 53 characters: Base58Check(**3-byte version** ‖ 32-byte keyHash),
+one version per (network, coin, scheme); the first three bytes, formerly 2-byte version ‖ scheme, are read as one
+version, and the decoder maps the version to the scheme (an unknown version, a wrong length or the old form is
+refused). With the scheme as a separate byte the third character comes from a fixed set shared by both schemes
+(`4 D M W e o` on mainnet), so a chosen letter needs the scheme inside the version. A fixed fourth character is
+not reachable at this length.
+
+**Proof** (`scripts/pq_addr_prefix.py prove`, standard library only, exit 0): a version v covers the integer
+interval [v·2^288, (v+1)·2^288) — every key hash and every checksum — and renders the prefix p at 53 characters
+iff that interval lies inside [val(p)·58^50, (val(p)+1)·58^50). The tool solves this in closed form, lists every
+hit and takes the lowest (the rule `0x1FE4`, `0x1FDD`, `0x4DD9`… followed); it re-derives the versions in use
+before D-9 as a self-check (each is the lowest of its hits); it samples the all-zero and all-0xFF hashes and
+10,000 random hashes per version (seeded, reproducible; none off-prefix or off-length); and it proves
+non-collision: Base58 is a bijection on byte strings, so two families can share a string only at the same byte
+length with overlapping intervals, and no new interval overlaps any other on any network — P2PKH/P2SH and their
+legacy versions, WIF, BIP32, Sprout address/viewing/spending key, the 35-character YED form, or the old 2-byte PQ
+versions with any third byte (no new version begins with an old 2-byte version). The two schemes have disjoint
+versions on every (network, coin), so a scheme-1 address never decodes as scheme 2. Sapling is bech32.
+
+| Network | Coin | Scheme | Prefix | **Version** | Hits (lowest taken) | First / last address |
+|---|---|---|---|---|---|---|
+| main | YEC | 2 FN-DSA-512 | `sqf` | **`4D DD 04`** | 29 | `sqf2UdbX…` / `sqf4RNmm…` |
+| main | YEC | 1 SLH-DSA-SHA2-128s | `sqs` | **`4D DE 6A`** | 29 | `sqs2P8kY…` / `sqs4Ksvn…` |
+| test | YEC | 2 | `tqf` | **`4F 65 19`** | 29 | `tqf2UPZe…` / `tqf4R8jt…` |
+| test | YEC | 1 | `tqs` | **`4F 66 7F`** | 29 | `tqs2Ntif…` / `tqs4Kdtu…` |
+| regtest | YEC | 2 | `rqf` | **`4C 54 EF`** | 29 | `rqf2UsdQ…` / `rqf4Rcoe…` |
+| regtest | YEC | 1 | `rqs` | **`4C 56 55`** | 29 | `rqs2PNnR…` / `rqs4L7xe…` |
+| main | YED | 2 | `ybf` | **`56 AE DE`** | 29 | `ybf2PMJN…` / `ybf4L6Ub…` |
+| main | YED | 1 | `ybs` | **`56 B0 44`** | 29 | `ybs2HrTN…` / `ybs4Ebdc…` |
+| test | YED | 2 | `ytf` | **`57 21 C9`** | 29 | `ytf15U9w…` / `ytf32DLA…` |
+| test | YED | 1 | `yts` | **`57 23 30`** | 28 | `yts2viVB…` / `yts4sTfQ…` |
+| regtest | YED | 2 | `yrf` | **`57 14 44`** | 29 | `yrf1M2bQ…` / `yrf3Hmme…` |
+| regtest | YED | 1 | `yrs` | **`57 15 AA`** | 29 | `yrs1FXkR…` / `yrs3CGve…` |
+
+All twelve are the lead architect's 2026-11-10 candidates, each proved and each the lowest of its hits. A later
+scheme takes its own letter the same way (`m` for ML-DSA is free; base58 has no `l`). On mainnet the 35-character
+ECC YED address is `yb…` (`1FDD`, D-Q-21), so mainnet YED has `yb…` (35, ECC) and `ybf…`/`ybs…` (53, post-quantum),
+told apart by length as before.
+
+**RPC.** `yed_getinfo.params.pqAddressVersion` and `.params.pq.plainAddressVersion` become objects of hex keyed by
+scheme number (`{"1": "5715aa", "2": "571444"}` on regtest), as the contract delta §4.10 states; `addressVersion`
+(ECC) stays a hex string.
+
+**Shared vectors.** `scripts/pq_addr_prefix.py vectors` writes `src/test/data/pq_address_vectors.json`
+(format `ycash-pq-address-vectors-1`): 72 valid (network, coin, scheme, version, keyhash, address) rows — six hashes per
+combination: zero, 0xFF, 00..1F, 20..01 and two SHA-256 values — and 60 invalid strings (the old form, a 31- and a
+33-byte hash, a bad checksum, and the next version up, which renders the same prefix but is not registered). The
+file lives in ycash-dd (and, byte-identical, in every other component that encodes addresses); each consumer checks
+every row against its own codec. Its consumers: ycash-dd `src/test/pq_address_tests.cpp` and
+`qa/rpc-tests/test_framework/pq_address.py`, then ycash6, kogany, yewd/YEW, lightwalletd-dd, x402-ycash, chain-viz,
+hawkeye and yecwallet-dd as they port D-9.
 
 lightwalletd guard (`lightwalletd-dd`, read on `upgrade/vault` @ `f0746e4`):
 - `frontend/yellowback.go:37` sets `maxAddressLen = 64`, enforced at `:430-431` (`GetAddressTokens`). A 53-character

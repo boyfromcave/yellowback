@@ -50,13 +50,13 @@ yed_decodepayload.ownerPubKey
   "rpcversion": 7,
   "params": {
     "addressVersion": "2002",
-    "pqAddressVersion": "5710",
+    "pqAddressVersion": { "1": "5715aa", "2": "571444" },
     "pq": {
       "schemes": [ 1 ],
       "falconActive": false,
       "falconHeight": -1,
       "feeRateZatPerKB": 100,
-      "plainAddressVersion": "4c51"
+      "plainAddressVersion": { "1": "4c5655", "2": "4c54ef" }
     },
     "attest": { "mintPayloadVersion": 4 }
   }
