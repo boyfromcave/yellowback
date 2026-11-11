@@ -330,8 +330,11 @@ Bitcoin/BTC or dollar/USD — never "5 yellowbacks YED", never "the YED protocol
   "the product" or "the system", it is Yellowback.
 - **First mention in any formal document:** "Ycash Yellowback (YED)"; then YED for amounts and
   Yellowback for the system throughout.
-- The RPC prefix is `yed_` (the asset ticker as namespace, the way Zcash uses `z_`); addresses
-  hold YED, so the mainnet address prefix is `ye…` (D10).
+- The RPC prefix is `yed_` (the asset ticker as namespace, the way Zcash uses `z_`). YED addresses
+  are `yb…` on mainnet (Yellowback; D10 as amended by D-Q-21), `yt…` on testnet and `yr…` on
+  regtest. A post-quantum address shows its signature scheme in the third character (D-9, quantum
+  spec §4.1): `f` for FN-DSA-512 and `s` for SLH-DSA-SHA2-128s, so plain YEC is `sqf…` / `sqs…`
+  (`tqf…` / `tqs…`, `rqf…` / `rqs…`) and YED is `ybf…` / `ybs…` (`ytf…` / `yts…`, `yrf…` / `yrs…`).
 
 Do not carry `DigiDollar` / `digidollar` / `DD` naming across — it makes `git grep` ambiguous
 between "ported code" and "upstream reference" and defeats the point of the split. The one
