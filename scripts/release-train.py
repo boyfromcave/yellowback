@@ -60,7 +60,7 @@ SECTIONS = {
     "testnet": ("fast-vault-height", "fast-set-id", "slow-vault-height", "slow-set-id", "bundle-height"),
 }
 # rpcversion -> the extract_spec.py check of that line (scripts/extract_spec.py THE ... LINE).
-SPEC_MODE = {5: "--check-upgrade", 6: "--check-in-term", 7: "--check-quantum", 8: "--check-fees"}
+SPEC_MODE = {5: "--check-upgrade", 6: "--check-in-term", 7: "--check-quantum", 8: "--check-fees", 9: "--check-prefix"}
 # Where each spec repository keeps what extract_spec.py reads, and its override variable.
 SPEC_TREES = {
     "ycash-dd": ("EXTRACT_SPEC_NODE_DIR", ["doc"]),

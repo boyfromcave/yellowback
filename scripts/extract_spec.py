@@ -924,6 +924,12 @@ OVERLAY_COPY_MIN = {   # line -> the rpcversion a client contract copy must stat
 }
 
 
+def client_copy_lags_by_one(cver, node_ver):
+    """Whether plain --check skips a client contract copy: only one exactly one rpcversion behind the node doc
+    (a missing or unparsable version, an equal, higher or older one is checked as before)."""
+    return isinstance(cver, int) and isinstance(node_ver, int) and cver == node_ver - 1
+
+
 def copy_version(path):
     """The top-level `rpcversion` of a generated contract copy, or None (missing, unreadable, or without one)."""
     try:
@@ -1152,6 +1158,40 @@ def check_vault_contract(path, want, plan_path=PLAN_QUANTUM, section=SECTION_QUA
             % (path, os.path.relpath(plan_path, ROOT), section, ", ".join(bad)))
 
 
+def reshape_at(tree, path):
+    """(parent, key) of a ```reshaped path in a contract tree or a delta (`cmd` keys to its returns), or None."""
+    cmd, rows, dotted = REMOVED_PATH_RE.match(path).groups()
+    node = tree.get(cmd)
+    if isinstance(node, dict) and "returns" in node:
+        node = node["returns"]
+    if rows:
+        node = node[0] if isinstance(node, list) and node and isinstance(node[0], dict) else None
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        if not isinstance(node, dict) or part not in node:
+            return None
+        node = node[part]
+    return (node, parts[-1]) if isinstance(node, dict) and parts[-1] in node else None
+
+
+def reshape_from_doc(doc, own, deltas, reshaped, where):
+    """Each ```reshaped path: the merged contract `doc` must carry it, the node's own document `own` must carry it,
+    the delta's json blocks must pin it (the shape is checked, never taken on trust), and the document's value must
+    have exactly the delta's keys when it is an object. Then the doc's value replaces the earlier delta's."""
+    for path in reshaped:
+        at_doc, at_own, at_delta = reshape_at(doc, path), reshape_at(own, path), reshape_at(deltas, path)
+        if at_doc is None or at_own is None:
+            die("%s reshapes %s, which the doc does not document" % (where, path))
+        if at_delta is None:
+            die("%s reshapes %s, but no json block pins its new shape" % (where, path))
+        want, got = at_delta[0][at_delta[1]], at_own[0][at_own[1]]
+        if type(want) is not type(got):
+            die("%s reshapes %s to %s; the doc gives %s" % (where, path, type(want).__name__, type(got).__name__))
+        if isinstance(want, dict) and set(got) != set(want):
+            die("%s reshapes %s with keys %s; the doc gives %s" % (where, path, sorted(want), sorted(got)))
+        at_doc[0][at_doc[1]] = got
+
+
 def apply_overlay(doc, rpcdoc_path, plan_path, section, delta):
     """Apply a contract delta (overlay_delta's tuple) to the contract `doc` of `rpcdoc_path` in place: the removed
     paths must be absent from the doc, every json block merges (args must agree, a field or command the doc lacks is
@@ -1166,17 +1206,7 @@ def apply_overlay(doc, rpcdoc_path, plan_path, section, delta):
         die("%s still documents fields %s %s removes: %s" % (rpcdoc_path, rel, section, ", ".join(still)))
     if reshaped:
         own = json.loads(contract_text_upgrade(read_plan(), read_plan_v3(), rpcdoc_path, RPCDOC_REL))
-        for path in reshaped:
-            if not removed_still_present(doc, path) or not removed_still_present(own, path):
-                die("%s: %s %s reshapes %s, which the doc does not document" % (rpcdoc_path, rel, section, path))
-            cmd, rows, dotted = REMOVED_PATH_RE.match(path).groups()
-            src, dst = own[cmd]["returns"], doc[cmd]["returns"]
-            if rows:
-                src, dst = src[0], dst[0]
-            parts = dotted.split(".")
-            for part in parts[:-1]:
-                src, dst = src[part], dst[part]
-            dst[parts[-1]] = src[parts[-1]]
+        reshape_from_doc(doc, own, deltas, reshaped, "%s: %s %s" % (rpcdoc_path, rel, section))
     missing = []
     for name in sorted(deltas):
         if name not in doc:
@@ -1370,6 +1400,7 @@ def main(argv):
     outputs = [(p, spec_for(p)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
+    skipped_clients = []
     kogany_skipped = None
     if not workspace_only:
         # kogany carries ycash6's copies: the spec of ycash6's line (SPEC_OUT[2]) and ycash6's contract (JSON6_OUT)
@@ -1382,15 +1413,17 @@ def main(argv):
         outputs = [(p, t) for p, t in outputs if os.path.relpath(p, ROOT).startswith("docs" + os.sep)]
         mode = "--check"
     if mode == "--check" and not workspace_only:
-        # A client copy that states a lower rpcversion than the node doc it is generated from has not moved onto the
-        # node's line yet: skipped and said so, as --check-<line> skips it (THE PREFIX LINE, client copies).
+        # A client copy exactly one rpcversion behind the node doc it is generated from has not moved onto the node's
+        # new line yet: skipped, loudly (THE PREFIX LINE, client copies). Anything further behind, missing or
+        # unreadable is checked and fails as before. The release train is the gate: it refuses a train whose client
+        # copy states another rpcversion than the node (scripts/release-train.py).
         node_ver = rpcdoc_version(RPCDOC)
         keep = []
         for p, t in outputs:
-            cver = copy_version(p) if p in JSON_OUT[1:] else None
-            if cver is not None and node_ver is not None and cver < node_ver:
-                print("spec-check: skipped %s (its contract copy is rpcversion %d, the node doc %d)"
-                      % (os.path.relpath(p, ROOT), cver, node_ver))
+            if p in JSON_OUT[1:] and client_copy_lags_by_one(copy_version(p), node_ver):
+                skipped_clients.append(os.path.relpath(p, ROOT))
+                print("spec-check: SKIPPED (client one version behind) %s: its contract copy is rpcversion %d, the node "
+                      "doc %d; the release train refuses it until the client moves" % (os.path.relpath(p, ROOT), node_ver - 1, node_ver))
                 continue
             keep.append((p, t))
         outputs = keep
@@ -1418,9 +1451,11 @@ def main(argv):
         if workspace_only:
             print("spec-check: docs/spec copy matches the plan (%s); the fork copies were not checked" % rev)
         else:
-            print("spec-check: docs/spec, %s/doc, %s/doc, %s/docs and %s/testdata copies match the plan (%s)%s" % (
-                os.path.relpath(NODE_DIR, ROOT), os.path.relpath(NODE6_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT),
-                os.path.relpath(LWD_DIR, ROOT), rev,
+            print("spec-check: %s copies match the plan (%s)%s" % (
+                ", ".join(["docs/spec", "%s/doc" % os.path.relpath(NODE_DIR, ROOT), "%s/doc" % os.path.relpath(NODE6_DIR, ROOT)]
+                          + [d for d, f in (("%s/docs" % os.path.relpath(WALLET_DIR, ROOT), JSON_OUT[1]),
+                                            ("%s/testdata" % os.path.relpath(LWD_DIR, ROOT), JSON_OUT[2]))
+                             if os.path.relpath(f, ROOT) not in skipped_clients]), rev,
                 "" if kogany_skipped else "; %s/doc equals %s/doc" % (
                     os.path.relpath(KOGANY_DIR, ROOT), os.path.relpath(NODE6_DIR, ROOT))))
     return 0
