@@ -110,6 +110,7 @@ pre.diff .hunk { color: var(--ink-3); }
 .card-addresses { border-color: var(--gold-2); }
 .support { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 650; vertical-align: middle; }
 .support-supported { background: color-mix(in srgb, var(--mint) 18%, transparent); color: var(--mint); }
+.support-unavailable { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
 .support-deprecated { background: color-mix(in srgb, var(--orange) 18%, transparent); color: var(--orange); }
 .addr-type { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 18px; }
 .addr-type h3 { font-size: 18px; }

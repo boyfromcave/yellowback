@@ -65,9 +65,15 @@ keeps the reader on the same method when switching versions.
 ## Addresses
 
 `site.json` `receive` is the page at `/<version>/addresses.html`: one place that says which call
-creates an address for YEC and which creates one for YED, which address types are supported, and
-why a call is deprecated. A method is named there and also in its `help` category. It is not copied
-into a second category. `otherKeys` holds keys that are not receive addresses (the vault owner).
+creates an address for YEC and which creates one for YED, and which address types are supported.
+The call named there is the one that works on Ycash: where the node's inherited help calls it
+deprecated (`getnewaddress`, `z_getnewaddress`), the entry's `note` says why it is still the call to
+use. A method is named there and also in its `help` category. It is not copied into a second
+category. `otherKeys` holds keys that are not receive addresses (the vault owner).
+
+`site.json` `unavailable` lists the methods a Ycash node refuses (the unified-address account calls,
+which need NU5) and the reason. Each gets a notice above its help text and a line on the addresses
+page. Add a method there only after reading the refusal in the node source.
 
 ## Sections
 

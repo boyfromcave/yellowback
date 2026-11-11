@@ -15,34 +15,20 @@
           "support": "supported",
           "summary": "A traditional P2PKH address. A payment to it is visible on chain. Use it where a shielded address cannot go.",
           "use": {
-            "method": "z_getaddressforaccount",
-            "steps": [
-              {"method": "z_getnewaccount", "cli": "ycash-cli z_getnewaccount"},
-              {"method": "z_getaddressforaccount", "cli": "ycash-cli z_getaddressforaccount <account> '[\"p2pkh\"]'"}
-            ]
-          },
-          "deprecated": {
             "method": "getnewaddress",
             "steps": [{"method": "getnewaddress", "cli": "ycash-cli getnewaddress"}],
-            "why": "Zcash replaced getnewaddress with unified-address accounts. Ycash still answers it, unless the node is started with -allowdeprecated=none, so software built against the older API keeps working. The address is the same transparent type. The first argument, if you pass one, must be the empty string."
+            "note": "The node's help says getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. The first argument, if you pass one, must be the empty string."
           }
         },
         {
           "id": "yec-sapling",
           "name": "Sapling",
           "support": "supported",
-          "summary": "A shielded Sapling address. Ask for the sapling receiver on its own. Sprout addresses are refused once Canopy is active.",
+          "summary": "A shielded Sapling address. Sprout addresses are refused once Canopy is active.",
           "use": {
-            "method": "z_getaddressforaccount",
-            "steps": [
-              {"method": "z_getnewaccount", "cli": "ycash-cli z_getnewaccount"},
-              {"method": "z_getaddressforaccount", "cli": "ycash-cli z_getaddressforaccount <account> '[\"sapling\"]'"}
-            ]
-          },
-          "deprecated": {
             "method": "z_getnewaddress",
             "steps": [{"method": "z_getnewaddress", "cli": "ycash-cli z_getnewaddress sapling"}],
-            "why": "Zcash replaced z_getnewaddress with the same unified-address accounts. With no argument it happens to return a Sapling address, and the node says not to rely on that. Ycash still answers it unless -allowdeprecated=none."
+            "note": "The node's help says z_getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so z_getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. Name the type: with no argument the call returns a Sapling address today, and the node says not to rely on that."
           }
         },
         {
@@ -56,7 +42,7 @@
               {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\""},
               {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\""}
             ],
-            "note": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s. Unified addresses have no post-quantum receiver, so this is the supported call even though getnewaddress is on the deprecated-RPC list. The first argument is the empty string."
+            "note": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s. Ycash has no unified addresses, so this is the supported call even though the node's help says getnewaddress is deprecated. The first argument is the empty string."
           }
         }
       ]
@@ -116,6 +102,11 @@
       }
     }
   ],
+  "unavailable": {
+    "title": "Not available on Ycash",
+    "reason": "Unified-address accounts need the NU5 network upgrade. NU5 has no activation height on any Ycash network, so the node refuses this call: \"Unified-address accounts require the NU5 network upgrade, which is not active on Ycash.\"",
+    "methods": ["z_getnewaccount", "z_getaddressforaccount", "z_listaccounts", "z_getbalanceforaccount"]
+  },
   "sections": [
     {
       "id": "vault",

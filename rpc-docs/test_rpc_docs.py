@@ -2,6 +2,7 @@
 """Unit tests for rpc-docs/build.py and capture.py. Offline: synthetic snapshots, no node."""
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -227,15 +228,28 @@ class AddressGuide(unittest.TestCase):
         self.assertNotIn('id="post-quantum"', cards)
         page = read_at(out, "v6.22.0-beta1/addresses.html")
         for text in ("Receive YEC", "Receive YED", "Transparent, ECC", "Sapling", "Post-quantum",
-                     "pqslh", "z_getaddressforaccount", "yed_getnewaddress",
-                     "z_getnewaddress sapling", "unified-address accounts", "Vault owner",
-                     "not an address for receiving"):
+                     "pqslh", "yed_getnewaddress", "ycash-cli getnewaddress</pre>",
+                     "z_getnewaddress sapling", "Ycash has no unified addresses", "Vault owner",
+                     "not an address for receiving", "Not available on Ycash"):
             self.assertIn(text, page, text)
-        self.assertIn("Deprecated", page)
+        # The calls the guide tells a reader to run are ones a Ycash node answers.
+        cmds = "".join(re.findall(r'<pre class="cmd">(.*?)</pre>', page, re.S))
+        for refused in ("z_getnewaccount", "z_getaddressforaccount"):
+            self.assertNotIn(refused, cmds, refused)
+        self.assertNotIn("Deprecated call", page)
         gna = read_at(out, "v6.22.0-beta1/getnewaddress.html")
-        self.assertIn("returns this address", gna)
-        self.assertIn("deprecated way to create this address", gna)
-        self.assertIn("The call to use is", gna)
+        self.assertEqual(gna.count("returns this address"), 2)
+        self.assertNotIn("deprecated way to create this address", gna)
+        self.assertNotIn("The call to use is", gna)
+        self.assertIn("getnewaddress is the supported call", gna)
+        zna = read_at(out, "v6.22.0-beta1/z_getnewaddress.html")
+        self.assertIn("returns this address", zna)
+        self.assertIn("z_getnewaddress is the supported call", zna)
+        for name in ("z_getnewaccount", "z_getaddressforaccount", "z_listaccounts", "z_getbalanceforaccount"):
+            refused = read_at(out, "v6.22.0-beta1/%s.html" % name)
+            self.assertIn("Not available on Ycash", refused, name)
+            self.assertIn("which is not active on Ycash", refused, name)
+            self.assertNotIn("returns this address", refused, name)
         yed = read_at(out, "v6.22.0-beta1/yed_getnewaddress.html")
         self.assertEqual(yed.count("returns this address"), 3)
         self.assertNotIn("deprecated way", yed)
