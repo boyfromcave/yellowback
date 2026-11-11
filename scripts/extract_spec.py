@@ -180,6 +180,17 @@ THE FEES LINE  (the quantum line after the D-Q-23/24/25 fee change, docs/plans/y
          tree named.  The kogany tree (EXTRACT_SPEC_KOGANY_DIR) gets ycash6's three copies, as in WRITES, whenever ycash6's
          tree is on the fees line: skipped (default tree) or an error (named tree) without crates/kogany-rpc.
 
+THE PREFIX LINE  (the fees line after D-9, docs/plans/yellowback-quantum-spec.md section 4.1; `--write-prefix` /
+  `--check-prefix`, `make spec-prefix` / `make spec-check-prefix`)
+  The line is `prefix` when the rpc doc's title states rpcversion >= 9 (EXTRACT_SPEC_LINE=prefix forces it).
+  Spec   the fees line's spec copy, unchanged.
+  Contract  the fees contract of the tree's rpc doc (without its rpcversion-8 test), then the `### 4.12` section of
+         docs/plans/yellowback-pq-prefix-rpc-delta.md (PLAN_PREFIX) applied as the fees delta is.
+  Trees  as the fees line, with 9 in place of 8.
+
+  Client copies under --check: a YecWallet or lightwalletd contract copy that states a lower rpcversion than the node
+  tree's rpc doc is skipped and said so (the client has not moved onto the node's line yet), as --check-<line> skips it.
+
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR / EXTRACT_SPEC_KOGANY_DIR
   override `ycash-dd` / `ycash6` / `yecwallet-dd` / `lightwalletd-dd` / `kogany` (absolute paths), so
@@ -215,6 +226,10 @@ QUANTUM_RPCVERSION = 7   # the first rpcversion of the quantum line (post-quantu
 PLAN_FEES = os.path.join(ROOT, "docs", "plans", "yellowback-quantum-fees-rpc-delta.md")
 SECTION_FEES = "4.11"
 FEES_RPCVERSION = 8      # the first rpcversion of the fees line (D-Q-23 tiered protocol fee, D-Q-24 maxMint, D-Q-25 supply cap)
+# The prefix line's contract delta: D-9 (scheme-visible post-quantum prefixes, quantum spec §4.1), layered on the fees delta.
+PLAN_PREFIX = os.path.join(ROOT, "docs", "plans", "yellowback-pq-prefix-rpc-delta.md")
+SECTION_PREFIX = "4.12"
+PREFIX_RPCVERSION = 9    # the first rpcversion of the prefix line (yed_getinfo's PQ address versions per scheme)
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
 LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
@@ -630,13 +645,16 @@ def commands_from_rpcdoc(path, rel=RPCDOC_REL):
 
 
 def doc_line(rpcdoc_path):
-    """`harden`, `upgrade`, `interm`, `quantum` or `fees`: EXTRACT_SPEC_LINE when set, else from the rpc doc's title rpcversion."""
+    """`harden`, `upgrade`, `interm`, `quantum`, `fees` or `prefix`: EXTRACT_SPEC_LINE when set, else from the rpc doc's
+    title rpcversion."""
     forced = os.environ.get("EXTRACT_SPEC_LINE")
     if forced:
-        if forced not in ("harden", "upgrade", "interm", "quantum", "fees"):
-            die("EXTRACT_SPEC_LINE must be harden, upgrade, interm, quantum or fees, not %r" % forced)
+        if forced not in ("harden", "upgrade", "interm", "quantum", "fees", "prefix"):
+            die("EXTRACT_SPEC_LINE must be harden, upgrade, interm, quantum, fees or prefix, not %r" % forced)
         return forced
     v = rpcdoc_version(rpcdoc_path)
+    if v is not None and v >= PREFIX_RPCVERSION:
+        return "prefix"
     if v is not None and v >= FEES_RPCVERSION:
         return "fees"
     if v is not None and v >= QUANTUM_RPCVERSION:
@@ -677,6 +695,8 @@ def contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
 
 def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_REL):
     line = doc_line(rpcdoc_path)
+    if line == "prefix":
+        return contract_text_prefix(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     if line == "fees":
         return contract_text_fees(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     if line == "quantum":
@@ -895,11 +915,19 @@ OVERLAY_LINES = {   # line -> (the check/write command names, the word in messag
     "interm": ("spec-check-in-term", "spec-in-term", "in-term", "--write-in-term"),
     "quantum": ("spec-check-quantum", "spec-quantum", "quantum", "--write-quantum"),
     "fees": ("spec-check-fees", "spec-fees", "fees", "--write-fees"),
+    "prefix": ("spec-check-prefix", "spec-prefix", "prefix", "--write-prefix"),
 }
 OVERLAY_COPY_MIN = {   # line -> the rpcversion a client contract copy must state to be checked on it (below: skipped)
     "quantum": QUANTUM_RPCVERSION,
     "fees": FEES_RPCVERSION,
+    "prefix": PREFIX_RPCVERSION,
 }
+
+
+def client_copy_lags_by_one(cver, node_ver):
+    """Whether plain --check skips a client contract copy: only one exactly one rpcversion behind the node doc
+    (a missing or unparsable version, an equal, higher or older one is checked as before)."""
+    return isinstance(cver, int) and isinstance(node_ver, int) and cver == node_ver - 1
 
 
 def copy_version(path):
@@ -921,7 +949,7 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
     node, node6, wallet, lwd = (d[k] for k in INTERM_TREES)
     rel = lambda p: os.path.relpath(p, ROOT)
     # the quantum and fees lines carry the in-term spec copy unchanged
-    spec = spec_text_quantum() if line in ("quantum", "fees") else spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
+    spec = spec_text_quantum() if line in ("quantum", "fees", "prefix") else spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
     copy_min = OVERLAY_COPY_MIN.get(line)
     checks, skipped = [], []
 
@@ -962,8 +990,8 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
             checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
                        (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
                         contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
-            if line == "fees":
-                # kogany carries ycash6's fees-line copies byte for byte (WRITES; same skip-if-no-crate rule)
+            if line in ("fees", "prefix"):
+                # kogany carries ycash6's fees-line (and prefix-line) copies byte for byte (WRITES; same skip-if-no-crate rule)
                 kogany, kogany_skipped = kogany_outputs(checks[-2][1], checks[-1][1])
                 checks += kogany
                 if kogany_skipped:
@@ -1041,11 +1069,11 @@ def overlay_delta(lines_q, plan_path, section):
     m = re.search(r"rpcversion`?\s*=?\s*(\d+)", sec[0])
     if not m:
         die("%s: the %s heading does not state rpcversion" % (rel, section))
-    deltas, args, removed, vault = {}, {}, [], None
+    deltas, args, removed, vault, reshaped = {}, {}, [], None, []
     i = 1
     while i < len(sec):
         fence = sec[i]
-        if fence.startswith("```json") or fence.startswith("```removed"):
+        if fence.startswith("```json") or fence.startswith("```removed") or fence.startswith("```reshaped"):
             j = i - 1
             while j >= 0 and not sec[j].strip():
                 j -= 1
@@ -1053,13 +1081,14 @@ def overlay_delta(lines_q, plan_path, section):
             while k < len(sec) and not sec[k].startswith("```"):
                 k += 1
             body = sec[i + 1:k]
-            if fence.startswith("```removed"):
+            if fence.startswith("```removed") or fence.startswith("```reshaped"):
+                kind = "removed" if fence.startswith("```removed") else "reshaped"
                 for l in body:
                     if not l.strip():
                         continue
                     if not REMOVED_PATH_RE.match(l.strip()):
-                        die("%s %s: bad removed path %r (cmd.field, cmd[].field or cmd.a.b)" % (rel, section, l.strip()))
-                    removed.append(l.strip())
+                        die("%s %s: bad %s path %r (cmd.field, cmd[].field or cmd.a.b)" % (rel, section, kind, l.strip()))
+                    (removed if kind == "removed" else reshaped).append(l.strip())
             else:
                 name = re.search(r"`(yed_[a-z]+)((?: [^`]*)?)`", sec[j]) if j >= 1 else None
                 try:
@@ -1078,7 +1107,7 @@ def overlay_delta(lines_q, plan_path, section):
         i += 1
     if not deltas:
         die("%s %s has no json blocks" % (rel, section))
-    return int(m.group(1)), deltas, args, removed, vault
+    return int(m.group(1)), deltas, args, removed, vault, reshaped
 
 
 def quantum_delta(lines_q):
@@ -1129,15 +1158,55 @@ def check_vault_contract(path, want, plan_path=PLAN_QUANTUM, section=SECTION_QUA
             % (path, os.path.relpath(plan_path, ROOT), section, ", ".join(bad)))
 
 
+def reshape_at(tree, path):
+    """(parent, key) of a ```reshaped path in a contract tree or a delta (`cmd` keys to its returns), or None."""
+    cmd, rows, dotted = REMOVED_PATH_RE.match(path).groups()
+    node = tree.get(cmd)
+    if isinstance(node, dict) and "returns" in node:
+        node = node["returns"]
+    if rows:
+        node = node[0] if isinstance(node, list) and node and isinstance(node[0], dict) else None
+    parts = dotted.split(".")
+    for part in parts[:-1]:
+        if not isinstance(node, dict) or part not in node:
+            return None
+        node = node[part]
+    return (node, parts[-1]) if isinstance(node, dict) and parts[-1] in node else None
+
+
+def reshape_from_doc(doc, own, deltas, reshaped, where):
+    """Each ```reshaped path: the merged contract `doc` must carry it, the node's own document `own` must carry it,
+    the delta's json blocks must pin it (the shape is checked, never taken on trust), and the document's value must
+    have exactly the delta's keys when it is an object. Then the doc's value replaces the earlier delta's."""
+    for path in reshaped:
+        at_doc, at_own, at_delta = reshape_at(doc, path), reshape_at(own, path), reshape_at(deltas, path)
+        if at_doc is None or at_own is None:
+            die("%s reshapes %s, which the doc does not document" % (where, path))
+        if at_delta is None:
+            die("%s reshapes %s, but no json block pins its new shape" % (where, path))
+        want, got = at_delta[0][at_delta[1]], at_own[0][at_own[1]]
+        if type(want) is not type(got):
+            die("%s reshapes %s to %s; the doc gives %s" % (where, path, type(want).__name__, type(got).__name__))
+        if isinstance(want, dict) and set(got) != set(want):
+            die("%s reshapes %s with keys %s; the doc gives %s" % (where, path, sorted(want), sorted(got)))
+        at_doc[0][at_doc[1]] = got
+
+
 def apply_overlay(doc, rpcdoc_path, plan_path, section, delta):
     """Apply a contract delta (overlay_delta's tuple) to the contract `doc` of `rpcdoc_path` in place: the removed
     paths must be absent from the doc, every json block merges (args must agree, a field or command the doc lacks is
-    an error), the vault block checks the tree's vault primitive contract, and `rpcversion` becomes the delta's."""
-    ver, deltas, args, removed, vault = delta
+    an error), the vault block checks the tree's vault primitive contract, and `rpcversion` becomes the delta's.
+    A ```reshaped path (a field whose type this line changes, e.g. a string an earlier delta set that becomes an
+    object) must be present; its value is replaced by the doc's own before the merge, so the doc decides the new
+    shape and the json block still checks it key by key."""
+    ver, deltas, args, removed, vault, reshaped = delta
     rel = os.path.relpath(plan_path, ROOT)
     still = [path for path in removed if removed_still_present(doc, path)]
     if still:
         die("%s still documents fields %s %s removes: %s" % (rpcdoc_path, rel, section, ", ".join(still)))
+    if reshaped:
+        own = json.loads(contract_text_upgrade(read_plan(), read_plan_v3(), rpcdoc_path, RPCDOC_REL))
+        reshape_from_doc(doc, own, deltas, reshaped, "%s: %s %s" % (rpcdoc_path, rel, section))
     missing = []
     for name in sorted(deltas):
         if name not in doc:
@@ -1175,15 +1244,32 @@ def read_plan_fees():
     return read_plan(PLAN_FEES)
 
 
-def contract_text_fees(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
-    """The fees line: the quantum contract of the doc with the fees delta applied (THE FEES LINE)."""
+def contract_text_fees(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=True):
+    """The fees line: the quantum contract of the doc with the fees delta applied (THE FEES LINE).
+    check_version=False: a later line's base (the prefix line), whose doc states its own rpcversion."""
     delta = overlay_delta(read_plan_fees(), PLAN_FEES, SECTION_FEES)
     doc_ver = rpcdoc_version(rpcdoc_path)
-    if doc_ver != delta[0]:
+    if check_version and doc_ver != delta[0]:
         die("%s states rpcversion %s; %s %s states %d"
             % (rpcdoc_path, doc_ver, os.path.relpath(PLAN_FEES, ROOT), SECTION_FEES, delta[0]))
     doc = json.loads(contract_text_quantum(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=False))
     doc = apply_overlay(doc, rpcdoc_path, PLAN_FEES, SECTION_FEES, delta)
+    return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+# ── the prefix line (the fees line after D-9) ─────────────────────────────────────────────────
+
+def contract_text_prefix(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
+    """The prefix line: the fees contract of the doc with the D-9 delta applied (THE PREFIX LINE)."""
+    if not os.path.exists(PLAN_PREFIX):
+        die("the prefix line needs %s" % os.path.relpath(PLAN_PREFIX, ROOT))
+    delta = overlay_delta(read_plan(PLAN_PREFIX), PLAN_PREFIX, SECTION_PREFIX)
+    doc_ver = rpcdoc_version(rpcdoc_path)
+    if doc_ver != delta[0]:
+        die("%s states rpcversion %s; %s %s states %d"
+            % (rpcdoc_path, doc_ver, os.path.relpath(PLAN_PREFIX, ROOT), SECTION_PREFIX, delta[0]))
+    doc = json.loads(contract_text_fees(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=False))
+    doc = apply_overlay(doc, rpcdoc_path, PLAN_PREFIX, SECTION_PREFIX, delta)
     return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
@@ -1275,9 +1361,9 @@ def check_upgrade(lines, lines_v3, write=False):
 def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
     if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade", "--write-upgrade", "--check-in-term", "--write-in-term",
-                    "--check-quantum", "--write-quantum", "--check-fees", "--write-fees"):
+                    "--check-quantum", "--write-quantum", "--check-fees", "--write-fees", "--check-prefix", "--write-prefix"):
         die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade|--write-upgrade|--check-in-term|--write-in-term"
-            "|--check-quantum|--write-quantum|--check-fees|--write-fees]")
+            "|--check-quantum|--write-quantum|--check-fees|--write-fees|--check-prefix|--write-prefix]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
     if mode in ("--check-upgrade", "--write-upgrade"):
@@ -1288,6 +1374,8 @@ def main(argv):
         return check_interm(lines, lines_v3, write=mode == "--write-quantum", line="quantum")
     if mode in ("--check-fees", "--write-fees"):
         return check_interm(lines, lines_v3, write=mode == "--write-fees", line="fees")
+    if mode in ("--check-prefix", "--write-prefix"):
+        return check_interm(lines, lines_v3, write=mode == "--write-prefix", line="prefix")
     # Each node tree gets the spec of the line it is on (its rpc doc's rpcversion: >= 5 = the vault upgrade),
     # as its contract copies already do; docs/spec in this repo is always the harden line's.
     spec_h = spec_text(lines, lines_v3)
@@ -1299,7 +1387,7 @@ def main(argv):
         if os.path.relpath(path, ROOT).startswith("docs" + os.sep):
             return spec_h
         line = doc_line(os.path.join(tree, "doc", "yellowback-rpc.md"))
-        if line in ("quantum", "fees"):
+        if line in ("quantum", "fees", "prefix"):
             return spec_text_quantum()
         if line == "interm":
             return spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
@@ -1312,6 +1400,7 @@ def main(argv):
     outputs = [(p, spec_for(p)) for p in SPEC_OUT] + [(p, contract_text(lines, lines_v3)) for p in JSON_OUT]
     outputs.append((JSON6_OUT, contract_text(lines, lines_v3, RPCDOC6, RPCDOC6_REL)))
     workspace_only = mode == "--check-workspace"
+    skipped_clients = []
     kogany_skipped = None
     if not workspace_only:
         # kogany carries ycash6's copies: the spec of ycash6's line (SPEC_OUT[2]) and ycash6's contract (JSON6_OUT)
@@ -1323,6 +1412,21 @@ def main(argv):
         # The workspace CI has no nested clones: compare only the copies that live in this repo.
         outputs = [(p, t) for p, t in outputs if os.path.relpath(p, ROOT).startswith("docs" + os.sep)]
         mode = "--check"
+    if mode == "--check" and not workspace_only:
+        # A client copy exactly one rpcversion behind the node doc it is generated from has not moved onto the node's
+        # new line yet: skipped, loudly (THE PREFIX LINE, client copies). Anything further behind, missing or
+        # unreadable is checked and fails as before. The release train is the gate: it refuses a train whose client
+        # copy states another rpcversion than the node (scripts/release-train.py).
+        node_ver = rpcdoc_version(RPCDOC)
+        keep = []
+        for p, t in outputs:
+            if p in JSON_OUT[1:] and client_copy_lags_by_one(copy_version(p), node_ver):
+                skipped_clients.append(os.path.relpath(p, ROOT))
+                print("spec-check: SKIPPED (client one version behind) %s: its contract copy is rpcversion %d, the node "
+                      "doc %d; the release train refuses it until the client moves" % (os.path.relpath(p, ROOT), node_ver - 1, node_ver))
+                continue
+            keep.append((p, t))
+        outputs = keep
     stale = []
     for path, text in outputs:
         rel = os.path.relpath(path, ROOT)
@@ -1347,9 +1451,11 @@ def main(argv):
         if workspace_only:
             print("spec-check: docs/spec copy matches the plan (%s); the fork copies were not checked" % rev)
         else:
-            print("spec-check: docs/spec, %s/doc, %s/doc, %s/docs and %s/testdata copies match the plan (%s)%s" % (
-                os.path.relpath(NODE_DIR, ROOT), os.path.relpath(NODE6_DIR, ROOT), os.path.relpath(WALLET_DIR, ROOT),
-                os.path.relpath(LWD_DIR, ROOT), rev,
+            print("spec-check: %s copies match the plan (%s)%s" % (
+                ", ".join(["docs/spec", "%s/doc" % os.path.relpath(NODE_DIR, ROOT), "%s/doc" % os.path.relpath(NODE6_DIR, ROOT)]
+                          + [d for d, f in (("%s/docs" % os.path.relpath(WALLET_DIR, ROOT), JSON_OUT[1]),
+                                            ("%s/testdata" % os.path.relpath(LWD_DIR, ROOT), JSON_OUT[2]))
+                             if os.path.relpath(f, ROOT) not in skipped_clients]), rev,
                 "" if kogany_skipped else "; %s/doc equals %s/doc" % (
                     os.path.relpath(KOGANY_DIR, ROOT), os.path.relpath(NODE6_DIR, ROOT))))
     return 0

@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees release-train-check
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees spec-prefix spec-check-prefix release-train-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -38,7 +38,7 @@ status-short: ## Same as status, without the per-file listing
 spec: ## Regenerate docs/spec/yellowback-spec.md, the fork copy and both rpc-contract copies from the plan; kogany/doc gets ycash6's copies (EXTRACT_SPEC_KOGANY_DIR)
 	@scripts/extract-spec.sh
 
-spec-check: ## Fail if any generated spec/contract copy is stale vs the plan, kogany/doc's included (run by `make status`)
+spec-check: ## Fail if any generated spec/contract copy is stale vs the plan, kogany/doc's included (run by `make status`); a client copy exactly one rpcversion behind its node is SKIPPED loudly, and the release train (release-train-check) is the gate that refuses it
 	@scripts/extract-spec.sh --check
 
 spec-check-upgrade: ## Same for the upgrade/vault line's copies only, in the main trees (EXTRACT_SPEC_*_DIR override; trees not on the upgrade line skipped)
@@ -64,6 +64,12 @@ spec-check-fees: ## The fees line's copies (the quantum line after D-Q-23/24/25,
 
 spec-fees: ## Write the fees line's copies (the in-term spec; the quantum contract with docs/plans/yellowback-quantum-fees-rpc-delta.md §4.11)
 	@scripts/extract-spec.sh --write-fees
+
+spec-check-prefix: ## The prefix line's copies (the fees line after D-9, rpcversion 9; default the main trees, EXTRACT_SPEC_*_DIR override; trees below 9 skipped)
+	@scripts/extract-spec.sh --check-prefix
+
+spec-prefix: ## Write the prefix line's copies (the fees contract with docs/plans/yellowback-pq-prefix-rpc-delta.md §4.12)
+	@scripts/extract-spec.sh --write-prefix
 
 release-train-check: ## Check every releases/v*.yaml: shape, commits on upgrade/vault, tags, rpcversion, contract copies (testnet plan §5.4; OFFLINE=1: shape only)
 	@python3 scripts/release-train.py check $(if $(OFFLINE),,--online)

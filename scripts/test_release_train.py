@@ -18,12 +18,12 @@ spec.loader.exec_module(rt)
 ATT = "ab" * 32
 
 
-def train_text(version="6.22.0-rc1", commits=None, extra="", **net):
+def train_text(version="6.22.0-rc1", commits=None, extra="", rpcversion=8, **net):
     commits = commits or {}
     values = {"fast-vault-height": "510400", "fast-set-id": ATT, "slow-vault-height": "none",
               "slow-set-id": "none", "bundle-height": "none"}
     values.update({k.replace("_", "-"): v for k, v in net.items()})
-    out = ["# a release train", "release:", "  version: %s" % version, "  rpcversion: 8",
+    out = ["# a release train", "release:", "  version: %s" % version, "  rpcversion: %d" % rpcversion,
            "  workspace: %s" % commits.get("workspace", "1" * 40), "testnet:"]
     out += ["  %s: %s   # comment" % (k, v) for k, v in values.items()]
     for name in rt.COMPONENTS:
@@ -199,6 +199,35 @@ class Online(unittest.TestCase):
         problems = self.run_check(train_text(commits=dict(self.commits, wyec=newer)))
         self.assertEqual(problems, ["hawkeye: eth/tools/fetch-wyec.sh pins wyec %s, the train says %s" % (self.wyec, newer)])
         self.assertEqual(self.spec_calls, [])
+
+    def test_a_train_at_9_runs_the_prefix_check_and_refuses_a_client_at_8(self):
+        # rpcversion 9 (D-9): every node line and client copy at 9 runs extract_spec.py --check-prefix; a client
+        # copy still at 8 (which plain spec-check skips, one version behind) fails the train.
+        commits = dict(self.commits)
+        for name, files in (("ycash-dd", ["src/rpc/yellowback.cpp", "doc/yellowback-rpc-contract.json"]),
+                            ("ycash6", ["src/rpc/yellowback.cpp", "doc/yellowback-rpc-contract.json"]),
+                            ("yecwallet-dd", ["docs/yellowback-rpc-contract.json"]),
+                            ("lightwalletd-dd", ["testdata/yellowback/contract.json"])):
+            repo = os.path.join(self.tmp, "src", name)
+            for rel in files:
+                full = os.path.join(repo, rel)
+                with open(full, encoding="utf-8") as fh:
+                    text = fh.read().replace("= 8;", "= 9;").replace('"rpcversion": 8', '"rpcversion": 9')
+                with open(full, "w", encoding="utf-8") as fh:
+                    fh.write(text)
+            git(repo, "commit", "-q", "-am", "rpcversion 9")
+            commits[name] = git(repo, "rev-parse", "HEAD")
+        self.assertEqual(self.run_check(train_text(commits=commits, rpcversion=9)), [])
+        (ws, mode, trees), = self.spec_calls
+        self.assertEqual(mode, "--check-prefix")
+        self.spec_calls.clear()
+        lwd = os.path.join(self.tmp, "src", "lightwalletd-dd")
+        git(lwd, "checkout", "-q", "HEAD~1", "--", "testdata/yellowback/contract.json")
+        git(lwd, "commit", "-q", "-am", "back to 8")
+        problems = self.run_check(train_text(commits=dict(commits, **{"lightwalletd-dd": git(lwd, "rev-parse", "HEAD")}),
+                                             rpcversion=9))
+        self.assertEqual(problems, ["lightwalletd-dd: testdata/yellowback/contract.json states rpcversion 8, the train says 9"])
+
 
 if __name__ == "__main__":
     unittest.main()

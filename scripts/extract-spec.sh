@@ -25,6 +25,10 @@
 #                                                    states rpcversion 8 (D-Q-23/24/25); EXTRACT_SPEC_*_DIR override
 #        scripts/extract-spec.sh --write-fees        write them: the in-term spec, the quantum contract with the fees delta
 #                                                    (docs/plans/yellowback-quantum-fees-rpc-delta.md section 4.11) (`make spec-fees`)
+#        scripts/extract-spec.sh --check-prefix      the prefix line's copies (`make spec-check-prefix`): the trees whose rpc doc
+#                                                    states rpcversion 9 (D-9); EXTRACT_SPEC_*_DIR override
+#        scripts/extract-spec.sh --write-prefix      write them: the fees contract with the D-9 delta
+#                                                    (docs/plans/yellowback-pq-prefix-rpc-delta.md section 4.12) (`make spec-prefix`)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.

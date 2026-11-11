@@ -193,6 +193,8 @@ jobs:
         with: { python-version: '3.11' }
       - name: release-train.py unit tests (local fixture repositories, no network)
         run: python3 scripts/test_release_train.py -v
+      - name: extract_spec.py unit tests (the prefix line, the client-copy skip, the reshaped fence)
+        run: python3 scripts/test_extract_spec.py -v
       - name: Every release train holds (make release-train-check)
         # Public repositories only, read over HTTPS with no credentials.
         run: python3 scripts/release-train.py check --online
