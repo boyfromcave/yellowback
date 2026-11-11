@@ -1,0 +1,38 @@
+{
+ "bucket": "low",
+ "sla_days": 180,
+ "findings": [
+  {
+   "fingerprint": "0e98f8a5f370872e",
+   "rule": "python.lang.security.audit.dynamic-urllib-use-detected",
+   "path": "rpc-docs/fetch_image.py",
+   "line": 58,
+   "first_seen": "2026-11-10",
+   "due": "2027-05-09"
+  },
+  {
+   "fingerprint": "42b86dabdc70f673",
+   "rule": "python.lang.security.audit.dynamic-urllib-use-detected",
+   "path": "rpc-docs/fetch_image.py",
+   "line": 72,
+   "first_seen": "2026-11-10",
+   "due": "2027-05-09"
+  },
+  {
+   "fingerprint": "e975dc2dada957eb",
+   "rule": "generic.secrets.gitleaks.generic-api-key",
+   "path": "rpc-docs/versions/v6.22.0-beta1/contracts/yellowback-rpc-contract.json",
+   "line": 1664,
+   "first_seen": "2026-11-10",
+   "due": "2027-05-09"
+  },
+  {
+   "fingerprint": "646cf3585b76d021",
+   "rule": "python.lang.security.audit.regex_dos",
+   "path": "scripts/extract_spec.py",
+   "line": 1042,
+   "first_seen": "2026-11-11",
+   "due": "2027-05-10"
+  }
+ ]
+}
