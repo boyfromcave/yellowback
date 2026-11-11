@@ -207,6 +207,32 @@ Listed roughly by operational impact.
   connected, so the notified sequence never catches up with the connected sequence. The signal is
   regtest-only, so mainnet impact is nil.
 
+### 3.9 `getunconfirmedbalance` cannot be called (no argument-table row)
+
+> Added 2026-11-10, after this report was sent. Found on our 6.22.0-beta1 build; the cause is in the
+> pin unchanged.
+
+- **Where:** `getunconfirmedbalance` is registered (`src/wallet/rpcwallet.cpp:6488`, category
+  `wallet`) but has no row in the shared argument table `rpcCvtTable` (`src/rpc/common.h:43`).
+  Both sides require a row: `ycash-cli` refuses the call with "error: Unknown RPC method,
+  getunconfirmedbalance" (`src/rpc/client.cpp:72`), and the server answers a plain JSON-RPC call with
+  HTTP 500, code -32603, "Parameters for getunconfirmedbalance not found – this is an internal error,
+  please report it." (`src/rpc/server.cpp:519`). `help getunconfirmedbalance` works, so the method
+  looks available.
+- **Introduced:** Upstream zcashd `4ddf2a93d` ("Share RPC param table between client and server",
+  Greg Pfeil, 2023-02-20). Before it, the client table listed only methods with non-string
+  arguments and any other method went through; the shared table made a row mandatory, and this
+  no-argument method was never given one. zcashd likely has the same defect.
+- **Same class:** `dumpwallet` (registered as `hidden`, `rpcwallet.cpp:6480`) has no row either.
+  Upstream removed it in `265145145` and kept the handler as a tombstone that points callers to
+  `z_exportwallet`; without a row the tombstone's message is never reached, and callers get the two
+  errors above instead. We keep that behaviour (the method is removed either way) and record it.
+- **Impact:** The method is unusable through every interface; there is no workaround.
+- **Suggested fix:** Add `{ "getunconfirmedbalance", {{}, {}} }` to `rpcCvtTable`, and a unit test
+  that compares every registered method with the table in both directions. We did both on our line
+  (`boyfromcave/ycash6`, `src/wallet/test/rpc_table_tests.cpp`, with `dumpwallet` as the one
+  allowlisted exception).
+
 ### 3.8 Behaviour changes worth knowing (not defects)
 
 - `setmocktime` now requires the node to be started with a non-zero `-mocktime`
