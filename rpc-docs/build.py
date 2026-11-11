@@ -397,8 +397,8 @@ def render_type_block(snap, group, kind):
 def render_addresses_page(config, snap):
     out = ['<h1>Addresses</h1>',
            '<p class="lede">Create an address that can receive YEC, or one that can hold YED. '
-           'Each type is listed once. The call under the type is the one to use. A call marked '
-           'deprecated still works on this release, and the note says why it is deprecated.</p>',
+           'Each type is listed once. The call under the type is the one to use on Ycash. Where the '
+           'node\'s help calls it deprecated, the note says why it is still the call to use.</p>',
            '<p>If the wallet is encrypted, run <code>walletpassphrase</code> first.</p>']
     for group in config.get("receive", []):
         out.append('<section class="addr-coin" id="%s"><h2>Receive %s</h2><p>%s</p>'
@@ -413,7 +413,24 @@ def render_addresses_page(config, snap):
         for kind in others:
             out.append(render_type_block(snap, None, kind))
         out.append("</section>")
+    gone = config.get("unavailable") or {}
+    methods = [m for m in gone.get("methods", []) if m in snap.help]
+    if methods:
+        out.append('<section class="addr-coin" id="unavailable"><h2>%s</h2><p>%s</p><p>%s</p></section>'
+                   % (esc(gone.get("title", "Not available")),
+                      ", ".join('<a href="%s.html"><code>%s</code></a>' % (esc(m), esc(m)) for m in methods),
+                      esc(gone.get("reason", ""))))
     return "\n".join(out)
+
+
+def render_unavailable_callout(config, name):
+    gone = config.get("unavailable") or {}
+    if name not in gone.get("methods", []):
+        return ""
+    return ('<aside class="addr-callout unavailable"><h2>%s <span class="support support-unavailable">Refused</span></h2>'
+            '<p>%s The help text below is inherited from Zcash.</p>'
+            '<p><a href="addresses.html">Addresses</a> lists the calls that create an address.</p></aside>'
+            % (esc(gone.get("title", "Not available")), esc(gone.get("reason", ""))))
 
 
 def render_address_callout(config, snap, name):
@@ -539,6 +556,7 @@ class Site:
             elif any(c[0] == name for c in changes["changed"]):
                 badges.append('<a class="badge badge-changed" href="changes.html#%s">changed in %s</a>' % (esc(name), esc(snap.version)))
         callout = render_address_callout(self.config, snap, name)
+        callout += render_unavailable_callout(self.config, name)
         return ('<h1 class="method">%s</h1><p class="badges">%s</p>%s<pre class="help">%s</pre>\n%s'
                 % (esc(name), " ".join(badges), callout, esc(snap.help[name]), render_contract_block(snap, name, "contracts.html")))
 
@@ -562,7 +580,7 @@ class Site:
                             % (esc(g["id"]), esc(g["coin"]), esc(", ".join(t["name"] for t in g.get("types", []))))
                             for g in self.config["receive"])
             out.append('<section class="card card-addresses" id="addresses"><h2><a href="addresses.html">Addresses</a></h2>'
-                       '<p>One list of the address types this release can create, the call to use, and why a call is deprecated.</p>'
+                       '<p>One list of the address types this release can create, and the call that creates each one on Ycash.</p>'
                        '<ul class="methods">%s</ul></section>' % links)
         for s, methods in self.sections_for(snap):
             out.append('<section class="card" id="%s"><h2>%s</h2><p>%s</p><ul class="methods">%s</ul></section>'
