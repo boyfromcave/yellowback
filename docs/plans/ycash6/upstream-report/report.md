@@ -219,6 +219,35 @@ Listed roughly by operational impact.
   both arguments required. As a result, the one-argument unlock-all branch in
   `src/wallet/rpcwallet.cpp` (`params.size() == 1`) cannot be reached from RPC.
 
+### 3.9 `getunconfirmedbalance` cannot be called (no argument-table row)
+
+> Added 2026-11-10, after this report was sent. Found on our 6.22.0-beta1 build; the cause is in the
+> pin unchanged.
+
+- **Where:** `getunconfirmedbalance` is registered (`src/wallet/rpcwallet.cpp:6488`, category
+  `wallet`) but has no row in the shared argument table `rpcCvtTable` (`src/rpc/common.h:43`).
+  Both sides require a row: `ycash-cli` refuses the call with "error: Unknown RPC method,
+  getunconfirmedbalance" (`src/rpc/client.cpp:72`), and the server answers a plain JSON-RPC call with
+  HTTP 500, code -32603, "Parameters for getunconfirmedbalance not found – this is an internal error,
+  please report it." (`src/rpc/server.cpp:519`). `help getunconfirmedbalance` works, so the method
+  looks available.
+- **Introduced:** Upstream zcashd `4ddf2a93d` ("Share RPC param table between client and server",
+  Greg Pfeil, 2023-02-20). Before it, the client table listed only methods with non-string
+  arguments and any other method went through; the shared table made a row mandatory, and this
+  no-argument method was never given one. Upstream zcashd has the same defect at least up to
+  `b66266c31` (2026-06-02, the newest upstream zcashd commit in the history of this pin): the method is
+  registered, the table has no row and the server check is there. We did not check zcashd after that
+  commit.
+- **Same class:** `dumpwallet` (registered as `hidden`, `rpcwallet.cpp:6480`) has no row either.
+  Upstream removed it in `265145145` and kept the handler as a tombstone that points callers to
+  `z_exportwallet`; without a row the tombstone's message is never reached, and callers get the two
+  errors above instead. We keep that behaviour (the method is removed either way) and record it.
+- **Impact:** The method is unusable through every interface; there is no workaround.
+- **Suggested fix:** Add `{ "getunconfirmedbalance", {{}, {}} }` to `rpcCvtTable`, and a unit test
+  that compares every registered method with the table in both directions. We did both on our line
+  (`boyfromcave/ycash6`, `src/wallet/test/rpc_table_tests.cpp`, with `dumpwallet` as the one
+  allowlisted exception).
+
 ## 4. Inherited functional suite (pin + the three patches)
 
 **BASE_SCRIPTS: 39 pass and 80 fail** (75 fail outright and 5 hang). Outside `BASE_SCRIPTS`,
