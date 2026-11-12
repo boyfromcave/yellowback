@@ -248,7 +248,8 @@ On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash 
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
 branch, YEW signs vault spends; yolo needed no source change and is tested mining across the
-activation), `rpcversion` 8 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules:
+activation), `rpcversion` 9 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
+scheme-visible post-quantum address prefixes, D-9:
 `YELLOWBACK_RPC_VERSION` in `src/rpc/yellowback.cpp` on both node lines; Hawkeye parses only the
 post-quantum owner shape and needs this line, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
 calls, chain-viz's set/vault panels).
@@ -335,8 +336,9 @@ Bitcoin/BTC or dollar/USD — never "5 yellowbacks YED", never "the YED protocol
   regtest. A post-quantum address shows its signature scheme in the third character (D-9, quantum
   spec §4.1): `f` for FN-DSA-512 and `s` for SLH-DSA-SHA2-128s, so plain YEC is `sqf…` / `sqs…`
   (`tqf…` / `tqs…`, `rqf…` / `rqs…`) and YED is `ybf…` / `ybs…` (`ytf…` / `yts…`, `yrf…` / `yrs…`).
-  Until ycash-dd #166 and ycash6 #95 merge, both node lines still write post-quantum addresses in
-  the old form (`sq…` / `tq…` / `rq…`, `yb…` / `yt…` / `yr…`, 53 characters, no scheme letter).
+  Both C++ node lines carry it since ycash-dd #166 and ycash6 #95 (2026-11-12, rpcversion 9); a
+  binary without D-9 (6.22.0-beta1 among them) writes the old form (`sq…` / `tq…` / `rq…`, `yb…` /
+  `yt…` / `yr…`, 53 characters, no scheme letter).
 
 Do not carry `DigiDollar` / `digidollar` / `DD` naming across — it makes `git grep` ambiguous
 between "ported code" and "upstream reference" and defeats the point of the split. The one

@@ -1,12 +1,21 @@
 <!-- Copyright (c) 2026 The Ycash developers -->
 # Beta2 release notes: draft for the Yellowback lead architect
 
-Draft, 2026-11-11. Not release notes yet: it collects what the beta2 release notes of each component
-will say, from what is merged on `upgrade/vault` today. Each statement that depends on a pull request
-not merged on 2026-11-11 is marked **[pending: …]**; flip or drop it when the PR merges or is dropped.
-The final text goes into each component's own notes (ycash6
-`doc/release-notes/release-notes-6.22.0-beta2.md`, which today carries only the beta1 rebuild fixes,
-and the kogany and yew release notes), in their style.
+Draft, 2026-11-11; corrected 2026-11-12 (D-9, the has-held-YED guard and the ceremony seed merged; the
+statements the RELNOTES lane found false fixed). Not release notes yet: it collects what the beta2
+release notes of each component will say, from what is merged on `upgrade/vault`. Each statement that
+depends on a pull request not merged on 2026-11-12 is marked **[pending: …]**; flip or drop it when the
+PR merges or is dropped.
+
+The final text goes into each component's own notes, in their style; the per-line drafts (in
+`wt/handoff/relnotes/`, applied by the checklist there once the open PRs merge) land at:
+
+| Line | Final location |
+|---|---|
+| ycash6 (ycashd 6.22.0-beta2, the release line) | `ycash6/doc/release-notes/release-notes-6.22.0-beta2.md` (today it carries only the beta1 rebuild fixes) |
+| ycash-dd (the reference line) | `ycash-dd/doc/release-notes.md` |
+| kogany 1.8.0-ycash beta2 | `kogany/doc/release-notes/v1.8.0-ycash.beta2.md` (new) |
+| yew (`yewd`, the app, the web wallet) | `yew/docs/release-notes-beta2.md` (new) |
 
 Scope: ycashd 6.22.0-beta2 (ycash6, the release line), ycashd on Ycash 4.5.0 (ycash-dd, the reference
 line), kogany 1.8.0-ycash beta2 with `yewd`, and the clients. Plan:
@@ -17,13 +26,18 @@ Ycash Yellowback (YED) remain proposed, unaudited, with no activation height on 
 
 ### Both C++ node lines (ycash6 and ycash-dd)
 
-Merged: ycash-dd #162, #163, #164, #165; ycash6 #92, #96, #98, #99, #100.
+Merged: ycash-dd #162, #163, #164, #165, #166, #170; ycash6 #92, #95, #96, #97, #98, #99, #100.
 
 - **Send YEC between every address type** (D-2). `z_sendmany` takes an ECC, Sapling or post-quantum
   from address and any mix of ECC, Sapling and post-quantum recipients. A post-quantum source spends
   its own coins; its change returns to the same address (D-4); its fee is priced on its size (about
   27,000 zat for one SLH-DSA input, 5,500 for one FN-DSA-512 input), and an explicit fee below that
-  is refused. `ANY_TADDR` still selects ECC coins only. `sendtoaddress` and `sendmany` are unchanged.
+  is refused. `ANY_TADDR` still selects ECC coins only.
+- **`sendtoaddress` and `sendmany`** (as merged): they choose among all the wallet's transparent coins,
+  post-quantum ones included, priced by size, so the source cannot be named. **[pending: the wallet
+  follow-ups pair, `up/b2-wallet-followups`, not pushed: both calls then select ECC coins only,
+  `fundrawtransaction` adds no unnamed post-quantum coin, and a send only post-quantum coins could
+  cover is refused with a message naming `z_sendmany`; replace this bullet with that text]**
 - **`z_mergetoaddress` follows** (D-6): named post-quantum sources (at most 100 inputs per call) and a
   post-quantum destination. `z_shieldcoinbase` still refuses a post-quantum source (D-7).
 - **Privacy policy on ycash6** (D-5): a post-quantum party is a transparent party. With the default
@@ -55,36 +69,42 @@ Merged: ycash-dd #162, #163, #164, #165; ycash6 #92, #96, #98, #99, #100.
   address is refused.
 - **Scheme-visible post-quantum prefixes** (D-9): `sqf…` / `sqs…` (FN-DSA-512 / SLH-DSA) for YEC and
   `ybf…` / `ybs…` for YED on mainnet, `tqf`/`tqs`/`ytf`/`yts` on testnet, `rqf`/`rqs`/`yrf`/`yrs` on
-  regtest; 53 characters as before; the old form is no longer produced or accepted.
-  **[pending: ycash-dd #166, ycash6 #95]**
+  regtest; 53 characters as before; the old form is no longer produced or accepted, except when a
+  wallet loads its own address book (rewritten under the new form) and by `importwallet` of an older
+  key dump. RPC contract version 9. Merged (ycash-dd #166, ycash6 #95).
 - **Has-held-YED guard**: a wallet that has ever held YED refuses to load on a node where Yellowback
   is not live, unless started with `-yellowback=0` (which warns, in `getinfo` errors, and sets
-  `getwalletinfo.yed_unlocked`); new field `getwalletinfo.yed_held`.
-  **[pending: ycash-dd #170, ycash6 #97]**
+  `getwalletinfo.yed_unlocked`); new field `getwalletinfo.yed_held`. Merged (ycash-dd #170, ycash6
+  #97).
 - **ycash6 seed restore finds transparent coins**: a lookahead of `-keypool`+1 keys per legacy HD
   chain, mark-used on scan and a re-scan until no new key is found; only key IDs are written to the
   wallet, never an extended public key; `getwalletinfo` gains `lookahead_incomplete` and
-  `restore_in_progress`. **[pending: ycash6 `up/b2-seed-restore` and its ycash-dd test companion,
-  not pushed]**
-- **Ceremony seed**. **[pending: ycash-dd #169, ycash6 #93; describe from their PR bodies]**
+  `restore_in_progress`. **[pending: ycash6 #102 and its ycash-dd test companion #172]**
+
+The ceremony-seed pair (ycash-dd #169, ycash6 #93) is merged; it changes only how CI runs the testnet
+ceremony rehearsal and is not a user-visible item.
 
 ### kogany
 
-Merged: kogany #11, #17, #18; zakura-common-ycash #7.
+Merged: kogany #11, #17, #18, #19; zakura-common-ycash #7.
 
 - The P2P user agent carries the kogany release tag.
 - Tests: transactions with Sapling spends and outputs beside post-quantum and vault scripts,
   recorded on a C++ line and replayed, are accepted the same way. No consensus change.
-- RPC contract version 9 and the D-9 address forms. **[pending: kogany `kc/b2-pq-prefix`, after
-  ycash6 #95]**
+- `getinfo` errors, the local peer port and the restore guide (#19).
+- RPC contract version 9 and the D-9 address forms. **[pending: kogany #20, pinned to ycash6
+  `f8beb78e1a`, the merge of #95]**
 
 ### yew: `yewd` and the YEW app and web wallet
 
-**[pending: everything in this section; yew `up/b2-pq-prefix`, not pushed; merge gate: a run against
-a real ycashd and lightwalletd-dd]**
+**[pending: everything in this section; yew #27 (`up/b2-pq-prefix`), with `up/b2-yewd-ecc-only` and
+`up/b2-real-run-fixes` stacked on it, not pushed; the real-node run (YEW-REAL) is done and its fixes
+are in review]**
 
 - `yewd`: `z_sendmany` between every address type, `vault_lock "from"`, read-only `z_gettotalbalance`
-  and `listaddresses` (K-25 amended for beta2), the D-9 prefixes and rpcversion 9.
+  and `listaddresses` (K-25 amended for beta2), the D-9 prefixes and rpcversion 9; `sendtoaddress`,
+  `sendmany` and `fundrawtransaction` ECC-only with the C++ strings (`up/b2-yewd-ecc-only`); spending
+  Sapling notes from before Canopy and the wallet's own change notes (`up/b2-real-run-fixes`).
 - App: balances per type, send between every type, mint funded from ECC, post-quantum or the private
   balance; fee bounds with a second confirmation for an unusual fee; a local provenance check of each
   plain-YEC input; the has-held-YED guard at send time.
@@ -92,9 +112,8 @@ a real ycashd and lightwalletd-dd]**
 
 ### Clients
 
-**[pending: the D-9 client ports, local commits, merged after the node pair publishes rpcversion 9]**
-lightwalletd-dd, chain-viz, x402-ycash, hawkeye and yecwallet-dd move to RPC contract version 9 and
-the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned yet).
+chain-viz (#9), x402-ycash (#19) and ycash-infra's `yindex` (#34) are on RPC contract version 9 and the
+D-9 address forms (merged). **[pending: lightwalletd-dd #17, hawkeye #40, yecwallet-dd #18]**
 
 ## 2. Defects fixed that were present in beta1
 
@@ -126,19 +145,24 @@ Hardened, not a beta1 defect:
 
 - **RPC contract version 9.** `yed_getinfo.params.pqAddressVersion` and `.params.pq.plainAddressVersion`
   become objects keyed by scheme number. Every client must be at version 9; lightwalletd-dd and yew
-  check the version exactly. **[pending: D-9, ycash-dd #166, ycash6 #95]**
+  check the version exactly. (Merged on both node lines; the client ports are listed above.)
 - **Address book rewrite.** On first load, a wallet written before D-9 rewrites its post-quantum
   address-book records under the new address form, once. Back up `wallet.dat` first; an older binary
-  does not read the new form. **[pending: D-9]**
+  does not read the new form.
 - **`-yellowback=0` now has the has-held-YED guard.** A wallet that has held YED refuses to load where
   Yellowback is not live; `-yellowback=0` overrides it with a warning, and with it the wallet will
   spend a YED-carrying coin as plain YEC (its YED burns). Do not leave `-yellowback=0` in a
-  configuration file. **[pending: ycash-dd #170, ycash6 #97]**
+  configuration file.
 - **Scripts that read `z_getbalance` for foreign addresses** on ycash-dd must expect error -5 instead
   of 0. ycash6 already refused an address the wallet does not hold with -5 (`From address does not
   belong to this node.`); only the message text changes there.
 - **Scripts that call `getnewaddress` with a non-empty first string** get a different error code and
   message.
+- **Testnet peers.** Seed hosts run for the three public testnets (`fastnet-seed.ycash.team`,
+  `slownet-seed.ycash.team`, `legacy-seed.ycash.team`), but none is compiled into this build (the
+  testnet DNS seed lists and `src/chainparamsseeds.h` are empty): connect with
+  `-addnode=<seed name>`. Mainnet keeps its existing DNS seed. (The merged ycash6 beta2 notes' "No
+  testnet seed nodes yet" is stale.)
 
 ## 4. Known limitations
 
@@ -146,8 +170,10 @@ Hardened, not a beta1 defect:
   not derived from the seed (`-hdseedfile` says so); back up `wallet.dat`. ycash6 derives them from the
   seed. Its post-quantum rescan is forward-only with a lookahead of 20.
 - **The has-held-YED marker does not cover** a seed restore, rescan or key import done where
-  Yellowback is not live, nor a wallet last used by a release before the marker. **[pending: ycash-dd
-  #170, ycash6 #97]**
+  Yellowback is not live, nor a wallet last used by a release before the marker; such a wallet lists a
+  YED output as ordinary spendable YEC. **[pending: the wallet follow-ups pair makes every
+  coin-selecting send leave out an output whose own payload gives YED, mark or no mark; a raw
+  transaction that names it still spends it. Keep this bullet, reworded, if the pair does not merge]**
 - **The browser wallet cannot build** post-quantum → Sapling, private → post-quantum, or a mint funded
   from the private balance: the hybrid builder is not compiled for the browser in beta2. The core
   refuses them with an explanation; the app builds all three. **[pending: yew; decision on beta2 or a
@@ -156,16 +182,24 @@ Hardened, not a beta1 defect:
   refusals).
 - **ycash6 `getbalance` with `asOfHeight`** reads a cached credit that ignores the height and can
   differ from `getwalletinfo`; an inherited defect (ycash6 upstream report §3.11), documented.
+  **[pending: fixed by the wallet follow-ups pair (an as-of-height read bypasses the cache); drop when
+  it merges]**
 - **Default vault funding can pick coinbase coins** where coinbase must be shielded (`vault_lock`
-  without `"from"`); pre-existing, follow-up on both lines.
-- **App fee bound**: the YEW app cannot verify the attested price. It bounds post-quantum fees against
-  a compiled floor of $0.01 per YEC, so a hostile server can raise a fee up to that bound. The app asks
-  for a second confirmation for a fee it finds unusual, but the reference it judges by follows the
-  price reports the server supplies, so not every fee above the usual one is confirmed: a server
-  that supplies each day's first price report controls the median the reference is taken from after
-  3 days (16 days against 30 honest reports) and can then take up to 2× the usual fee without a
-  second confirmation; at a reference of about $0.05 per YEC that is about 1.44 YEC
-  per FN-DSA send, 6.5 per SLH-DSA send and 2.3 per YED transfer. **[pending: yew]**
+  without `"from"`); pre-existing. **[pending: fixed by the wallet follow-ups pair; drop when it
+  merges]**
+- **App fee bound**: the YEW app cannot verify the attested price. A server's fee terms are refused
+  above the rates of the node's dollar targets at a compiled floor of $0.01 per YEC, and no send pays
+  more than the build's limit (about 3.6 YEC for an FN-DSA send, 10 YEC for an SLH-DSA send, 5.75 YEC
+  for a YED transfer). Below that, a fee needs a separate confirmation when it is unusual against the
+  wallet's reference price: the 30-day median of the servers' reports, one per day, moving at most ×4
+  per day. A fee above twice the usual fee at the reference, or a server price below half of it, is
+  unusual. While the reference is weak (fewer than three days of reports, or below $0.05 per YEC,
+  first use included) every fee above 0.1 YEC is flagged. So without the separate confirmation a
+  hostile server can take at most 0.1 YEC per send on a weak reference, and at an honest $0.30
+  reference 0.24 YEC per FN-DSA send, 1.08 per SLH-DSA send and 0.38 per YED transfer (twice the honest
+  fee). Residual risk: a server that is the wallet's only source of reports for more than half of the
+  window sets the reference, by at most ×4 per day; the user can reset the reference. Figures from yew
+  `docs/address-types.md` §4 item 6 and `core/src/build/terms.rs` (`guard_fee`). **[pending: yew]**
 - **A post-quantum → Sapling send in YEW copies the Sapling spending key.** The send needs only the
   outgoing viewing key, but the builder copies the full spending key, and the copies are not zeroized;
   a memory disclosure during such a send would expose it. Accepted for beta2 by the Yellowback lead
@@ -175,15 +209,17 @@ Hardened, not a beta1 defect:
 
 ## 5. Pending before the tag
 
-| What | Where | State on 2026-11-11 |
+| What | Where | State on 2026-11-12 |
 |---|---|---|
-| D-9 prefixes, rpcversion 9 | ycash-dd #166, ycash6 #95 | open |
-| D-9 ports | kogany `kc/b2-pq-prefix`; lightwalletd-dd, chain-viz, x402-ycash, hawkeye, yecwallet-dd `up/b2-pq-prefix`; ycash-infra `yindex` | local commits; `yindex` not assigned |
-| Has-held-YED guard | ycash-dd #170, ycash6 #97 | open, in CI |
-| Ceremony seed | ycash-dd #169, ycash6 #93 | open, in CI |
-| ycash6 seed-restore lookahead and interrupted-restore fix | ycash6 `up/b2-seed-restore` + ycash-dd companion | local, reviewed, not pushed |
-| yewd, YEW app and web | yew `up/b2-pq-prefix` | local; real-node run outstanding |
-| librustzcash6 client tests, SQLite upgrade | librustzcash6 `up/b2-client-tests`, #22 | local / open |
-| Stale `getnewaddress` help on both C++ lines: ycash-dd says "z_sendmany, z_shieldcoinbase and z_mergetoaddress never do" pay or spend a post-quantum address, ycash6 says "the z_* operations never pay or spend it" (both false since ycash-dd #163 / ycash6 #99); both say "its prefix showing the network and the scheme" before D-9 merges | ycash-dd and ycash6 `src/wallet/rpcwallet.cpp`, `getnewaddress` help | pending: node help text, owned by the wallet follow-up lane (WALLET-FOLLOW item 10) |
+| D-9 prefixes, rpcversion 9 | ycash-dd #166, ycash6 #95 | merged |
+| D-9 ports | chain-viz #9, x402-ycash #19, ycash-infra #34; kogany #20, lightwalletd-dd #17, hawkeye #40, yecwallet-dd #18 | first three merged; the rest open |
+| Has-held-YED guard | ycash-dd #170, ycash6 #97 | merged |
+| Ceremony seed | ycash-dd #169, ycash6 #93 | merged (CI only) |
+| ycash6 seed-restore lookahead and interrupted-restore fix | ycash6 #102, ycash-dd #172 | open |
+| Wallet follow-ups (ECC-only `sendtoaddress`/`sendmany`, payload-based YED refusal, `asOfHeight` cache, `walletconfirmbackup`, default vault funding) | `up/b2-wallet-followups` on both C++ lines | local, in review, not pushed |
+| Release dry run | ycash6 #104, ycash-dd #174, kogany #21 | open |
+| yewd, YEW app and web | yew #27, with `up/b2-yewd-ecc-only` and `up/b2-real-run-fixes` stacked | open / local; real-node run done, fixes in review |
+| librustzcash6 client tests, SQLite upgrade | librustzcash6 #23, #24; x402-ycash #18 | merged; yew `up/b2-sqlite-041` follows #27 |
+| Stale `getnewaddress` help on both C++ lines: ycash-dd says "z_sendmany, z_shieldcoinbase and z_mergetoaddress never do" pay or spend a post-quantum address, ycash6 says "the z_* operations never pay or spend it" (both false since ycash-dd #163 / ycash6 #99); the D-9 prefix wording in the same help became true with #166 / #95 | ycash-dd and ycash6 `src/wallet/rpcwallet.cpp`, `getnewaddress` help | fixed on `up/b2-wallet-followups` (not pushed) |
 | Beta2 RPC snapshot for rpc.ycash.team (turns on the "Moving YEC" page) | workspace `rpc-docs/versions/v6.22.0-beta2` | after the tag |
-| Release train file | workspace `releases/v6.22.0-beta2.yaml` | not written |
+| Release train file | workspace `releases/v6.22.0-beta2.yaml` | DRAFT (pins move before the tag) |
