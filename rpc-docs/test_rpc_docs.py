@@ -258,6 +258,113 @@ class AddressGuide(unittest.TestCase):
         self.assertIn("not an address for receiving", owner.lower())
 
 
+class NotesFollowTheHelp(unittest.TestCase):
+    """A note that quotes the node's help is tied to the help of the releases it is shown for (beta2 item 19).
+
+    Coverage: only the `use.note` variants of the address entries, checked against the help of `use.method`, and
+    only in releases that have a captured snapshot (the beta2 quotes are checked when beta2 is captured). Summaries,
+    the "moving" page's cells and any other text that quotes a node string (an error message, a field name) are not
+    checked by this mechanism."""
+
+    INDEX = "== Wallet ==\ngetnewaddress\nz_getnewaddress\nyed_getnewaddress\nvault_getnewowner\n"
+    BETA1 = {"getnewaddress": "getnewaddress ( \"\" \"type\" )\n\ngetnewaddress is DEPRECATED and will be removed.\n",
+             "z_getnewaddress": "z_getnewaddress ( type )\n\nz_getnewaddress is DEPRECATED and will be removed.\n"}
+    BETA2 = {"getnewaddress": "getnewaddress ( \"type\" )\n\nSupported on Ycash. This is the way.\n\n> ycash-cli getnewaddress pq\n",
+             "z_getnewaddress": "z_getnewaddress ( type )\n\nSupported on Ycash. This is the way.\n"}
+
+    def site(self, beta2_help):
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root)
+        make_site(root)
+        with open(os.path.join(HERE, "site.json")) as f:
+            real = json.load(f)
+        with open(os.path.join(root, "site.json")) as f:
+            cfg = json.load(f)
+        cfg["receive"], cfg["otherKeys"] = real["receive"], real["otherKeys"]
+        with open(os.path.join(root, "site.json"), "w") as f:
+            json.dump(cfg, f)
+        make_snapshot(root, "v6.22.0-beta1", index=self.INDEX, help_overrides=self.BETA1)
+        make_snapshot(root, "v6.22.0-beta2", index=self.INDEX, help_overrides=beta2_help)
+        build.Site(root, os.path.join(root, "_site")).build()
+        return root
+
+    def test_each_release_gets_its_own_note(self):
+        root = self.site(self.BETA2)
+        old, new = read(root, "v6.22.0-beta1/addresses.html"), read(root, "v6.22.0-beta2/addresses.html")
+        self.assertIn("help says getnewaddress is deprecated", old)
+        self.assertNotIn("getnewaddress pq</pre>", old)
+        self.assertIn("ycash-cli getnewaddress &quot;&quot; &quot;pq&quot;", old)
+        self.assertIn("No z_* call pays or spends it", old)
+        self.assertNotIn("help says", new.split('id="yec"', 1)[1].split('id="yed"', 1)[0])
+        self.assertIn("ycash-cli getnewaddress pq\nycash-cli getnewaddress pqslh</pre>", new)
+        self.assertIn("z_sendmany and z_mergetoaddress pay and spend it", new)
+
+    def test_a_note_quoting_help_the_release_lacks_fails_the_build(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.site(self.BETA1)   # a "beta2" whose help still says DEPRECATED: the beta2 notes' quotes miss
+        self.assertIn("Supported on Ycash.", str(cm.exception))
+
+    def test_every_note_that_cites_the_help_names_the_words(self):
+        with open(os.path.join(HERE, "site.json")) as f:
+            cfg = json.load(f)
+        for group, kind in build.address_entries(cfg):
+            note = (kind.get("use") or {}).get("note")
+            variants = note if isinstance(note, list) else [{"text": note or ""}]
+            for v in variants:
+                if re.search(r"help (says|calls|prints)", v["text"], re.I):
+                    self.assertTrue(v.get("helpSays"), "%s: %r quotes the help without helpSays" % (kind["id"], v["text"]))
+
+
+class Moving(unittest.TestCase):
+    """The "moving YEC" page is shown from the release its "since" names, with the real site.json content."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root)
+        make_site(self.root)
+        with open(os.path.join(HERE, "site.json")) as f:
+            self.real = json.load(f)
+        with open(os.path.join(self.root, "site.json")) as f:
+            cfg = json.load(f)
+        cfg["moving"] = self.real["moving"]
+        with open(os.path.join(self.root, "site.json"), "w") as f:
+            json.dump(cfg, f)
+        since = self.real["moving"]["since"]
+        self.before, self.since = "v6.22.0-beta1", since
+        make_snapshot(self.root, self.before)
+        make_snapshot(self.root, since)
+        build.Site(self.root, os.path.join(self.root, "_site")).build()
+
+    def test_shown_from_since_only(self):
+        self.assertFalse(os.path.exists(os.path.join(self.root, "_site", self.before, "moving.html")))
+        self.assertNotIn("moving.html", read(self.root, self.before + "/addresses.html"))
+        page = read(self.root, self.since + "/moving.html")
+        self.assertIn('href="moving.html"', read(self.root, self.since + "/addresses.html"))
+        self.assertIn('href="moving.html" aria-current="page"', page)
+        for line in ("ycash6", "ycash-dd", "kogany", "prefixes"):
+            self.assertIn('id="%s"' % line, page)
+
+    def test_tables_and_pending_marks(self):
+        page = read(self.root, self.since + "/moving.html")
+        for text in ("<code>z_sendmany</code>", "AllowRevealedRecipients", "<code>vault_lock</code>",
+                     "<code>z_gettotalbalance ( minconf includeWatchonly )</code>", "<code>getnewaddress pqslh</code>",
+                     "<code>sqf…</code> <code>4D DD 04</code>", "<code>yrs…</code> <code>57 15 AA</code>"):
+            self.assertIn(text, page, text)
+        # Every statement that rests on unmerged work carries a visible notice and a marker the build prints.
+        pending = [s for s in self.real["moving"]["sections"] if s.get("pending")]
+        self.assertEqual(page.count('class="note pending"'), len(pending))
+        self.assertEqual(len(build.pending_markers(self.real)), len(pending))
+
+    def test_row_width_is_checked(self):
+        cfg = {"moving": {"since": "v1.0.0", "title": "t", "lede": "l",
+                          "sections": [{"id": "x", "title": "x", "tables": [{"columns": ["a", "b"], "rows": [["1"]]}]}]}}
+
+        class S:
+            version = "v1.0.0"
+        with self.assertRaises(SystemExit):
+            build.render_moving_page(cfg, S())
+
+
 def read_at(root, rel):
     with open(os.path.join(root, rel)) as f:
         return f.read()

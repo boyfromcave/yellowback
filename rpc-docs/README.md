@@ -66,14 +66,38 @@ keeps the reader on the same method when switching versions.
 
 `site.json` `receive` is the page at `/<version>/addresses.html`: one place that says which call
 creates an address for YEC and which creates one for YED, and which address types are supported.
-The call named there is the one that works on Ycash: where the node's inherited help calls it
-deprecated (`getnewaddress`, `z_getnewaddress`), the entry's `note` says why it is still the call to
-use. A method is named there and also in its `help` category. It is not copied into a second
+The call named there is the one that works on Ycash: where a release's inherited help calls it
+deprecated (`getnewaddress`, `z_getnewaddress` in v6.22.0-beta1; from beta2 the help says
+"Supported on Ycash"), the entry's `note` says why it is still the call to use.
+
+Releases differ, so a `summary` or `note` may be a list of variants, each `{"text", "since"?,
+"until"?}`; the variants whose range holds the release are joined. `steps` take `since`/`until`
+too. A variant that says what the node's help says names the words it relies on in `helpSays`, and
+the build fails when the help of that call, in a release the variant is shown for, does not
+contain them: a reworded help cannot leave a stale note behind. A test refuses a note that cites
+the help without `helpSays`. The check covers only the `use.note` variants of the address entries, against
+the help of `use.method`, in the releases that have a snapshot; a summary, a cell of the "moving" page or
+any other text that quotes a node string (an error message, a field name) is not checked. A method is named there and also in its `help` category. It is not copied into a second
 category. `otherKeys` holds keys that are not receive addresses (the vault owner).
 
 `site.json` `unavailable` lists the methods a Ycash node refuses (the unified-address account calls,
 which need NU5) and the reason. Each gets a notice above its help text and a line on the addresses
 page. Add a method there only after reading the refusal in the node source.
+
+## Moving YEC between address types
+
+`site.json` `moving` is the page at `/<version>/moving.html`: for each node line (ycashd 6.22,
+ycashd on 4.5.0, kogany with `yewd`) which call moves YEC from each address type to each, where
+the change goes, how to fund a vault from each type, how to read balances by type, and the
+scheme-visible post-quantum prefixes (D-9). It is shown from the release named by `since`, and
+only there; the page and the addresses page link each other. Each section is `paragraphs` and
+`tables` (`columns`, `rows`, `notes`); cells take `` `code` `` and `**bold**`; the build refuses a row
+whose cell count differs from its columns.
+
+A statement that rests on work not yet merged carries `"pending": "<what is missing>"` and a
+`pendingText` the reader sees. `build.py` prints every pending marker; when the work lands, delete
+the marker (and the `pendingText`) and reword the section. `source` records which merges a section
+describes; it is not rendered.
 
 ## Sections
 

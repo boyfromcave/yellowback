@@ -17,7 +17,10 @@
           "use": {
             "method": "getnewaddress",
             "steps": [{"method": "getnewaddress", "cli": "ycash-cli getnewaddress"}],
-            "note": "The node's help says getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. The first argument, if you pass one, must be the empty string."
+            "note": [
+              {"until": "v6.22.0-beta1", "helpSays": "getnewaddress is DEPRECATED", "text": "The node's help says getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. The first argument, if you pass one, must be the empty string."},
+              {"since": "v6.22.0-beta2", "helpSays": "Supported on Ycash.", "text": "Ycash has no unified addresses, so getnewaddress is the call to use. It is answered unless the node is started with -allowdeprecated=none. getnewaddress p2pkh names the type."}
+            ]
           }
         },
         {
@@ -28,21 +31,36 @@
           "use": {
             "method": "z_getnewaddress",
             "steps": [{"method": "z_getnewaddress", "cli": "ycash-cli z_getnewaddress sapling"}],
-            "note": "The node's help says z_getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so z_getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. Name the type: with no argument the call returns a Sapling address today, and the node says not to rely on that."
+            "note": [
+              {"until": "v6.22.0-beta1", "helpSays": "z_getnewaddress is DEPRECATED", "text": "The node's help says z_getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so z_getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none."},
+              {"since": "v6.22.0-beta2", "helpSays": "Supported on Ycash.", "text": "Ycash has no unified addresses, so z_getnewaddress is the call to use. It is answered unless the node is started with -allowdeprecated=none."},
+              {"text": "Name the type: with no argument the call returns a Sapling address today, and the node says not to rely on that."}
+            ]
           }
         },
         {
           "id": "yec-pq",
           "name": "Post-quantum",
           "support": "supported",
-          "summary": "Receives plain YEC at a 53-character address: sq… on mainnet, tq… on testnet, rq… on regtest. sendtoaddress and sendmany spend it. No z_* call pays or spends it. The vault upgrade must be active at the next block, and the wallet must be unlocked.",
+          "summary": [
+            {"text": "Receives plain YEC at a 53-character address: sq… on mainnet, tq… on testnet, rq… on regtest."},
+            {"until": "v6.22.0-beta1", "text": "sendtoaddress and sendmany spend it. No z_* call pays or spends it."},
+            {"since": "v6.22.0-beta2", "text": "z_sendmany and z_mergetoaddress pay and spend it, as sendtoaddress and sendmany do; the Moving YEC page has every direction."},
+            {"text": "The vault upgrade must be active at the next block, and the wallet must be unlocked."}
+          ],
           "use": {
             "method": "getnewaddress",
             "steps": [
-              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\""},
-              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\""}
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\"", "until": "v6.22.0-beta1"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\"", "until": "v6.22.0-beta1"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress pq", "since": "v6.22.0-beta2"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress pqslh", "since": "v6.22.0-beta2"}
             ],
-            "note": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s. Ycash has no unified addresses, so this is the supported call even though the node's help says getnewaddress is deprecated. The first argument is the empty string."
+            "note": [
+              {"text": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s."},
+              {"until": "v6.22.0-beta1", "helpSays": "getnewaddress is DEPRECATED", "text": "Ycash has no unified addresses, so this is the supported call even though the node's help says getnewaddress is deprecated. The first argument is the empty string."},
+              {"since": "v6.22.0-beta2", "helpSays": "getnewaddress pq", "text": "The type may come first, as here; getnewaddress \"\" pq, the older shape, still works."}
+            ]
           }
         }
       ]
@@ -102,6 +120,385 @@
       }
     }
   ],
+  "moving": {
+    "since": "v6.22.0-beta2",
+    "title": "Moving YEC between address types",
+    "lede": "A Ycash wallet holds YEC at three kinds of address: transparent ECC (`s1…` on mainnet), shielded Sapling (`ys1…`) and post-quantum (`sq…`, in two signature schemes, SLH-DSA-SHA2-128s and FN-DSA-512). This page says which call moves YEC from each to each, where the change goes, how to fund a vault from each, and how to read the balance of each, on every Ycash node line. It describes this release and later ones; 6.22.0-beta1 could not move YEC between Sapling and post-quantum addresses and did not split balances by type. The decisions it names (D-2 to D-9) are recorded in `docs/plans/yellowback-address-interop-plan.md` in this site's repository.",
+    "sections": [
+      {
+        "id": "ycash6",
+        "title": "ycashd 6.22 (ycash6, the release line)",
+        "source": "merged on ycash6 upgrade/vault: #96 balances, #98 getnewaddress, #99 sends, #100 vault_lock from (2026-11-11)",
+        "paragraphs": [
+          "`z_sendmany` is the call that moves YEC between any two types (decision D-2). `sendtoaddress` and `sendmany` spend the wallet's transparent coins and pay ECC and post-quantum addresses.",
+          "**Privacy policy** (the fifth argument of `z_sendmany`, D-5): a post-quantum address counts as a transparent party, exactly as an ECC address does. With the default, `LegacyCompat`, every cell below is allowed. With a stricter policy, Sapling → post-quantum needs `AllowRevealedRecipients`; post-quantum → Sapling needs `AllowRevealedSenders`, or `AllowFullyTransparent` when the send has change (the change is a transparent output). A refusal is the node's usual `The specified privacy policy, …` message."
+        ],
+        "tables": [
+          {
+            "caption": "Send",
+            "columns": [
+              "From",
+              "To ECC (`s1…`)",
+              "To Sapling (`ys1…`)",
+              "To post-quantum (`sq…`)",
+              "Change goes to"
+            ],
+            "rows": [
+              [
+                "ECC (`s1…`)",
+                "`sendtoaddress`, `sendmany`; `z_sendmany` from the address or from `ANY_TADDR`",
+                "`z_sendmany`",
+                "`sendtoaddress`, `sendmany`, `z_sendmany`",
+                "a new transparent address of the wallet"
+              ],
+              [
+                "Sapling (`ys1…`)",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "a Sapling note to the source address"
+              ],
+              [
+                "Post-quantum (`sq…`, either scheme)",
+                "`z_sendmany` from the address. `sendtoaddress` and `sendmany` may also spend post-quantum coins: they choose from all the wallet's transparent coins, so you cannot name the source",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "the source address (D-4: same scheme, no new key to back up); change below the post-quantum dust threshold joins the fee"
+              ]
+            ],
+            "notes": [
+              "`z_mergetoaddress` takes the same address types: named ECC, Sapling and post-quantum sources (at most 100 post-quantum inputs per call; `ANY_TADDR` merges ECC coins only) into one ECC, Sapling or post-quantum address. `z_shieldcoinbase` refuses a post-quantum source, and a node refuses to start with a post-quantum `-mineraddress`.",
+              "A post-quantum send is priced on its size: about 27,000 zat for one SLH-DSA input and 5,500 for one FN-DSA-512 input. The default fee is raised to that price, and an explicit fee below it is refused. A post-quantum address can be spent from only once the vault upgrade is active at the next block, and an FN-DSA-512 (scheme 2) address only once Falcon is active as well. The wallet must be unlocked.",
+              "A post-quantum address is transparent. Paying one from Sapling reveals the amount and the recipient, as paying an ECC address does."
+            ]
+          },
+          {
+            "caption": "Fund a vault",
+            "columns": [
+              "Funding source",
+              "`vault_lock` (`\"from\"` in its params)",
+              "`yed_mint` (third argument `from`)"
+            ],
+            "rows": [
+              [
+                "none (the default)",
+                "the wallet's confirmed transparent P2PKH coins, with change to a new wallet address",
+                "any confirmed transparent output of the wallet"
+              ],
+              [
+                "ECC (`s1…`)",
+                "that address's confirmed, unlocked coins; change back to it",
+                "that address's confirmed outputs"
+              ],
+              [
+                "Post-quantum (`sq…`)",
+                "that address's confirmed, unlocked post-quantum coins, signed under the next block's vault rules, priced by size; change back to it",
+                "not accepted as `from`"
+              ],
+              [
+                "Sapling (`ys1…`)",
+                "up to 20 of that address's confirmed notes, in the same transaction; change as a Sapling note to it",
+                "its Sapling notes, in the same transaction; change returns to it"
+              ]
+            ]
+          },
+          {
+            "caption": "Read balances",
+            "columns": [
+              "What you want",
+              "Call",
+              "Fields"
+            ],
+            "rows": [
+              [
+                "Totals, split by type",
+                "`z_gettotalbalance ( minconf includeWatchonly )`",
+                "`transparent`, `private`, `total`, and `transparent_ecc`, `transparent_pq`, `pq_by_scheme` (`pqscheme`, `pqschemename`, `transparent_pq` for both schemes). An output counts by its confirmations alone: at the default `minconf` 1 the wallet's own unconfirmed change is left out"
+              ],
+              [
+                "The wallet's balance, with its own unconfirmed change",
+                "`getwalletinfo`",
+                "`balance_ecc`, `balance_pq`, `unconfirmed_balance_ecc`, `unconfirmed_balance_pq`, `pq_by_scheme`, `shielded_balance`; `balance` counts confirmed coins and the wallet's own unconfirmed outputs"
+              ],
+              [
+                "One address",
+                "`z_getbalance \"address\"`",
+                "an ECC, post-quantum (either scheme) or Sapling address of the wallet. An address the wallet does not hold is refused (code -5, `RPC_INVALID_ADDRESS_OR_KEY`); a watch-only transparent address answers"
+              ],
+              [
+                "The addresses of each type",
+                "`listaddresses`; `listreceivedbyaddress`",
+                "`listaddresses` has a `pq` list, each entry with `address`, `pqscheme` (1 SLH-DSA-SHA2-128s, 2 FN-DSA-512) and `pqschemename`; `listreceivedbyaddress` adds `pqscheme` and `pqschemename` to a post-quantum address"
+              ]
+            ],
+            "notes": [
+              "`getwalletinfo`, `getbalance` and `listreceivedbyaddress` take `asOfHeight` (as do `z_getbalanceforaccount` and `z_getbalanceforviewingkey`); `z_gettotalbalance` and `z_getbalance` do not. With `asOfHeight`, `getbalance` can disagree with `getwalletinfo`, which computes its figures fresh; `getbalance` reads a cached credit that ignores the height (an inherited defect)."
+            ]
+          },
+          {
+            "caption": "New addresses",
+            "columns": [
+              "Address",
+              "Call",
+              "Notes"
+            ],
+            "rows": [
+              [
+                "ECC",
+                "`getnewaddress` or `getnewaddress p2pkh`",
+                "the type may come first; `getnewaddress \"\" p2pkh` is the older shape and still works"
+              ],
+              [
+                "Post-quantum, the default scheme",
+                "`getnewaddress pq`",
+                "FN-DSA-512 once Falcon is active at the next block, SLH-DSA-SHA2-128s before that"
+              ],
+              [
+                "Post-quantum, SLH-DSA",
+                "`getnewaddress pqslh`",
+                "always SLH-DSA-SHA2-128s: larger spends, hash-based only"
+              ],
+              [
+                "Sapling",
+                "`z_getnewaddress sapling`",
+                ""
+              ]
+            ],
+            "notes": [
+              "A post-quantum address needs the vault upgrade active at the next block. `getnewaddress` of any type refuses while the wallet is locked."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ycash-dd",
+        "title": "ycashd on Ycash 4.5.0 (ycash-dd, the reference line)",
+        "source": "merged on ycash-dd upgrade/vault: #162 balances, #164 getnewaddress, #163 sends, #165 vault_lock from (2026-11-11)",
+        "paragraphs": [
+          "The same calls, change rules, fees and error strings as ycashd 6.22. The differences: `z_sendmany` has no privacy-policy argument, so no cell needs one; there is no `listaddresses` and no `asOfHeight`; and transparent keys are random, not derived from the wallet's seed, so restoring from the seed alone recovers no transparent coins (back up `wallet.dat`)."
+        ],
+        "tables": [
+          {
+            "caption": "Send",
+            "columns": [
+              "From",
+              "To ECC (`s1…`)",
+              "To Sapling (`ys1…`)",
+              "To post-quantum (`sq…`)",
+              "Change goes to"
+            ],
+            "rows": [
+              [
+                "ECC (`s1…`)",
+                "`sendtoaddress`, `sendmany`; `z_sendmany` from the address or from `ANY_TADDR`",
+                "`z_sendmany`",
+                "`sendtoaddress`, `sendmany`, `z_sendmany`",
+                "a new transparent address of the wallet"
+              ],
+              [
+                "Sapling (`ys1…`)",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "a Sapling note to the source address"
+              ],
+              [
+                "Post-quantum (`sq…`, either scheme)",
+                "`z_sendmany` from the address. `sendtoaddress` and `sendmany` may also spend post-quantum coins: they choose from all the wallet's transparent coins, so you cannot name the source",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "the source address (D-4: same scheme, no new key to back up); change below the post-quantum dust threshold joins the fee"
+              ]
+            ],
+            "notes": [
+              "`z_mergetoaddress` takes the same address types: named ECC, Sapling and post-quantum sources (at most 100 post-quantum inputs per call; `ANY_TADDR` merges ECC coins only) into one ECC, Sapling or post-quantum address. `z_shieldcoinbase` refuses a post-quantum source, and a node refuses to start with a post-quantum `-mineraddress`.",
+              "A post-quantum send is priced on its size: about 27,000 zat for one SLH-DSA input and 5,500 for one FN-DSA-512 input. The default fee is raised to that price, and an explicit fee below it is refused. A post-quantum address can be spent from only once the vault upgrade is active at the next block, and an FN-DSA-512 (scheme 2) address only once Falcon is active as well. The wallet must be unlocked."
+            ]
+          },
+          {
+            "caption": "Fund a vault",
+            "columns": [
+              "Funding source",
+              "`vault_lock` (`\"from\"` in its params)",
+              "`yed_mint` (third argument `from`)"
+            ],
+            "rows": [
+              [
+                "none (the default)",
+                "the wallet's confirmed transparent P2PKH coins, with change to a new wallet address",
+                "any confirmed transparent output of the wallet"
+              ],
+              [
+                "ECC (`s1…`)",
+                "that address's confirmed, unlocked coins; change back to it",
+                "that address's confirmed outputs"
+              ],
+              [
+                "Post-quantum (`sq…`)",
+                "that address's confirmed, unlocked post-quantum coins, signed under the next block's vault rules, priced by size; change back to it",
+                "not accepted as `from`"
+              ],
+              [
+                "Sapling (`ys1…`)",
+                "up to 20 of that address's confirmed notes, in the same transaction; change as a Sapling note to it",
+                "its Sapling notes, in the same transaction; change returns to it"
+              ]
+            ]
+          },
+          {
+            "caption": "Read balances",
+            "columns": [
+              "What you want",
+              "Call",
+              "Fields"
+            ],
+            "rows": [
+              [
+                "Totals, split by type",
+                "`z_gettotalbalance ( minconf includeWatchonly )`",
+                "`transparent`, `private`, `total`, and `transparent_ecc`, `transparent_pq`, `pq_by_scheme` (`pqscheme`, `pqschemename`, `transparent_pq` for both schemes). An output counts by its confirmations alone: at the default `minconf` 1 the wallet's own unconfirmed change is left out"
+              ],
+              [
+                "The wallet's balance, with its own unconfirmed change",
+                "`getwalletinfo`",
+                "`balance_ecc`, `balance_pq`, `unconfirmed_balance_ecc`, `unconfirmed_balance_pq`, `pq_by_scheme`, `shielded_balance`; `balance` counts confirmed coins and the wallet's own unconfirmed outputs"
+              ],
+              [
+                "One address",
+                "`z_getbalance \"address\"`",
+                "an ECC, post-quantum (either scheme) or Sapling address of the wallet. An address the wallet does not hold is refused (code -5, `RPC_INVALID_ADDRESS_OR_KEY`); a watch-only transparent address answers"
+              ],
+              [
+                "The addresses of each type",
+                "`z_listaddresses`; `listreceivedbyaddress`",
+                "this line has no `listaddresses`. `z_listaddresses` lists shielded addresses; `listreceivedbyaddress` lists transparent ones, with `pqscheme` and `pqschemename` on a post-quantum address"
+              ]
+            ]
+          },
+          {
+            "caption": "New addresses",
+            "columns": [
+              "Address",
+              "Call",
+              "Notes"
+            ],
+            "rows": [
+              [
+                "ECC",
+                "`getnewaddress` or `getnewaddress p2pkh`",
+                "the type may come first; `getnewaddress \"\" p2pkh` is the older shape and still works"
+              ],
+              [
+                "Post-quantum, the default scheme",
+                "`getnewaddress pq`",
+                "FN-DSA-512 once Falcon is active at the next block, SLH-DSA-SHA2-128s before that"
+              ],
+              [
+                "Post-quantum, SLH-DSA",
+                "`getnewaddress pqslh`",
+                "always SLH-DSA-SHA2-128s: larger spends, hash-based only"
+              ],
+              [
+                "Sapling",
+                "`z_getnewaddress sapling`",
+                ""
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "kogany",
+        "title": "kogany and yewd",
+        "pending": "yew up/b2-pq-prefix (any-to-any z_sendmany, vault_lock from, z_gettotalbalance, listaddresses in yewd) is not merged on yew upgrade/vault (e44a1b4)",
+        "pendingText": "This table is yewd as merged today. The yewd of this release, with `z_sendmany` between every type, `vault_lock` funded from any type, and `z_gettotalbalance` and `listaddresses`, is still in review.",
+        "paragraphs": [
+          "kogany has no wallet. It validates, relays and mines transactions; for the mixed shapes this is tested on a chain recorded on a C++ line and replayed into kogany (kogany#17: Sapling spends and outputs beside post-quantum and vault scripts, with negative controls). Still open: an FN-DSA input beside a Sapling spend, a vault unlock beside Sapling parts, and reject-reason parity with both C++ lines. The wallet of the kogany product is `yewd`, a separate process that answers the wallet RPCs.",
+          "yewd does not serve `z_gettotalbalance`, `listaddresses` or `z_mergetoaddress` (it answers only the post-quantum refusals of `z_mergetoaddress` and `z_shieldcoinbase`)."
+        ],
+        "tables": [
+          {
+            "caption": "Send and fund a vault (yewd)",
+            "columns": [
+              "From",
+              "To ECC",
+              "To Sapling",
+              "To post-quantum",
+              "Fund a vault"
+            ],
+            "rows": [
+              [
+                "ECC",
+                "`sendtoaddress`, `sendmany`, `z_sendmany`",
+                "`z_sendmany`",
+                "`sendtoaddress`, `sendmany`",
+                "`vault_lock` (the wallet's ECC coins only)"
+              ],
+              [
+                "Sapling",
+                "`z_sendmany`",
+                "`z_sendmany`",
+                "refused: `z_sendmany cannot pay a post-quantum address; use sendtoaddress or sendmany`",
+                "`yed_mint` from a Sapling address"
+              ],
+              [
+                "Post-quantum",
+                "`sendtoaddress`, `sendmany` (they select post-quantum coins with the rest); `z_sendmany` from the address is refused",
+                "refused",
+                "`sendtoaddress`, `sendmany`",
+                "not offered"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "prefixes",
+        "title": "Which scheme is this address?",
+        "pending": "D-9 prefix pair ycash-dd #166 / ycash6 #95 (and kogany, yew, the clients) not merged on any line (2026-11-11)",
+        "pendingText": "Scheme-visible prefixes come with the release that carries decision D-9 (RPC contract version 9). Until then both schemes share one prefix and only `validateaddress` (`pqscheme`) or the listings above tell them apart.",
+        "paragraphs": [
+          "From the release that carries D-9, a post-quantum address shows its scheme in the third character: `f` for FN-DSA-512 (Falcon), `s` for SLH-DSA-SHA2-128s. Each prefix is one 3-byte Base58Check version, so the address stays 53 characters (3-byte version, 32-byte key hash, checksum). The ECC YED address is unchanged: 35 characters, `yb…` on mainnet.",
+          "A binary without D-9 (6.22.0-beta1 among them) writes the older 53-character form with no scheme letter (`sq…`, `tq…`, `rq…` for YEC; `yb…`, `yt…`, `yr…` for YED; on testnet both schemes begin `tq3`) and refuses an address in the new form as invalid. A binary with D-9 refuses the older form, except when it loads its own address book or a key dump written before D-9. `yed_getinfo.params.pqAddressVersion` and `.params.pq.plainAddressVersion` become objects keyed by scheme number."
+        ],
+        "tables": [
+          {
+            "caption": "The twelve versions",
+            "columns": [
+              "Network",
+              "YEC FN-DSA-512",
+              "YEC SLH-DSA",
+              "YED FN-DSA-512",
+              "YED SLH-DSA"
+            ],
+            "rows": [
+              [
+                "mainnet",
+                "`sqf…` `4D DD 04`",
+                "`sqs…` `4D DE 6A`",
+                "`ybf…` `56 AE DE`",
+                "`ybs…` `56 B0 44`"
+              ],
+              [
+                "testnet",
+                "`tqf…` `4F 65 19`",
+                "`tqs…` `4F 66 7F`",
+                "`ytf…` `57 21 C9`",
+                "`yts…` `57 23 30`"
+              ],
+              [
+                "regtest",
+                "`rqf…` `4C 54 EF`",
+                "`rqs…` `4C 56 55`",
+                "`yrf…` `57 14 44`",
+                "`yrs…` `57 15 AA`"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "unavailable": {
     "title": "Not available on Ycash",
     "reason": "Unified-address accounts need the NU5 network upgrade. NU5 has no activation height on any Ycash network, so the node refuses this call: \"Unified-address accounts require the NU5 network upgrade, which is not active on Ycash.\"",

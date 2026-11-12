@@ -354,6 +354,43 @@ def block_mentions(block, name):
     return any(s.get("method") == name for s in block.get("steps", []))
 
 
+def in_range(version, entry):
+    """True when version lies in entry's optional "since" / "until" range (both ends included)."""
+    key = parse_version(version)[0]
+    if entry.get("since") and key < parse_version(entry["since"])[0]:
+        return False
+    if entry.get("until") and key > parse_version(entry["until"])[0]:
+        return False
+    return True
+
+
+def text_for(value, snap):
+    """A curated text as snap's release reads it. A string holds for every release. A list holds variants,
+    {"text", "since"?, "until"?, "helpSays"?, "pending"?}; the ones whose range holds snap.version are joined."""
+    if value is None or isinstance(value, str):
+        return value or ""
+    return " ".join(v["text"] for v in value if in_range(snap.version, v))
+
+
+def steps_for(steps, snap):
+    return [s for s in (steps or []) if in_range(snap.version, s)]
+
+
+def check_help_quotes(config, snap):
+    """A note that says what the node's help says must name the words ("helpSays"), and the help of the call it
+    is under must contain them in every release the note is shown for: a reworded help fails the build.
+    Only `use.note` variants are checked; summaries and the "moving" page's cells are not."""
+    for group, kind in address_entries(config):
+        use = kind.get("use") or {}
+        note = use.get("note")
+        if not isinstance(note, list):
+            continue
+        for v in note:
+            if v.get("helpSays") and in_range(snap.version, v) and v["helpSays"] not in snap.help.get(use.get("method"), ""):
+                raise SystemExit("build: site.json note of %s quotes %r, which the %s help of %s does not contain"
+                                 % (kind["id"], v["helpSays"], snap.version, use.get("method")))
+
+
 def address_entries(config):
     """(group or None, type) for every receive type and every non-receive key."""
     out = []
@@ -377,14 +414,15 @@ def render_type_block(snap, group, kind):
     dep = kind.get("deprecated") or {}
     out = ['<section class="addr-type" id="%s">' % esc(anchor)]
     out.append("<h3>%s %s</h3>" % (esc(heading), support_badge(kind.get("support", "supported"))))
-    out.append("<p>%s</p>" % esc(kind.get("summary", "")))
+    out.append("<p>%s</p>" % esc(text_for(kind.get("summary"), snap)))
     if use:
         returns = use.get("method", "")
         link = '<a href="%s.html"><code>%s</code></a>' % (esc(returns), esc(returns)) if returns in snap.help else "<code>%s</code>" % esc(returns)
         out.append("<p>Call %s.</p>" % link)
-        out.append(cli_block(use.get("steps")))
-        if use.get("note"):
-            out.append('<p class="note">%s</p>' % esc(use["note"]))
+        out.append(cli_block(steps_for(use.get("steps"), snap)))
+        note = text_for(use.get("note"), snap)
+        if note:
+            out.append('<p class="note">%s</p>' % esc(note))
     if dep:
         out.append('<div class="deprecated-call"><h4>Deprecated call</h4>')
         out.append("<p>%s</p>" % esc(dep.get("why", "")))
@@ -397,9 +435,13 @@ def render_type_block(snap, group, kind):
 def render_addresses_page(config, snap):
     out = ['<h1>Addresses</h1>',
            '<p class="lede">Create an address that can receive YEC, or one that can hold YED. '
-           'Each type is listed once. The call under the type is the one to use on Ycash. Where the '
-           'node\'s help calls it deprecated, the note says why it is still the call to use.</p>',
+           'Each type is listed once. The call under the type is the one to use on Ycash. Where this '
+           'release\'s help calls it deprecated, the note says why it is still the call to use.</p>',
            '<p>If the wallet is encrypted, run <code>walletpassphrase</code> first.</p>']
+    if moving_shown(config, snap):
+        out.append('<p><a href="moving.html">%s</a> says which call moves YEC from one address type to another, '
+                   'how to fund a vault from each, and how to read balances by type.</p>'
+                   % esc(config["moving"].get("title", "Moving YEC")))
     for group in config.get("receive", []):
         out.append('<section class="addr-coin" id="%s"><h2>Receive %s</h2><p>%s</p>'
                    % (esc(group["id"]), esc(group["coin"]), esc(group.get("lead", ""))))
@@ -420,6 +462,61 @@ def render_addresses_page(config, snap):
                    % (esc(gone.get("title", "Not available")),
                       ", ".join('<a href="%s.html"><code>%s</code></a>' % (esc(m), esc(m)) for m in methods),
                       esc(gone.get("reason", ""))))
+    return "\n".join(out)
+
+
+def moving_shown(config, snap):
+    """The "moving YEC" page is shown from the release named by its "since" (and never without one)."""
+    moving = config.get("moving")
+    return bool(moving and moving.get("since") and in_range(snap.version, moving))
+
+
+def pending_markers(config):
+    """Every "pending" marker in the curated config: a statement that depends on work not yet merged. The build
+    prints them so a maintainer flips each one when that work lands."""
+    found = []
+
+    def walk(v, where):
+        if isinstance(v, dict):
+            if v.get("pending"):
+                found.append((where, v["pending"]))
+            for k, x in v.items():
+                walk(x, where + "." + k)
+        elif isinstance(v, list):
+            for i, x in enumerate(v):
+                walk(x, "%s[%d]" % (where, i))
+
+    walk(config, "site")
+    return found
+
+
+def render_moving_page(config, snap):
+    m = config["moving"]
+    out = ['<h1>%s</h1>' % esc(m.get("title", "Moving YEC")), '<p class="lede">%s</p>' % inline_md(text_for(m.get("lede"), snap))]
+    for sec in m.get("sections", []):
+        if not in_range(snap.version, sec):
+            continue
+        out.append('<section class="addr-coin" id="%s"><h2>%s</h2>' % (esc(sec["id"]), esc(sec["title"])))
+        if sec.get("pending") and sec.get("pendingText"):
+            out.append('<p class="note pending"><strong>Not in every release yet.</strong> %s</p>' % inline_md(sec["pendingText"]))
+        for p in sec.get("paragraphs", []):
+            text = text_for(p, snap) if isinstance(p, list) else p
+            if text:
+                out.append("<p>%s</p>" % inline_md(text))
+        for t in sec.get("tables", []):
+            if t.get("caption"):
+                out.append("<h3>%s</h3>" % inline_md(t["caption"]))
+            out.append('<div class="table-scroll"><table><thead><tr>%s</tr></thead><tbody>'
+                       % "".join("<th>%s</th>" % inline_md(c) for c in t["columns"]))
+            for row in t["rows"]:
+                if len(row) != len(t["columns"]):
+                    raise SystemExit("build: site.json moving table %r has a row of %d cells for %d columns"
+                                     % (t.get("caption", sec["id"]), len(row), len(t["columns"])))
+                out.append("<tr>%s</tr>" % "".join("<td>%s</td>" % inline_md(c) for c in row))
+            out.append("</tbody></table></div>")
+            for n in t.get("notes", []):
+                out.append('<p class="note">%s</p>' % inline_md(n))
+        out.append("</section>")
     return "\n".join(out)
 
 
@@ -453,9 +550,10 @@ def render_address_callout(config, snap, name):
             marks += ' <span class="support support-deprecated">Deprecated call</span>'
         out.append('<h2 id="addr-%s">%s · %s %s</h2>' % (esc(kind["id"]), esc(coin), esc(kind["name"]), marks))
         out.append("<p><code>%s</code> %s. %s <a href=\"addresses.html#%s\">Full steps</a>.</p>"
-                   % (esc(name), role, esc(kind.get("summary", "")), esc(kind["id"])))
-        if use.get("method") == name and use.get("note"):
-            out.append('<p class="note">%s</p>' % esc(use["note"]))
+                   % (esc(name), role, esc(text_for(kind.get("summary"), snap)), esc(kind["id"])))
+        note = text_for(use.get("note"), snap)
+        if use.get("method") == name and note:
+            out.append('<p class="note">%s</p>' % esc(note))
         if dep.get("method") == name and use.get("method") != name:
             out.append("<p>%s</p>" % esc(dep.get("why", "")))
             prefer = use.get("method", "")
@@ -537,6 +635,9 @@ class Site:
                  '<li><a href="index.html">Overview</a></li><li><a href="changes.html">Changes</a></li>'
                  '<li><a href="contracts.html">Contracts</a></li></ul>']
         parts[1] = parts[1] % (' aria-current="page"' if current == "addresses" else "")
+        if moving_shown(self.config, snap):
+            parts[1] = parts[1].replace("</li>", '</li><li><a href="moving.html"%s>Moving YEC</a></li>' %
+                                        (' aria-current="page"' if current == "moving" else ""), 1)
         for cat, methods in snap.groups:
             parts.append('<details open><summary>%s</summary><ul>' % esc(cat))
             for m in methods:
@@ -604,6 +705,11 @@ class Site:
     def write_version(self, snap, rel_dir, label):
         prefix = rel_dir + "/" if rel_dir else ""
         prev, changes = self.changes[snap.version]
+        check_help_quotes(self.config, snap)
+        if moving_shown(self.config, snap):
+            self.write(prefix + "moving.html", self.page(rel_dir, "Moving YEC, Ycash %s RPC" % snap.version,
+                                                        render_moving_page(self.config, snap), snap, label,
+                                                        "moving.html", self.nav(snap, "moving")))
         self.write(prefix + "index.html", self.page(rel_dir, "Ycash %s RPC" % snap.version, self.index_body(snap), snap, label,
                                                    "index.html", self.nav(snap)))
         self.write(prefix + "addresses.html", self.page(rel_dir, "Addresses, Ycash %s RPC" % snap.version,
@@ -673,7 +779,10 @@ def main(argv=None):
     ap.add_argument("--src", default=HERE)
     ap.add_argument("--out", default=os.path.join(HERE, "_site"))
     args = ap.parse_args(argv)
-    manifest = Site(args.src, args.out).build()
+    site = Site(args.src, args.out)
+    manifest = site.build()
+    for where, what in pending_markers(site.config):
+        print("build: pending (flip when it merges): %s: %s" % (where, what))
     print("build: %d versions, channels %s, / = %s -> %s" % (
         len(manifest["versions"]), ", ".join("%s=%s" % kv for kv in sorted(manifest["channels"].items())) or "none",
         manifest["default"], args.out))
