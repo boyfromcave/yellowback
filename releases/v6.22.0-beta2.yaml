@@ -9,10 +9,10 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: 01d983770a815f271c675ceb1ccc2fb795465301  # upgrade/vault head; moves when ycash6#109 merges
+  commit: c8f25b0ba067ed9eb5f8907220028471d9a4106d  # upgrade/vault head, after ycash6#109
   tag: v6.22.0-beta2
 ycash-dd:
-  commit: 7074365ebdc8f987a2376f0fd7325c513d615761  # upgrade/vault head; moves when ycash-dd#178 merges
+  commit: 00247d5c3e4e6be3c563ec031b6d639a1f47c62c  # upgrade/vault head, after ycash-dd#178
   tag: vault-params/v6.22.0-beta2
 librustzcash6:
   commit: d384b90d47aca1c70f972089841e24cd0211937a  # the rev ycash6's Cargo.toml [patch.crates-io] builds against (clients pin their own rev, fixed by their rows)
