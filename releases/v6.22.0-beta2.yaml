@@ -1,0 +1,34 @@
+release:
+  version: 6.22.0-beta2
+  rpcversion: 9
+  workspace: 21020a8d029959e4238270bff9e02b3932ffff19  # workspace upgrade/vault (#48), the head before this train
+testnet:
+  fast-vault-height: 510400
+  fast-set-id: none
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: 01d983770a815f271c675ceb1ccc2fb795465301  # upgrade/vault head; moves when ycash6#109 merges
+  tag: v6.22.0-beta2
+ycash-dd:
+  commit: 7074365ebdc8f987a2376f0fd7325c513d615761  # upgrade/vault head; moves when ycash-dd#178 merges
+  tag: vault-params/v6.22.0-beta2
+librustzcash6:
+  commit: d384b90d47aca1c70f972089841e24cd0211937a  # the rev ycash6's Cargo.toml [patch.crates-io] builds against (clients pin their own rev, fixed by their rows)
+lightwalletd-dd:
+  commit: 6b7a28f917f773fabc3e6bbe667907e563956499  # upgrade/vault head; descends from bf8005a (KnownRPCVersion 9)
+yecwallet-dd:
+  commit: 09023de1cf52248ee37c559851a9eab5f197bcd7
+yew:
+  commit: 5bea4306ee698e0852af745677d0a340b4e567a3
+yolo:
+  commit: fcb5a9e24d1494ed75ca7bad6a2b5d7336dcaab5  # = beta1 pin; no beta2 change
+chain-viz:
+  commit: fa4b78dac3c5bfd8f163a1bb7119afa946e4dc67
+x402-ycash:
+  commit: b7a77f76a2453e02d64874a6aca3d7dadf9349c2
+hawkeye:
+  commit: ce7345a79ef36bbfc849ea346831806fdc2b5c15
+wyec:
+  commit: e9ea41aa185c348c4f6c72085b18bff8eda49bb5  # hawkeye's pin (eth/tools/fetch-wyec.sh:24), not wyec's head 727d3530
