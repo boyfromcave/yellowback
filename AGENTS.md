@@ -248,7 +248,8 @@ On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash 
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
 branch, YEW signs vault spends; yolo needed no source change and is tested mining across the
-activation), `rpcversion` 8 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules:
+activation), `rpcversion` 9 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
+scheme-visible post-quantum address prefixes, D-9:
 `YELLOWBACK_RPC_VERSION` in `src/rpc/yellowback.cpp` on both node lines; Hawkeye parses only the
 post-quantum owner shape and needs this line, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
 calls, chain-viz's set/vault panels).
