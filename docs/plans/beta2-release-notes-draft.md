@@ -98,16 +98,12 @@ the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned 
 
 ## 2. Defects fixed that were present in beta1
 
-- **A refused post-quantum send could be paid twice.** A post-quantum send whose fee was above the
-  mempool's cap was written to the wallet, refused by the mempool, and re-broadcast at restart after
-  the user had sent again. Reproduced on ycash-dd; the same experiment did not reproduce on 6.22.0-beta1
-  (the fee was refused before building), and the protections were ported to both lines: the fee cap
-  is checked before signing and again under the node's locks, and a refused send is erased from the
-  wallet. Merged (ycash-dd #163, ycash6 #99).
 - **Node crash after an erased send.** Erasing a wallet transaction left its entries in the spend
   index; a later send of the same coins created an empty wallet transaction, and the next re-broadcast
-  stopped the node (`Assertion failed: (pwallet)`). Present in beta1 through the Yellowback orphan
-  removal. One erase function now clears every index on both lines. Merged (ycash-dd #163, ycash6 #99).
+  stopped the node: on 6.22.0-beta1 (ycash6) through a null wallet pointer in
+  `assert(pwallet->GetBroadcastTransactions())` (`src/wallet/wallet.cpp:5951` at the beta1 tag), on
+  ycash-dd with `Assertion failed: (pwallet)`. Present in beta1 through the Yellowback orphan removal.
+  One erase function now clears every index on both lines. Merged (ycash-dd #163, ycash6 #99).
 - **An interrupted seed restore silently skipped history.** The "scan from genesis" of a restore was
   kept in memory only; after a stop during the restore the node resumed near the tip. Now recorded in
   the wallet until a complete scan. **[pending: ycash6 `up/b2-seed-restore`]**
@@ -116,6 +112,15 @@ the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned 
   `up/b2-seed-restore`]**
 - **`getunconfirmedbalance` could not be called on ycash6** (no argument-table row). Fixed in ycash6
   #91, already in this release's base.
+
+Hardened, not a beta1 defect:
+
+- **A refused post-quantum send cannot be paid twice.** On ycash-dd a post-quantum send whose fee was
+  above the mempool's cap was written to the wallet, refused by the mempool, and re-broadcast at restart
+  after the user had sent again. The same experiment did not reproduce on 6.22.0-beta1 (the fee was
+  refused before building). The protections are on both lines: the fee cap is checked before signing
+  and again under the node's locks, and a refused send is erased from the wallet. Merged (ycash-dd #163,
+  ycash6 #99).
 
 ## 3. What an operator must do on upgrade
 
@@ -129,7 +134,9 @@ the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned 
   Yellowback is not live; `-yellowback=0` overrides it with a warning, and with it the wallet will
   spend a YED-carrying coin as plain YEC (its YED burns). Do not leave `-yellowback=0` in a
   configuration file. **[pending: ycash-dd #170, ycash6 #97]**
-- **Scripts that read `z_getbalance` for foreign addresses** must expect error -5 instead of 0.
+- **Scripts that read `z_getbalance` for foreign addresses** on ycash-dd must expect error -5 instead
+  of 0. ycash6 already refused an address the wallet does not hold with -5 (`From address does not
+  belong to this node.`); only the message text changes there.
 - **Scripts that call `getnewaddress` with a non-empty first string** get a different error code and
   message.
 
@@ -151,9 +158,18 @@ the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned 
   differ from `getwalletinfo`; an inherited defect (ycash6 upstream report §3.11), documented.
 - **Default vault funding can pick coinbase coins** where coinbase must be shielded (`vault_lock`
   without `"from"`); pre-existing, follow-up on both lines.
-- **App fee bound**: the YEW app cannot verify the attested price and bounds post-quantum fees against
-  a compiled floor of $0.01 per YEC; a hostile server can raise a fee up to that bound, and above the
-  usual fee the app asks for a second confirmation. **[pending: yew]**
+- **App fee bound**: the YEW app cannot verify the attested price. It bounds post-quantum fees against
+  a compiled floor of $0.01 per YEC, so a hostile server can raise a fee up to that bound. The app asks
+  for a second confirmation for a fee it finds unusual, but the reference it judges by follows the
+  price reports the server supplies, so not every fee above the usual one is confirmed: a server
+  that supplies each day's first price report controls the median the reference is taken from after
+  3 days (16 days against 30 honest reports) and can then take up to 2× the usual fee without a
+  second confirmation; at a reference of about $0.05 per YEC that is about 1.44 YEC
+  per FN-DSA send, 6.5 per SLH-DSA send and 2.3 per YED transfer. **[pending: yew]**
+- **A post-quantum → Sapling send in YEW copies the Sapling spending key.** The send needs only the
+  outgoing viewing key, but the builder copies the full spending key, and the copies are not zeroized;
+  a memory disclosure during such a send would expose it. Accepted for beta2 by the Yellowback lead
+  architect; the fix splits the builder's signing code and follows after beta2. **[pending: yew]**
 - **Wallet encryption** remains experimental on both C++ lines (`-experimentalfeatures
   -developerencryptwallet`); on ycash6 `getnewaddress` refuses while the wallet is locked.
 
@@ -168,6 +184,6 @@ the D-9 address forms; ycash-infra's `yindex` needs the same port (not assigned 
 | ycash6 seed-restore lookahead and interrupted-restore fix | ycash6 `up/b2-seed-restore` + ycash-dd companion | local, reviewed, not pushed |
 | yewd, YEW app and web | yew `up/b2-pq-prefix` | local; real-node run outstanding |
 | librustzcash6 client tests, SQLite upgrade | librustzcash6 `up/b2-client-tests`, #22 | local / open |
-| Stale help: ycash6 `getnewaddress` says "the z_* operations never pay or spend it" | ycash6 `src/wallet/rpcwallet.cpp` (merged text) | not fixed; found while writing these notes |
+| Stale `getnewaddress` help on both C++ lines: ycash-dd says "z_sendmany, z_shieldcoinbase and z_mergetoaddress never do" pay or spend a post-quantum address, ycash6 says "the z_* operations never pay or spend it" (both false since ycash-dd #163 / ycash6 #99); both say "its prefix showing the network and the scheme" before D-9 merges | ycash-dd and ycash6 `src/wallet/rpcwallet.cpp`, `getnewaddress` help | pending: node help text, owned by the wallet follow-up lane (WALLET-FOLLOW item 10) |
 | Beta2 RPC snapshot for rpc.ycash.team (turns on the "Moving YEC" page) | workspace `rpc-docs/versions/v6.22.0-beta2` | after the tag |
 | Release train file | workspace `releases/v6.22.0-beta2.yaml` | not written |
