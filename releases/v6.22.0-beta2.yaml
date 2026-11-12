@@ -1,0 +1,34 @@
+release:
+  version: 6.22.0-beta2
+  rpcversion: 9
+  workspace: f26b59b98cfcf04dd122f366f4c1ff51404011dc  # DRAFT 2026-11-12: workspace upgrade/vault head (#47); WILL MOVE to the head that carries this train
+testnet:
+  fast-vault-height: 510400
+  fast-set-id: none
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: f8beb78e1a8beb5293769373ed758a585cdd2f7c  # DRAFT: upgrade/vault head (#95 merge, D-9); WILL MOVE: #102, #104, the wallet follow-ups pair, the beta2 release notes
+  tag: v6.22.0-beta2
+ycash-dd:
+  commit: 0ea6564453d4ad831f377d5570bce7dfa099a2db  # DRAFT: upgrade/vault head (#166 merge, D-9); WILL MOVE: #172, #174, the wallet follow-ups pair, the release notes
+  tag: vault-params/v6.22.0-beta2
+librustzcash6:
+  commit: 6ff87bc9f564fcb7891e1f32698c7ad91ba85ca2  # DRAFT: upgrade/vault head (#24), the rev x402-ycash and yew pin; ycash6 still builds against d384b90d (consensus-equal); no open beta2 PR
+lightwalletd-dd:
+  commit: 93aec31b8c2a87a7cfe5aaa9b7dfe5ca01c072e1  # DRAFT: upgrade/vault head = the beta1 pin (rpcversion 8); WILL MOVE: lightwalletd #17 (D-9, rpcversion 9)
+yecwallet-dd:
+  commit: 679e832f53c4b979700a83ef0de7fa61e9c5cbb2  # DRAFT: upgrade/vault head = the beta1 pin (rpcversion 8); WILL MOVE: yecwallet-dd #18 (D-9, rpcversion 9)
+yew:
+  commit: afd55507c3720c6836314a2a22e0312819de9e1d  # DRAFT: upgrade/vault head (#26); WILL MOVE: yew #27 and the branches stacked on it (ECC-only sends, real-run fixes, SQLite)
+yolo:
+  commit: fcb5a9e24d1494ed75ca7bad6a2b5d7336dcaab5  # upgrade/vault head = the beta1 pin; no beta2 PR
+chain-viz:
+  commit: fa4b78dac3c5bfd8f163a1bb7119afa946e4dc67  # upgrade/vault head (#9 merge, D-9)
+x402-ycash:
+  commit: b7a77f76a2453e02d64874a6aca3d7dadf9349c2  # upgrade/vault head (#19 merge, D-9)
+hawkeye:
+  commit: 5718fa71423634288b5277a7ba34482f36286296  # DRAFT: upgrade/vault head; WILL MOVE: hawkeye #40 (D-9, rpcversion 9)
+wyec:
+  commit: e9ea41aa185c348c4f6c72085b18bff8eda49bb5  # the commit hawkeye pins (eth/tools/fetch-wyec.sh:24), NOT wyec's head 727d3530; moves only if hawkeye re-pins
