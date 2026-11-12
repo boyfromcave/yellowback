@@ -222,6 +222,23 @@ rule change and the one structural lever worth a design decision. All owner deci
   released-set non-exclusivity (owner: kept, 2026-10-12); §15.5 self-remove, slash in the exit delay, displacement,
   bond exit delay, `MIN_SET_MATURITY`, one unspent bond per key, corrected bond rule and item (11); §15.6 S-3
   `epochUsed` not reduced by a cancel; quantum spec R-A2 `pqFalconHeight = 0` (D-Q-2). No code change.
+- 2026-11-11 (beta2, wallet and address work; plan `docs/plans/yellowback-address-interop-plan.md`, decisions D-1
+  to D-9 there). No consensus change. **Merged on `upgrade/vault`:** ycash-dd #162 (balances and listings by
+  address type), #164 (`getnewaddress` takes the type first), #163 (`z_sendmany` / `z_mergetoaddress` between ECC,
+  Sapling and post-quantum addresses, D-2/D-4/D-6, with the fix for a refused post-quantum send paid twice and the
+  wallet erase that crashed the node on a re-send), #165 (`vault_lock "from"`, D-3); ycash6 #92 (help wording for
+  the RPCs upstream deprecated), #94 (rustix), #96, #98, #99, #100 (the ports of the four ycash-dd changes, D-1 and
+  D-5 on this line); kogany #18 (audit footer, rustix), #17 (Sapling parts beside post-quantum and vault scripts,
+  replayed from a C++-recorded chain: W4), #11 (release tag in the user agent); zakura-common-ycash #7; workspace
+  #45 (AGENTS.md rule 6) and #46 (the address plan). **Open:** the D-9 prefix pair (ycash-dd #166, ycash6 #95;
+  RPC contract version 9) and the client ports that wait on it (kogany, yew, lightwalletd-dd, chain-viz,
+  x402-ycash, hawkeye, YecWallet, ycash-infra `yindex`); the has-held-YED guard (ycash-dd #170, ycash6 #97); the
+  ceremony-seed pair (ycash-dd #169, ycash6 #93); the ycash6 transparent seed-restore lookahead and its ycash-dd
+  test companion (branches `up/b2-seed-restore`, not pushed); yewd and the YEW app and web shell (yew
+  `up/b2-pq-prefix`, not pushed; a real node and lightwalletd run is its merge gate); follow-ups recorded for both
+  C++ lines (balance-view LOWs incl. `MarkDirty` after a post-quantum lookahead top-up, coinbase coins in the
+  default vault funding, CI hardening, `-yellowback=0` with a has-held-YED wallet). Docs: the RPC site's
+  "Moving YEC" page, from v6.22.0-beta2; ycash6 upstream report §3.10–§3.13; mapping §16, §19, §24 rows.
 
 ## 0. Assumptions about the Foundation's primitive
 
