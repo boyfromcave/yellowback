@@ -276,7 +276,7 @@ Listed roughly by operational impact.
 - **Suggested fix:** Before each `mapWallet.erase`, erase the transaction's `wtxOrdered` entry by
   pointer (look up its `nOrderPos` range and compare pointers), and call `RemoveFromSpends(txid)` in
   the spent loop as in the expired loop. On our line, `CWallet::EraseUnbroadcastTx` does exactly this
-  for our own erase (ycash6 #99). `DeleteTransactions` itself is **not yet fixed on our line**.
+  for our own erase (`boyfromcave/ycash6#99`). `DeleteTransactions` itself is **not yet fixed on our line**.
 - **Same in 4.5.0:** Partly. `ref/ycash` has no `wtxOrdered` (it sorts `mapWallet` on each call), but
   its spent loop (`src/wallet/wallet.cpp:4080`) also skips `RemoveFromSpends`, unlike the expired
   loop (`:4051`-`:4055`). That code is built only with `YCASH_WR` (`:3949`).
@@ -311,7 +311,7 @@ Listed roughly by operational impact.
 - **Suggested fix:** In `GetAvailableCredit`, read and write the cache only when
   `!asOfHeight.has_value()`. Write it only when `fUseCache` is set, or give historical callers a
   no-write path. `GetBalance` then needs no change. On our line, `getwalletinfo.balance` is computed
-  without the cache (ycash6 #96), but `getbalance` is unchanged.
+  without the cache (`boyfromcave/ycash6#96`), but `getbalance` is unchanged.
 
 ### 3.12 `SyncMetaData` creates an empty wallet transaction from a stale spend entry, and the next resend crashes
 
@@ -338,7 +338,7 @@ Listed roughly by operational impact.
 - **Severity:** Low at the pin (it needs a rare precondition), but the failure is a crash.
 - **Suggested fix:** In `SyncMetaData`, use `mapWallet.find` and skip txids that are not found. Also
   call `RemoveFromSpends` on every erase path (3.10). Our line fixes the erase side:
-  `CWallet::EraseUnbroadcastTx` (ycash6 #99) removes the spend entries, nullifier maps and
+  `CWallet::EraseUnbroadcastTx` (`boyfromcave/ycash6#99`) removes the spend entries, nullifier maps and
   `wtxOrdered` pointer before erasing. `SyncMetaData` itself is unchanged there.
 - **Same in 4.5.0:** Yes. `ref/ycash` `src/wallet/wallet.cpp:1045` (`mapWallet[hash]` at `:1056`),
   `RelayWalletTransaction` at `:4653` (there `assert(pwallet)` at `:4655` aborts instead).
@@ -362,8 +362,9 @@ Listed roughly by operational impact.
 - **Severity:** Low at the pin (latent); High for any seed-only restore.
 - **Suggested fix:** Hold a window of external (and internal) keys ahead of the counter, with a
   gap limit like the keypool. When a scanned output pays a held key, mark it used and move the
-  counter past it, then top the window up and re-scan the affected range. Our line does this on
-  `up/b2-seed-restore`, **not merged yet**.
+  counter past it, then top the window up and re-scan the affected range. A fix of this shape is
+  in review on our line; it is not on our `upgrade/vault` yet, and this report will cite the pull
+  request once it is published.
 
 ## 4. Inherited functional suite (pin + the three patches)
 
