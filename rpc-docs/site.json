@@ -413,7 +413,7 @@
         "pending": "yew up/b2-pq-prefix (any-to-any z_sendmany, vault_lock from, z_gettotalbalance, listaddresses in yewd) is not merged on yew upgrade/vault (e44a1b4)",
         "pendingText": "This table is yewd as merged today. The yewd of this release, with `z_sendmany` between every type, `vault_lock` funded from any type, and `z_gettotalbalance` and `listaddresses`, is still in review.",
         "paragraphs": [
-          "kogany has no wallet. It validates, relays and mines every transaction shape on this page, including Sapling spends beside post-quantum and vault scripts. The wallet of the kogany product is `yewd`, a separate process that answers the wallet RPCs.",
+          "kogany has no wallet. It validates, relays and mines transactions; for the mixed shapes this is tested on a chain recorded on a C++ line and replayed into kogany (kogany#17: Sapling spends and outputs beside post-quantum and vault scripts, with negative controls). Still open: an FN-DSA input beside a Sapling spend, a vault unlock beside Sapling parts, and reject-reason parity with both C++ lines. The wallet of the kogany product is `yewd`, a separate process that answers the wallet RPCs.",
           "yewd does not serve `z_gettotalbalance`, `listaddresses` or `z_mergetoaddress` (it answers only the post-quantum refusals of `z_mergetoaddress` and `z_shieldcoinbase`)."
         ],
         "tables": [
