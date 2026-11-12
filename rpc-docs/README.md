@@ -66,9 +66,16 @@ keeps the reader on the same method when switching versions.
 
 `site.json` `receive` is the page at `/<version>/addresses.html`: one place that says which call
 creates an address for YEC and which creates one for YED, and which address types are supported.
-The call named there is the one that works on Ycash: where the node's inherited help calls it
-deprecated (`getnewaddress`, `z_getnewaddress`), the entry's `note` says why it is still the call to
-use. A method is named there and also in its `help` category. It is not copied into a second
+The call named there is the one that works on Ycash: where a release's inherited help calls it
+deprecated (`getnewaddress`, `z_getnewaddress` in v6.22.0-beta1; from beta2 the help says
+"Supported on Ycash"), the entry's `note` says why it is still the call to use.
+
+Releases differ, so a `summary` or `note` may be a list of variants, each `{"text", "since"?,
+"until"?}`; the variants whose range holds the release are joined. `steps` take `since`/`until`
+too. A variant that says what the node's help says names the words it relies on in `helpSays`, and
+the build fails when the help of that call, in a release the variant is shown for, does not
+contain them: a reworded help cannot leave a stale note behind. A test refuses a note that cites
+the help without `helpSays`. A method is named there and also in its `help` category. It is not copied into a second
 category. `otherKeys` holds keys that are not receive addresses (the vault owner).
 
 `site.json` `unavailable` lists the methods a Ycash node refuses (the unified-address account calls,

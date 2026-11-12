@@ -258,6 +258,58 @@ class AddressGuide(unittest.TestCase):
         self.assertIn("not an address for receiving", owner.lower())
 
 
+class NotesFollowTheHelp(unittest.TestCase):
+    """A note that quotes the node's help is tied to the help of the releases it is shown for (beta2 item 19)."""
+
+    INDEX = "== Wallet ==\ngetnewaddress\nz_getnewaddress\nyed_getnewaddress\nvault_getnewowner\n"
+    BETA1 = {"getnewaddress": "getnewaddress ( \"\" \"type\" )\n\ngetnewaddress is DEPRECATED and will be removed.\n",
+             "z_getnewaddress": "z_getnewaddress ( type )\n\nz_getnewaddress is DEPRECATED and will be removed.\n"}
+    BETA2 = {"getnewaddress": "getnewaddress ( \"type\" )\n\nSupported on Ycash. This is the way.\n\n> ycash-cli getnewaddress pq\n",
+             "z_getnewaddress": "z_getnewaddress ( type )\n\nSupported on Ycash. This is the way.\n"}
+
+    def site(self, beta2_help):
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root)
+        make_site(root)
+        with open(os.path.join(HERE, "site.json")) as f:
+            real = json.load(f)
+        with open(os.path.join(root, "site.json")) as f:
+            cfg = json.load(f)
+        cfg["receive"], cfg["otherKeys"] = real["receive"], real["otherKeys"]
+        with open(os.path.join(root, "site.json"), "w") as f:
+            json.dump(cfg, f)
+        make_snapshot(root, "v6.22.0-beta1", index=self.INDEX, help_overrides=self.BETA1)
+        make_snapshot(root, "v6.22.0-beta2", index=self.INDEX, help_overrides=beta2_help)
+        build.Site(root, os.path.join(root, "_site")).build()
+        return root
+
+    def test_each_release_gets_its_own_note(self):
+        root = self.site(self.BETA2)
+        old, new = read(root, "v6.22.0-beta1/addresses.html"), read(root, "v6.22.0-beta2/addresses.html")
+        self.assertIn("help says getnewaddress is deprecated", old)
+        self.assertNotIn("getnewaddress pq</pre>", old)
+        self.assertIn("ycash-cli getnewaddress &quot;&quot; &quot;pq&quot;", old)
+        self.assertIn("No z_* call pays or spends it", old)
+        self.assertNotIn("help says", new.split('id="yec"', 1)[1].split('id="yed"', 1)[0])
+        self.assertIn("ycash-cli getnewaddress pq\nycash-cli getnewaddress pqslh</pre>", new)
+        self.assertIn("z_sendmany and z_mergetoaddress pay and spend it", new)
+
+    def test_a_note_quoting_help_the_release_lacks_fails_the_build(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.site(self.BETA1)   # a "beta2" whose help still says DEPRECATED: the beta2 notes' quotes miss
+        self.assertIn("Supported on Ycash.", str(cm.exception))
+
+    def test_every_note_that_cites_the_help_names_the_words(self):
+        with open(os.path.join(HERE, "site.json")) as f:
+            cfg = json.load(f)
+        for group, kind in build.address_entries(cfg):
+            note = (kind.get("use") or {}).get("note")
+            variants = note if isinstance(note, list) else [{"text": note or ""}]
+            for v in variants:
+                if re.search(r"help (says|calls|prints)", v["text"], re.I):
+                    self.assertTrue(v.get("helpSays"), "%s: %r quotes the help without helpSays" % (kind["id"], v["text"]))
+
+
 class Moving(unittest.TestCase):
     """The "moving YEC" page is shown from the release its "since" names, with the real site.json content."""
 

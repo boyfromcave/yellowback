@@ -549,7 +549,7 @@ def render_address_callout(config, snap, name):
             marks += ' <span class="support support-deprecated">Deprecated call</span>'
         out.append('<h2 id="addr-%s">%s · %s %s</h2>' % (esc(kind["id"]), esc(coin), esc(kind["name"]), marks))
         out.append("<p><code>%s</code> %s. %s <a href=\"addresses.html#%s\">Full steps</a>.</p>"
-                   % (esc(name), role, esc(kind.get("summary", "")), esc(kind["id"])))
+                   % (esc(name), role, esc(text_for(kind.get("summary"), snap)), esc(kind["id"])))
         note = text_for(use.get("note"), snap)
         if use.get("method") == name and note:
             out.append('<p class="note">%s</p>' % esc(note))

@@ -17,7 +17,10 @@
           "use": {
             "method": "getnewaddress",
             "steps": [{"method": "getnewaddress", "cli": "ycash-cli getnewaddress"}],
-            "note": "The node's help says getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. The first argument, if you pass one, must be the empty string."
+            "note": [
+              {"until": "v6.22.0-beta1", "helpSays": "getnewaddress is DEPRECATED", "text": "The node's help says getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. The first argument, if you pass one, must be the empty string."},
+              {"since": "v6.22.0-beta2", "helpSays": "Supported on Ycash.", "text": "Ycash has no unified addresses, so getnewaddress is the call to use. It is answered unless the node is started with -allowdeprecated=none. getnewaddress p2pkh names the type."}
+            ]
           }
         },
         {
@@ -28,21 +31,36 @@
           "use": {
             "method": "z_getnewaddress",
             "steps": [{"method": "z_getnewaddress", "cli": "ycash-cli z_getnewaddress sapling"}],
-            "note": "The node's help says z_getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so z_getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none. Name the type: with no argument the call returns a Sapling address today, and the node says not to rely on that."
+            "note": [
+              {"until": "v6.22.0-beta1", "helpSays": "z_getnewaddress is DEPRECATED", "text": "The node's help says z_getnewaddress is deprecated. That notice comes from Zcash, which replaced the call with unified-address accounts. Ycash has no unified addresses, so z_getnewaddress is the supported call, and it is answered unless the node is started with -allowdeprecated=none."},
+              {"since": "v6.22.0-beta2", "helpSays": "Supported on Ycash.", "text": "Ycash has no unified addresses, so z_getnewaddress is the call to use. It is answered unless the node is started with -allowdeprecated=none."},
+              {"text": "Name the type: with no argument the call returns a Sapling address today, and the node says not to rely on that."}
+            ]
           }
         },
         {
           "id": "yec-pq",
           "name": "Post-quantum",
           "support": "supported",
-          "summary": "Receives plain YEC at a 53-character address: sq… on mainnet, tq… on testnet, rq… on regtest. sendtoaddress and sendmany spend it. No z_* call pays or spends it. The vault upgrade must be active at the next block, and the wallet must be unlocked.",
+          "summary": [
+            {"text": "Receives plain YEC at a 53-character address: sq… on mainnet, tq… on testnet, rq… on regtest."},
+            {"until": "v6.22.0-beta1", "text": "sendtoaddress and sendmany spend it. No z_* call pays or spends it."},
+            {"since": "v6.22.0-beta2", "text": "z_sendmany and z_mergetoaddress pay and spend it, as sendtoaddress and sendmany do; the Moving YEC page has every direction."},
+            {"text": "The vault upgrade must be active at the next block, and the wallet must be unlocked."}
+          ],
           "use": {
             "method": "getnewaddress",
             "steps": [
-              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\""},
-              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\""}
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pq\"", "until": "v6.22.0-beta1"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress \"\" \"pqslh\"", "until": "v6.22.0-beta1"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress pq", "since": "v6.22.0-beta2"},
+              {"method": "getnewaddress", "cli": "ycash-cli getnewaddress pqslh", "since": "v6.22.0-beta2"}
             ],
-            "note": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s. Ycash has no unified addresses, so this is the supported call even though the node's help says getnewaddress is deprecated. The first argument is the empty string."
+            "note": [
+              {"text": "\"pq\" is FN-DSA-512 once Falcon is active at the next block, and SLH-DSA-SHA2-128s before that. \"pqslh\" is always SLH-DSA-SHA2-128s."},
+              {"until": "v6.22.0-beta1", "helpSays": "getnewaddress is DEPRECATED", "text": "Ycash has no unified addresses, so this is the supported call even though the node's help says getnewaddress is deprecated. The first argument is the empty string."},
+              {"since": "v6.22.0-beta2", "helpSays": "getnewaddress pq", "text": "The type may come first, as here; getnewaddress \"\" pq, the older shape, still works."}
+            ]
           }
         }
       ]
