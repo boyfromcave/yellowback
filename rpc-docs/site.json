@@ -232,7 +232,7 @@
               ]
             ],
             "notes": [
-              "The balance calls also take `asOfHeight`. With `asOfHeight`, `getbalance` can disagree with `getwalletinfo`, which computes its figures fresh; `getbalance` reads a cached credit that ignores the height (an inherited defect)."
+              "`getwalletinfo`, `getbalance` and `listreceivedbyaddress` take `asOfHeight` (as do `z_getbalanceforaccount` and `z_getbalanceforviewingkey`); `z_gettotalbalance` and `z_getbalance` do not. With `asOfHeight`, `getbalance` can disagree with `getwalletinfo`, which computes its figures fresh; `getbalance` reads a cached credit that ignores the height (an inherited defect)."
             ]
           },
           {
