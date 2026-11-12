@@ -230,7 +230,9 @@ rule change and the one structural lever worth a design decision. All owner deci
   the RPCs upstream deprecated), #94 (rustix), #96, #98, #99, #100 (the ports of the four ycash-dd changes, D-1 and
   D-5 on this line); kogany #18 (audit footer, rustix), #17 (Sapling parts beside post-quantum and vault scripts,
   replayed from a C++-recorded chain: W4), #11 (release tag in the user agent); zakura-common-ycash #7; workspace
-  #45 (AGENTS.md rule 6) and #46 (the address plan). **Open:** the D-9 prefix pair (ycash-dd #166, ycash6 #95;
+  #42 (the RPC site's address guide names the calls a Ycash node answers), #43 (quantum spec §4.1: the D-9
+  scheme-visible prefixes, proved; the rpcversion 9 contract line), #44 (ycash6 upstream report:
+  `getunconfirmedbalance` has no argument-table row), #45 (AGENTS.md rule 6) and #46 (the address plan). **Open:** the D-9 prefix pair (ycash-dd #166, ycash6 #95;
   RPC contract version 9) and the client ports that wait on it (kogany, yew, lightwalletd-dd, chain-viz,
   x402-ycash, hawkeye, YecWallet, ycash-infra `yindex`); the has-held-YED guard (ycash-dd #170, ycash6 #97); the
   ceremony-seed pair (ycash-dd #169, ycash6 #93); the ycash6 transparent seed-restore lookahead and its ycash-dd
