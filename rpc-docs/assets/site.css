@@ -130,3 +130,6 @@ pre.cmd { background: var(--navy-1); }
   .side details { display: none; }
   .side.filtering details { display: block; }
 }
+.table-scroll { overflow-x: auto; }
+.table-scroll table { min-width: 560px; }
+.note.pending { border-left: 3px solid var(--line); padding-left: 10px; }

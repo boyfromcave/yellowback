@@ -75,6 +75,21 @@ category. `otherKeys` holds keys that are not receive addresses (the vault owner
 which need NU5) and the reason. Each gets a notice above its help text and a line on the addresses
 page. Add a method there only after reading the refusal in the node source.
 
+## Moving YEC between address types
+
+`site.json` `moving` is the page at `/<version>/moving.html`: for each node line (ycashd 6.22,
+ycashd on 4.5.0, kogany with `yewd`) which call moves YEC from each address type to each, where
+the change goes, how to fund a vault from each type, how to read balances by type, and the
+scheme-visible post-quantum prefixes (D-9). It is shown from the release named by `since`, and
+only there; the page and the addresses page link each other. Each section is `paragraphs` and
+`tables` (`columns`, `rows`, `notes`); cells take `` `code` `` and `**bold**`; the build refuses a row
+whose cell count differs from its columns.
+
+A statement that rests on work not yet merged carries `"pending": "<what is missing>"` and a
+`pendingText` the reader sees. `build.py` prints every pending marker; when the work lands, delete
+the marker (and the `pendingText`) and reword the section. `source` records which merges a section
+describes; it is not rendered.
+
 ## Sections
 
 `site.json` `sections` defines the featured groups on each version's overview and the badges on

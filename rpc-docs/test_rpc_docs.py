@@ -258,6 +258,56 @@ class AddressGuide(unittest.TestCase):
         self.assertIn("not an address for receiving", owner.lower())
 
 
+class Moving(unittest.TestCase):
+    """The "moving YEC" page is shown from the release its "since" names, with the real site.json content."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root)
+        make_site(self.root)
+        with open(os.path.join(HERE, "site.json")) as f:
+            self.real = json.load(f)
+        with open(os.path.join(self.root, "site.json")) as f:
+            cfg = json.load(f)
+        cfg["moving"] = self.real["moving"]
+        with open(os.path.join(self.root, "site.json"), "w") as f:
+            json.dump(cfg, f)
+        since = self.real["moving"]["since"]
+        self.before, self.since = "v6.22.0-beta1", since
+        make_snapshot(self.root, self.before)
+        make_snapshot(self.root, since)
+        build.Site(self.root, os.path.join(self.root, "_site")).build()
+
+    def test_shown_from_since_only(self):
+        self.assertFalse(os.path.exists(os.path.join(self.root, "_site", self.before, "moving.html")))
+        self.assertNotIn("moving.html", read(self.root, self.before + "/addresses.html"))
+        page = read(self.root, self.since + "/moving.html")
+        self.assertIn('href="moving.html"', read(self.root, self.since + "/addresses.html"))
+        self.assertIn('href="moving.html" aria-current="page"', page)
+        for line in ("ycash6", "ycash-dd", "kogany", "prefixes"):
+            self.assertIn('id="%s"' % line, page)
+
+    def test_tables_and_pending_marks(self):
+        page = read(self.root, self.since + "/moving.html")
+        for text in ("<code>z_sendmany</code>", "AllowRevealedRecipients", "<code>vault_lock</code>",
+                     "<code>z_gettotalbalance ( minconf includeWatchonly )</code>", "<code>getnewaddress pqslh</code>",
+                     "<code>sqf…</code> <code>4D DD 04</code>", "<code>yrs…</code> <code>57 15 AA</code>"):
+            self.assertIn(text, page, text)
+        # Every statement that rests on unmerged work carries a visible notice and a marker the build prints.
+        pending = [s for s in self.real["moving"]["sections"] if s.get("pending")]
+        self.assertEqual(page.count('class="note pending"'), len(pending))
+        self.assertEqual(len(build.pending_markers(self.real)), len(pending))
+
+    def test_row_width_is_checked(self):
+        cfg = {"moving": {"since": "v1.0.0", "title": "t", "lede": "l",
+                          "sections": [{"id": "x", "title": "x", "tables": [{"columns": ["a", "b"], "rows": [["1"]]}]}]}}
+
+        class S:
+            version = "v1.0.0"
+        with self.assertRaises(SystemExit):
+            build.render_moving_page(cfg, S())
+
+
 def read_at(root, rel):
     with open(os.path.join(root, rel)) as f:
         return f.read()
