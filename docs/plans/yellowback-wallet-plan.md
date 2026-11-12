@@ -463,6 +463,20 @@ proportional to the wallet's own history, not the chain's.
 (bundled), `serde`/`serde_json` (fixtures only), `thiserror`, `flutter_rust_bridge`. Anything
 else is a decision recorded here. No `zcash_*` crates (D-W-3).
 
+The allow-list as enforced is `yew/scripts/allowed-deps.txt` (checked by `scripts/check-deps.sh`); each
+later line there carries its decision. Recorded in the beta2 run:
+
+- Review YEW-PORT-5 R3 (2026-11-11): the hybrid builder (a transparent transaction with a Sapling part)
+  moved from yewd's signer into `core/src/build/hybrid.rs`, native only. Its crates, at the versions
+  both lock files already held through librustzcash6 (no new crate or version): `hex` 0.4.3,
+  `incrementalmerkletree` 0.8.2, `orchard` 0.14.0 (the transaction's Orchard authorization type
+  only), `rand_core` 0.6.4 (`OsRng`). Approved by the lead of the beta2 run; to be confirmed by the
+  Yellowback lead architect (yew #27).
+- Real-stack run YEW-REAL finding 1 (2026-11-11, the Yellowback lead architect): `jubjub` 0.10.0,
+  native only, to spend Sapling notes from before Canopy (pre-ZIP-212: `Rseed::BeforeZip212`) in the
+  hybrid builder; already in every lock file. Approved by the lead of the beta2 run on 2026-11-12; to
+  be confirmed by the Yellowback lead architect (yew `up/b2-real-run-fixes`, not yet merged).
+
 ### 3.4 The bridge surface (`api.rs`)
 
 Small by design; every call is synchronous from Dart's point of view and returns a typed result
