@@ -259,7 +259,12 @@ class AddressGuide(unittest.TestCase):
 
 
 class NotesFollowTheHelp(unittest.TestCase):
-    """A note that quotes the node's help is tied to the help of the releases it is shown for (beta2 item 19)."""
+    """A note that quotes the node's help is tied to the help of the releases it is shown for (beta2 item 19).
+
+    Coverage: only the `use.note` variants of the address entries, checked against the help of `use.method`, and
+    only in releases that have a captured snapshot (the beta2 quotes are checked when beta2 is captured). Summaries,
+    the "moving" page's cells and any other text that quotes a node string (an error message, a field name) are not
+    checked by this mechanism."""
 
     INDEX = "== Wallet ==\ngetnewaddress\nz_getnewaddress\nyed_getnewaddress\nvault_getnewowner\n"
     BETA1 = {"getnewaddress": "getnewaddress ( \"\" \"type\" )\n\ngetnewaddress is DEPRECATED and will be removed.\n",

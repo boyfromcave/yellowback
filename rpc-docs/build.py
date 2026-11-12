@@ -378,7 +378,8 @@ def steps_for(steps, snap):
 
 def check_help_quotes(config, snap):
     """A note that says what the node's help says must name the words ("helpSays"), and the help of the call it
-    is under must contain them in every release the note is shown for: a reworded help fails the build."""
+    is under must contain them in every release the note is shown for: a reworded help fails the build.
+    Only `use.note` variants are checked; summaries and the "moving" page's cells are not."""
     for group, kind in address_entries(config):
         use = kind.get("use") or {}
         note = use.get("note")

@@ -75,7 +75,9 @@ Releases differ, so a `summary` or `note` may be a list of variants, each `{"tex
 too. A variant that says what the node's help says names the words it relies on in `helpSays`, and
 the build fails when the help of that call, in a release the variant is shown for, does not
 contain them: a reworded help cannot leave a stale note behind. A test refuses a note that cites
-the help without `helpSays`. A method is named there and also in its `help` category. It is not copied into a second
+the help without `helpSays`. The check covers only the `use.note` variants of the address entries, against
+the help of `use.method`, in the releases that have a snapshot; a summary, a cell of the "moving" page or
+any other text that quotes a node string (an error message, a field name) is not checked. A method is named there and also in its `help` category. It is not copied into a second
 category. `otherKeys` holds keys that are not receive addresses (the vault owner).
 
 `site.json` `unavailable` lists the methods a Ycash node refuses (the unified-address account calls,
