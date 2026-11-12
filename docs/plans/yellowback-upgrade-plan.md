@@ -241,6 +241,31 @@ rule change and the one structural lever worth a design decision. All owner deci
   C++ lines (balance-view LOWs incl. `MarkDirty` after a post-quantum lookahead top-up, coinbase coins in the
   default vault funding, CI hardening, `-yellowback=0` with a has-held-YED wallet). Docs: the RPC site's
   "Moving YEC" page, from v6.22.0-beta2; ycash6 upstream report §3.10–§3.13; mapping §16, §19, §24 rows.
+- 2026-11-12 (beta2, continued; PR states read from GitHub on 2026-11-12). No consensus change. **Merged on
+  `upgrade/vault`:** the D-9 prefix pair, ycash6 #95 (`f8beb78e1a`) and ycash-dd #166 (`0ea656445`): post-quantum
+  addresses name the scheme in the prefix, RPC contract version 9 on both C++ lines; the has-held-YED guard, ycash6
+  #97 and ycash-dd #170; the ceremony-seed pair, ycash6 #93 and ycash-dd #169; the CI-hardening pair, ycash6 #101
+  and ycash-dd #171 (one audit script for every gate, derived shard counts, the cross-line leg); librustzcash6 #23
+  (Ycash-aware client-crate tests) and #24 (rusqlite 0.41 for the client crates); kogany #19 (the P2 items: getinfo
+  errors, local peer port, the restore guide); yew #24 (rustix; carries the runner and toolchain pin of #25, closed)
+  and #26 (the web wallet's lockfiles scanned); x402-ycash #17 (rustix), #18 (librustzcash6 `6ff87bc9`, rusqlite
+  0.41, the RUSTSEC-2026-0459 exception removed) and #19 (D-9); chain-viz #9 and ycash-infra #34 (`yindex`), both
+  D-9; workspace #47 (the beta2 address matrix on the RPC site). **Open:** kogany #20 (D-9, pinned to ycash6
+  `f8beb78e1a`), #21 (release dry run) and #22 (mixed shapes, second chain); yew #27 (the beta2 wallet: D-9, any-to-
+  any `z_sendmany`, balances by type in yewd), with `up/b2-yewd-ecc-only`, `up/b2-real-run-fixes` (pre-Canopy
+  notes, internal-scope change notes, `jubjub` on the allow-list) and `up/b2-sqlite-041` stacked behind it, not
+  pushed; lightwalletd #17, hawkeye #40 and yecwallet-dd #18 (D-9); the seed-restore pair (ycash6 #102, ycash-dd
+  #172); the release dry-run pair (ycash6 #104, ycash-dd #174); the wallet follow-ups pair (`up/b2-wallet-followups`,
+  ycash-dd `c2ac7d720`, ycash6 `cc9a91eaf`, not pushed: `sendtoaddress`/`sendmany` select ECC coins only, the
+  YED-as-YEC refusal rests on the outputs' own payload so a seed restore is covered, ycash6's `getbalance`
+  `asOfHeight` cache fix and `walletconfirmbackup` row). **Decisions:** the Yellowback lead architect keeps this
+  wave named beta2; the stale ycash-dd tag `vault-params/v6.22.0-beta2` (commit `85ed00309`, rpcversion 8,
+  2026-11-05) is archived as `archive/vault-params-v6.22.0-beta2-20261105` and deleted under its old name, so the
+  beta2 train tags it afresh on the beta2 commit. The beta2 tags are delegated to the lead of the run, to be created
+  in the release-train order only when every beta2 PR is merged, `upgrade/vault` CI is green in every repository, the
+  release dry run has passed, the real-node yew run and the fast-testnet walkthrough are done and the release notes
+  are final. Draft train `releases/v6.22.0-beta2.yaml`; sapling-crypto `decrypt_diversifier` defect recorded in
+  `docs/plans/upstream-reports.md`, to be relayed upstream.
 
 ## 0. Assumptions about the Foundation's primitive
 
