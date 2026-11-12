@@ -248,6 +248,123 @@ Listed roughly by operational impact.
   (`boyfromcave/ycash6`, `src/wallet/test/rpc_table_tests.cpp`, with `dumpwallet` as the one
   allowlisted exception).
 
+### 3.10 `-deletetx` leaves dangling `wtxOrdered` pointers, and its spent-tx loop leaves spend-index entries
+
+> Added 2026-11-11. Found while reviewing a wallet erase on our 6.22.0-beta2 line; the cause is in the
+> pin unchanged.
+
+- **Where:** `CWallet::DeleteTransactions` (`src/wallet/wallet.cpp:2913`) erases from `mapWallet` in
+  two loops: expired/conflicted transactions at `:2934` and spent, deeply confirmed ones at `:2952`.
+  `wtxOrdered` (`src/wallet/wallet.h:1805`) holds a raw `CWalletTx*` for every entry, inserted at
+  `wallet.cpp:3919` and `:3940`, and nothing in the tree ever erases from it. Each erased transaction
+  therefore leaves a dangling pointer. Readers that dereference it include `listtransactions`
+  (`src/wallet/rpcwallet.cpp:2161`) and the smart-time loop in `AddToWallet`
+  (`wallet.cpp:3952`ff.), which walks `wtxOrdered` from the newest entry. The spent-tx loop
+  (`:2952`) also skips `RemoveFromSpends` (`:2694`), which the expired loop calls (`:2936`), so that
+  transaction's `mapTxSpends` / nullifier entries stay behind (see 3.12).
+- **Introduced:** `ae23774b3` ("Port deletetx + -bdbcache from YCASH_WR", 2026-05-15). The skipped
+  `RemoveFromSpends` came across from the 4.5.0 code.
+- **Reproduction (reasoning):** Run with `-deletetx` (and the default `-deletetxconflict`). An expired
+  wallet transaction is erased whatever its age, through the `wtxDepth == -1` branch, and it is often
+  the newest entry in `wtxOrdered`. The next `listtransactions` then reads freed memory, as does the
+  next wallet transaction that arrives in a block. Spent transactions are older, so
+  `listtransactions` with a large `count` reaches them.
+- **Impact:** Use-after-free in the wallet of the operators `-deletetx` is meant for (pools,
+  long-running nodes). In practice that means garbage times and amounts, or a crash. The option is
+  off by default.
+- **Severity:** High for `-deletetx` users (memory unsafety on a routine RPC); none otherwise.
+- **Suggested fix:** Before each `mapWallet.erase`, erase the transaction's `wtxOrdered` entry by
+  pointer (look up its `nOrderPos` range and compare pointers), and call `RemoveFromSpends(txid)` in
+  the spent loop as in the expired loop. On our line, `CWallet::EraseUnbroadcastTx` does exactly this
+  for our own erase (ycash6 #99). `DeleteTransactions` itself is **not yet fixed on our line**.
+- **Same in 4.5.0:** Partly. `ref/ycash` has no `wtxOrdered` (it sorts `mapWallet` on each call), but
+  its spent loop (`src/wallet/wallet.cpp:4080`) also skips `RemoveFromSpends`, unlike the expired
+  loop (`:4051`-`:4055`). That code is built only with `YCASH_WR` (`:3949`).
+
+### 3.11 `getbalance` / `getwalletinfo` with `asOfHeight` use a balance cache that ignores the height
+
+> Added 2026-11-11. Found while reviewing our balance RPCs on 6.22.0-beta2; the cause is in the pin
+> unchanged.
+
+- **Where:** `CWallet::GetBalance` (`src/wallet/wallet.cpp:5834`) calls
+  `GetAvailableCredit(asOfHeight, true, filter)` (`:5843`), with the cache on whatever the height.
+  `CWalletTx::GetAvailableCredit` (`:5654`) keeps one cached value per transaction
+  (`nAvailableCreditCached`). It returns that value when `fUseCache` is set (`:5674-5675`), and
+  writes it after every computation (`:5691-5694`), even when the caller passed `fUseCache=false` or
+  a historical `asOfHeight`. The computed value depends on the height through
+  `IsSpent(hashTx, i, asOfHeight)`. Callers: `getbalance` (`src/wallet/rpcwallet.cpp:1231`),
+  `getwalletinfo.balance` (`:3002`) and the balance check in `sendtoaddress` (`:296`).
+- **Introduced:** Upstream zcashd `659077aff` ("Propagate asOfHeight to all relevant RPC calls", Greg
+  Pfeil, 2022-11-17).
+- **Reproduction (reasoning):** A coin received at height 100 and spent at 110.
+  1. `getbalance` at the tip caches 0 for the receiving transaction.
+  2. `getbalance "*" 1 false false 105` then returns that cached 0, though the coin was unspent at
+     105.
+  3. The other way round: after the spend has marked the parent dirty, a first call at
+     `asOfHeight=105` caches the coin's value. Every later plain `getbalance`, and
+     `sendtoaddress`'s balance check, then counts a spent coin until something else marks the
+     transaction dirty.
+- **Impact:** Wrong historical balances, and a historical query can inflate the current balance.
+  Coin selection does not use this cache, so no invalid transaction results: a send against the
+  inflated balance fails later with insufficient funds.
+- **Severity:** Medium: a balance RPC reports wrong figures without any error. Funds are not at risk.
+- **Suggested fix:** In `GetAvailableCredit`, read and write the cache only when
+  `!asOfHeight.has_value()`. Write it only when `fUseCache` is set, or give historical callers a
+  no-write path. `GetBalance` then needs no change. On our line, `getwalletinfo.balance` is computed
+  without the cache (ycash6 #96), but `getbalance` is unchanged.
+
+### 3.12 `SyncMetaData` creates an empty wallet transaction from a stale spend entry, and the next resend crashes
+
+> Added 2026-11-11. Hit on our 6.22.0-beta2 line through our own erase (now fixed there); the code is
+> in the pin unchanged and in 4.5.0.
+
+- **Where:** `CWallet::SyncMetaData` (`src/wallet/wallet.cpp:1898`) indexes `mapWallet[hash]` for
+  every txid in a spend range (`:1909`, `:1913`, `:1920`). It runs from `AddToTransparentSpends` /
+  the Sprout and Sapling variants (`:2598`, `:2607`, `:2616`) whenever a wallet transaction is
+  recorded as spending an outpoint or nullifier. If the range still names a txid that is no longer
+  in `mapWallet`, `operator[]` inserts an empty `CWalletTx` (no `pwallet`, `nOrderPos` -1). Its
+  `nOrderPos` is the smallest, so the empty entry becomes `copyFrom`, and its blank `mapValue`,
+  `fFromMe` and `nTimeSmart` overwrite those of the real transaction. The next
+  `ResendWalletTransactionsBefore` (`:5776`) calls `RelayWalletTransaction` on it (`:5794`), which
+  dereferences the null `pwallet` at `:5552`.
+- **Precondition at the pin:** Something must erase a transaction from `mapWallet` without
+  `RemoveFromSpends`. At the pin, only the spent loop of `-deletetx` does that (3.10), and its stale
+  entries are revisited only if a later wallet transaction spends the same input, which a confirmed
+  spend makes unlikely. `EraseFromWallet` (`:4365`) has the same gap, but nothing fires the
+  `EraseTransaction` signal that calls it. Any future erase path inherits the crash, as ours did
+  (a refused send erased, then sent again in the same process).
+- **Impact:** A node crash on a wallet resend (periodic, after a block, or
+  `resendwallettransactions`), plus wrong metadata written to disk for the real transaction.
+- **Severity:** Low at the pin (it needs a rare precondition), but the failure is a crash.
+- **Suggested fix:** In `SyncMetaData`, use `mapWallet.find` and skip txids that are not found. Also
+  call `RemoveFromSpends` on every erase path (3.10). Our line fixes the erase side:
+  `CWallet::EraseUnbroadcastTx` (ycash6 #99) removes the spend entries, nullifier maps and
+  `wtxOrdered` pointer before erasing. `SyncMetaData` itself is unchanged there.
+- **Same in 4.5.0:** Yes. `ref/ycash` `src/wallet/wallet.cpp:1045` (`mapWallet[hash]` at `:1056`),
+  `RelayWalletTransaction` at `:4653` (there `assert(pwallet)` at `:4655` aborts instead).
+
+### 3.13 Legacy transparent addresses have no lookahead, so the seed alone cannot find them (latent)
+
+> Added 2026-11-11. Found while building a seed-only restore on our line; latent at the pin, which
+> has no restore path.
+
+- **Where:** `getnewaddress` (`src/wallet/rpcwallet.cpp:171`, `:211`) calls `GenerateNewKey(true)`.
+  That derives the next external key of the legacy account at `GetLegacyTKeyCounter`, adds it, and
+  advances the counter (`src/wallet/wallet.cpp:342-377`). The keypool only ever holds internal
+  (change) keys (`GenerateNewKey(false)`, `:6880`). No external key is derived ahead of the counter,
+  and a rescan that finds a payment to a derived key does not advance the counter.
+- **Introduced:** Not traced. It came in with zcashd's mnemonic-seed wallet.
+- **Impact:** A wallet re-created from the same mnemonic holds only the keys it derives itself. A
+  rescan then misses every coin paid to a `getnewaddress` address it has not yet re-derived, and
+  calling `getnewaddress` again does not trigger a rescan. At the pin this is latent, since there is
+  no way to create a wallet from a phrase and `z_exportwallet` carries the keys themselves. It
+  matters to any restore tool built on this wallet.
+- **Severity:** Low at the pin (latent); High for any seed-only restore.
+- **Suggested fix:** Hold a window of external (and internal) keys ahead of the counter, with a
+  gap limit like the keypool. When a scanned output pays a held key, mark it used and move the
+  counter past it, then top the window up and re-scan the affected range. Our line does this on
+  `up/b2-seed-restore`, **not merged yet**.
+
 ## 4. Inherited functional suite (pin + the three patches)
 
 **BASE_SCRIPTS: 39 pass and 80 fail** (75 fail outright and 5 hang). Outside `BASE_SCRIPTS`,
