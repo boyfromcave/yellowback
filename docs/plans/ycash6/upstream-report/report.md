@@ -304,6 +304,12 @@ Listed roughly by operational impact.
      `asOfHeight=105` caches the coin's value. Every later plain `getbalance`, and
      `sendtoaddress`'s balance check, then counts a spent coin until something else marks the
      transaction dirty.
+- **Reproduced (2026-11-12, on our 6.22.0-beta2 line before the fix):** step 3 above, as a
+  functional test (`qa/rpc-tests/wallet_beta2_followups.py`, case `asof_cache`): a 2 YEC coin is
+  received, spent with `z_sendmany` (1.9 YEC out), then `getbalance "*" 1 false false <h>` at the
+  height before the spend writes the coin into the cache, and the plain `getbalance` that follows
+  answered 2.09999 YEC where `getwalletinfo` answered 0.09999. The code is the pin's unchanged
+  (`wallet.cpp:5654-5694`).
 - **Impact:** Wrong historical balances, and a historical query can inflate the current balance.
   Coin selection does not use this cache, so no invalid transaction results: a send against the
   inflated balance fails later with insufficient funds.
@@ -311,7 +317,8 @@ Listed roughly by operational impact.
 - **Suggested fix:** In `GetAvailableCredit`, read and write the cache only when
   `!asOfHeight.has_value()`. Write it only when `fUseCache` is set, or give historical callers a
   no-write path. `GetBalance` then needs no change. On our line, `getwalletinfo.balance` is computed
-  without the cache (`boyfromcave/ycash6#96`), but `getbalance` is unchanged.
+  without the cache (`boyfromcave/ycash6#96`). The fix above for `getbalance` (an as-of-height read
+  neither reads nor writes the cache) is in review on our line, in the beta2 wallet follow-ups.
 
 ### 3.12 `SyncMetaData` creates an empty wallet transaction from a stale spend entry, and the next resend crashes
 
@@ -365,6 +372,34 @@ Listed roughly by operational impact.
   counter past it, then top the window up and re-scan the affected range. A fix of this shape is
   in review on our line; it is not on our `upgrade/vault` yet, and this report will cite the pull
   request once it is published.
+
+### 3.14 `walletconfirmbackup` refuses its own optional `acknowledge_imports` argument
+
+> Added 2026-11-12. Found by our CI hardening's argument-table check on 6.22.0-beta2; the cause is in
+> the pin unchanged.
+
+- **Where:** `walletconfirmbackup` takes `"emergency recovery phrase" ( acknowledge_imports )`
+  (`src/wallet/rpcwallet.cpp:2620`, help `:2627`, `:2645-2646`) and, when the wallet holds keys
+  imported from outside the ZIP-32 tree, refuses to confirm the backup unless the second argument is
+  `true` (`:2658-2669`). Its row in the shared argument table is `{ "walletconfirmbackup", {{s},
+  {}} }` (`src/rpc/common.h:171`): one required argument and no optional one. So the server answers
+  any call that passes the second argument with code -32602, "Too many parameters for method
+  `walletconfirmbackup`. Needed exactly 1, but received 2" followed by the help (`src/rpc/server.cpp:488-511`), and
+  `ycash-cli` refuses it with its wrong-number-of-parameters error before sending
+  (`src/rpc/client.cpp:76-79`).
+- **Introduced:** `9e8b4f58c` ("Track externally-imported keys for partial-backup awareness",
+  2026-05-14, on the `dev-rebase-6.20.0` branch of this pin), which added the argument and its
+  refusal to the handler but not to the table. It is not in upstream zcashd.
+- **Impact:** A wallet with externally imported keys can never confirm its backup: the call without
+  the argument is refused by the handler, the call with it by the table. `ycashd-wallet-tool`, which
+  sends only the phrase (`src/rust/bin/wallet_tool.rs:460`), hits the first refusal. Until the backup
+  is confirmed the wallet will not generate new spending keys or addresses (the help, `:2634-2635`).
+- **Severity:** Medium for a wallet with imported keys (no workaround through the RPC); none
+  otherwise.
+- **Suggested fix:** Make the row `{ "walletconfirmbackup", {{s}, {o}} }` (`o`, so `ycash-cli`
+  parses `true` as JSON), and a unit test that calls the method with both arguments through the
+  table. Both are in review on our line (`src/wallet/test/rpc_table_tests.cpp`, beta2 wallet
+  follow-ups).
 
 ## 4. Inherited functional suite (pin + the three patches)
 
