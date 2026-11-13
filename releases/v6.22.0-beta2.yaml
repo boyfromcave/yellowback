@@ -21,7 +21,7 @@ lightwalletd-dd:
 yecwallet-dd:
   commit: 09023de1cf52248ee37c559851a9eab5f197bcd7
 yew:
-  commit: 59e78e70b4ddb25642e741dabcc20db1ca005f73
+  commit: 6d9017ec2fc075c1cd92cc2e4b64682161ec2f99
 yolo:
   commit: fcb5a9e24d1494ed75ca7bad6a2b5d7336dcaab5  # = beta1 pin; no beta2 change
 chain-viz:
