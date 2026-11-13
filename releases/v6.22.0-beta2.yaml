@@ -9,7 +9,7 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: 4be90112a4f62218b0d05ca815955a230d803a4c  # upgrade/vault head, after ycash6#111 (packages built at c8f25b0ba; qa/, doc/, .github/ only since)
+  commit: fbc9f625c657eca50ddc09e5065e8ed0d3a33a48  # upgrade/vault head, after ycash6#114 (packages built at c8f25b0ba; qa/, doc/, .github/ only since)
   tag: v6.22.0-beta2
 ycash-dd:
   commit: 00247d5c3e4e6be3c563ec031b6d639a1f47c62c  # upgrade/vault head, after ycash-dd#178
