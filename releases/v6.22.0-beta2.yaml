@@ -9,7 +9,7 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: c8f25b0ba067ed9eb5f8907220028471d9a4106d  # upgrade/vault head, after ycash6#109
+  commit: fbc9f625c657eca50ddc09e5065e8ed0d3a33a48  # upgrade/vault head, after ycash6#114 (packages built at c8f25b0ba; qa/, doc/, .github/ only since)
   tag: v6.22.0-beta2
 ycash-dd:
   commit: 00247d5c3e4e6be3c563ec031b6d639a1f47c62c  # upgrade/vault head, after ycash-dd#178
@@ -21,13 +21,13 @@ lightwalletd-dd:
 yecwallet-dd:
   commit: 09023de1cf52248ee37c559851a9eab5f197bcd7
 yew:
-  commit: 5bea4306ee698e0852af745677d0a340b4e567a3
+  commit: 6d9017ec2fc075c1cd92cc2e4b64682161ec2f99
 yolo:
   commit: fcb5a9e24d1494ed75ca7bad6a2b5d7336dcaab5  # = beta1 pin; no beta2 change
 chain-viz:
   commit: fa4b78dac3c5bfd8f163a1bb7119afa946e4dc67
 x402-ycash:
-  commit: b7a77f76a2453e02d64874a6aca3d7dadf9349c2
+  commit: a50a45f61d2b312a94d6cad59c847dae1624c6de
 hawkeye:
   commit: ce7345a79ef36bbfc849ea346831806fdc2b5c15
 wyec:
