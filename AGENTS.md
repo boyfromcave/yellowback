@@ -31,7 +31,8 @@ yellowback-workspace/
 │   ├── ycash6/      READ-ONLY. miodragpop/ycash, ycashd 6.20.0 (Zcash 6.x lineage), dev-rebase-6.20.0 @ 040894344b (no tag)
 │   ├── librustzcash6/ READ-ONLY. miodragpop/librustzcash, the patched librustzcash ref/ycash6's Cargo.toml pins, ycashd-v6.20.0 @ ec525fae82 (no tag)
 │   ├── zakura/      READ-ONLY. zakura-core/zakura, a Zcash full node in Rust (Zebra lineage), main @ b44ec121d (v1.8.0-rc1 lineage, 2026-11-02; first pinned at 2b062412c5)
-│   └── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
+│   ├── yolo/        READ-ONLY. yecdev/yolo, the Perl solo-pool stratum servers (stratumpool/stratumsolo/cenote), main @ c9c155c6 (no tag)
+│   └── inzyght/     READ-ONLY. miodragpop/inzyght, the Ycash block explorer (C++23, Drogon, PostgreSQL), main @ 17f505f273 (v1.0.9, no tag) — docs/mapping.md §25
 ├── ycash-dd/        WORKING FORK of the node.   branch `feature/yellowback-price-attest`, off `ycash-legacy`     (= v4.5.0)
 ├── yecwallet-dd/    WORKING FORK of the wallet. branch `feature/yellowback-price-attest`, off `yecwallet-legacy` (= v4.5.0)
 │                    (`feature/digidollar` in both: the retired federation prototype, kept as a record — never built on)
@@ -67,7 +68,7 @@ yellowback-workspace/
 │   ├── ideation/    README only: experimental ideas live on `ideation/*` branches, never on main
 │   └── mapping.md   ← THE FILE-BY-FILE CROSSWALK (node §1–§11, wallet §12, v2/v3 §13–§14, lightwalletd
 │                       §15, YEW §16, yolo §17, chain-viz §18, v4.5.0→6.20.0 port §19, x402 §20,
-│                       hardening §21, vault upgrade §22, kogany (Zakura) port §24). READ IT FIRST.
+│                       hardening §21, vault upgrade §22, kogany (Zakura) port §24, Inzyght explorer §25). READ IT FIRST.
 ├── repos.yaml       the manifest: every repo, URL, pin (plain nested clones — NOT submodules)
 ├── scripts/         bootstrap.sh (`make bootstrap`), pull.sh (`make pull`), repos.sh, repo-status.sh,
 │                    extract-spec.sh + extract_spec.py (`make spec`), check-ref-pins.sh (CI: pins vs upstream)
@@ -146,8 +147,8 @@ procedure in kogany's `.github/README-kogany.md` ("Turning Actions on"); the off
 
 ### 1. `ref/` is read-only. Never edit, never commit, never checkout.
 
-All eight `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, `ref/ycash6`,
-`ref/librustzcash6` and `ref/yolo`, whose upstreams publish no tags, and `ref/zakura`, pinned past its last tag by choice, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
+All nine `ref/` checkouts are pinned in detached HEAD (to a tag, or for `ref/lightwalletd`, `ref/ycash6`,
+`ref/librustzcash6`, `ref/yolo` and `ref/inzyght`, whose upstreams publish no tags, and `ref/zakura`, pinned past its last tag by choice, to a commit) and their working trees are `chmod -R a-w`. They exist to be **read and grepped**, never modified. If a write fails with
 `Permission denied` under `ref/`, that is the guardrail working — you are editing the wrong tree.
 The file you want is under `ycash-dd/`.
 
@@ -381,7 +382,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its twenty-five clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty-six clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the seven forks vs its -legacy baseline

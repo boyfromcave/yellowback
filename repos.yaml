@@ -162,6 +162,13 @@ ref/yolo:
   commit: c9c155c6
   what: yolo, the Perl Ycash solo-pool stratum servers (stratumpool, stratumsolo, cenote): wire-format and behaviour reference for yolo/
 
+ref/inzyght:
+  role: reference
+  url: https://github.com/miodragpop/inzyght.git
+  branch: main               # miodragpop's Inzyght, its own repository (not a branch of miodragpop/ycash); version 1.0.9, publishes no tags
+  commit: 17f505f273
+  what: Inzyght, the Ycash block explorer (C++23, Drogon, PostgreSQL, ZMQ) on insightexplorer ycashd: reference for a vault-upgrade explorer (docs/mapping.md §25)
+
 yolo:
   role: app
   url: https://github.com/boyfromcave/yolo.git

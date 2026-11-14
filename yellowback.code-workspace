@@ -1,5 +1,5 @@
 {
-  // Yellowback workspace for VS Code: the parent repo plus its twenty-five nested clones as roots.
+  // Yellowback workspace for VS Code: the parent repo plus its twenty-six nested clones as roots.
   // Open with `code yellowback.code-workspace` after `make bootstrap`. The folder names below are
   // referenced by ${workspaceFolder:<name>} in settings and tasks, so keep them stable.
   "folders": [
@@ -28,12 +28,13 @@
     { "name": "ref/ycash6",    "path": "ref/ycash6" },
     { "name": "ref/librustzcash6", "path": "ref/librustzcash6" },
     { "name": "ref/zakura",    "path": "ref/zakura" },
-    { "name": "ref/yolo",      "path": "ref/yolo" }
+    { "name": "ref/yolo",      "path": "ref/yolo" },
+    { "name": "ref/inzyght",   "path": "ref/inzyght" }
   ],
   "settings": {
     // AGENTS.md rule 1: ref/ is read-only. The filesystem enforces it (chmod a-w); this makes the
     // editor say so instead of failing on save.
-    "files.readonlyInclude": { "**/ref/digibyte/**": true, "**/ref/ycash/**": true, "**/ref/yecwallet/**": true, "**/ref/lightwalletd/**": true, "**/ref/ycash6/**": true, "**/ref/librustzcash6/**": true, "**/ref/zakura/**": true, "**/ref/yolo/**": true },
+    "files.readonlyInclude": { "**/ref/digibyte/**": true, "**/ref/ycash/**": true, "**/ref/yecwallet/**": true, "**/ref/lightwalletd/**": true, "**/ref/ycash6/**": true, "**/ref/librustzcash6/**": true, "**/ref/zakura/**": true, "**/ref/yolo/**": true, "**/ref/inzyght/**": true },
     "files.readonlyFromPermissions": true,
 
     // The workspace venv (created by `make bootstrap`) runs the functional tests and the coordinator.
