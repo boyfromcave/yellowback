@@ -1,0 +1,54 @@
+{
+ "bucket": "medium",
+ "sla_days": 90,
+ "findings": [
+  {
+   "fingerprint": "23afb1117fff4ecf",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "rpc-docs/capture.py",
+   "line": 98,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  },
+  {
+   "fingerprint": "b532c07c6fe5772c",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "rpc-docs/capture.py",
+   "line": 104,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  },
+  {
+   "fingerprint": "aa3ca3e1ad10f00e",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "rpc-docs/capture.py",
+   "line": 112,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  },
+  {
+   "fingerprint": "a32f54a2b41432b3",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "rpc-docs/capture.py",
+   "line": 120,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  },
+  {
+   "fingerprint": "dec36c6f01fd4c00",
+   "rule": "python.lang.security.audit.dangerous-subprocess-use-audit",
+   "path": "rpc-docs/capture.py",
+   "line": 127,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  },
+  {
+   "fingerprint": "60530d23b28bac96",
+   "rule": "python.lang.security.audit.insecure-file-permissions",
+   "path": "rpc-docs/fetch_image.py",
+   "line": 135,
+   "first_seen": "2026-11-10",
+   "due": "2027-02-08"
+  }
+ ]
+}
