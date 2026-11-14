@@ -1,7 +1,8 @@
 # Explorer plan: a block explorer for the vault network upgrade
 
-**Revision 1 (2026-11-14). Proposal. Nothing here is implemented.**
-Decisions EX-1..EX-10 (§9) are the Yellowback lead architect's; each has a recommendation.
+**Revision 2 (2026-11-14). Decided; E1 and E2 started.**
+The Yellowback lead architect accepted every recommendation of §9 on 2026-11-14 (EX-1..EX-10), with
+the order: the local Docker solution first (E1, E2), then the Terraform deployment (E3, E4).
 
 ## 1. Goals
 
@@ -231,7 +232,7 @@ Not decisions; the list the lead architect picks from in E6. Details in
 
 ## 9. Decisions for the Yellowback lead architect
 
-| # | Decision | Recommendation |
+| # | Decision | Decided (2026-11-14, as recommended) |
 |---|---|---|
 | EX-1 | Backend node | ycashd 6.22.0-beta2 now, node-agnostic code, koganyd second ([`node-choice.md`](node-choice.md)) |
 | EX-2 | Licence route for Inzyght | A: ask the author for a licence and his preference; C as the fallback |
