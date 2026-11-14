@@ -51,6 +51,7 @@ yellowback-workspace/
 ├── hawkeye/         THE BRIDGE ATTESTOR (Hawkeye), its own repo, branch `upgrade/vault` — the wYEC bridge's attestor sidecar, plan hawkeye/docs/hawkeye-bridge-plan.md
 ├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
 ├── ycash-ops/       THE OPERATIONS REPO (ycash-ops), PRIVATE, its own repo, branch `main` (no `upgrade/vault` yet) — the GitHub Actions that deploy the testnets on AWS from ycash-infra's recipes; no account identifiers in it
+├── kogany-site/     THE KOGANY WEBSITE (kogany-site), its own repo, branch `upgrade/vault` — static site served at kogany.ycash.team (S3 + CloudFront, infrastructure in ycash-ops)
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `upgrade/vault` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        yellowback-risk-profile.md (READ FIRST: the collateral model as the upgrade/vault node
@@ -75,11 +76,11 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines (a third, `kogany`, just started), ten component repos.** Yellowback is an overlay on the node
+**One overlay, two node lines (a third, `kogany`, just started), eleven component repos.** Yellowback is an overlay on the node
 (`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
 the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
-parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye) and the light-wallet backend (ycash-infra), each in its own
+parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye), the light-wallet backend (ycash-infra) and the Kogany website (kogany-site), each in its own
 repo and each reaching the node only through a public interface (README.md, the components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
@@ -380,7 +381,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its twenty-four clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty-five clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the seven forks vs its -legacy baseline
