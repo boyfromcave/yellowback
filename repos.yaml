@@ -210,3 +210,9 @@ ycash-ops:
   branch: main                # GitHub default; it has no upgrade/vault branch yet
   private: true               # the one private repository: needs access, clone over SSH
   what: ycash-ops, the Ycash contributors' private operations repository: the GitHub Actions that deploy and run the testnets (and, after P8, mainnet) on AWS from ycash-infra's public recipes; holds no account identifiers (those live in GitHub environment secrets)
+
+kogany-site:
+  role: app
+  url: https://github.com/boyfromcave/kogany-site.git
+  branch: upgrade/vault       # GitHub default; net new, no baseline
+  what: kogany-site, the Kogany website (static HTML, a dependency-free Python build, build-time snapshot cards), served at kogany.ycash.team from S3 + CloudFront (the infrastructure is in ycash-ops)
