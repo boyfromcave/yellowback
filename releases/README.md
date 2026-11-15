@@ -6,8 +6,8 @@ A new version of the Ycash node is only tested together with the programs around
 the light-wallet server, the mining pool, the chain visualizer, the agent-payment library and the
 bridge attestor. Each file here is the list of exactly which version (which commit) of each of them
 one node release was tested with. It is written before the release is tagged, checked by CI, and
-read by the release-candidate qualification (`rc-qualify` in ycash6), so "tested together" always
-means the same set of commits.
+read by the release-candidate qualification ([`qualify/`](../qualify/README.md), beside this
+directory), so "tested together" always means the same set of commits.
 
 ## The file
 
@@ -52,7 +52,10 @@ wyec:
   commit: <40-hex>
 ```
 
-Every component is required. The testnet values follow the node's own release rules for the stage
+Every component is required. A train may be written ahead as a **skeleton**: any value but
+`release.version` and the tags may be the literal `placeholder` (`releases/v6.22.0-beta3.yaml` is
+one). The check passes a skeleton's shape and does not go online; `pins`, and so the qualification,
+refuses it until every placeholder is filled in. The testnet values follow the node's own release rules for the stage
 (`qa/yellowback-vault-params.py` on both node lines): an rc names testnet-yb-fast's height and set;
 a set never appears without its height; a final release names both `yb` networks.
 
@@ -69,7 +72,7 @@ a set never appears without its height; a final release names both `yb` networks
 - hawkeye fetches the train's wyec commit.
 
 `scripts/release-train.py pins releases/v<version>.yaml` prints the train as `TRAIN_*` lines. That
-is how `rc-qualify` takes its pins on the release path, in place of the push tier's
+is how the qualification (`qualify/rc-qualify.sh train`) takes its pins, in place of the push tier's
 `YOLO_COMMIT`, `CHAINVIZ_COMMIT`, `LWD_COMMIT` and `YB_WORKSPACE_COMMIT`.
 
 ## Order
@@ -77,5 +80,6 @@ is how `rc-qualify` takes its pins on the release path, in place of the push tie
 1. The ceremony and the node's release parameters are done; the commits are known.
 2. Add `releases/v<version>.yaml` here by pull request; the check passes (tags may not exist yet).
 3. Tag ycash-dd `vault-params/v<version>`, then ycash6 `v<version>`, on those commits.
-   ycash6's release workflow drafts the release and starts `rc-qualify`, which reads this file
-   from the workspace's `upgrade/vault`.
+   ycash6's release workflow drafts the release. Then dispatch this repository's `rc-qualify`
+   with this file as its `train` input ([`qualify/README.md`](../qualify/README.md)); the record
+   names the train's commits and the harness commit that ran.

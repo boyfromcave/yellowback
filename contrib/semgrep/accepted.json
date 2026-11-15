@@ -1,6 +1,27 @@
 {
   "_comment": "Accepted Semgrep findings (contrib/semgrep/README.md, 'Accepting a finding'). findings: fingerprint -> {rule, path, reason, by, date}. rule_paths: [{rule (glob), paths (globs), reason, by, date}]. Every entry needs a reason a reviewer can check.",
   "findings": {
+    "ec785393002d240a": {
+      "rule": "python.lang.security.audit.insecure-file-permissions",
+      "path": "qualify/test_rc_qualify.py",
+      "reason": "The node-shard self-test's stub ycashd and rpc-tests.py: fresh stub executables this test just wrote under its own tempfile.mkdtemp() directory; they must be executable to be run, and 0o700 is owner-only (no group or world bits), the most restrictive mode an executable can have.",
+      "by": "@boyfromcave",
+      "date": "2026-11-15"
+    },
+    "6c1260adcb8062b4": {
+      "rule": "python.lang.security.audit.insecure-file-permissions",
+      "path": "qualify/test_rc_qualify.py",
+      "reason": "Moved from ycash6 qa/test_yellowback_rc_qualify.py (accepted there as 6043e88331000543). rc-qualify self-test stub binaries inside a staged tarball: the file is a fresh stub executable this test just wrote under its own tempfile.mkdtemp() directory; it must be executable to be run, and 0o700 is owner-only (no group or world bits), the most restrictive mode an executable can have.",
+      "by": "@boyfromcave",
+      "date": "2026-11-15"
+    },
+    "61ed21b86dc54355": {
+      "rule": "python.lang.security.audit.dynamic-urllib-use-detected",
+      "path": "qualify/rc-crossline.py",
+      "reason": "Moved from ycash6 qa/yellowback-rc-crossline.py (accepted there as 0f6ad1975b9bb0a0). The URL is always http://127.0.0.1:<port>/ (Rpc.__init__), the integer JSON-RPC port of a local node: read from an existing devnet node's ycash.conf, or of a node this script started itself; no scheme or host comes from outside, so urlopen cannot be pointed at file:// or a remote host.",
+      "by": "@boyfromcave",
+      "date": "2026-11-15"
+    },
     "0a8e3e80bc0115c4": {
       "rule": "python.lang.security.audit.regex_dos",
       "path": "scripts/extract_spec.py",

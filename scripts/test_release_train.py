@@ -95,6 +95,34 @@ class Shape(unittest.TestCase):
         beta = train_text(version="6.22.0-beta1", fast_vault_height="none", fast_set_id="none")
         self.assertEqual(self.check(beta, "v6.22.0-beta1.yaml"), [])
 
+    def test_a_skeleton_passes_its_shape_and_lists_its_placeholders(self):
+        text = train_text(version="6.22.0-beta3").replace("  rpcversion: 8", "  rpcversion: placeholder")
+        text = text.replace("  commit: " + "2" * 40, "  commit: placeholder")
+        self.assertEqual(self.check(text, "v6.22.0-beta3.yaml"), [])
+        train = rt.parse_flat(text, "x")
+        self.assertIn("release.rpcversion", rt.placeholders(train))
+        self.assertIn("ycash6.commit", rt.placeholders(train))
+        self.assertEqual(rt.placeholders(rt.parse_flat(train_text(), "x")), [])
+        # The version and the tags are never placeholders: they name the file and the release.
+        bad = train_text().replace("tag: v6.22.0-rc1", "tag: placeholder")
+        self.assertIn("ycash6.tag cannot be a placeholder", self.check(bad))
+        self.assertIn("release.version cannot be a placeholder", self.check(train_text().replace("  version: 6.22.0-rc1", "  version: placeholder")))
+
+    def test_pins_refuses_a_skeleton_and_check_passes_it_offline(self):
+        tmp = tempfile.mkdtemp(prefix="release-train-skel-")
+        self.addCleanup(shutil.rmtree, tmp)
+        path = os.path.join(tmp, "v6.22.0-beta3.yaml")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(train_text(version="6.22.0-beta3").replace("  commit: " + "2" * 40, "  commit: placeholder", 1))
+        err, out = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+            self.assertEqual(rt.main(["pins", path]), 1)
+            self.assertEqual(rt.main(["check", "--online", path]), 0)   # never goes online
+        self.assertIn("is a skeleton", err.getvalue())
+        self.assertIn("ycash6.commit", err.getvalue())
+        self.assertNotIn("TRAIN_", out.getvalue())
+        self.assertIn("SKELETON", out.getvalue())
+
     def test_the_flat_shape_is_strict(self):
         for bad in ("release:\n version: x\n", "release:\n  version: a\n  version: b\n", "  orphan: x\n",
                     "release:\nrelease:\n"):
@@ -170,6 +198,21 @@ class Online(unittest.TestCase):
         git(side, "checkout", "-q", "upgrade/vault")
         problems = self.run_check(train_text(commits=dict(self.commits, yolo=off)))
         self.assertTrue(any(p.startswith("yolo: %s is not on upgrade/vault" % off) for p in problems), problems)
+
+    def test_a_commit_on_a_release_branch_passes_and_on_another_does_not(self):
+        repo = os.path.join(self.tmp, "src", "yolo")
+        made = {}
+        for branch in ("release/6.22", "feature/x"):
+            git(repo, "checkout", "-q", "-b", branch, "upgrade/vault")
+            with open(os.path.join(repo, "r"), "w", encoding="utf-8") as fh:
+                fh.write(branch)
+            git(repo, "add", "r")
+            git(repo, "commit", "-q", "-m", branch)
+            made[branch] = git(repo, "rev-parse", "HEAD")
+        git(repo, "checkout", "-q", "upgrade/vault")
+        self.assertEqual(self.run_check(train_text(commits=dict(self.commits, yolo=made["release/6.22"]))), [])
+        problems = self.run_check(train_text(commits=dict(self.commits, yolo=made["feature/x"])))
+        self.assertTrue(any("is not on upgrade/vault or a release/* branch" in p for p in problems), problems)
 
     def test_a_tag_on_another_commit_is_refused(self):
         repo = os.path.join(self.tmp, "src", "ycash6")
