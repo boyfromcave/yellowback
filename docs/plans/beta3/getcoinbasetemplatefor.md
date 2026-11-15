@@ -1,6 +1,7 @@
 # `getcoinbasetemplatefor`: design note (beta3 item 3, chunk N-1)
 
-**Revision 1 (2026-11-15). For the Yellowback lead architect's approval before 3n, 3k and 3p start.**
+**Revision 2. Decided 2026-11-15** by the Yellowback lead architect (the six decisions are in §2;
+revision 1 put them as open findings). This is the specification 3n, 3k and 3p implement.
 This note fixes the interface between three implementations that are built in parallel: the node
 call on ycash-dd and ycash6 (chunk 3n), kogany's equivalent (3k) and yolo's paired jobs (3p). Each
 of the three implements against this note alone. Where the note says MUST, a deviation is a defect
@@ -24,19 +25,21 @@ Fixed by the lead architect (`wt/beta3-list.md` item 3) and not reopened here:
 This note adds: the exact request and response (§3), how the template is named and what "stale"
 means (§4), the coinbase's contents and what a pool may change in it (§5), locking, concurrency
 and cost (§6), the errors (§7), yolo's flow and the interface 3p may code against today (§8),
-kogany's contract (§9), the evidence (§10), and the findings that need the lead architect's decision (§2, and D-6 in §8.1).
+kogany's contract (§9), the evidence (§10), and the lead architect's decisions on the findings of revision 1 (§2).
 
-## 2. Findings that need the lead architect's decision
+## 2. Decisions
 
-Each is the smallest change this lane can propose; none is applied anywhere yet.
+The lead architect decided revision 1's six findings on 2026-11-15. Each row records the finding,
+the decision and what it changed in this note.
 
-| # | Finding | Proposed |
-|---|---|---|
-| **D-1** | **"No way to request a lower amount" cannot be absolute in a stateless call.** A node that remembers nothing cannot tell a template it issued from a list of mempool transactions a caller made up. With the reference of §4 (the previous block hash and the template's transaction ids) a caller can name fewer transactions than its block will carry and so obtain a coinbase that claims fewer fees. Consensus accepts such a block (measured, §10 run 1: a coinbase built for an empty template, on a block with fee-paying transactions, was accepted and 637 zatoshi of fees were claimed by nobody). No design of this call can prevent that: a pool can also keep an old coinbase, or build its own. Only the exact-claim consensus rule could, and it is not requested. | Accept the stateless reference of §4. The interface still has no amount argument, the node never lowers an amount, and yolo checks every answer against the stock template (§8.3) and never pairs a coinbase with a transaction set other than the one it named. The alternative, a bounded per-tip memory of issued templates in the node (not per address), costs a hook inside `getblocktemplate`'s code path, has no counterpart in kogany, and closes nothing, because the pairing happens in the pool. |
-| **D-2** | **The swap path and the paired path disagree when the pool node runs with `-ydf=<n>` above 0.** The stock coinbase carries the operator's optional fund share (yolo keeps "any further output" as the node built it, `yolo/src/work.rs:110-118`), while `getcoinbasetemplatefor` builds no optional share. A transparent miner on the swap path would then be paid 5 % less than a Sapling miner on the same pool. With item 4 (default 0 %) this needs an operator who opted in. | In per-miner mode (no `--payout`) yolo refuses to issue work, with a clear log line, while the stock coinbase has more than one output at a height where `coinbasetxn.foundersreward` is absent or zero (the share is then optional). The pool recipe sets `-ydf=0`. No node change. |
-| **D-3** | **A full block has no room for a Sapling coinbase.** Both C++ assemblers reserve 1,000 bytes for the header and the coinbase together (`ycash6/src/miner.cpp:310-317`, `ycash-dd/src/miner.cpp:486`) and cap the rest at `MAX_BLOCK_SIZE - 1000`. A mainnet header with its Equihash 192,7 solution is 1,487 bytes, so only about 510 bytes are certain to be free; a Sapling coinbase is 1,119 bytes (measured). A template within about 600 bytes of the size limit cannot take one. Ycash blocks are far from full, so this is a boundary, not a daily case, and it already exists for a node mining to its own Sapling `-mineraddress`. | The call refuses with `coinbase-does-not-fit` (§7) instead of returning a coinbase that makes the block invalid. yolo MUST NOT drop transactions to make room on a paired job (today's `build_work` truncates at the size limit, `yolo/src/work.rs:131-137`; on a paired job that would leave the coinbase claiming fees of dropped transactions, `bad-cb-amount`). The miner stays on its previous pair until the next template. No change to the assembler. |
-| **D-4** | **kogany cannot build a Sapling coinbase today** (§9, measured). It has no Sapling prover and loads no proving parameters. | 3k ships transparent and post-quantum payouts first and answers a Sapling address with the refusal of §7 row 9. The Sapling part is a separate chunk, size M to L (an output prover, the 3.6 MB Sapling output parameters and their loading, a v4 coinbase path with a Sapling output, tests). The lead architect decides whether it holds the kogany release. The demonstration's pool node is ycashd, so criterion 2 does not depend on it. |
-| **D-5** | **A username with a worker suffix is refused today** (`<address>.rig1`: `Invalid address`, measured), and mining programs commonly add one. | 3p accepts `<address>` and `<address>.<worker>`: the part before the first `.` is the address (no address of any of the three kinds contains a `.`), the rest a label of at most 32 characters from `[A-Za-z0-9_-]`, shown in the log and `/status` only. F-1 passes the bare address. |
+| # | Finding | Decision | What it changed |
+|---|---|---|---|
+| **D-1** | **"No way to request a lower amount" cannot be absolute in a stateless call.** A node that remembers nothing cannot tell a template it issued from a list of mempool transactions a caller made up: a caller can name fewer transactions than its block will carry and so obtain a coinbase that claims fewer fees, and consensus accepts such a block (§10 run 1: 637 zatoshi of fees claimed by nobody). No design of this call can prevent that (a pool can also keep an old coinbase, or build its own); only an exact-claim consensus rule could, and it is not requested. | **Accepted as designed.** The reference is stateless: the previous block hash plus the template's transaction ids (§4). No amount argument; no node-side memory of templates. | Nothing; §4 stands. The node never lowers an amount, and yolo checks every answer against the stock template (§8.3) and never pairs a coinbase with a transaction set other than the one it named (§5.5). |
+| **D-2** | **The swap path and the paired path disagreed when the pool node runs with `-ydf=<n>` above 0**: the stock coinbase carries the operator's optional fund share, and revision 1's call built none. | **Changed: the call honours the node's `-ydf`.** After the mandate ends it deducts the same optional fund share the node's own stock coinbase carries: the same arithmetic and the same script as `CreateNewBlock`'s `SetFoundersRewardAndGetMinerValue` on each line (`ycash6/src/miner.cpp:119-157`, `ycash-dd/src/miner.cpp:187-242`), a share of the subsidy, never of the fees. So the swap path and the paired path pay the same on one pool. The default `-ydf` is 0 since beta3 item 4, so a miner is paid in full unless the pool operator opts in. | §3.2 (`fund` is the value of the fund output, mandated or optional, and the new key `fundrule` says which; `amount = subsidy - fund + fees` holds in every case), §3.3 (the node reads `-ydf`, as `CreateNewBlock` does), §5.1, §5.2 rewritten (for a Sapling payout the optional share is a transparent output, as in the node's own shielded coinbase), §8.3 (yolo checks the fund output against the stock coinbase), §8.4 (`fundrule`; the stub's helper node runs with the pool node's `-ydf`), §9, §11 (the `-ydf=5` test for every lane). Revision 1's yolo guard (refuse to issue work while an optional share is set) is dropped, as is the recipe's forced `-ydf=0`. |
+| **D-3** | **A full block has no room for a Sapling coinbase.** Both C++ assemblers reserve 1,000 bytes for the header and the coinbase together (`ycash6/src/miner.cpp:310-317`, `ycash-dd/src/miner.cpp:486`); a mainnet header with its Equihash 192,7 solution is 1,487 bytes and a Sapling coinbase 1,119 (measured), so a template within about 600 bytes of the size limit cannot take one. A boundary, not a daily case, and it already exists for a node mining to its own Sapling `-mineraddress`. | **Accepted.** The call refuses with `coinbase-does-not-fit` (§7 row 12) instead of returning a coinbase that makes the block invalid. yolo never drops transactions on a paired job (today's `build_work` truncates at the size limit, `yolo/src/work.rs:131-137`; on a paired job that leaves the coinbase claiming fees of dropped transactions, `bad-cb-amount`). The miner stays on its previous pair until the next template. No change to the assembler. | Nothing; §3.3 step 5, §5.5 and §7 stand. |
+| **D-4** | **kogany cannot build a Sapling coinbase today** (§9, measured): no Sapling prover, no proving parameters. | **Changed: beta3 is held for kogany's Sapling coinbase.** kogany's call pays Sapling addresses too in beta3: kogany implements the full contract, including a Sapling output prover and its parameters. | §7 row 9 is withdrawn from the contract (its number is kept so rows 10 to 17 keep theirs); missing parameters are row 17, an operator error (§9). §9 rewritten, §11's kogany tests include the Sapling case and cross-line acceptance both ways, §12's kogany row. |
+| **D-5** | **A username with a worker suffix is refused today** (`<address>.rig1`: `Invalid address`, measured), and mining programs commonly add one. | **Accepted.** 3p accepts `<address>` and `<address>.<label>`: the part before the first `.` is the address (no address of any of the three kinds contains a `.`), the rest a label of at most 32 characters from `[A-Za-z0-9_-]`, shown in the log and `/status` only. F-1 passes the bare address. | Nothing; §11's 3p tests stand. |
+| **D-6** | **Post-quantum miners already work on the swap path** (§10 run 2), so they could stay there or take the paired path. | **Decided: post-quantum miners use the new call (the paired path).** Only transparent ECC addresses (P2PKH, P2SH) stay on the swap path. | §8.1 (one rule: only P2PKH and P2SH are swapped), §8.4 (the stub for post-quantum addresses), §12's first yolo row. |
 
 Two smaller facts the three lanes must know are in §5.4 (the quote tag is the node's current one,
 not the template's) and §6.3 (a cap on parallel requests, or `submitblock` waits behind proofs).
@@ -75,9 +78,10 @@ One object. All amounts are integers in zatoshi, as `getblocktemplate` prints `f
 | `previousblockhash` | string, 64 hex | Echo of the request. |
 | `addresstype` | string | `"p2pkh"`, `"p2sh"`, `"sapling"` or `"pq"` (the names `z_validateaddress` uses). |
 | `subsidy` | number | The block subsidy at `height`. |
-| `fund` | number | The development-fund output's value: `subsidy / 20` where consensus requires the output at `height`, otherwise `0` and no such output exists (§5.2). |
+| `fund` | number | The value of the coinbase's development-fund output, whichever rule put it there (§5.2): the mandated output, or the node's optional `-ydf` share. `0` exactly when the coinbase has no fund output. |
+| `fundrule` | string | Why the fund output is there: `"mandated"` (consensus requires it at `height`), `"optional"` (the mandate has ended and the node's `-ydf` is above 0) or `"none"` (no fund output; `fund` is 0). |
 | `fees` | number | The sum of the fees of the named transactions. |
-| `amount` | number | What `address` receives: `subsidy - fund + fees`. Never anything else. |
+| `amount` | number | What `address` receives: `subsidy - fund + fees`, under every `fundrule`. Never anything else. |
 | `txcount` | number | The number of transaction ids the amount was derived from. |
 | `flags` | string, hex | The scriptSig bytes after `<height> OP_0`: the Yellowback quote tag push, or empty (§5.4). Same meaning as `getblocktemplate`'s `coinbaseaux.flags`. |
 | `sigops` | number | The coinbase's legacy signature-operation count, as `coinbasetxn.sigops`. |
@@ -88,7 +92,7 @@ Ycash (§4.4). Until that is implemented the call refuses at such a height (§7 
 that ignores the key is never handed a coinbase that needs it.
 
 Example (regtest, a Sapling address, a template with three transactions paying 734 zatoshi in
-fees, the fund output not required):
+fees, the fund output not required and the node at `-ydf=0`):
 
 ```json
 {
@@ -99,6 +103,7 @@ fees, the fund output not required):
   "addresstype": "sapling",
   "subsidy": 625000000,
   "fund": 0,
+  "fundrule": "none",
   "fees": 734,
   "amount": 625000734,
   "txcount": 3,
@@ -123,7 +128,8 @@ fees, the fund output not required):
    - the quote tag for a coinbase built now: `yellowback::policy::BuildTagScript(index, GetTime())`
      when the index exists, else empty. Read it into a local; do not read or write the global
      `COINBASE_FLAGS` (it belongs to `CreateNewBlock`, `ycash6/src/miner.cpp:354`);
-   - `subsidy`, and whether the fund output is required at `height`.
+   - `subsidy`, and the fund output's value and rule at `height` (§5.2), with `-ydf` read as
+     `CreateNewBlock` reads it.
 4. **Release both locks. Build the coinbase** (§5) for `amount = subsidy - fund + fees`: outputs,
    scriptSig, and for a Sapling address the output proof and the binding signature.
 5. **Check it fits**: the block made of a header with the network's Equihash solution, the
@@ -134,7 +140,8 @@ fees, the fund output not required):
    the block.)
 7. Return §3.2.
 
-The node MUST NOT, in this call: read `-ydf` or `-mineraddress`; touch the wallet; read, replace
+The node MUST read `-ydf` exactly as its own `CreateNewBlock` does (§5.2), so the call and the
+stock coinbase carry the same fund output. It MUST NOT, in this call: read `-mineraddress`; touch the wallet; read, replace
 or invalidate `getblocktemplate`'s cached template or its statics; keep anything between calls.
 Two calls with the same arguments return two valid coinbases that differ only in the Sapling
 output's randomness (and in `flags`, if the quote changed in between).
@@ -216,14 +223,14 @@ height 111 with Heartwood, Canopy and Vault active.
 
 | Kind | Payable in a coinbase | Transparent outputs | Shielded part |
 |---|---|---|---|
-| P2PKH, P2SH | at every height | `vout[0]` = `amount` to the address's script; then the fund output if required | none |
+| P2PKH, P2SH | at every height | `vout[0]` = `amount` to the address's script; then the fund output, if any (§5.2) | none |
 | Post-quantum (`<32-byte key hash> <scheme> OP_CHECKPQSIG`, 35 bytes) | from the Vault upgrade's activation height | as transparent | none |
-| Sapling | from Heartwood's activation height | only the fund output, if required (it is then `vout[0]`) | one Sapling output of `amount` to the address, empty memo, encrypted to the all-zero outgoing viewing key as consensus requires of a coinbase; `valueBalance = -amount`; the binding signature |
+| Sapling | from Heartwood's activation height | only the fund output, if any, mandated or optional (it is then `vout[0]`) | one Sapling output of `amount` to the address, empty memo, encrypted to the all-zero outgoing viewing key as consensus requires of a coinbase; `valueBalance = -amount`; the binding signature |
 
 This is the layout both nodes' own miners already produce (`AddOutputsToCoinbaseTxAndSign`,
-`ycash6/src/miner.cpp:96-268`, `ycash-dd/src/miner.cpp:162-314`); 3n reuses those visitors and
-gives them the two things that differ: the fund rule of §5.2 instead of `-ydf`, and the tag as an
-argument instead of the global.
+`ycash6/src/miner.cpp:96-268`, `ycash-dd/src/miner.cpp:162-314`); 3n reuses those visitors,
+including `SetFoundersRewardAndGetMinerValue` for the fund output unchanged (§5.2), and gives them
+the one thing that differs: the tag as an argument instead of the global.
 
 Fixed fields: version 4 with the Sapling version group, `nLockTime` 0, `nExpiryHeight` 0, one
 input with a null prevout and sequence `0xffffffff`, as `CreateCoinbaseTransaction` sets them.
@@ -233,17 +240,32 @@ Measured sizes: 141 bytes for a P2PKH coinbase with a fund output, 151 for a pos
 
 ### 5.2 The fund output
 
-- Where consensus requires it at `height` (`height < nYdfMandateEndHeight`, after the Ycash fork:
-  `ycash6/src/main.cpp:6267-6283`): one output of `subsidy / 20` to
-  `GetFoundersRewardScriptAtHeight(height)`, and `fund` reports it.
-- Everywhere else: no fund output, `fund` is 0, whatever `-ydf` says. The call never deducts an
-  optional share on a miner's behalf.
-- Before the Ycash fork (regtest without the Ycash upgrade): the founders' reward rule of that era
-  applies as in `CreateCoinbaseTransaction` (`subsidy / 5` while required); `fund` reports that
-  output. No network of ours is there; the suites that leave the Ycash upgrade off still pass.
+The call builds exactly the fund output the node's own stock coinbase carries at `height`: the same
+arithmetic and the same script as `SetFoundersRewardAndGetMinerValue` on each line
+(`ycash6/src/miner.cpp:119-157`, `ycash-dd/src/miner.cpp:187-242`). It is always a share of the
+subsidy, never of the fees.
 
-Today that means: mainnet, none (the mandate ended at 2,275,000); the fast testnet, required until
-the height item 5 sets; regtest, required below height 5.
+- **Mandated** (`height < nYdfMandateEndHeight`, after the Ycash fork:
+  `ycash6/src/main.cpp:6267-6283`): one output of `subsidy / 20` to
+  `GetFoundersRewardScriptAtHeight(height)`, whatever `-ydf` says. `fundrule` is `"mandated"`.
+- **Optional** (from `nYdfMandateEndHeight` on): one output of `subsidy * n / 100` to the same
+  script, where `n` is the node's `-ydf` (`GetArg("-ydf", DEFAULT_YDF_FEE_PERCENTAGE)`, at most
+  `MAX_YDF_FEE_PERCENTAGE` = 5), if that value is above 0. `fundrule` is `"optional"`. With `n` = 0,
+  the default since beta3 item 4, there is no fund output, `fund` is 0 and `fundrule` is `"none"`:
+  the miner is paid in full unless the pool operator opted in.
+- **Before the Ycash fork** (regtest without the Ycash upgrade): the founders' reward rule of that
+  era applies as in `CreateCoinbaseTransaction` (`subsidy / 5` while required); `fund` reports that
+  output and `fundrule` is `"mandated"`. No network of ours is there; the suites that leave the
+  Ycash upgrade off still pass.
+
+For a Sapling payout the fund output, mandated or optional, is a transparent output (`vout[0]`),
+as in the node's own shielded coinbase; the Sapling output carries `amount`.
+
+`amount = subsidy - fund + fees` holds under every rule, and the swap path and the paired path pay
+a miner the same on one pool node.
+
+Today that means: mainnet, mandate over (it ended at 2,275,000), so the operator's `-ydf` decides;
+the fast testnet, mandated until the height item 5 sets; regtest, mandated below height 5.
 
 ### 5.3 The scriptSig
 
@@ -279,7 +301,7 @@ merkle root, as it does today.
 the Sapling output, its proof, the binding signature; version, lock time, expiry. One zatoshi of
 difference in `valueBalance` makes the block invalid (`bad-sapling-bundle-authorization`,
 measured). In particular yolo MUST NOT run its `vout[0]` script swap on such a coinbase (for a
-Sapling payout with a required fund output, `vout[0]` is the fund).
+Sapling payout with a fund output, mandated or optional, `vout[0]` is the fund).
 
 **Must never change, in the job:** the transaction set. The block carries exactly the named
 transactions, in the template's order. Fewer transactions would leave the coinbase claiming fees
@@ -376,7 +398,7 @@ before the first colon.
 | 6 | -5 | `Invalid address` | parameter 0 is not a string or does not decode for this network |
 | 7 | -5 | `Address type cannot receive a coinbase: <type>` | a valid address of a kind §3.1 does not accept; `<type>` as `z_validateaddress` names it (`sprout`, `unified`, …) |
 | 8 | -5 | `Address type cannot receive a coinbase at height <height>: <type>` | `pq` before the Vault upgrade is active at `height`; `sapling` before Heartwood is |
-| 9 | -5 | `Address type cannot receive a coinbase on this node: sapling` | kogany only, until it can prove (D-4). The C++ lines never return it. |
+| 9 | | *(withdrawn, D-4)* | Revision 1's kogany-only Sapling refusal. No line returns it; the number is kept so rows 10 to 17 keep theirs. |
 | 10 | -1 | `template-stale: previousblockhash is not the tip` | step 3 or step 6 |
 | 11 | -1 | `template-stale: transaction is not in the mempool: <txid>` | step 3; the first missing id in the request's order |
 | 12 | -1 | `coinbase-does-not-fit: <what>` | step 5; `<what>` is `block size <n> exceeds <limit>` or `sigops <n> exceed <limit>` |
@@ -384,7 +406,7 @@ before the first colon.
 | 14 | -9 | `Ycash is not connected!` | as `getblocktemplate` |
 | 15 | -10 | `Ycash is downloading blocks...` | as `getblocktemplate` |
 | 16 | -26 | `yellowback-unhealthy: <reason>; restart with -reindex-yellowback` | as `getblocktemplate` |
-| 17 | -32603 | `coinbase construction failed: <detail>` | the prover or the signer failed; never expected |
+| 17 | -32603 | `coinbase construction failed: <detail>` | the prover or the signer failed, or (kogany) the Sapling output parameters are not loaded (§9); never expected on a correctly installed node |
 
 Order of checks: rows 1 to 7 (in that order), then 14 to 16, then 10, 8, 13, 11 and 5 in step 3,
 then 17, 12, and 10 again. A wrong number of parameters is each line's usual usage error and is
@@ -397,32 +419,26 @@ not part of the contract.
 | Username | Path |
 |---|---|
 | transparent (P2PKH, P2SH) | the swap path, unchanged: yolo writes the address's script into `vout[0]` of the stock coinbase |
-| post-quantum | the paired path, as the list fixes it (but see D-6) |
+| post-quantum | the paired path (D-6): one `getcoinbasetemplatefor` per template |
 | Sapling | the paired path: one `getcoinbasetemplatefor` per template |
 
-**D-6, for the lead architect:** a post-quantum username already works on the swap path, with no
-change to yolo or the node (question a, §10 run 2: `validateaddress` returns a `scriptPubKey` for
-`rqf…` and `rqs…`, yolo swaps it in, the blocks were accepted and paid the address). The call
-would build the same single output, so the two paths pay the same once D-2 holds. Keeping
-post-quantum miners on the swap path costs no RPC and no wait at a new block, and lets F-1 and the
-demonstration's post-quantum miner run before 3n merges. Putting them on the paired path gives one
-rule ("only P2PKH and P2SH are swapped") and makes them independent of the node's `-ydf`. The
-call supports both; 3p implements the table above unless the lead architect chooses the swap path
-for them, which changes one line of the table and nothing else in this note.
+One rule (D-6): only transparent ECC addresses (P2PKH, P2SH) are swapped; every other payable
+kind takes the paired path. A post-quantum username would also work on the swap path (§10 run 2),
+and the call builds the same outputs for it; the paired path is used for it all the same.
 
 yolo decides the kind from the node's answers at `mining.authorize`: `validateaddress` with a
-`scriptPubKey` and `pqscheme` absent means swap; `pqscheme` present means post-quantum (paired, or swap under D-6); otherwise `z_validateaddress` with `isvalid` and `type` `sapling` means
+`scriptPubKey` and `pqscheme` absent means swap; `pqscheme` present means post-quantum (paired); otherwise `z_validateaddress` with `isvalid` and `type` `sapling` means
 paired; anything else is refused with `Invalid address` as today. Both answers are cached as
 today's are (`yolo/src/state.rs`).
 
-### 8.2 The flow for a Sapling miner
+### 8.2 The flow for a paired miner (Sapling or post-quantum)
 
 A **pair** is one template's transaction set and one coinbase built for exactly that set and one
 address. yolo keys it by `(address, previousblockhash, digest of the txid list)`.
 
 1. The poller fetches the stock template as today (every second).
 2. When the template's **pair key part** `(previousblockhash, txid list)` or its
-   `coinbaseaux.flags` changes, every Sapling miner needs a new pair:
+   `coinbaseaux.flags` changes, every paired miner needs a new pair:
    - **new block** (`previousblockhash` changed): at once. The miner's current job is void and it
      is told nothing new until its pair arrives. No reward-only or lower-amount coinbase is ever
      issued in the meantime (the list's step 6).
@@ -457,7 +473,11 @@ All MUST hold, or the answer is dropped, logged as an error and no job is built 
 - the coinbase parses, has one input with a null prevout, and the sum of its transparent outputs
   minus `valueBalance` equals the sum of the outputs of the template's own `coinbasetxn` (both are
   subsidy plus fees: measured equal, 625,000,734 on both in run 1);
-- `amount` equals that sum minus `fund`.
+- `amount` equals that sum minus `fund`;
+- the fund output is the stock coinbase's: `fund` equals the sum of the stock `coinbasetxn`'s
+  outputs other than `vout[0]` (the pool node mines to a transparent address, as the swap path
+  already requires), and when it is above 0 the coinbase has an output of exactly that value to
+  the same script.
 
 yolo's coinbase codec (`yolo/src/tx.rs`) refuses a transaction with shielded outputs today. For
 this it learns to carry everything after `valueBalance` as opaque bytes; it never parses or
@@ -479,6 +499,7 @@ pub struct CoinbaseFor {
     pub addresstype: String,
     pub subsidy: u64,
     pub fund: u64,
+    pub fundrule: String,
     pub fees: u64,
     pub amount: u64,
     pub txcount: usize,
@@ -504,13 +525,18 @@ is a Sapling coinbase for that address, valid on the pool node's template whenev
 the same tip and the same mempool fees. Run 1 is exactly this and its block was accepted. The stub
 `CoinbaseSource` asks that helper node for a template, checks `previousblockhash` and the fee
 total against the request (answering `template-stale` otherwise) and fills `CoinbaseFor` from it.
-Its limits: one helper node per Sapling address, and the helper applies `-ydf`, so run it with
-`-ydf=0`. It is a test fixture only.
+Its limits: one helper node per Sapling address, and the helper applies its own `-ydf`, so run it
+with the pool node's `-ydf`; the stub sets `fundrule` from the height and that value. For a
+post-quantum address the stub takes the pool node's own stock coinbase and writes the address's
+script into `vout[0]` (run 2 shows that is the coinbase the call returns: `vout[0]` = `amount`, then
+the fund output). It is a test fixture only.
 
 ## 9. kogany
 
-Same request, same response, same errors, same rules (§3 to §7), under the `ycash` feature, in
-`crates/zakura-rpc`. Lane 3k owns the mapping row; what it needs to know:
+**kogany implements the full contract, including a Sapling output prover and its parameters**
+(D-4: beta3 is held for it). Same request, same response, same errors, same rules (§3 to §7), for
+every address kind of §3.1, Sapling included, under the `ycash` feature, in `crates/zakura-rpc`.
+Lane 3k owns the mapping row; what it needs to know:
 
 - **The reference maps directly.** kogany's template transactions carry `miner_fee`
   (`crates/zakura-chain/src/transaction/unmined.rs:360`) and its mempool answers lookups by mined
@@ -518,18 +544,24 @@ Same request, same response, same errors, same rules (§3 to §7), under the `yc
   tip read. kogany keeps no template between calls either, so nothing in §4 needs state.
 - **The scriptSig already matches**: with no `extra_coinbase_data`, kogany writes
   `<height> OP_0 <tag>` (`crates/zakura-rpc/src/methods/types/get_block_template.rs:816-826`).
-- **The fund output** follows §5.2: required-only, from `ydf_output`'s mandate branch
-  (`crates/zakura-rpc/src/methods/types/ycash.rs:356`), never the optional share that 4k makes
-  configurable.
+- **The fund output** follows §5.2: `ydf_output` (`crates/zakura-rpc/src/methods/types/ycash.rs:356`),
+  both its mandate branch and the optional share that 4k makes configurable, the same value and
+  script kogany's own `getblocktemplate` coinbase carries, and `fundrule` as §3.2. For a Sapling
+  payout it is the transparent `vout[0]`.
 - **Post-quantum payout** needs a miner-reward variant that pays an arbitrary 35-byte script
   (kogany's `MinerAddress` has transparent, Sapling, unified and TEX only,
   `get_block_template/miner_address.rs:15-38`). Small.
-- **Sapling payout: not possible today** (question b). `CoinbasePlan::new` returns
+- **Sapling payout: to be built in beta3** (question b, D-4). Today `CoinbasePlan::new` returns
   `Sapling coinbase construction is not supported` for a Sapling miner address
   (`crates/zakura-rpc/src/methods/types/transaction.rs:217-223`), the builder is given a prover
   that cannot prove (`transaction/no_sapling.rs`), and the node links Sapling verifying keys only
-  (`crates/zakura-consensus/Cargo.toml:59`, `pinned-vk-only`). Measured: koganyd `v1.8.0-ycash.beta2` on regtest answers `getblocktemplate` with a 140-byte coinbase for a transparent miner address and with `could not construct coinbase tx: Sapling coinbase construction is not supported; use a unified or transparent miner address` for a Sapling one (§10 run 3). See D-4.
-- Proving, when it comes, runs on a blocking thread outside any state service call; the cap of
+  (`crates/zakura-consensus/Cargo.toml:59`, `pinned-vk-only`). Measured: koganyd `v1.8.0-ycash.beta2` on regtest answers `getblocktemplate` with a 140-byte coinbase for a transparent miner address and with `could not construct coinbase tx: Sapling coinbase construction is not supported; use a unified or transparent miner address` for a Sapling one (§10 run 3). 3k adds: a Sapling output prover; the Sapling output proving parameters (the 3.6 MB output parameters, from the project's `zcash-params-v1` release) and their loading and hash check; a v4 coinbase path with one Sapling output, the all-zero outgoing viewing key, `valueBalance = -amount` and the binding signature, laid out as §5.1. The result MUST be accepted by ycashd, and ycashd's by kogany (§11).
+- **Missing parameters are an operator error, not a contract answer.** If the Sapling output
+  parameters are absent or fail their hash check, kogany logs it at startup and keeps running; the
+  call then answers a Sapling address with §7 row 17, `coinbase construction failed: Sapling output
+  parameters are not loaded`. Transparent and post-quantum calls are unaffected. Row 9 is never
+  returned.
+- Proving runs on a blocking thread outside any state service call; the cap of
   §6.3 is the pool's.
 
 ## 10. Evidence
@@ -596,9 +628,12 @@ does with an 88-character username is F-1's test; yolo's side is clear.
    `submitblock` and by a second node, and the address received exactly `subsidy - fund + fees`
    (transparent kinds from the block, Sapling from `z_listunspent` in the owning wallet), with a
    template that has fee-paying transactions and with an empty one.
-2. The same at a height where the fund output is required (regtest below height 5 with the Ycash
-   upgrade on) and where it is not; and with `-ydf=5` on the node, where the stock coinbase has a
-   fund output and the returned one has none.
+2. The same at a height where the fund output is mandated (regtest below height 5 with the Ycash
+   upgrade on, `fundrule` `"mandated"`) and where it is not, at `-ydf=0` (`"none"`, no fund
+   output). And `-ydf=5` on the pool node, past the mandate: both paths (the swap path's stock
+   coinbase and the returned coinbase, for every address kind) pay 95 % of the subsidy plus all
+   fees, the fund output is identical (value and script; `fundrule` `"optional"`), and for Sapling
+   it is the transparent `vout[0]`.
 3. `getblocktemplate`'s reply is byte-identical before and after a series of calls (same tip, same
    mempool, same second), and `longpollid` does not move.
 4. Stale: after a new block (row 10); after a named transaction is mined or leaves the mempool
@@ -607,29 +642,34 @@ does with an 88-character username is F-1's test; yolo's side is clear.
    returned `amount` never differs from `subsidy - fund + fees` computed by the test from the
    chain.
 6. Every row of §7 that a test can reach (1 to 8, 10, 11, 13 with NU5 on regtest where the line
-   has it, 14 to 16).
+   has it, 14 to 16); row 9 is never returned.
 7. Sixteen calls in parallel for sixteen Sapling addresses while another thread calls
    `getblocktemplate` and `getblockcount`: all succeed, and the node's `cs_main` is not held across
    a proof (the lock-order checker build, and `getblockcount` latency during the run).
 8. The scriptSig carries the tag when a quote is set, and `flags` equals the next
    `getblocktemplate`'s `coinbaseaux.flags`.
 
-**3k:** the same script against kogany, with row 9 expected for Sapling until D-4 is built; a
-cross-line run in which ycashd accepts a block built from kogany's coinbase and the reverse.
+**3k:** the same script against kogany, the Sapling case included (tests 1, 2 with `-ydf=5`, 7
+with kogany's own parallel callers), and row 17 for a Sapling address on a node started without
+the Sapling output parameters. Cross-line acceptance for every address kind, Sapling included: a
+block built from a kogany-built coinbase (a Sapling one among them) is accepted by ycashd, and a
+block built from a ycashd-built coinbase is accepted by kogany.
 
 **3p:** on regtest with the 48,5 miner, a mixed pool of three miners (transparent, post-quantum,
 Sapling), each finding a block that pays it exactly subsidy plus fees, with fee-paying
-transactions in the blocks; usernames of 35, 53 and 91 characters and one with a worker suffix (D-5); a template change in the middle of a job; a `template-stale` answer;
-a node with `-ydf=5` (D-2); the checks of §8.3 each tripped by the stub.
+transactions in the blocks, the post-quantum and Sapling miners on paired jobs and the
+transparent one on the swap path (D-6); usernames of 35, 53 and 91 characters and one with a worker suffix (D-5); a template change in the middle of a job; a `template-stale` answer;
+`-ydf=5` on the pool node (D-2): both paths pay 95 % of the subsidy plus all fees, and the fund
+output is identical; the checks of §8.3 each tripped by the stub.
 
 ## 12. Proposed `docs/mapping.md` rows (the coordinator lands them)
 
 | Where | Row |
 |---|---|
-| §17 (yolo) | A post-quantum username already works on the swap path: `validateaddress` returns `scriptPubKey` (`20 <key hash> <scheme> c2`, 35 bytes) for `sqf…`/`sqs…` on both C++ lines, and yolo writes it into `vout[0]` (`yolo/src/work.rs:110-118`). A Sapling username does not: `validateaddress` says `isvalid: false` for it, only `z_validateaddress` knows it, and its payout is not a script. Paired jobs (`docs/plans/beta3/getcoinbasetemplatefor.md`) are for Sapling. |
-| §17 (yolo) | A coinbase from `getcoinbasetemplatefor` is never run through the `vout[0]` swap and its job never drops transactions at the size limit (`yolo/src/work.rs:131-137`): with a Sapling payout and a required fund output `vout[0]` is the fund, and a dropped transaction leaves the coinbase over the limit consensus allows (`bad-cb-amount`). |
+| §17 (yolo) | A post-quantum username already works on the swap path: `validateaddress` returns `scriptPubKey` (`20 <key hash> <scheme> c2`, 35 bytes) for `sqf…`/`sqs…` on both C++ lines, and yolo writes it into `vout[0]` (`yolo/src/work.rs:110-118`). A Sapling username does not: `validateaddress` says `isvalid: false` for it, only `z_validateaddress` knows it, and its payout is not a script. Paired jobs (`docs/plans/beta3/getcoinbasetemplatefor.md`) are for Sapling and, by decision D-6, for post-quantum usernames too; only P2PKH and P2SH stay on the swap path. |
+| §17 (yolo) | A coinbase from `getcoinbasetemplatefor` is never run through the `vout[0]` swap and its job never drops transactions at the size limit (`yolo/src/work.rs:131-137`): with a Sapling payout and a fund output (mandated or optional) `vout[0]` is the fund, and a dropped transaction leaves the coinbase over the limit consensus allows (`bad-cb-amount`). |
 | §19 (the two C++ lines) | `getblocktemplate.coinbasetxn` differs: ycash-dd always prints `ydfpercentage` and `foundersreward` (the value of `vout[1]`, or 0: wrong for a Sapling `-mineraddress`, whose fund output is `vout[0]`; `ycash-dd/src/rpc/mining.cpp:742-743`); ycash6 prints `foundersreward` only while the output is required and has no `ydfpercentage` (`ycash6/src/rpc/mining.cpp:772-782`). A client must not derive the fund rule from these keys alone; `getcoinbasetemplatefor`'s `fund` is the same on both. |
 | §19 | A Sapling coinbase whose binding signature fails is `bad-txns-sapling-binding-signature-invalid` on ycash-dd and `bad-sapling-bundle-authorization` on ycash6 (the 6.x bundle verifier). Same verdict, different reason string. |
 | §19 | Both assemblers reserve 1,000 bytes for header and coinbase (`ycash6/src/miner.cpp:310-317`, `ycash-dd/src/miner.cpp:486`); a 192,7 header is 1,487 bytes and a Sapling coinbase 1,119. A template within about 600 bytes of `MAX_BLOCK_SIZE` cannot take a Sapling coinbase; `getcoinbasetemplatefor` refuses (`coinbase-does-not-fit`) rather than the assembler changing. |
-| §24 (kogany) | kogany cannot build a Sapling coinbase: `CoinbasePlan::new` refuses a Sapling miner address (`crates/zakura-rpc/src/methods/types/transaction.rs:217-223`), the builder's prover is `NoSaplingProver` (`transaction/no_sapling.rs`), and only verifying keys are linked (`crates/zakura-consensus/Cargo.toml:59`). ycashd builds one for `-mineraddress=<Sapling>` (`ycash6/src/miner.cpp:237-250`). Until kogany gains a prover, its `getcoinbasetemplatefor` answers a Sapling address with `Address type cannot receive a coinbase on this node: sapling`. |
+| §24 (kogany) | kogany cannot build a Sapling coinbase: `CoinbasePlan::new` refuses a Sapling miner address (`crates/zakura-rpc/src/methods/types/transaction.rs:217-223`), the builder's prover is `NoSaplingProver` (`transaction/no_sapling.rs`), and only verifying keys are linked (`crates/zakura-consensus/Cargo.toml:59`). ycashd builds one for `-mineraddress=<Sapling>` (`ycash6/src/miner.cpp:237-250`). Beta3 is held for it (D-4): kogany gains a Sapling output prover and the output parameters, and its `getcoinbasetemplatefor` pays Sapling addresses like ycashd's. |
 | §24 | kogany's `MinerAddress` has no post-quantum variant (`get_block_template/miner_address.rs:15-38`); a post-quantum payout is a 35-byte script output and needs one. |
