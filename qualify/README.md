@@ -19,7 +19,8 @@ qualification; process requirement P-1 of the beta3 run moved it here, beta3 pla
 |---|---|
 | `rc-qualify.sh` | The steps, one command each: `train`, `pins`, `install`, `walk`, `yew`, `x402`, `hawkeye`, `yecwallet`, `cross-line`, `ceremony` (usage at the top of the file) |
 | `rc-crossline.py` | Step 3: ycash-dd (and optionally kogany) nodes on a running ycash6 devnet; block, vault-state and YED-state hashes compared every 100 blocks |
-| `rc-record.py` | Step 1's evidence check and the run's record (`rc-qualify.json`) |
+| `rc-suites.py` | Step 1 against the package: the node's own functional lists and shards, read from ycash6's `yellowback-tests.yml` at the train's commit, and its `tests_config.ini` |
+| `rc-record.py` | Step 1's CI-build evidence check (with the client pins) and the run's record (`rc-qualify.json`) |
 | `test_rc_qualify.py` | The harness's self-tests: no node, stub binaries, the real train files |
 | [`../.github/workflows/rc-qualify.yml`](../.github/workflows/rc-qualify.yml) | The workflow: `workflow_dispatch` only, input `train` |
 
@@ -34,24 +35,36 @@ is qualified.
 |---|---|---|
 | train | the train file at the run's commit; a skeleton (any `placeholder`) is refused; its ycash6 tag names its ycash6 commit, or a proving run built that commit (or an ancestor differing only in `qa/`, `doc/`, `.github/` files the release build does not read) | `rc-train` artifact |
 | candidate | the tag's release (draft or published) or the proving run's `release-signed` artifact: `SHA256SUMS`, its cosign signature by ycash6's release workflow at the tag (or the proving branch), the linux_x86_64 package's build provenance | `rc-package` artifact |
-| 1 | the node's own suites: a ycash6 `yellowback-tests.yml` run of tier `all` (its `push tier` and `nightly` jobs), green at the train's ycash6 commit or the built commit, given by run id | the run id in the record |
+| 1, package | the node's merge-gate functional lists (yellowback in 4 shards, stock in 2, exactly as its `functional` job shards them) run by its own `rpc-tests.py` on the **package's** `ycashd`, `ycash-cli`, `ycash-tx`, with yolo and chain-viz built at their train pins | `1-node-suites-package`; logs on failure |
+| 1, CI build | the tiers that need a build of their own (the unit tests, the nightly's suites, lockorder, sanitizers, coverage): a ycash6 `yellowback-tests.yml` run of tier `all` (its `push tier` and `nightly` jobs), green at the train's ycash6 commit or the built commit, given by run id, whose default client pins (`YOLO_COMMIT`, `CHAINVIZ_COMMIT`, `LWD_COMMIT`, `YB_WORKSPACE_COMMIT`) are the train's | `1-node-suites-ci-build`, the run id |
 | 2 | upgrade-walk with chain-viz, lightwalletd fork and baseline and yolo; YEW's devnet suites; x402's `test:devnet`; Hawkeye's `scenario demo`; YecWallet's QTest devnet cases; each at its train pin | `rc-ecosystem-<leg>` |
 | 3 | ycash-dd built at the train's commit; two of its nodes on the devnet of the release binary; the three hashes agree at every 100th height | `rc-cross-line` |
 | 4 | the launch ceremony rehearsed on regtest, fast and slow profiles | `rc-ceremony` |
 
-**Step 1 changed with the move.** The ycash6 workflow used to call the node's test workflow with the
-release package swapped in. A workflow in another repository cannot do that (a called workflow
-checks out its caller), and polling a dispatched run is not allowed (it bills a runner for waiting).
-So step 1 is now evidence: the coordinator runs the node's suites in ycash6 and gives the finished
-run's id. Those suites run a CI build of the same commit, not the package's binaries; steps 2 to 4
-run the package.
+**What step 1 runs on which binary.** Before the move, ycash6's rc-qualify called the node's test
+workflow (tier `all`) with the package swapped in: every functional shard and the nightly's suites ran
+the package's binaries; the unit tests and the instrumented variants were CI builds there too (no
+`test_bitcoin` in a package). The beta2 run took about 950 runner-minutes on 17 runners, 4 hours
+of wall time: build 6 min, the six functional shards 171, the nightly 249, lockorder 220,
+coverage 243, sanitizers 48, the rest about 15.
+
+A workflow in another repository cannot call that workflow on the node's tree (a called workflow
+checks out its caller), and waiting on a dispatched run would bill a runner for nothing. So the
+functional shards run here, on the package, from the node tree at the train's commit with its own
+lists and test framework (no build: a `tests_config.ini` is written for the tree). About 180
+runner-minutes on 7 runners (sidecars, six shards), about 50 minutes of wall time, free on this
+public repository. What needs a build of its own comes from the node's own tier-all run: the
+unit tests and variants as before, and **the nightly's suites, which now run a CI build of the same
+commit rather than the package**. That is the one narrowing; the record says which binary each half
+ran (`node_suites_binary`).
 
 ## Running it in CI
 
 From the workspace's `upgrade/vault` (or a branch carrying the train under review):
 
 ```
-# 1. the node's own suites at the train's ycash6 commit, in ycash6 (tier all); note the run id
+# 1. the node's own tiers at the train's ycash6 commit, in ycash6 (tier all; its default client pins
+#    must be the train's); note the run id
 env -u GH_TOKEN gh workflow run yellowback-tests.yml -R boyfromcave/ycash6 --ref v<V> -f tier=all
 # 2. once it is green, the qualification
 env -u GH_TOKEN gh workflow run rc-qualify.yml -R boyfromcave/yellowback --ref upgrade/vault \
@@ -62,7 +75,7 @@ Before the tag exists, add `-f proving_run=<id>`: a green, strict `yellowback-re
 in ycash6 (its `release-dry-run` job green) on `upgrade/vault` or `release/*`. The train's
 `ycash6.commit` is then the commit the tag will be cut at.
 
-The switches `ecosystem`, `cross_line` and `ceremony` (default on) turn steps off for a rerun of
+The switches `node_suites` (the package shards), `ecosystem`, `cross_line` and `ceremony` (default on) turn steps off for a rerun of
 one part; a step that did not run is `skipped` in the record, and the record is then not a
 qualification.
 
@@ -73,16 +86,30 @@ repository at the run), `train_file`, the train's pins, the package's sha256 and
 **draft** release it is also attached as `rc-qualify-<run id>.json`; a published release is never
 changed.
 
-**Token.** ycash6 is public: a published release, its signature and attestations need no secret. A
-draft release, a proving run's artifact and attaching the record to a draft need the repository
-secret `RC_QUALIFY_YCASH6_TOKEN`: a fine-grained token for `boyfromcave/ycash6` only, Contents read
-and write (GitHub shows drafts to writers only) and Actions read. Without it those cases fail
-plainly.
+**Token.** The jobs' own `github.token` is this repository's, and GitHub scopes it to this
+repository: it can read anything public in ycash6 (a published release, its attestations, its
+signature, a run's jobs, a file at a commit), and probably a public run's artifacts, but it cannot
+see a **draft** release. GitHub lists drafts to users with push access only. So one case needs the
+repository secret `RC_QUALIFY_YCASH6_TOKEN`, a fine-grained token for `boyfromcave/ycash6` only:
+
+- qualifying a draft (reading it, and attaching the record) needs Contents read and write. Nothing
+  read-only can see a draft. The token never pushes, tags or edits code.
+- a proving run's artifact needs Actions read. `github.token` alone may be enough on a public
+  repository; untested.
+
+Without the secret, published releases qualify as before and a draft fails with GitHub's answer.
+The secret is used only in the steps that call the GitHub API: train (tag and proving-run checks),
+candidate (downloads), the CI-build evidence check and the record. **It is never present in a job
+that runs another repository's code**: the leg jobs (step 1's package shards and sidecars, steps
+2 to 4) have `contents: read`, this repository's own token, and no secrets.
 
 **Cost.** The workspace repository is public, so its standard runners are free. No job waits on
 another workflow. No job restores or saves an Actions cache: the legs run another repository's code
 (ycash6 and ycash-dd at the train's commits, every client at its pin), and a cache written there in
-this repository's default-branch scope could be read by its other workflows. `vars.RC_QUALIFY_RUNNER` can name a larger runner for step 2, which is billed.
+this repository's default-branch scope could be read by its other workflows.
+`vars.RC_QUALIFY_RUNNER` can name a larger runner for step 2, which is billed. A full run: step 1's
+package half about 180 runner-minutes, step 2 five legs of up to 6 hours each, step 3 one (ycash-dd
+build plus rounds), step 4 one.
 
 ## Running it locally
 

@@ -33,6 +33,26 @@ def load(name, file):
 
 crossline = load("crossline", "rc-crossline.py")
 rc_record = load("rc_record", "rc-record.py")
+rc_suites = load("rc_suites", "rc-suites.py")
+
+# The shape of ycash6's yellowback-tests.yml that rc-suites.py reads (its top-level env block).
+WORKFLOW = """name: yellowback tests
+on: push
+env:
+  # the merge-gate lists
+  YELLOWBACK_SCRIPTS: a b c d e f g
+  SANITIZER_SCRIPTS: x
+  YOLO_COMMIT: ${{ inputs.yolo_commit || '%s' }}
+  CHAINVIZ_COMMIT: ${{ inputs.chainviz_commit || '%s' }}  # a comment
+  LWD_COMMIT: ${{ inputs.lwd_commit || '%s' }}
+  YB_WORKSPACE_COMMIT: ${{ inputs.workspace_commit || '%s' }}
+  STOCK_BASELINE: s1 s2 s3
+  STOCK_BASELINE_MINEBLOCK: 'txn_doublespend.py --mineblock'
+jobs:
+  build:
+    env:
+      YELLOWBACK_SCRIPTS: not this one
+""" % ("1" * 40, "2" * 40, "3" * 40, "4" * 40)
 
 
 def run(*args):
@@ -204,6 +224,87 @@ class CrossLine(unittest.TestCase):
                 os.environ["WS"] = old
 
 
+class Suites(unittest.TestCase):
+    """rc-suites.py: the node's own lists, sharded as its functional job does."""
+
+    def test_shards_are_round_robin_as_the_node_job(self):
+        env = rc_suites.workflow_env(WORKFLOW)
+        self.assertEqual(env["YELLOWBACK_SCRIPTS"], "a b c d e f g")
+        self.assertEqual(rc_suites.shard(env, "yellowback", 1, 4), ["a", "e"])
+        self.assertEqual(rc_suites.shard(env, "yellowback", 4, 4), ["d"])
+        allof = sum((rc_suites.shard(env, "yellowback", n, 4) for n in range(1, 5)), [])
+        self.assertEqual(sorted(allof), list("abcdefg"))
+        self.assertEqual(rc_suites.shard(env, "stock", 1, 2), ["s1", "s3"])
+        self.assertEqual(rc_suites.shard(env, "stock", 2, 2), ["s2", "txn_doublespend.py --mineblock"])
+        for bad in (("other", 1, 2), ("stock", 3, 2), ("stock", 0, 2)):
+            with self.assertRaises(ValueError):
+                rc_suites.shard(env, *bad)
+
+    def test_the_real_ycash6_lists_read(self):
+        # The workspace's ycash6 clone, when this runs in a wt/ worktree of a laptop workspace; skipped in CI.
+        tree = os.path.join(WORKSPACE, "..", "..", "ycash6")
+        path = os.path.join(tree, ".github", "workflows", "yellowback-tests.yml")
+        if not os.path.exists(path):
+            self.skipTest("no ycash6 tree beside the workspace")
+        with open(path, encoding="utf-8") as fh:
+            env = rc_suites.workflow_env(fh.read())
+        self.assertIn("yellowback_index", rc_suites.shard(env, "yellowback", 1, 4))
+
+    def test_tests_config_is_written_for_the_tree(self):
+        template = ("SRCDIR=@abs_top_srcdir@\nBUILDDIR=@abs_top_builddir@\nEXEEXT=@EXEEXT@\n"
+                    "@ENABLE_WALLET_TRUE@ENABLE_WALLET=true\n@BUILD_BITCOIN_UTILS_TRUE@ENABLE_UTILS=true\n"
+                    "@BUILD_BITCOIND_TRUE@ENABLE_BITCOIND=true\n@ENABLE_ZMQ_TRUE@ENABLE_ZMQ=true\n")
+        out = rc_suites.config(template, "/t")
+        self.assertIn("SRCDIR=/t\nBUILDDIR=/t\nEXEEXT=\n", out)
+        self.assertIn("\nENABLE_ZMQ=true", out)
+        self.assertIn("#ENABLE_ZMQ=true", rc_suites.config(template, "/t", zmq=False))
+        with self.assertRaises(ValueError):
+            rc_suites.config(template + "@NEW_FLAG@\n", "/t")
+
+    def test_default_pins(self):
+        env = rc_suites.workflow_env(WORKFLOW)
+        self.assertEqual(rc_suites.default_pin(env["CHAINVIZ_COMMIT"]), "2" * 40)
+        self.assertIsNone(rc_suites.default_pin("${{ inputs.x }}"))
+
+
+class NodeShard(unittest.TestCase):
+    """`node-shard`: the node tree's own lists and rpc-tests.py, the release binary in its src/ (stubs)."""
+
+    def test_runs_the_shard_with_the_node_s_runner(self):
+        ws = tempfile.mkdtemp(prefix="rc-shard-")
+        self.addCleanup(shutil.rmtree, ws)
+        tree = os.path.join(ws, "ycash6")
+        files = {
+            ".github/workflows/yellowback-tests.yml": WORKFLOW,
+            "qa/pull-tester/tests_config.ini.in": "SRCDIR=@abs_top_srcdir@\n@ENABLE_ZMQ_TRUE@ENABLE_ZMQ=true\n",
+            # the stub runner records its arguments and the config it found
+            "qa/pull-tester/rpc-tests.py": "#!/bin/sh\n{ cat qa/pull-tester/tests_config.ini; echo \"ARGS $*\"; } > %s/ran\n" % ws,
+            "src/ycashd": "#!/bin/sh\necho 'Ycash Daemon version v6.22.0-beta2'\n",
+        }
+        for rel, text in files.items():
+            path = os.path.join(tree, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            if rel.endswith(("rpc-tests.py", "ycashd")):
+                os.chmod(path, 0o700)
+        env = dict(os.environ, WS=ws, RC_OUT=os.path.join(ws, "out"), PYTHON=sys.executable)
+        proc = subprocess.run(["bash", SCRIPT, "node-shard", "stock", "2", "2"], capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        with open(os.path.join(ws, "ran"), encoding="utf-8") as fh:
+            ran = fh.read()
+        self.assertIn("SRCDIR=%s" % tree, ran)
+        self.assertIn("#ENABLE_ZMQ=true", ran)         # the stub's --help names no -zmqpub
+        self.assertIn("ARGS --fail-on-skip -j4 --nocleanup s2 txn_doublespend.py --mineblock", ran)
+        # a yellowback shard that names yellowback_chainviz needs the sidecar, or it fails before running
+        with open(os.path.join(tree, ".github/workflows/yellowback-tests.yml"), "w", encoding="utf-8") as fh:
+            fh.write(WORKFLOW.replace("a b c d e f g", "yellowback_chainviz"))
+        env.pop("CHAINVIZ_BIN", None)
+        proc = subprocess.run(["bash", SCRIPT, "node-shard", "yellowback", "1", "4"], capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("would SKIP", proc.stderr)
+
+
 class Record(unittest.TestCase):
     A, B = "a" * 40, "b" * 40
 
@@ -230,6 +331,15 @@ class Record(unittest.TestCase):
             problems = rc_record.node_suites(run, jobs, [self.A])
             self.assertTrue(any(want in p for p in problems), (want, problems))
 
+    def test_the_ci_build_run_must_carry_the_train_s_pins(self):
+        pins = {"TRAIN_YOLO_COMMIT": "1" * 40, "TRAIN_CHAIN_VIZ_COMMIT": "2" * 40,
+                "TRAIN_LIGHTWALLETD_DD_COMMIT": "3" * 40, "TRAIN_RELEASE_WORKSPACE": "4" * 40}
+        self.assertEqual(rc_record.pin_problems(WORKFLOW, pins), [])
+        problems = rc_record.pin_problems(WORKFLOW, dict(pins, TRAIN_YOLO_COMMIT="9" * 40))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("YOLO_COMMIT=" + "1" * 40, problems[0])
+        self.assertEqual(len(rc_record.pin_problems(WORKFLOW.replace("LWD_COMMIT", "LWD_X"), pins)), 1)
+
     def test_paginated_jobs_are_read(self):
         fd, path = tempfile.mkstemp()
         self.addCleanup(os.unlink, path)
@@ -238,7 +348,8 @@ class Record(unittest.TestCase):
         self.assertEqual([j["name"] for j in rc_record.load_jobs(path)], ["build", "push tier", "nightly", "weekly-fuzz"])
 
     def test_the_record_names_node_and_harness_commits(self):
-        env = {"R_TRAIN": "success", "R_CANDIDATE": "success", "R_NODE": "success", "R_ECO": "success",
+        env = {"R_TRAIN": "success", "R_CANDIDATE": "success", "R_NODE": "success", "R_NODE_PACKAGE": "success",
+               "R_ECO": "success",
                "R_CROSS": "success", "R_CEREMONY": "success", "HARNESS_COMMIT": self.B, "BUILT_COMMIT": self.A,
                "GITHUB_REPOSITORY": "boyfromcave/yellowback", "GITHUB_RUN_ID": "9", "DRAFT": "false",
                "TRAIN_FILE": "releases/v6.22.0-beta2.yaml"}
@@ -248,6 +359,9 @@ class Record(unittest.TestCase):
         self.assertEqual((rec["commit"], rec["harness_commit"], rec["tag"]), (self.A, self.B, "v6.22.0-beta2"))
         self.assertEqual(rec["run"], "https://github.com/boyfromcave/yellowback/actions/runs/9")
         self.assertFalse(rc_record.record(dict(env, R_NODE="skipped"), pins)["qualified"])
+        self.assertFalse(rc_record.record(dict(env, R_NODE_PACKAGE="failure"), pins)["qualified"])
+        self.assertEqual(rec["node_suites_binary"]["1-node-suites-package"], "package")
+        self.assertEqual(rec["node_suites_binary"]["1-node-suites-ci-build"], "ci-build")
         self.assertFalse(rc_record.record({k: v for k, v in env.items() if k != "R_CEREMONY"}, pins)["qualified"])
 
 

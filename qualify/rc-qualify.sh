@@ -24,6 +24,12 @@
 #                         the package's)
 #   pins FILE             print FILE's TRAIN_* lines (scripts/release-train.py pins) after checking
 #                         every line's shape; the workflow appends them to $GITHUB_ENV
+#   sidecars DEST         step 1's sidecars: yolo (--features regtest) and chain-viz at their train
+#                         pins, the binaries copied to DEST (yellowback_stratum, yellowback_chainviz)
+#   node-shard SUITE N OF step 1 against the package: shard N of OF of the node's own functional
+#                         list SUITE (yellowback | stock), read from WS/ycash6's yellowback-tests.yml
+#                         (qualify/rc-suites.py), run by its own rpc-tests.py on the release binaries
+#                         in WS/ycash6/src; YOLO_BIN / CHAINVIZ_BIN name the sidecars
 #   walk | yew | x402 | hawkeye | yecwallet
 #                         step 2, the ecosystem walk: one client (or, for walk, the devnet's own
 #                         clients: chain-viz, lightwalletd fork and baseline, yolo) at its train pin
@@ -150,6 +156,49 @@ cmd_train() {
   cmd_pins /dev/stdin <<<"$raw"
 }
 
+cmd_sidecars() {
+  [ $# -eq 1 ] || die "usage: sidecars DEST"
+  : "${WS:?WS must name the scratch directory}"
+  mkdir -p "$1"
+  build_yolo
+  clone_at chain-viz "$WS/chain-viz"
+  (cd "$WS/chain-viz" && CARGO_TARGET_DIR="$WS/chain-viz/target" cargo build -q --release --locked)
+  cp "$YOLO_BIN" "$WS/chain-viz/target/release/chain-viz" "$1/"
+  "$1/yolo" --version
+  "$1/chain-viz" --version
+}
+
+cmd_node_shard() {
+  [ $# -eq 3 ] || die "usage: node-shard SUITE SHARD OF"
+  need_ws
+  local suite=$1 n=$2 of=$3 tree="$WS/ycash6" zmq=() name flags=()
+  local out="$RC_OUT/node-suites/$suite-$n"
+  mkdir -p "$out/tmp"
+  # configure's tests_config.ini for this tree (no build here: the binaries are the package's).
+  "$tree/src/ycashd" --help 2>/dev/null | grep -q -- '-zmqpub' || zmq=(--no-zmq)
+  python3 "$here/rc-suites.py" config "$tree/qa/pull-tester/tests_config.ini.in" "$tree" ${zmq[@]+"${zmq[@]}"} \
+    > "$tree/qa/pull-tester/tests_config.ini"
+  local list sel=()
+  list=$(python3 "$here/rc-suites.py" lists "$tree/.github/workflows/yellowback-tests.yml" "$suite" "$n" "$of") \
+    || die "no shard $n/$of of $suite in $tree's yellowback-tests.yml"
+  while IFS= read -r name; do [ -n "$name" ] && sel+=("$name"); done <<<"$list"   # bash 3.2 too (no mapfile)
+  [ "${#sel[@]}" -gt 0 ] || die "shard $n/$of of $suite is empty"
+  [ "$suite" = yellowback ] && flags=(--nozmq)
+  # The same early, named failures as the node's own job: a script that would SKIP fails instead.
+  for name in "${sel[@]}"; do
+    case "$name" in
+      yellowback_stratum)  [ -x "${YOLO_BIN:-}" ]     || die "no yolo (sidecars); $name would SKIP" ;;
+      yellowback_chainviz) [ -x "${CHAINVIZ_BIN:-}" ] || die "no chain-viz (sidecars); $name would SKIP" ;;
+      vault_pq_reorg)
+        (cd "$tree" && python3 -c 'import sys; sys.path.insert(0, "qa/rpc-tests")
+from test_framework import pq
+sys.exit(0 if pq.falcon_signer_available() else 1)') || die "the Falcon signer does not build; $name would SKIP" ;;
+    esac
+  done
+  echo "shard $n/$of of $suite against $("$tree/src/ycashd" --version | head -1): ${sel[*]}"
+  (cd "$tree" && TMPDIR="$out/tmp" qa/pull-tester/rpc-tests.py --fail-on-skip -j4 ${flags[@]+"${flags[@]}"} --nocleanup "${sel[@]}")
+}
+
 devnet_down() { "$PY" "$DEVNET" down --dir "$1" >/dev/null 2>&1 || true; }
 
 cmd_walk() {
@@ -274,6 +323,8 @@ command=$1; shift
 case "$command" in
   install)    cmd_install "$@" ;;
   train)      cmd_train "$@" ;;
+  sidecars)   cmd_sidecars "$@" ;;
+  node-shard) cmd_node_shard "$@" ;;
   pins)       cmd_pins "$@" ;;
   walk)       cmd_walk ;;
   yew)        cmd_yew ;;
