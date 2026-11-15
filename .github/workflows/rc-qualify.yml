@@ -318,9 +318,20 @@ jobs:
         with:
           path: harness
           persist-credentials: false
-      - uses: ./.github/actions/yellowback-prereqs  # zizmor: ignore[self-repository] ycash6's action, from the node tree at the job's root
+      # ycash6's CI prerequisites (its .github/actions/yellowback-prereqs) without any cache: this
+      # workflow runs another repository's code, so it neither restores nor saves an Actions cache.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          apt: 'false'
+          python-version: '3.11'
+      - name: Python test packages and the pyblake2 shim (as ycash6's prerequisites action)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user -r qa/yellowback-ci-requirements.txt
+          site=$(python3 -c 'import site; print(site.getusersitepackages())')
+          mkdir -p "$site"
+          printf '%s\n' '"""Shim: pyblake2 is unmaintained; Python 3.6+ has hashlib.blake2b with the same API."""' \
+                        'from hashlib import blake2b, blake2s  # noqa: F401' > "$site/pyblake2.py"
+          python3 -c 'import asyncore, zmq, simplejson, pyblake2, pyflakes, tomllib'
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: rc-package
@@ -398,7 +409,24 @@ jobs:
         with:
           path: harness
           persist-credentials: false
-      - uses: ./.github/actions/yellowback-prereqs  # zizmor: ignore[self-repository] ycash6's action, from the node tree at the job's root
+      - name: apt build packages (as ycash6's prerequisites action)
+        run: |
+          qa/yellowback-ci-apt.sh build-essential pkg-config libc6-dev m4 g++-multilib \
+            autoconf libtool ncurses-dev unzip git python3 python3-zmq zlib1g-dev curl bsdmainutils automake
+      # ycash6's CI prerequisites (its .github/actions/yellowback-prereqs) without any cache: this
+      # workflow runs another repository's code, so it neither restores nor saves an Actions cache.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Python test packages and the pyblake2 shim (as ycash6's prerequisites action)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user -r qa/yellowback-ci-requirements.txt
+          site=$(python3 -c 'import site; print(site.getusersitepackages())')
+          mkdir -p "$site"
+          printf '%s\n' '"""Shim: pyblake2 is unmaintained; Python 3.6+ has hashlib.blake2b with the same API."""' \
+                        'from hashlib import blake2b, blake2s  # noqa: F401' > "$site/pyblake2.py"
+          python3 -c 'import asyncore, zmq, simplejson, pyblake2, pyflakes, tomllib'
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: rc-package
@@ -468,9 +496,20 @@ jobs:
         with:
           path: harness
           persist-credentials: false
-      - uses: ./.github/actions/yellowback-prereqs  # zizmor: ignore[self-repository] ycash6's action, from the node tree at the job's root
+      # ycash6's CI prerequisites (its .github/actions/yellowback-prereqs) without any cache: this
+      # workflow runs another repository's code, so it neither restores nor saves an Actions cache.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          apt: 'false'
+          python-version: '3.11'
+      - name: Python test packages and the pyblake2 shim (as ycash6's prerequisites action)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user -r qa/yellowback-ci-requirements.txt
+          site=$(python3 -c 'import site; print(site.getusersitepackages())')
+          mkdir -p "$site"
+          printf '%s\n' '"""Shim: pyblake2 is unmaintained; Python 3.6+ has hashlib.blake2b with the same API."""' \
+                        'from hashlib import blake2b, blake2s  # noqa: F401' > "$site/pyblake2.py"
+          python3 -c 'import asyncore, zmq, simplejson, pyblake2, pyflakes, tomllib'
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: rc-package

@@ -80,7 +80,9 @@ and write (GitHub shows drafts to writers only) and Actions read. Without it tho
 plainly.
 
 **Cost.** The workspace repository is public, so its standard runners are free. No job waits on
-another workflow. `vars.RC_QUALIFY_RUNNER` can name a larger runner for step 2, which is billed.
+another workflow. No job restores or saves an Actions cache: the legs run another repository's code
+(ycash6 and ycash-dd at the train's commits, every client at its pin), and a cache written there in
+this repository's default-branch scope could be read by its other workflows. `vars.RC_QUALIFY_RUNNER` can name a larger runner for step 2, which is billed.
 
 ## Running it locally
 
