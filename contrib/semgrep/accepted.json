@@ -1,6 +1,13 @@
 {
   "_comment": "Accepted Semgrep findings (contrib/semgrep/README.md, 'Accepting a finding'). findings: fingerprint -> {rule, path, reason, by, date}. rule_paths: [{rule (glob), paths (globs), reason, by, date}]. Every entry needs a reason a reviewer can check.",
   "findings": {
+    "ec785393002d240a": {
+      "rule": "python.lang.security.audit.insecure-file-permissions",
+      "path": "qualify/test_rc_qualify.py",
+      "reason": "The node-shard self-test's stub ycashd and rpc-tests.py: fresh stub executables this test just wrote under its own tempfile.mkdtemp() directory; they must be executable to be run, and 0o700 is owner-only (no group or world bits), the most restrictive mode an executable can have.",
+      "by": "@boyfromcave",
+      "date": "2026-11-15"
+    },
     "6c1260adcb8062b4": {
       "rule": "python.lang.security.audit.insecure-file-permissions",
       "path": "qualify/test_rc_qualify.py",
