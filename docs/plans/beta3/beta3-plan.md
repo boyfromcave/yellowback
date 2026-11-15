@@ -1,7 +1,9 @@
 # Beta3 plan: 6.22.0-beta3 and a pool that pays shielded miners
 
-**Revision 1 (2026-11-15). Proposal for the Yellowback lead architect; not started.**
-Source: the beta3 list refined with the lead architect on 2026-11-13..15 (16 requested items, 2
+**Revision 2 (2026-11-15). Proposal for the Yellowback lead architect; not started.**
+Revision 2 adds two items at the lead architect's request: a lightwalletd deployment for the fast
+testnet (17) and the ycash.team landing page (18).
+Source: the beta3 list refined with the lead architect on 2026-11-13..15 (18 requested items, 2
 process requirements). This plan orders that work for a team of agents. Its status block (§2) is
 the record once the run starts.
 
@@ -12,7 +14,7 @@ Beta3 is done when both of these are true:
 1. **The beta3 releases are published** as one release train (`releases/v6.22.0-beta3.yaml`):
    ycashd `v6.22.0-beta3` (ycash6), `vault-params/v6.22.0-beta3` (ycash-dd), koganyd
    `v1.8.0-ycash.beta3`, and the clients at their train commits (yew with yewd, yolo, YecWallet's
-   first real release, lightwalletd, chain-viz, x402-ycash, hawkeye). Every one of the 16 items
+   first real release, lightwalletd, chain-viz, x402-ycash, hawkeye). Every one of the 18 items
    is in it or explicitly dropped by the lead architect.
 2. **The yolo pool on the fast testnet pays several unrelated miners in full, at their own
    addresses, shielded ones included.** At least **four rented GPU miners at the same time**, each
@@ -60,6 +62,8 @@ Filled in by the coordinator during the run. `[ ]` open, `[~]` in progress, `[x]
 | 16 | Mobile wallet fee warning | n/a | n/a | n/a | [ ] yew (local branch) |
 | 14 | yewd gaps against ycashd's wallet | n/a | n/a | n/a | [ ] yew |
 | 13 | YecWallet release; macOS first-run instructions | n/a | n/a | n/a | [ ] yecwallet-dd, site |
+| 17 | lightwalletd for the fast testnet at `fastnet-lightwallet.ycash.team` | n/a | n/a | n/a | [ ] ycash-infra, ycash-ops, yew |
+| 18 | The ycash.team landing page | n/a | n/a | n/a | [ ] new site repo, ycash-ops |
 | F-1 | Miner fleet: several miners, three address kinds | n/a | n/a | n/a | [ ] ycash-infra, ycash-ops |
 | R-1 | RPC contract version and clients | [ ] | [ ] | [ ] | [ ] all clients |
 | Q | Qualification (incl. P-2) | [ ] | [ ] | [ ] | [ ] |
@@ -78,6 +82,9 @@ Filled in by the coordinator during the run. `[ ]` open, `[~]` in progress, `[x]
 | B3-D5 | The `rpcversion` step | 10, once, at integration (R-1), covering every new call and field of this run |
 | B3-D6 | Four payout addresses for the demonstration | Fresh addresses from the lead architect's own fast-testnet wallet (keys stay local; only addresses go in the fleet file) |
 | B3-D7 | Start | "go" on Wave 0 |
+| B3-D8 | Where lightwalletd runs (item 17) | Its own small host in the pool-host pattern (own address, role and environment), not on the explorer host: the explorer host's 4 GiB is already budgeted, and a wallet backend and an explorer should not fail together |
+| B3-D9 | Whether the web wallet is served by this deployment | Not in the first cut: the app's native gRPC over TLS first; the web wallet's gRPC-web listener as a second step of the same item |
+| B3-D10 | The landing page's open choices (item 18) | Where the YEW, YecWallet, Yolo, x402 and lightwalletd tiles lead (a one-screen page per product, not a source repository); whether a newcomer page keeps the builder tiles; the one-line tagline; the tile order |
 
 Already decided and recorded in the list: the fund default 0 % with `-ydf` opt-in on all lines;
 testnet and mainnet behave the same; exact-amount coinbases only; no Apple Developer signing;
@@ -145,7 +152,7 @@ Wave 5  qualify, roll out, show ─► Q (with P-2) → T testnet → D four min
 |---|---|---|---|---|
 | P-1 | harness | **Important process change.** Move `qa/test_yellowback_rc_qualify.py` and `.github/workflows/rc-qualify.yml` out of ycash6 to the home chosen in B3-D3. The harness takes the node commits from the train file and records its own commit in the run's result; a harness fix never moves a node's head. Fold in the two fixes left from ycash6 #114 (open `ycash.conf` with "w"; the kogany wait fails fast on a dead node). ycash6 keeps a pointer in `doc/yellowback-release.md`. | B3-D3 | M |
 | 15 | k-tools | Pin kogany's Rust toolchain in `rust-toolchain.toml` and in every workflow that installs one; the same in `zakura-common-ycash`; a short "how to bump" note. | — | S |
-| W0-a | coord | `wt/BRIEFING-beta3.md`, `wt/COORDINATION-beta3.md`, the skeleton `releases/v6.22.0-beta3.yaml`. | B3-D1..D7 | S |
+| W0-a | coord | `wt/BRIEFING-beta3.md`, `wt/COORDINATION-beta3.md`, the skeleton `releases/v6.22.0-beta3.yaml`. | B3-D1..D10 | S |
 | W0-b | fees | Push the work already done locally and open PRs: item 1 (`up/b3-gettransaction-fee` in ycash-dd and ycash6, `wt/handoff/B3-FEE-DISPLAY.md`) and yew's `up/b3-fees-and-guards` (items 10 and 16 in part, `wt/handoff/B3-YEW-FEES.md`). Rebase by merge onto today's `upgrade/vault`, re-run their tests, then review. | — | S |
 | N-1 | design | **Design note for item 3** (`docs/plans/beta3/getcoinbasetemplatefor.md`): the call's exact request and response; how a caller names the template it holds (so the node derives the exact amount and refuses a stale reference); what the coinbase carries (quote tag; fund output only where consensus requires it); proving outside `cs_main`; errors. Measure the shielded coinbase proving time on a seed-class host and on this Mac. Answer three questions with tests, not reading: does a post-quantum username already work through yolo's swap path; can kogany build a shielded coinbase today; is the header root independent of the coinbase on every Ycash network at every height that matters. | — | M |
 | N-2 | design | **Design note for item 2** (`value-pools.md`): the entries and their names (matching the wallet's `transparent_ecc`, `transparent_pq`, `pq_by_scheme`), where vault-locked and YED-carrying value falls, how the existing order `[0]` transparent, `[1]` sprout, `[2]` sapling is kept (Inzyght reads by position), the block-index field and the reindex or migration, the cross-line check. | — | M |
@@ -196,6 +203,8 @@ Client and tooling lanes run alongside from the start of the run; none needs a n
 | 8 | S restore | `ycash-bootstrap`'s import node ignores peers whatever `ycash.conf` says; a refused restore exits non-zero and leaves a marker the entrypoint will not start past; the missing-`.minisig` case accepts 403 as "absent" for a bucket that is not listable. A test that reproduces the silent failure first (ycash6 `contrib/bootstrap`, `contrib/docker/ycashd`). | — | M |
 | 9 | S restore | Bundles in parts as N-3 specifies: `ycash-infra/bundles/state` (`FORMAT.md`, `verify.py`, `mainnet/snapshot.py`, `publish-s3.sh`), `ycash-bootstrap`, and the snapshots page in `kogany-site`. A restore test from a small bundle split into three parts. | 8, N-3 | M |
 | F-1 | F fleet | **Several miners with different payout addresses.** Today the fleet file has one `payout` per network and accepts only a transparent address (`ycash-infra/scripts/vast-fleet.py`, `PAYOUT_RE`; the miner container's `PAYOUT`). Change: a per-network list of payouts, one per miner, cycling by miner index; accept transparent, Sapling and post-quantum address forms for the network; `burst` takes the list; `status` and `logs` show each miner's payout kind and its accepted-share count; the miner image passes the address as the stratum username unchanged (check miniZ accepts a 78-character Sapling username and a post-quantum one; if it truncates, say so and find the workaround). ycash-ops: `miners/fleet.json` and the `miners` workflow inputs. | N-1's username answer | M |
+| 17 | L lightwallet | **lightwalletd for the fast testnet, deployed like the pool and the explorer.** ycash-infra: the seeds module gains a `lightwallet` block beside `pool` and `explorer` (a node with `-txindex -insightexplorer -experimentalfeatures`, which lightwalletd's address calls need; the `lightwalletd-dd` image with `--yellowback`; a proxy that terminates TLS and passes gRPC through; automatic certificate; nothing else public; RPC on the host's internal network only; memory limits; `status` reports the server's height and its `GetLightdInfo`); an image workflow for `lightwalletd-dd` in the `yolo-image.yml` pattern (public image, pinned by digest, with provenance). ycash-ops: roots `testnet-lightwallet/{ips,nodes}`, a deploy layer `lightwallet` with its own role (`deploy-testnet-lightwallet`) and environment, the layer policy extended to four layers (and the older gap toward the Kubernetes layer's machines closed in the same re-put), docs, a CloudShell runbook for the lead architect. yew: the fast testnet's server in the testnet default list (it is empty today), so the app finds it without typing. Second step (B3-D9): a gRPC-web listener for the web wallet. **Acceptance:** `https://fastnet-lightwallet.ycash.team` answers `GetLightdInfo` and `GetChainInfo` with a valid certificate; the YEW app syncs against it on the fast testnet, shows a balance and makes a shielded send that confirms. | B3-D8; the first deploy uses the current node image | L |
+| 18 | H landing | **The ycash.team landing page.** The page built locally on 2026-11-15 (`/Users/boy/projects/ycash-team-site`: dark theme, the Ycash logo, "Ycash = Your" with the rotating words Electronic Cash, Team, Life, Family, Collateral, Assets, Wallet, Future, ❤️, Friends, 🛡️, Vault, eight product tiles, almost no text; written for someone completely new to Ycash) becomes a public repository and a workspace component like `kogany-site`, with a deploy workflow and a strict content security policy. ycash-ops: `site/ycash-team` (private S3 behind CloudFront at the apex `ycash.team`, with `www` redirecting), hand-applied by the lead architect as the Kogany site was. Content pass with the lead architect's choices (B3-D10): tiles lead to pages a newcomer can use (the YecWallet tile to its beta3 download, item 13; the explorer and wallet backend to the live fast-testnet services), not to source repositories. **Acceptance:** `https://ycash.team` serves the page with a valid certificate and security headers; every tile link works; it reads correctly with scripts off and with reduced motion. | B3-D10; the YecWallet tile's final link waits for item 13 | M |
 
 Collisions to sequence: lanes S and N-C both edit ycash6 but different trees (`contrib/` against
 `src/`); lanes W and Y both edit yew (`core/`, `app/`, `web/` against `yewd/`): Y rebases onto W's
@@ -233,16 +242,17 @@ Strictly in this order.
 | Q-2 | **P-2:** the candidate koganyd syncs the fast testnet to the tip and yewd runs against it; the wallet walk-through passes on the upgrade-active chain. (About 26 minutes with a local peer, about 6.5 hours from the seeds.) | agent |
 | Q-3 | Release dry run (packages build, checksums, SBOM, the YecWallet packages), with nothing published. | coordinator |
 | T-1 | Node images built from the candidate commits. The mandate-end height (B3-D4) is in them. | coordinator |
-| T-2 | **Every fast-testnet node upgrades before that height:** the two seeds, the pool host, the explorer host (deploy workflows), the local ycashd and the local koganyd (the lead architect's machines: the lead architect restarts them, or says who may). A node on the old binary rejects the first block without the fund output. The checklist is ticked here, node by node, with each node's reported version. | coordinator, lead architect |
+| T-2 | **Every fast-testnet node upgrades before that height:** the two seeds, the pool host, the explorer host and the lightwalletd host from item 17 (deploy workflows), the local ycashd and the local koganyd (the lead architect's machines: the lead architect restarts them, or says who may). A node on the old binary rejects the first block without the fund output. The checklist is ticked here, node by node, with each node's reported version. | coordinator, lead architect |
 | T-3 | The pool host switches to per-miner payouts (no fixed `--payout`) with the new yolo image; the fleet file gets the four payout addresses (B3-D6). | coordinator |
-| T-4 | A miner burst carries the chain across the height. Check: the first block after it without a fund output is accepted by all six nodes; the explorer shows it. | coordinator |
+| T-4 | A miner burst carries the chain across the height. Check: the first block after it without a fund output is accepted by every node on the checklist; the explorer shows it. | coordinator |
 | D-1 | **The demonstration** (§9). | coordinator |
+| L-1 | With beta3 nodes everywhere, repeat item 17's acceptance (the YEW app against `fastnet-lightwallet.ycash.team`) and item 18's link check, so the landing page and the wallet backend are correct on release day. | coordinator |
 | REL | Tags in the train's order (ycash-dd `vault-params/v6.22.0-beta3`, then ycash6 `v6.22.0-beta3`, kogany `v1.8.0-ycash.beta3`, the clients), the signing step (the lead architect's key and "go"), publication, the site's download and snapshots pages, the train file merged. | per B3-D2 |
 
 ## 6. What can run at the same time
 
 - **From the first hour:** P-1, 15, W0-b, N-1..N-4, and the client lanes W (10, 16), Y (14),
-  G (13), S (8). That is up to ten agents with no shared files.
+  G (13), S (8), L (17) and H (18). That is up to twelve agents with no shared files.
 - **ycash-dd lanes B, C, D** run in parallel with each other and with the kogany-only lane
   (7 → 11) and, once N-4 is approved, 12.
 - **Strictly in sequence:** 4 → 5 → 3n inside lane C (same files, and "paid in full" needs 4 and
@@ -251,7 +261,10 @@ Strictly in this order.
 - **Same-file collisions the coordinator must sequence:** `src/rpc/blockchain.cpp` (6 and 2),
   `src/rpc/mining.cpp` and `src/miner.cpp` (4, 5's tests, 3n), `src/chainparams.cpp` (5 only),
   the RPC documents (every node chunk; regenerate once per merge, never by hand), kogany's
-  `crates/zakura-rpc` (7, 11, 6k, 4k, 3k: one lane, or two with files assigned), yew (W and Y).
+  `crates/zakura-rpc` (7, 11, 6k, 4k, 3k: one lane, or two with files assigned), yew (W and Y;
+  17's one-line server default goes through lane W), the seeds module and ycash-ops' deploy
+  workflow and role policy (17 and any explorer follow-up: one at a time), ycash-ops' `miners`
+  files (F-1 only).
 - **The critical path** to the demonstration is N-1 → 4 → 5 → 3n (dd) → 3n (y6) → 3p → F-1 →
   T → D. Everything else has slack; staff this path first and never let it wait for a review.
 
@@ -275,7 +288,9 @@ Strictly in this order.
 | A fast-testnet node is missed at T-2 and forks off | The node-by-node checklist with reported versions; the height has 400 blocks of margin; the chain advances only a few blocks an hour without a burst |
 | The value-pool index needs a reindex on upgrade | N-2 decides migration against reindex; the release notes say which and how long |
 | The harness move breaks qualification itself | P-1 is first and is proven by re-qualifying the unchanged beta2 commits before any beta3 change merges |
-| Sixteen items is a large release | Items are independent except the chains in §6; the lead architect can drop any `[ ]` without unpicking others, except 4 and 5, which item 3's "in full" needs |
+| The lightwalletd host is a fourth deploy layer: its role and the re-put of three live role policies | The same procedure as the explorer's, already proven: backup, diff shown to the coordinator, put, simulator checks (with each action checked against a resource type it acts on) |
+| The landing page sends newcomers to things that are not ready | Its tiles carry honest labels (Beta, Testnet) and lead only to what exists on release day; the content pass is the lead architect's |
+| Eighteen items is a large release | Items are independent except the chains in §6; the lead architect can drop any `[ ]` without unpicking others, except 4 and 5, which item 3's "in full" needs |
 
 ## 9. The demonstration: four miners, three kinds of address
 
@@ -312,5 +327,5 @@ Cost: four cards for two hours at about six cents an hour each.
 The candidates left on the list: kogany's spent index and push channel; fresh mainnet snapshots
 (waiting, by decision); the software bill of materials detail; YecWallet display polish; the
 operations permission gap toward the undeployed Kubernetes layer (an operations task); the
-explorer's vault and post-quantum views (waiting on Inzyght's licence); the ycash.team landing
-page.
+explorer's vault and post-quantum views (waiting on Inzyght's licence); a mainnet lightwalletd
+and a mainnet explorer (the fast-testnet deployments are their worked examples).
