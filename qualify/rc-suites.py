@@ -33,23 +33,30 @@ PINS = ("YOLO_COMMIT", "CHAINVIZ_COMMIT", "LWD_COMMIT", "YB_WORKSPACE_COMMIT")
 
 
 def workflow_env(text):
-    """The top-level `env:` block of a workflow, as {NAME: value} (one-line values, quotes removed)."""
+    """The top-level `env:` block of a workflow, as {NAME: value} (one-line values, quotes removed).
+    Anything else in the block (a value continued on the next line, a block scalar) is an error, never
+    a shorter list."""
     env, inside = {}, False
-    for line in text.splitlines():
+    for n, line in enumerate(text.splitlines(), 1):
         if re.match(r"^env:\s*(#.*)?$", line):
             inside = True
             continue
         if inside and re.match(r"^\S", line):
             break
-        m = re.match(r"^  ([A-Z][A-Z0-9_]*):\s*(.*?)\s*$", line) if inside else None
-        if m:
-            value = m.group(2)
-            if value[:1] in "'\"":
-                end = value.find(value[0], 1)
-                value = value[1:end] if end > 0 else value[1:]
-            else:
-                value = re.sub(r"\s+#.*$", "", value)
-            env[m.group(1)] = value
+        if not inside or not line.strip() or line.lstrip().startswith("#"):
+            continue
+        m = re.match(r"^  ([A-Z][A-Z0-9_]*):\s*(.*?)\s*$", line)
+        if not m:
+            raise ValueError("workflow line %d: not a one-line `  NAME: value` env entry (a continued value?): %r" % (n, line))
+        value = m.group(2)
+        if not value or value[:1] in "|>":
+            raise ValueError("workflow line %d: %s has no one-line value (a block or continued value?)" % (n, m.group(1)))
+        if value[:1] in "'\"":
+            end = value.find(value[0], 1)
+            value = value[1:end] if end > 0 else value[1:]
+        else:
+            value = re.sub(r"\s+#.*$", "", value)
+        env[m.group(1)] = value
     return env
 
 
@@ -68,7 +75,9 @@ def shard(env, suite, n, of):
     if not names:
         raise ValueError("the workflow has no %s" % SUITES[suite])
     sel = [name for i, name in enumerate(names) if i % of == n - 1]
-    if suite == "stock" and n == of and env.get("STOCK_BASELINE_MINEBLOCK"):
+    if suite == "stock" and n == of:
+        if not env.get("STOCK_BASELINE_MINEBLOCK"):
+            raise ValueError("the workflow has no STOCK_BASELINE_MINEBLOCK (the stock suite's last shard runs it)")
         sel.append(env["STOCK_BASELINE_MINEBLOCK"])
     return sel
 

@@ -58,6 +58,23 @@ unit tests and variants as before, and **the nightly's suites, which now run a C
 commit rather than the package**. That is the one narrowing; the record says which binary each half
 ran (`node_suites_binary`).
 
+## Before you qualify
+
+- The train `releases/v<V>.yaml` is filled in (no `placeholder`), merged, and `make release-train-check` passes. Every commit is on its repository's `upgrade/vault` or a `release/*` branch.
+- **ycash6's default client pins are aligned with the train before the candidate is cut.** The `YOLO_COMMIT`, `CHAINVIZ_COMMIT`, `LWD_COMMIT` and `YB_WORKSPACE_COMMIT` defaults in its `yellowback-tests.yml` must equal the train's yolo, chain-viz, lightwalletd-dd and `release.workspace` commits. Step 1's CI-build half refuses a run with other pins, and a dispatch cannot override them.
+- The node's own tier-all run is green at the train's ycash6 commit (its id is `node_suites_run`).
+- For a draft, the secret `RC_QUALIFY_YCASH6_TOKEN` is set ("Token" below).
+
+**The beta2 proof (the coordinator's ruling).** The move was proved by re-qualifying the unchanged beta2 commits. ycash6 at fbc9f625 pins yolo, chain-viz, lightwalletd-dd and workspace commits that differ from the beta2 train's, so the CI-build half of step 1 fails on the pin check. The check stands as written. That run proves the move if all of these are green:
+
+- train;
+- candidate;
+- the package shards;
+- steps 2 to 4.
+
+The ONLY failure may be that client-pin mismatch, which the record names under
+`node_suites_ci_build_problems`. A `qualified: true` record is not expected for beta2. From beta3 on, the pins are aligned first (above).
+
 ## Running it in CI
 
 From the workspace's `upgrade/vault` (or a branch carrying the train under review):

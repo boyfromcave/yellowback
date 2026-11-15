@@ -199,6 +199,21 @@ class Online(unittest.TestCase):
         problems = self.run_check(train_text(commits=dict(self.commits, yolo=off)))
         self.assertTrue(any(p.startswith("yolo: %s is not on upgrade/vault" % off) for p in problems), problems)
 
+    def test_a_commit_on_a_release_branch_passes_and_on_another_does_not(self):
+        repo = os.path.join(self.tmp, "src", "yolo")
+        made = {}
+        for branch in ("release/6.22", "feature/x"):
+            git(repo, "checkout", "-q", "-b", branch, "upgrade/vault")
+            with open(os.path.join(repo, "r"), "w", encoding="utf-8") as fh:
+                fh.write(branch)
+            git(repo, "add", "r")
+            git(repo, "commit", "-q", "-m", branch)
+            made[branch] = git(repo, "rev-parse", "HEAD")
+        git(repo, "checkout", "-q", "upgrade/vault")
+        self.assertEqual(self.run_check(train_text(commits=dict(self.commits, yolo=made["release/6.22"]))), [])
+        problems = self.run_check(train_text(commits=dict(self.commits, yolo=made["feature/x"])))
+        self.assertTrue(any("is not on upgrade/vault or a release/* branch" in p for p in problems), problems)
+
     def test_a_tag_on_another_commit_is_refused(self):
         repo = os.path.join(self.tmp, "src", "ycash6")
         with open(os.path.join(repo, "y"), "w", encoding="utf-8") as fh:

@@ -17,12 +17,12 @@
 # the node's own suites, given by its id (input node_suites_run) and checked once.
 #
 # Steps (each a job; the record job collects them):
-#   train       the train file at this commit: `release-train.py check --online` (every commit exists
-#               on its upgrade/vault, the tags, rpcversion, the contract copies) and `pins` (a
-#               skeleton is refused); its ycash6 tag exists and names its ycash6 commit (or, for a
-#               proving run before the tag, the commit is on the run's branch and the release run built
-#               it or an ancestor differing only in qa/, doc/, .github/ files the build does not
-#               read). Uploads `rc-train`.
+#   train       the train file at this commit: `release-train.py check --online` (every commit is on
+#               its repository's upgrade/vault or a release/* branch, the tags, rpcversion, the
+#               contract copies) and `pins` (a skeleton is refused); its ycash6 tag exists and names
+#               its ycash6 commit (or, for a proving run before the tag, the commit is on upgrade/vault
+#               or a release/* branch and the release run built it or an ancestor differing only in
+#               qa/, doc/, .github/ files the build does not read). Uploads `rc-train`.
 #   candidate   the release of the tag (draft or published) or the proving run's `release-signed`
 #               artifact: every ycashd_v* asset matches SHA256SUMS, SHA256SUMS carries the release
 #               workflow's cosign signature and the linux_x86_64 package its build provenance, both
@@ -179,10 +179,15 @@ jobs:
           [ "$revent" = workflow_dispatch ] || { echo "run $PROVING_RUN is not a proving run (event $revent)"; exit 1; }
           [[ $rbranch == upgrade/vault || $rbranch == release/* ]] || { echo "run $PROVING_RUN ran on $rbranch, not upgrade/vault or release/*"; exit 1; }
           [ "$rstatus/$rconcl" = completed/success ] || { echo "run $PROVING_RUN is $rstatus/$rconcl, not completed/success"; exit 1; }
-          # The commit the tag will be cut at is on that branch (the branch is identical to it or ahead).
-          onbranch=$(gh api "repos/$NODE_REPO/compare/$COMMIT...$rbranch" --jq .status) \
-            || { echo "no comparison of $COMMIT with $rbranch"; exit 1; }
-          case "$onbranch" in identical|ahead) ;; *) echo "$COMMIT is not on $rbranch ($rbranch is $onbranch relative to it)"; exit 1 ;; esac
+          # The commit the tag will be cut at is on upgrade/vault or a release/* branch (the branch is
+          # identical to it or ahead), the same rule as release-train.py check --online.
+          found=""
+          for b in upgrade/vault $(gh api "repos/$NODE_REPO/branches?per_page=100" --paginate --jq '.[].name | select(startswith("release/"))'); do
+            st=$(gh api "repos/$NODE_REPO/compare/$COMMIT...$b" --jq .status 2>/dev/null || true)
+            case "$st" in identical|ahead) found=$b; break ;; esac
+          done
+          [ -n "$found" ] || { echo "$COMMIT is on neither upgrade/vault nor a release/* branch of $NODE_REPO"; exit 1; }
+          echo "$COMMIT is on $found"
           # A strict run only: release-dry-run runs only when strict, so its success proves the guards refused nothing.
           dr=$(gh api "repos/$NODE_REPO/actions/runs/$PROVING_RUN/jobs" --paginate \
             --jq '.jobs[] | select(.name == "Draft release (dry run, no release)") | .conclusion')
@@ -329,7 +334,15 @@ jobs:
             "repos/$NODE_REPO/contents/.github/workflows/yellowback-tests.yml?ref=$sha" > "$RUNNER_TEMP/yellowback-tests.yml"
           python3 qualify/rc-record.py node-suites --run "$RUNNER_TEMP/run.json" --jobs "$RUNNER_TEMP/jobs.json" \
             --commit "$COMMIT" --commit "$BUILT" \
-            --workflow "$RUNNER_TEMP/yellowback-tests.yml" --pins "$RUNNER_TEMP/rc-train/rc-train.env"
+            --workflow "$RUNNER_TEMP/yellowback-tests.yml" --pins "$RUNNER_TEMP/rc-train/rc-train.env" \
+            --out rc-node-evidence.json
+      - name: The evidence's findings, for the record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rc-node-evidence
+          path: rc-node-evidence.json
+          if-no-files-found: ignore
 
   sidecars:
     name: 1 sidecars (yolo, chain-viz at the train's pins)
@@ -695,6 +708,11 @@ jobs:
         with:
           name: rc-train
           path: ${{ runner.temp }}/rc-train
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: rc-node-evidence
+          path: ${{ runner.temp }}/rc-node-evidence
+        continue-on-error: true      # none when step 1's evidence did not run
       - name: rc-qualify.json
         env:
           TRAIN_FILE: ${{ inputs.train }}
@@ -715,7 +733,8 @@ jobs:
           R_CEREMONY: ${{ needs.ceremony.result }}
         run: |
           set -euo pipefail
-          python3 qualify/rc-record.py record --pins "$RUNNER_TEMP/rc-train/rc-train.env" > rc-qualify.json
+          python3 qualify/rc-record.py record --pins "$RUNNER_TEMP/rc-train/rc-train.env" \
+            --evidence "$RUNNER_TEMP/rc-node-evidence/rc-node-evidence.json" > rc-qualify.json
           cat rc-qualify.json
           {
             echo "## rc-qualify $TRAIN_FILE"

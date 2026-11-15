@@ -240,6 +240,20 @@ class Suites(unittest.TestCase):
             with self.assertRaises(ValueError):
                 rc_suites.shard(env, *bad)
 
+    def test_a_continued_or_block_value_is_an_error_not_a_shorter_list(self):
+        wrapped = WORKFLOW.replace("  YELLOWBACK_SCRIPTS: a b c d e f g\n", "  YELLOWBACK_SCRIPTS: a b c\n    d e f g\n")
+        with self.assertRaises(ValueError):
+            rc_suites.workflow_env(wrapped)
+        block = WORKFLOW.replace("  YELLOWBACK_SCRIPTS: a b c d e f g\n", "  YELLOWBACK_SCRIPTS: >-\n    a b c d e f g\n")
+        with self.assertRaises(ValueError):
+            rc_suites.workflow_env(block)
+
+    def test_the_stock_suite_needs_its_mineblock_entry(self):
+        env = rc_suites.workflow_env(WORKFLOW.replace("  STOCK_BASELINE_MINEBLOCK: 'txn_doublespend.py --mineblock'\n", ""))
+        self.assertEqual(rc_suites.shard(env, "stock", 1, 2), ["s1", "s3"])   # only the last shard runs it
+        with self.assertRaises(ValueError):
+            rc_suites.shard(env, "stock", 2, 2)
+
     def test_the_real_ycash6_lists_read(self):
         # The workspace's ycash6 clone, when this runs in a wt/ worktree of a laptop workspace; skipped in CI.
         tree = os.path.join(WORKSPACE, "..", "..", "ycash6")
@@ -339,6 +353,29 @@ class Record(unittest.TestCase):
         self.assertEqual(len(problems), 1)
         self.assertIn("YOLO_COMMIT=" + "1" * 40, problems[0])
         self.assertEqual(len(rc_record.pin_problems(WORKFLOW.replace("LWD_COMMIT", "LWD_X"), pins)), 1)
+
+    def test_the_record_names_a_pin_mismatch(self):
+        tmp = tempfile.mkdtemp(prefix="rc-record-")
+        self.addCleanup(shutil.rmtree, tmp)
+        files = {"run.json": json.dumps(self.run_json()), "jobs.json": json.dumps({"jobs": self.jobs()}),
+                 "wf.yml": WORKFLOW, "pins.env": "TRAIN_YOLO_COMMIT=%s\nTRAIN_CHAIN_VIZ_COMMIT=%s\n"
+                 "TRAIN_LIGHTWALLETD_DD_COMMIT=%s\nTRAIN_RELEASE_WORKSPACE=%s\n" % ("9" * 40, "2" * 40, "3" * 40, "4" * 40)}
+        for name, text in files.items():
+            with open(os.path.join(tmp, name), "w", encoding="utf-8") as fh:
+                fh.write(text)
+        j = lambda name: os.path.join(tmp, name)
+        proc = subprocess.run([sys.executable, os.path.join(HERE, "rc-record.py"), "node-suites", "--run", j("run.json"),
+                               "--jobs", j("jobs.json"), "--commit", self.A, "--workflow", j("wf.yml"),
+                               "--pins", j("pins.env"), "--out", j("ev.json")], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+        self.assertIn("YOLO_COMMIT", proc.stdout)
+        proc = subprocess.run([sys.executable, os.path.join(HERE, "rc-record.py"), "record", "--pins", j("pins.env"),
+                               "--evidence", j("ev.json")], capture_output=True, text=True,
+                              env=dict(os.environ, R_NODE="failure"))
+        rec = json.loads(proc.stdout)
+        self.assertFalse(rec["qualified"])
+        self.assertEqual(len(rec["node_suites_ci_build_problems"]), 1)
+        self.assertIn("YOLO_COMMIT", rec["node_suites_ci_build_problems"][0])
 
     def test_paginated_jobs_are_read(self):
         fd, path = tempfile.mkstemp()

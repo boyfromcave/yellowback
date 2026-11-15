@@ -155,8 +155,10 @@ def main(argv):
     ns.add_argument("--commit", action="append", required=True)
     ns.add_argument("--workflow", required=True)
     ns.add_argument("--pins", required=True)
+    ns.add_argument("--out", help="write {\"problems\": [...]} here as well (the record names them)")
     rec = sub.add_parser("record")
     rec.add_argument("--pins")
+    rec.add_argument("--evidence", help="node-suites --out of this run: its problems go into the record")
     args = ap.parse_args(argv)
     if args.command == "node-suites":
         commits = [c for c in args.commit if c]
@@ -169,12 +171,19 @@ def main(argv):
         if args.workflow:
             with open(args.workflow, encoding="utf-8") as fh:
                 problems += pin_problems(fh.read(), read_pins(args.pins))
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as fh:
+                json.dump({"run": run.get("id"), "problems": problems}, fh, indent=2)
         for problem in problems:
             print("FAIL " + problem)
         if not problems:
             print("ok   step 1: %s run %s, tier all, green at %s" % (NODE_SUITES, run["id"], run["head_sha"]))
         return 1 if problems else 0
-    print(json.dumps(record(os.environ, read_pins(args.pins)), indent=2, sort_keys=True))
+    result = record(os.environ, read_pins(args.pins))
+    if args.evidence and os.path.exists(args.evidence):
+        with open(args.evidence, encoding="utf-8") as fh:
+            result["node_suites_ci_build_problems"] = json.load(fh).get("problems", [])
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 

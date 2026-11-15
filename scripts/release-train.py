@@ -29,7 +29,8 @@ Testnet plan §5.4. One file per release, releases/v<version>.yaml, in the flat 
 `check` (offline) validates the shape: every field present and well formed, the file named after its
 version, tags matching the version, a final release naming both testnet-yb networks. `check --online`
 also clones each component (commit graph only, plus the few files read) and checks:
-  - every commit is on that repository's upgrade/vault (repos.yaml `branch`);
+  - every commit is on that repository's upgrade/vault (repos.yaml `branch`) or one of its release/*
+    branches, and nowhere else;
   - a tag, when it already exists, names the train's commit (a train is written before the tag);
   - rpcversion: the node lines' YELLOWBACK_RPC_VERSION and every client contract copy's top-level
     "rpcversion" equal the train's;
@@ -235,12 +236,19 @@ class Remote:
         self.name, self.url, self.branch = name, url, branch
         self.dir = os.path.join(scratch, name + ".git")
         git("clone", "-q", "--bare", "--filter=tree:0", "--single-branch", "--branch", branch, url, self.dir)
+        # A release branch counts too (one rule with the qualification's proving run): release/*.
+        git("fetch", "-q", "--filter=tree:0", "origin", "+refs/heads/release/*:refs/heads/release/*", cwd=self.dir)
+
+    def branches(self):
+        out = git("for-each-ref", "--format=%(refname)", "refs/heads/release/", cwd=self.dir).stdout.split()
+        return ["refs/heads/" + self.branch] + sorted(out)
 
     def on_branch(self, commit):
+        """True when COMMIT is on the repository's branch (upgrade/vault) or on one of its release/* branches."""
         if git("cat-file", "-e", commit + "^{commit}", cwd=self.dir, check=False).returncode != 0:
             return False
-        return git("merge-base", "--is-ancestor", commit, "refs/heads/" + self.branch,
-                   cwd=self.dir, check=False).returncode == 0
+        return any(git("merge-base", "--is-ancestor", commit, ref, cwd=self.dir, check=False).returncode == 0
+                   for ref in self.branches())
 
     def tag_commit(self, tag):
         out = git("ls-remote", self.url, "refs/tags/%s" % tag, "refs/tags/%s^{}" % tag).stdout.split("\n")
@@ -302,9 +310,9 @@ def check_online(train, scratch, log=print):
         commit = train[name]["commit"]
         remote = remotes[name] = Remote(name, url, branch, scratch)
         if not remote.on_branch(commit):
-            problems.append("%s: %s is not on %s" % (name, commit, branch))
+            problems.append("%s: %s is not on %s or a release/* branch" % (name, commit, branch))
             continue
-        log("ok   %-16s %s on %s" % (name, commit[:12], branch))
+        log("ok   %-16s %s on %s or release/*" % (name, commit[:12], branch))
         if name in TAGGED:
             tag = train[name]["tag"]
             tagged = remote.tag_commit(tag)
