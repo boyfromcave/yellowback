@@ -1,0 +1,38 @@
+# SKELETON (beta3 plan, Wave 0): the shape of the 6.22.0-beta3 train, written before its commits exist.
+# Every `placeholder` is filled in by the coordinator at qualification (beta3 plan Q-1). While one
+# remains, `scripts/release-train.py pins` refuses this file, so the qualification harness
+# (qualify/, .github/workflows/rc-qualify.yml) cannot run against it.
+release:
+  version: 6.22.0-beta3
+  rpcversion: placeholder  # 10 at integration (scripts/release-train.py SPEC_MODE gains 10 with it)
+  workspace: placeholder   # the workspace upgrade/vault commit whose spec and contract copies the clients carry
+testnet:
+  fast-vault-height: 510400  # beta2's value; confirm at qualification
+  fast-set-id: none
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: placeholder      # the upgrade/vault commit v6.22.0-beta3 is cut at
+  tag: v6.22.0-beta3
+ycash-dd:
+  commit: placeholder      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at
+  tag: vault-params/v6.22.0-beta3
+librustzcash6:
+  commit: placeholder      # the rev ycash6's Cargo.toml [patch.crates-io] builds against
+lightwalletd-dd:
+  commit: placeholder
+yecwallet-dd:
+  commit: placeholder
+yew:
+  commit: placeholder
+yolo:
+  commit: placeholder
+chain-viz:
+  commit: placeholder
+x402-ycash:
+  commit: placeholder
+hawkeye:
+  commit: placeholder
+wyec:
+  commit: placeholder      # hawkeye's pin (eth/tools/fetch-wyec.sh)

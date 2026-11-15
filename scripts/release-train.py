@@ -10,6 +10,10 @@ the same RPC contract as the node, and everything states the same RPC version.
   scripts/release-train.py check [--online] [FILE ...]   validate trains (default: releases/v*.yaml)
   scripts/release-train.py pins FILE                      print the train as KEY=VALUE lines (rc-qualify)
 
+A train is a SKELETON while any value is the literal `placeholder` (any field but release.version
+and the tags may be one): it is written ahead of the release so the run's shape is visible, `check` passes its shape and never goes online, and `pins` refuses it, so the
+qualification harness (the workspace's qualify/) cannot run against a train that is not filled in.
+
 Testnet plan §5.4. One file per release, releases/v<version>.yaml, in the flat shape of repos.yaml
 (unindented `section:` lines, two-space `key: value` fields, `# comment`s stripped, nothing else):
 
@@ -35,8 +39,8 @@ also clones each component (commit graph only, plus the few files read) and chec
   - hawkeye's pinned wyec commit (eth/tools/fetch-wyec.sh WYEC_COMMIT) is the train's wyec commit.
 
 `pins` prints TRAIN_<SECTION>_<KEY>=<value> lines (upper case, '-' as '_'), every value validated,
-for rc-qualify to read in place of the push tier's YOLO_COMMIT / CHAINVIZ_COMMIT / LWD_COMMIT /
-YB_WORKSPACE_COMMIT env pins. Python 3 standard library and git only.
+for the qualification (qualify/rc-qualify.sh train) to read in place of the push tier's YOLO_COMMIT /
+CHAINVIZ_COMMIT / LWD_COMMIT / YB_WORKSPACE_COMMIT env pins. Python 3 standard library and git only.
 """
 import json
 import os
@@ -81,6 +85,9 @@ HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 VERSION = re.compile(r"^6\.22\.\d+(?:-(?:rc|beta)[1-9]\d*)?$")
 HEIGHT = re.compile(r"^[1-9]\d{0,8}$")
+# A value not known yet in a skeleton train (see the module doc); never allowed in these fields.
+PLACEHOLDER = "placeholder"
+NEVER_PLACEHOLDER = {("release", "version")} | {(name, "tag") for name in TAGGED}
 
 
 class TrainError(Exception):
@@ -116,9 +123,23 @@ def repos():
         return parse_flat(fh.read(), os.path.basename(REPOS_FILE))
 
 
+def placeholders(train):
+    """The fields of a skeleton train still set to `placeholder`, as section.key (empty: a full train)."""
+    return ["%s.%s" % (section, key) for section, fields in train.items() for key, value in fields.items()
+            if value == PLACEHOLDER]
+
+
 def validate(train, filename=None):
-    """Offline shape checks; returns the list of problems (empty when the train is well formed)."""
+    """Offline shape checks; returns the list of problems (empty when the train is well formed).
+    A `placeholder` value passes its field's check (a skeleton); placeholders() lists them."""
     problems = []
+    for section, fields in train.items():
+        for key, value in fields.items():
+            if value == PLACEHOLDER and (section, key) in NEVER_PLACEHOLDER:
+                problems.append("%s.%s cannot be a placeholder" % (section, key))
+    # Checked as if filled in: a placeholder stands for a well-formed value.
+    train = {section: {key: (None if value == PLACEHOLDER else value) for key, value in fields.items()}
+             for section, fields in train.items()}
     for section, keys in SECTIONS.items():
         got = train.get(section)
         if got is None:
@@ -139,7 +160,7 @@ def validate(train, filename=None):
             problems.append("missing %s.%s" % (name, key))
         for key in sorted(set(got) - want):
             problems.append("unknown field %s.%s" % (name, key))
-        if "commit" in got and not HEX40.match(got["commit"]):
+        if got.get("commit") is not None and not HEX40.match(got["commit"]):
             problems.append("%s.commit is not a full 40-hex commit: %r" % (name, got["commit"]))
     for section in sorted(set(train) - set(SECTIONS) - set(COMPONENTS)):
         problems.append("unknown section %s" % section)
@@ -147,17 +168,20 @@ def validate(train, filename=None):
         return problems
     rel, net = train["release"], train["testnet"]
     version = rel["version"]
-    if not VERSION.match(version):
+    if version is None or not VERSION.match(version):
         problems.append("release.version %r is not a 6.22.x release version" % version)
-    if not re.match(r"^[1-9]\d*$", rel["rpcversion"]) or int(rel["rpcversion"]) not in SPEC_MODE:
+    if version is None:
+        return problems
+    if rel["rpcversion"] is not None and (not re.match(r"^[1-9]\d*$", rel["rpcversion"])
+                                          or int(rel["rpcversion"]) not in SPEC_MODE):
         problems.append("release.rpcversion %r is not one of %s" % (rel["rpcversion"], sorted(SPEC_MODE)))
-    if not HEX40.match(rel["workspace"]):
+    if rel["workspace"] is not None and not HEX40.match(rel["workspace"]):
         problems.append("release.workspace is not a full 40-hex commit: %r" % rel["workspace"])
     for key in ("fast-vault-height", "slow-vault-height", "bundle-height"):
-        if net[key] != "none" and not HEIGHT.match(net[key]):
+        if net[key] not in ("none", None) and not HEIGHT.match(net[key]):
             problems.append("testnet.%s is not a height or none: %r" % (key, net[key]))
     for key in ("fast-set-id", "slow-set-id"):
-        if net[key] != "none" and not (HEX64.match(net[key]) and set(net[key]) != {"0"}):
+        if net[key] not in ("none", None) and not (HEX64.match(net[key]) and set(net[key]) != {"0"}):
             problems.append("testnet.%s is not a 64-hex set id or none: %r" % (key, net[key]))
     # The node's own R7 for the testnet (qa/yellowback-vault-params.py): a set only with its height;
     # fast is launched by every rc and final release; a final release names slow's set too.
@@ -333,6 +357,11 @@ def main(argv):
         except (TrainError, OSError) as e:
             print("release-train: %s" % e, file=sys.stderr)
             return 1
+        skeleton = placeholders(train)
+        if skeleton:
+            print("release-train: %s is a skeleton, not a release train: %s still placeholder; fill every value "
+                  "before qualifying (releases/README.md)" % (argv[1], ", ".join(skeleton)), file=sys.stderr)
+            return 1
         print("\n".join(pins(train)))
         return 0
     online = "--online" in argv[1:]
@@ -350,6 +379,12 @@ def main(argv):
         except (TrainError, OSError) as e:
             print("FAIL %s" % e)
             bad += 1
+            continue
+        skeleton = placeholders(train)
+        if skeleton:
+            # Nothing to look up yet; `pins` (and so the qualification) refuses it until it is filled in.
+            print("ok   %s: release %s (shape; a SKELETON: %d placeholders, not qualifiable, not checked online)"
+                  % (path, train["release"]["version"], len(skeleton)))
             continue
         print("ok   %s: release %s (shape)" % (path, train["release"]["version"]))
         if online:

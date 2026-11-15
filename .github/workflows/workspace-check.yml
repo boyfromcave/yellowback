@@ -27,6 +27,8 @@
 #                  clients' contract copies against the node's (extract_spec.py at the train's
 #                  workspace commit), hawkeye's wyec pin. In plain words: the list of program versions
 #                  a node release was tested with must name versions that really exist and agree.
+#                  Also the qualification harness's self-tests (qualify/test_rc_qualify.py): a skeleton
+#                  train is refused, the real ones read.
 name: workspace-check
 
 # The branch list lives once, here: pull_request is unfiltered, push runs on main (the branch of
@@ -63,7 +65,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with: { python-version: '3.11' }
       - name: Scripts parse
-        run: for f in scripts/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py scripts/check-md-links.py scripts/release-train.py
+        run: for f in scripts/*.sh qualify/*.sh; do bash -n "$f"; done; python3 -m py_compile scripts/extract_spec.py scripts/check-md-links.py scripts/release-train.py qualify/rc-crossline.py qualify/rc-record.py
       - name: Manifest reads
         run: scripts/repos.sh list && for r in $(scripts/repos.sh list); do printf '%-18s %s\n' "$r" "$(scripts/repos.sh get "$r" role)"; done
       - name: Generated spec copies match the plan (the parts that live in this repo)
@@ -193,6 +195,8 @@ jobs:
         with: { python-version: '3.11' }
       - name: release-train.py unit tests (local fixture repositories, no network)
         run: python3 scripts/test_release_train.py -v
+      - name: The qualification harness's self-tests (qualify/; stub binaries, the real trains, no node)
+        run: python3 qualify/test_rc_qualify.py -v
       - name: extract_spec.py unit tests (the prefix line, the client-copy skip, the reshaped fence)
         run: python3 scripts/test_extract_spec.py -v
       - name: Every release train holds (make release-train-check)
