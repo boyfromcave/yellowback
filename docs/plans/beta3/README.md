@@ -5,7 +5,7 @@ shielded miners.
 
 | Document | What it is |
 |---|---|
-| [`beta3-plan.md`](beta3-plan.md) | **Revision 5 (2026-11-16), in progress (Wave 4, integration).** Eighteen requested items and two process requirements ordered into six waves for a team of agents: what runs in parallel and what must be sequential, the reference order ycash-dd → ycash6 → kogany, the review gates, the decisions the Yellowback lead architect took (B3-D1..D10), and the two success criteria: the beta3 releases, and the yolo pool on the fast testnet paying four rented miners at once (transparent, two Sapling, post-quantum) in full. Its status block is the record during the run. |
+| [`beta3-plan.md`](beta3-plan.md) | **Revision 6 (2026-11-16), in progress (Wave 4 done but for five open pull requests; Wave 5 next).** Eighteen requested items and two process requirements ordered into six waves for a team of agents: what runs in parallel and what must be sequential, the reference order ycash-dd → ycash6 → kogany, the review gates, the decisions the Yellowback lead architect took (B3-D1..D10), and the two success criteria: the beta3 releases, and the yolo pool on the fast testnet paying four rented miners at once (transparent, two Sapling, post-quantum) in full. Its status block is the record during the run. |
 
 Beside it, the design notes written in Wave 0 (each is the specification its chunk implements):
 
@@ -17,6 +17,5 @@ Beside it, the design notes written in Wave 0 (each is the specification its chu
 | [`reorg-parity.md`](reorg-parity.md) | kogany's reorganisation depth and check order against ycashd's (item 12), R1-R6 approved |
 | [`rpc-contract-delta.md`](rpc-contract-delta.md) | The `rpcversion` 10 contract delta the generator reads (`make spec-beta3`, B3-D5) |
 | [`beta3-release-announcement.md`](beta3-release-announcement.md) | The draft announcement the release pages draw on |
-| [`release-notes-draft.md`](release-notes-draft.md) | The combined release notes of the train (R-2): upgrade actions first, then operators, pools and miners, wallet users, explorers, the `rpcversion` 10 table and the known limits; two values filled in at the cut |
-
-Still to come: `pool-demonstration.md` (§9).
+| [`release-notes-draft.md`](release-notes-draft.md) | The combined release notes of the train (R-2): upgrade actions first, then operators, pools and miners, wallet users, explorers, other clients, the `rpcversion` 10 table and the known limits; two values filled in and one sentence confirmed at the cut |
+| [`pool-demonstration.md`](pool-demonstration.md) | The runbook of the four-miner demonstration (§9, step D-1): preconditions, the demonstration wallet, the one-card username check, the run, the acceptance table; its §9 becomes the record |
