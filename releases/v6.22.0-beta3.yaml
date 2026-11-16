@@ -1,38 +1,40 @@
-# SKELETON (beta3 plan, Wave 0): the shape of the 6.22.0-beta3 train, written before its commits exist.
-# Every `placeholder` is filled in by the coordinator at qualification (beta3 plan Q-1). While one
-# remains, `scripts/release-train.py pins` refuses this file, so the qualification harness
-# (qualify/, .github/workflows/rc-qualify.yml) cannot run against it.
+# SKELETON (beta3 plan, Wave 0; prepared for the cut by R-2): the shape of the 6.22.0-beta3 train,
+# written before its commits exist. Every `placeholder` is filled in by the coordinator at
+# qualification (beta3 plan Q-1). While one remains, `scripts/release-train.py pins` refuses this
+# file, so the qualification harness (qualify/, .github/workflows/rc-qualify.yml) cannot run against it.
+# kogany is not a section here: the train names the qualified lines and their clients only (AGENTS.md,
+# "The third node line"; kogany plan K-19). Its tag and pins are in the beta3 cut checklist.
 release:
   version: 6.22.0-beta3
-  rpcversion: placeholder  # 10 at integration (scripts/release-train.py SPEC_MODE gains 10 with it)
-  workspace: placeholder   # the workspace upgrade/vault commit whose spec and contract copies the clients carry
+  rpcversion: 10           # B3-D5: one step 9 -> 10 at integration (R-1); extract_spec.py --check-beta3
+  workspace: placeholder   # the workspace upgrade/vault commit whose spec and contract copies the clients carry; = ycash6's YB_WORKSPACE_COMMIT default (dbf53a83db4e, #63's spec commit, unless the spec changes again)
 testnet:
-  fast-vault-height: 510400  # beta2's value; confirm at qualification
-  fast-set-id: none
+  fast-vault-height: 510400  # testnet-yb-fast's UPGRADE_VAULT height, unchanged since beta2 (src/chainparams.cpp, both lines)
+  fast-set-id: none          # no YED attestor set on the fast testnet in beta3 (a beta may leave it unset)
   slow-vault-height: none
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: placeholder      # the upgrade/vault commit v6.22.0-beta3 is cut at
+  commit: placeholder      # the upgrade/vault commit v6.22.0-beta3 is cut at (the version bump and the final mandate end included)
   tag: v6.22.0-beta3
 ycash-dd:
-  commit: placeholder      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at
+  commit: placeholder      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at (same mandate end as ycash6)
   tag: vault-params/v6.22.0-beta3
 librustzcash6:
-  commit: placeholder      # the rev ycash6's Cargo.toml [patch.crates-io] builds against
+  commit: placeholder      # the rev ycash6's Cargo.toml [patch.crates-io] builds against at ycash6.commit
 lightwalletd-dd:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault after the rpcversion 9..10 change (MinRPCVersion); = ycash6's LWD_COMMIT default
 yecwallet-dd:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
 yew:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault after the rpcversion 9..=10 change and the regenerated ycashd_rpc.json; the commit kogany's notes name for yewd
 yolo:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault with the paired jobs (yolo #16) and the beta3 notes; = ycash6's YOLO_COMMIT default
 chain-viz:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault with chain-viz #11 (rpcversion 9 and 10, transparentPools); = ycash6's CHAINVIZ_COMMIT default
 x402-ycash:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault with x402-ycash #23 (tests cover 9 and 10)
 hawkeye:
-  commit: placeholder
+  commit: placeholder      # upgrade/vault with hawkeye #44 (README: node rpcversion 9 or 10)
 wyec:
-  commit: placeholder      # hawkeye's pin (eth/tools/fetch-wyec.sh)
+  commit: placeholder      # hawkeye's pin (eth/tools/fetch-wyec.sh WYEC_COMMIT) at hawkeye.commit, not wyec's head
