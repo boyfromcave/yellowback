@@ -17,5 +17,6 @@ Beside it, the design notes written in Wave 0 (each is the specification its chu
 | [`reorg-parity.md`](reorg-parity.md) | kogany's reorganisation depth and check order against ycashd's (item 12), R1-R6 approved |
 | [`rpc-contract-delta.md`](rpc-contract-delta.md) | The `rpcversion` 10 contract delta the generator reads (`make spec-beta3`, B3-D5) |
 | [`beta3-release-announcement.md`](beta3-release-announcement.md) | The draft announcement the release pages draw on |
+| [`release-notes-draft.md`](release-notes-draft.md) | The combined release notes of the train (R-2): upgrade actions first, then operators, pools and miners, wallet users, explorers, the `rpcversion` 10 table and the known limits; two values filled in at the cut |
 
-Still to come: `release-notes-draft.md` (Wave 4, R-2) and `pool-demonstration.md` (§9).
+Still to come: `pool-demonstration.md` (§9).
