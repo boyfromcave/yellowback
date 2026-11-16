@@ -393,6 +393,14 @@ class Capture(unittest.TestCase):
         self.assertEqual(fetch_image.parse_ref("ghcr.io/o/n"), ("ghcr.io", "o/n", "latest"))
         self.assertEqual(capture.IMAGE_COMMIT_RE.search("ghcr.io/o/ycashd:ycash6-a8120c787aa4").group(1), "a8120c787aa4")
 
+    def test_token_realm_must_be_https(self):
+        import fetch_image
+        reg = fetch_image.Registry("ghcr.io", "o/n")
+        for realm in ("file:///etc/passwd", "http://ghcr.io/token", "ftp://ghcr.io/token", "https:///token"):
+            with self.assertRaises(SystemExit) as cm:
+                reg._anonymous_token('Bearer realm="%s",service="ghcr.io"' % realm)
+            self.assertIn("not an https URL", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
