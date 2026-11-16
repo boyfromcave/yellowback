@@ -112,10 +112,34 @@ class PrefixLineVersion(unittest.TestCase):
     def test_the_line_follows_the_title(self):
         with tempfile.TemporaryDirectory() as d:
             doc = os.path.join(d, "yellowback-rpc.md")
-            for v, line in ((8, "fees"), (9, "prefix"), (10, "prefix")):
+            for v, line in ((8, "fees"), (9, "prefix"), (10, "beta3"), (11, "beta3")):
                 with open(doc, "w", encoding="utf-8") as fh:
                     fh.write("# Yellowback RPC contract (`yed_*`), rpcversion %d\n" % v)
                 self.assertEqual(es.doc_line(doc), line)
+
+
+class Beta3LineVersion(unittest.TestCase):
+    def test_a_doc_stating_9_under_a_forced_beta3_line_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            doc = os.path.join(d, "yellowback-rpc.md")
+            with open(doc, "w", encoding="utf-8") as fh:
+                fh.write("# Yellowback RPC contract (`yed_*`), rpcversion 9\n")
+            saved = os.environ.get("EXTRACT_SPEC_LINE")
+            os.environ["EXTRACT_SPEC_LINE"] = "beta3"
+            try:
+                self.assertEqual(es.doc_line(doc), "beta3")
+                self.assertTrue(dies(es.contract_text_beta3, es.read_plan(), es.read_plan_v3(), doc, es.RPCDOC_REL))
+            finally:
+                if saved is None:
+                    del os.environ["EXTRACT_SPEC_LINE"]
+                else:
+                    os.environ["EXTRACT_SPEC_LINE"] = saved
+
+    def test_the_delta_sets_rpcversion_10_and_changes_no_shape(self):
+        ver, deltas, args, removed, vault, reshaped = es.overlay_delta(
+            es.read_plan(es.PLAN_BETA3), es.PLAN_BETA3, es.SECTION_BETA3)
+        self.assertEqual((ver, deltas, args, removed, vault, reshaped),
+                         (es.BETA3_RPCVERSION, {"yed_getinfo": {"rpcversion": 10}}, {}, [], None, []))
 
 
 if __name__ == "__main__":

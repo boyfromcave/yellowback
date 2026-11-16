@@ -15,6 +15,7 @@ Beside it, the design notes written in Wave 0 (each is the specification its chu
 | [`value-pools.md`](value-pools.md) | Chain value pools by address type (item 2): `transparentPools` beside `valuePools` |
 | [`bundle-parts.md`](bundle-parts.md) | Snapshot bundles in parts under 50 GB (item 9) |
 | [`reorg-parity.md`](reorg-parity.md) | kogany's reorganisation depth and check order against ycashd's (item 12), R1-R6 approved |
+| [`rpc-contract-delta.md`](rpc-contract-delta.md) | The `rpcversion` 10 contract delta the generator reads (`make spec-beta3`, B3-D5) |
 | [`beta3-release-announcement.md`](beta3-release-announcement.md) | The draft announcement the release pages draw on |
 
 Still to come: `release-notes-draft.md` (Wave 4, R-2) and `pool-demonstration.md` (§9).
