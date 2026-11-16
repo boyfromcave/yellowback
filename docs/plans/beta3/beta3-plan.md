@@ -1,6 +1,8 @@
 # Beta3 plan: 6.22.0-beta3 and a pool that pays shielded miners
 
-**Revision 3 (2026-11-15). Decided; the run starts with Wave 0 after the lead architect's go.**
+**Revision 4 (2026-11-16). The run is under way; §2 is its record.** Revision 4 brings the status
+block up to 2026-11-16 and adds the run log (§2.1): the rulings and decisions taken during the run,
+also written into the chunks they change (P-1, 5, 3n, 11, 12, 3k, 2k, 3p, 17, §4, §8).
 Revision 3 records decisions B3-D1..D10 (§3). Revision 2 added a lightwalletd deployment for the
 fast testnet (17) and the ycash.team landing page (18).
 Source: the beta3 list refined with the lead architect on 2026-11-13..15 (18 requested items, 2
@@ -45,31 +47,89 @@ Filled in by the coordinator during the run. `[ ]` open, `[~]` in progress, `[x]
 
 | Chunk | What | dd | y6 | kogany | clients / infra |
 |---|---|---|---|---|---|
-| P-1 | Qualification harness out of the node repository | n/a | [ ] | n/a | [ ] workspace |
-| 15 | Rust toolchain pinned | n/a | n/a | [ ] | [ ] common fork |
-| 1 | `gettransaction` fee display | [ ] local branch | [ ] local branch | n/a | — |
-| 6 | Sender address on post-quantum spends; kogany input values, addresses, block fee | [ ] | [ ] | [ ] | — |
-| 4 | Development-fund mining default 0 % | [ ] | [ ] | [ ] | [ ] yolo README |
-| 5 | Fast testnet: end the fund mandate (consensus gate) | [ ] | [ ] | [ ] | — |
-| 3 | `getcoinbasetemplatefor` + yolo paired jobs | [ ] | [ ] | [ ] | [ ] yolo |
-| 2 | Chain value pools by address type | [ ] | [ ] | [ ] | [ ] chain-viz, lightwalletd, YecWallet |
-| 7 | koganyd accepts 1.0 batch requests | n/a | n/a | [ ] | — |
-| 11 | kogany per-address counts, chain transaction count | n/a | n/a | [ ] | — |
-| 12 | Reorganisation depth and check order (consensus gate) | n/a | n/a | [ ] | — |
-| 8 | Snapshot restore must not fail silently | n/a | [ ] | n/a | — |
-| 9 | Snapshot bundles above 50 GB | n/a | [ ] restorer | n/a | [ ] ycash-infra, site |
-| 10 | Wallet fees on shielded sends | n/a | n/a | n/a | [ ] yew (local branch) |
-| 16 | Mobile wallet fee warning | n/a | n/a | n/a | [ ] yew (local branch) |
-| 14 | yewd gaps against ycashd's wallet | n/a | n/a | n/a | [ ] yew |
-| 13 | YecWallet release; macOS first-run instructions | n/a | n/a | n/a | [ ] yecwallet-dd, site |
-| 17 | lightwalletd for the fast testnet at `fastnet-lightwallet.ycash.team` | n/a | n/a | n/a | [ ] ycash-infra, ycash-ops, yew |
-| 18 | The ycash.team landing page | n/a | n/a | n/a | [ ] new site repo, ycash-ops |
-| F-1 | Miner fleet: several miners, three address kinds | n/a | n/a | n/a | [ ] ycash-infra, ycash-ops |
+| P-1 | Qualification harness out of the node repository | n/a | [x] #123 (pointer) | n/a | [x] workspace #60; [ ] the beta2 proof run (§2.1) |
+| 15 | Rust toolchain pinned | n/a | n/a | [x] #34 | [~] common fork #9 |
+| 1 | `gettransaction` fee display | [~] #191, in #192 | [~] #129, in #130 | n/a | — |
+| 6 | Sender address on post-quantum spends; kogany input values, addresses, block fee | [x] #190 | [x] #128 | [ ] 6k | — |
+| 4 | Development-fund mining default 0 % | [x] #187 | [x] #125 | [x] #38 (4k) | [~] yolo README, in yolo #16 |
+| 5 | Fast testnet: end the fund mandate (consensus gate) | [~] #189, in #192 | [~] #127, in #130 | [x] #38 (5k, provisional height) | — |
+| 3 | `getcoinbasetemplatefor` + yolo paired jobs | [~] in #192 | [~] in #130 | [~] in #39 (3k) | [~] yolo #16 (3p) |
+| 2 | Chain value pools by address type | [~] #188, in #192 | [~] #126, in #130 | [ ] 2k | [ ] chain-viz, lightwalletd, YecWallet |
+| 7 | koganyd accepts 1.0 batch requests | n/a | n/a | [x] #35 | — |
+| 11 | kogany per-address counts, chain transaction count | n/a | n/a | [~] in #39 (`transactions` moved to 2k, §2.1) | — |
+| 12 | Reorganisation depth and check order (consensus gate) | n/a | n/a | [x] #36 (R3); [~] #37 (R1, R2) | — |
+| 8 | Snapshot restore must not fail silently | [x] #186 | [x] #122 | n/a | — |
+| 9 | Snapshot bundles above 50 GB | n/a | [ ] restorer | n/a | [x] design note (workspace #59); [ ] ycash-infra, site |
+| 10 | Wallet fees on shielded sends | n/a | n/a | n/a | [x] yew #44 |
+| 16 | Mobile wallet fee warning | n/a | n/a | n/a | [x] yew #44 |
+| 14 | yewd gaps against ycashd's wallet | n/a | n/a | n/a | [~] yew #46 |
+| 13 | YecWallet release; macOS first-run instructions | n/a | n/a | n/a | [x] yecwallet-dd #21; [ ] the site's download page |
+| 17 | lightwalletd for the fast testnet at `fastnet-lightwallet.ycash.team` | n/a | n/a | n/a | [x] ycash-infra #50, ycash-ops #31; [~] yew #45 (draft); [ ] deploy and acceptance |
+| 18 | The ycash.team landing page | n/a | n/a | n/a | [x] ycash-ops #29, live at ycash.team since 2026-11-15; [~] workspace registration of `ycash-team-site` |
+| F-1 | Miner fleet: several miners, three address kinds | n/a | n/a | n/a | [x] ycash-infra #51, ycash-ops #32 |
 | R-1 | RPC contract version and clients | [ ] | [ ] | [ ] | [ ] all clients |
 | Q | Qualification (incl. P-2) | [ ] | [ ] | [ ] | [ ] |
 | T | Testnet rollout, mandate-end height crossed | — | — | — | [ ] |
 | D | Pool demonstration: four miners | — | — | — | [ ] |
 | REL | Tags, releases, site | [ ] | [ ] | [ ] | [ ] |
+
+PR numbers are in the repository of the column (`#192` in the dd column is ycash-dd #192).
+"In #192" means the change is carried by an integration pull request: ycash-dd #192 and ycash6 #130
+(`up/b3-integration-1`) carry items 5, 1, 2 and 3n together; kogany #39
+(`up/b3-kogany-integration-2`) carries 3k and 11. State as of 2026-11-16 01:40 UTC, from the merged
+and open pull requests of ycash-dd, ycash6, kogany, zakura-common-ycash, yew, yolo, yecwallet-dd,
+ycash-infra, ycash-ops, the workspace and ycash-team-site.
+
+### 2.1 Run log
+
+Rulings and decisions taken during the run, in order. Each is also written into the chunk it changes.
+
+- **2026-11-15, N-4 approved.** The lead architect approved the reorganisation-parity note's
+  R1-R6 as proposed ([`reorg-parity.md`](reorg-parity.md)): R1(b) and R2 (koganyd refuses a
+  reorganisation deeper than 99 blocks and shuts down, also across a restart), R3 swapped (the
+  difficulty target before the median-time rules), R4, R5 and R6 documented (`docs/mapping.md`
+  §24).
+- **2026-11-15, the push rule** (the lead architect). GitHub runners are the run's bottleneck: an
+  agent commits locally as often as it likes and pushes only when the work is ready (built, tested,
+  audited, self-reviewed) and the coordinator releases the push, in critical-path order. Reviews
+  happen on local branches before the one push; review and CI fixes are batched into one push.
+  To save runs, changes that must merge together travel in integration pull requests: ycash-dd #192
+  / ycash6 #130 carry items 5, 1, 2 and 3n; kogany #39 carries 3k and 11.
+- **2026-11-15, item 17's acceptance** (the coordinator). On the fast testnet `GetChainInfo` answers
+  Unimplemented: the YED module has no attestor set there, so lightwalletd registers no Yellowback
+  service, and YEW does not need it there (its activation height is compiled in). `GetChainInfo` is
+  required only where YED is live. The fast-testnet acceptance is `GetLightdInfo`, the YEW app's
+  sync, balance and shielded send, and the web wallet's shielded send, run once. The web wallet has
+  no public home, so its run is made from a developer's machine against the public server.
+- **2026-11-15, the getcoinbasetemplatefor decisions D-1..D-6** (the lead architect), recorded in
+  the design note's §2 ([`getcoinbasetemplatefor.md`](getcoinbasetemplatefor.md#2-decisions)): the
+  stateless reference stands (D-1); the call honours the node's `-ydf` (D-2); it refuses a coinbase
+  that does not fit (D-3); **beta3 is held for kogany's Sapling coinbase** (D-4); yolo accepts
+  `<address>.<label>` (D-5); post-quantum miners take the paired path (D-6).
+- **2026-11-15, P-1's beta2 proof run** (the coordinator; workspace #60). The pin check stands as
+  written. ycash6 at `fbc9f625` pins yolo, chain-viz, lightwalletd-dd and workspace commits that differ from the beta2
+  train's, so re-qualifying the unchanged beta2 commits proves the move when the train, candidate,
+  package-shard and steps 2-4 jobs are green and the only failure is that client-pin mismatch, named
+  in the record under `node_suites_ci_build_problems`. A `qualified: true` record is not expected
+  for beta2. For beta3, ycash6's default client pins are aligned with the train before the candidate
+  is cut. The proof run itself is the coordinator's, after the merge; it is not recorded yet.
+- **2026-11-15, item 5's height.** The tree carries a provisional fast-testnet mandate end of
+  **600,000**, deliberately far above the tip, so a node built from `upgrade/vault` before the cut
+  stays strict. The final value (B3-D4: the tip at the release-candidate cut plus 400) is set at
+  that cut. The release guard (`qa/yellowback-vault-params.py` rule R9, both C++ lines) refuses an
+  rc or final tag that still carries 600,000; a beta may. **Cut gate:** kogany's parameter audit
+  must compare kogany's mandate end with ycash6's before the candidate is cut (kogany #38 shipped
+  5k with the same provisional value).
+- **2026-11-15, kogany's `transactions` count** (the lead architect: one disk-format bump, not
+  two). `getblockchaininfo.transactions` moves from item 11 to chunk 2k's zakura-state format
+  upgrade, which adds the cumulative count to `BlockInfo` in the same bump as the value pools.
+- **2026-11-15, yolo and a Sapling payout's recipient.** yolo checks a Sapling paired coinbase's
+  shape and value (one Sapling output, `valueBalance` of minus the amount, no transparent output
+  besides the fund's), not its recipient: it does not decrypt the output. That the output pays the
+  miner is the node's responsibility (yolo README, yolo #16). The demonstration (§9) proves it from
+  the owning wallet.
+- **2026-11-15, `-ydf`'s range.** The merged code accepts 0 to 100 on every line and resets an
+  out-of-range value to the default, 0; the design note's "at most 5" is corrected.
 
 ## 3. Decisions (taken by the lead architect, 2026-11-15)
 
@@ -120,7 +180,10 @@ Hand off at about 450K tokens of context through `wt/handoff/B3-<lane>.md`.
 - **A shared change is one change on every line**: the ycash-dd PR and its ycash6 twin are opened
   as a pair, and no CI run is started that must fail for lack of its twin.
 - CI runners are scarce: one push when the change is ready and checked locally; cancel
-  superseded runs; no ad hoc full-tier dispatches; no job that sleeps or polls.
+  superseded runs; no ad hoc full-tier dispatches; no job that sleeps or polls. **Since the push
+  rule (§2.1), an agent pushes only when the coordinator releases it** (it reports
+  `READY-TO-PUSH`); reviews happen on the local branch first, and changes that merge together
+  travel in one integration pull request per line.
 - A worktree is trusted only after fetch, `HEAD` = the remote tip, and a clean rebuild.
 - New crate versions that cargo-vet refuses are admitted by trusting the publisher, never by an
   exemption an agent wrote.
@@ -150,7 +213,7 @@ Wave 5  qualify, roll out, show ─► Q (with P-2) → T testnet → D four min
 
 | Chunk | Lane | What | After | Size |
 |---|---|---|---|---|
-| P-1 | harness | **Important process change.** Move `qa/test_yellowback_rc_qualify.py` and `.github/workflows/rc-qualify.yml` out of ycash6 to the workspace repository's `qualify/` (B3-D3). The harness takes the node commits from the train file and records its own commit in the run's result; a harness fix never moves a node's head. Fold in the two fixes left from ycash6 #114 (open `ycash.conf` with "w"; the kogany wait fails fast on a dead node). ycash6 keeps a pointer in `doc/yellowback-release.md`. | B3-D3 | M |
+| P-1 | harness | **Important process change.** Move `qa/test_yellowback_rc_qualify.py` and `.github/workflows/rc-qualify.yml` out of ycash6 to the workspace repository's `qualify/` (B3-D3). The harness takes the node commits from the train file and records its own commit in the run's result; a harness fix never moves a node's head. Fold in the two fixes left from ycash6 #114 (open `ycash.conf` with "w"; the kogany wait fails fast on a dead node). ycash6 keeps a pointer in `doc/yellowback-release.md`. **Merged** (workspace #60, ycash6 #123). The beta2 proof run's pass condition is the coordinator's ruling in §2.1 (only the client-pin mismatch may fail; no `qualified: true` record is expected for beta2). | B3-D3 | M |
 | 15 | k-tools | Pin kogany's Rust toolchain in `rust-toolchain.toml` and in every workflow that installs one; the same in `zakura-common-ycash`; a short "how to bump" note. | — | S |
 | W0-a | coord | `wt/BRIEFING-beta3.md`, `wt/COORDINATION-beta3.md`, the skeleton `releases/v6.22.0-beta3.yaml`. | — | S |
 | W0-b | fees | Push the work already done locally and open PRs: item 1 (`up/b3-gettransaction-fee` in ycash-dd and ycash6, `wt/handoff/B3-FEE-DISPLAY.md`) and yew's `up/b3-fees-and-guards` (items 10 and 16 in part, `wt/handoff/B3-YEW-FEES.md`). Rebase by merge onto today's `upgrade/vault`, re-run their tests, then review. | — | S |
@@ -172,8 +235,8 @@ Four node lanes on ycash-dd. Lanes B, C and D touch different files; where they 
 | 1 | A fees | Review and merge the pushed fee-display branch (W0-b). | W0-b | — | S |
 | 6 | B rpc | `vin[].address` for an input that spends a post-quantum output, in `getrawtransaction 1`, `getblock 2`, `getblockdeltas` (`src/rpc/rawtransaction.cpp`, `src/rpc/blockchain.cpp`; reuse the names map the `getaddress*` calls use, `src/rpc/misc.cpp`). An rpc-test with an FN-DSA and an SLH-DSA spend. | — | — | M |
 | 4 | C mining | `DEFAULT_YDF_FEE_PERCENTAGE` 5 → 0 (`src/consensus/consensus.h`; miner and init use it); `-ydf=<n>` help text; `getblocksubsidy` and the metrics screen report the configured share. Test: default pays nothing past the mandate, `-ydf=5` pays 5 %, the mandate period is unchanged. | — | — (a constant in a consensus header read only by the miner: one extra review) | S |
-| 5 | C mining | The fast profile gets its own `nYdfMandateEndHeight` (B3-D4); the default testnet value and the slow and legacy profiles are untouched. Tests: a block without the fund output is rejected one block before the height and accepted at it; a block with it stays valid after. | 4 | **two reviews** | S |
-| 3n | C mining | `getcoinbasetemplatefor` as N-1 specifies (`src/rpc/mining.cpp`, `src/miner.cpp`): stateless; the amount derived from the node's template; transparent, Sapling and post-quantum payout addresses; proving outside `cs_main`. `getblocktemplate` and `submitblock` untouched (a test asserts the stock template is byte-identical before and after). Tests: a block assembled from the stock template and a returned coinbase is accepted for each address kind and pays exactly subsidy plus fees; a stale template reference is refused; no lower amount can be requested. | 4, 5, N-1 | one review plus the coordinator's (mining path) | L |
+| 5 | C mining | The fast profile gets its own `nYdfMandateEndHeight` (B3-D4); the default testnet value and the slow and legacy profiles are untouched. Tests: a block without the fund output is rejected one block before the height and accepted at it; a block with it stays valid after. **Height (§2.1):** the tree carries a provisional 600,000 until the release-candidate cut, where the coordinator sets the final value; the release guard (R9) refuses an rc or final tag with 600,000; at the cut kogany's parameter audit must compare its mandate end with ycash6's. | 4 | **two reviews** | S |
+| 3n | C mining | `getcoinbasetemplatefor` as N-1 specifies, with decisions D-1..D-6 ([`getcoinbasetemplatefor.md`](getcoinbasetemplatefor.md) §2) (`src/rpc/mining.cpp`, `src/miner.cpp`): stateless; the amount derived from the node's template; transparent, Sapling and post-quantum payout addresses; proving outside `cs_main`. `getblocktemplate` and `submitblock` untouched (a test asserts the stock template is byte-identical before and after). Tests: a block assembled from the stock template and a returned coinbase is accepted for each address kind and pays exactly subsidy plus fees; a stale template reference is refused; no lower amount can be requested. | 4, 5, N-1 | one review plus the coordinator's (mining path) | L |
 | 2 | D index | Value pools by type as N-2 specifies (chain index, `getblockchaininfo`, `getblock`). Touches `main.cpp` / `chain.h`. Reindex or migration test; totals equal the old `transparent` entry. | N-2 | **two reviews** | L |
 
 Kogany-only work starts now too, because it depends on nothing above:
@@ -181,8 +244,8 @@ Kogany-only work starts now too, because it depends on nothing above:
 | Chunk | Lane | What | After | Gate | Size |
 |---|---|---|---|---|---|
 | 7 | K rpc | Accept JSON-RPC 1.0-style batch members as ycashd does (`crates/zakura-rpc`); a test with the exact batch Inzyght sends (`wt/handoff/EXPLORER-KOGANY-FASTNET.md`). | 15 | — | S |
-| 11 | K rpc | `getaddressfirstlastheight`; `txcount` in `getaddressbalance`; `transactions` in `getblockchaininfo`; `commitments` no longer 0. Parity tests against ycashd. | 7 | — | M |
-| 12 | K consensus | Reorganisation depth and check order as N-4 decides, under the `ycash` feature; a cross-line test for each difference. | N-4, 15 | **two reviews** | M |
+| 11 | K rpc | `getaddressfirstlastheight`; `txcount` in `getaddressbalance`; `commitments` no longer 0. Parity tests against ycashd. (`transactions` in `getblockchaininfo` moved to 2k's format upgrade, §2.1.) | 7 | — | M |
+| 12 | K consensus | Reorganisation depth and check order as N-4 decides, under the `ycash` feature; a cross-line test for each difference. N-4's R1-R6 approved as proposed (§2.1): R1(b)/R2 refuse a reorganisation deeper than 99 blocks and shut down, durably across a restart (kogany #37); R3 swap the order (kogany #36); R4, R5, R6 documented in `docs/mapping.md` §24. | N-4, 15 | **two reviews** | M |
 
 ### Wave 2: ycash6, the release line (and the clients, which wait for no node change)
 
@@ -203,7 +266,7 @@ Client and tooling lanes run alongside from the start of the run; none needs a n
 | 8 | S restore | `ycash-bootstrap`'s import node ignores peers whatever `ycash.conf` says; a refused restore exits non-zero and leaves a marker the entrypoint will not start past; the missing-`.minisig` case accepts 403 as "absent" for a bucket that is not listable. A test that reproduces the silent failure first (ycash6 `contrib/bootstrap`, `contrib/docker/ycashd`). | — | M |
 | 9 | S restore | Bundles in parts as N-3 specifies: `ycash-infra/bundles/state` (`FORMAT.md`, `verify.py`, `mainnet/snapshot.py`, `publish-s3.sh`), `ycash-bootstrap`, and the snapshots page in `kogany-site`. A restore test from a small bundle split into three parts. | 8, N-3 | M |
 | F-1 | F fleet | **Several miners with different payout addresses.** Today the fleet file has one `payout` per network and accepts only a transparent address (`ycash-infra/scripts/vast-fleet.py`, `PAYOUT_RE`; the miner container's `PAYOUT`). Change: a per-network list of payouts, one per miner, cycling by miner index; accept transparent, Sapling and post-quantum address forms for the network; `burst` takes the list; `status` and `logs` show each miner's payout kind and its accepted-share count; the miner image passes the address as the stratum username unchanged (check miniZ accepts a 78-character Sapling username and a post-quantum one; if it truncates, say so and find the workaround). ycash-ops: `miners/fleet.json` and the `miners` workflow inputs. | N-1's username answer | M |
-| 17 | L lightwallet | **lightwalletd for the fast testnet, deployed like the pool and the explorer.** ycash-infra: the seeds module gains a `lightwallet` block beside `pool` and `explorer` (a node with `-txindex -insightexplorer -experimentalfeatures`, which lightwalletd's address calls need; the `lightwalletd-dd` image with `--yellowback`; a proxy that terminates TLS and passes gRPC through; automatic certificate; nothing else public; RPC on the host's internal network only; memory limits; `status` reports the server's height and its `GetLightdInfo`); an image workflow for `lightwalletd-dd` in the `yolo-image.yml` pattern (public image, pinned by digest, with provenance). ycash-ops: roots `testnet-lightwallet/{ips,nodes}`, a deploy layer `lightwallet` with its own role (`deploy-testnet-lightwallet`) and environment, the layer policy extended to four layers (and the older gap toward the Kubernetes layer's machines closed in the same re-put), docs, a CloudShell runbook for the lead architect. yew: the fast testnet's server in the testnet default list (it is empty today), so the app finds it without typing. **From the start (B3-D9): a gRPC-web listener for the web wallet beside the native one** (a gRPC-web proxy container, as the Kubernetes chart's gateway and yew's web plan use), and the web wallet's testnet default pointing at it. **Acceptance:** `https://fastnet-lightwallet.ycash.team` answers `GetLightdInfo` and `GetChainInfo` with a valid certificate; the YEW app syncs against it on the fast testnet, shows a balance and makes a shielded send that confirms; the web wallet does the same in a browser over gRPC-web. | the first deploy uses the current node image | L |
+| 17 | L lightwallet | **lightwalletd for the fast testnet, deployed like the pool and the explorer.** ycash-infra: the seeds module gains a `lightwallet` block beside `pool` and `explorer` (a node with `-txindex -insightexplorer -experimentalfeatures`, which lightwalletd's address calls need; the `lightwalletd-dd` image with `--yellowback`; a proxy that terminates TLS and passes gRPC through; automatic certificate; nothing else public; RPC on the host's internal network only; memory limits; `status` reports the server's height and its `GetLightdInfo`); an image workflow for `lightwalletd-dd` in the `yolo-image.yml` pattern (public image, pinned by digest, with provenance). ycash-ops: roots `testnet-lightwallet/{ips,nodes}`, a deploy layer `lightwallet` with its own role (`deploy-testnet-lightwallet`) and environment, the layer policy extended to four layers (and the older gap toward the Kubernetes layer's machines closed in the same re-put), docs, a CloudShell runbook for the lead architect. yew: the fast testnet's server in the testnet default list (it is empty today), so the app finds it without typing. **From the start (B3-D9): a gRPC-web listener for the web wallet beside the native one** (a gRPC-web proxy container, as the Kubernetes chart's gateway and yew's web plan use), and the web wallet's testnet default pointing at it. **Acceptance (as ruled during the run, §2.1):** `https://fastnet-lightwallet.ycash.team` answers `GetLightdInfo` with a valid certificate; `GetChainInfo` is required only where YED is live, so not on the fast testnet; the YEW app syncs against it on the fast testnet, shows a balance and makes a shielded send that confirms; the web wallet makes a shielded send in a browser over gRPC-web, run once (it has no public home, so the run is made from a developer's machine against the public server). | the first deploy uses the current node image | L |
 | 18 | H landing | **The ycash.team landing page.** The page built locally on 2026-11-15 (`/Users/boy/projects/ycash-team-site`: dark theme, the Ycash logo, "Ycash = Your" with the rotating words Electronic Cash, Team, Life, Family, Collateral, Assets, Wallet, Future, ❤️, Friends, 🛡️, Vault, eight product tiles, almost no text; written for someone completely new to Ycash) becomes a public repository and a workspace component like `kogany-site`, with a deploy workflow and a strict content security policy. ycash-ops: `site/ycash-team` (private S3 behind CloudFront at the apex `ycash.team`, with `www` redirecting), hand-applied by the lead architect as the Kogany site was. Content as decided (B3-D10): no sentence under the rotating line; the eight tiles in two labelled rows, "Use Ycash" (YEW, YecWallet, Explorer) then "Run and build" (ycashd, Kogany, Yolo, x402, lightwalletd); **a one-screen page per product** on the site (what it is, how to get it, one button; facts only from the repositories and release notes), with the YecWallet page leading to its beta3 download (item 13) and the explorer and wallet backend leading straight to the live fast-testnet services. **Acceptance:** `https://ycash.team` serves the page with a valid certificate and security headers; every tile leads to its product page and every page's button works; it reads correctly with scripts off and with reduced motion. | the YecWallet page's download button waits for item 13 | M |
 
 Collisions to sequence: lanes S and N-C both edit ycash6 but different trees (`contrib/` against
@@ -217,9 +280,9 @@ fee rule when it lands.
 | 6k | K rpc | `vin[].value` / `valueSat` / `address` for every input, post-quantum included, and `blockfee` (`transaction.rs`; the indexes exist). Parity with ycash6 on the fast testnet and mainnet. | 6 (ycash6), 11 | — | M |
 | 4k | K mining | The mining default becomes 0 % and kogany gains the opt-in setting it lacks (`crates/zakura-rpc/src/methods/types/ycash.rs`). | 4 | — | S |
 | 5k | K mining | The fast profile's mandate end in `crates/zakura-chain/src/parameters/ycash/ydf.rs`, the same height. | 5 | **two reviews** | S |
-| 3k | K mining | kogany's equivalent of `getcoinbasetemplatefor`, to the same contract. If N-1 found that kogany cannot build a shielded coinbase, this chunk is first "transparent and post-quantum payouts", and the shielded part is recorded as a finding with its size; the lead architect decides whether it holds the release. | 3n (ycash6), 4k, 5k | one review plus the coordinator's | L |
-| 2k | K index | Value pools by type in zakura-state, the same names and numbers as ycash6; a cross-line test and the mainnet ycashd / koganyd pair on this Mac as the live check. | 2 (ycash6) | — | M |
-| 3p | P pool | **yolo paired jobs.** Usernames of all three address kinds are accepted and validated with the node. Transparent miners stay on today's swap path. For a Sapling or post-quantum miner, yolo requests a coinbase for the template it holds and issues the pair as one job; it refreshes on a new block, a changed transaction set (no more often than every few seconds) and a new quote; requests run in parallel; no precomputed lower-amount coinbase. `/status` shows miners by payout kind. README corrected (the fund share is not always present). Tests on regtest with the 48,5 miner: a mixed pool of three miners, one per kind, each finds a block that pays it exactly subsidy plus fees. | 3n (ycash6 merged or its interface frozen by N-1) | one review plus the coordinator's | L |
+| 3k | K mining | kogany's equivalent of `getcoinbasetemplatefor`, to the same contract. If N-1 found that kogany cannot build a shielded coinbase, this chunk is first "transparent and post-quantum payouts", and the shielded part is recorded as a finding with its size; the lead architect decides whether it holds the release. **Decided (D-4): it holds the release.** 3k includes a Sapling output prover and its parameters, on the critical path. | 3n (ycash6), 4k, 5k | one review plus the coordinator's | L |
+| 2k | K index | Value pools by type in zakura-state, the same names and numbers as ycash6; a cross-line test and the mainnet ycashd / koganyd pair on this Mac as the live check. The same disk-format bump adds the cumulative transaction count for `getblockchaininfo.transactions` (moved from item 11, §2.1). | 2 (ycash6) | — | M |
+| 3p | P pool | **yolo paired jobs.** Usernames of all three address kinds are accepted and validated with the node. Transparent miners stay on today's swap path. For a Sapling or post-quantum miner, yolo requests a coinbase for the template it holds and issues the pair as one job; it refreshes on a new block, a changed transaction set (no more often than every few seconds) and a new quote; requests run in parallel; no precomputed lower-amount coinbase. `/status` shows miners by payout kind. README corrected (the fund share is not always present). yolo checks a Sapling coinbase's shape and value, not its recipient (§2.1); the recipient is the node's responsibility. Tests on regtest with the 48,5 miner: a mixed pool of three miners, one per kind, each finds a block that pays it exactly subsidy plus fees. | 3n (ycash6 merged or its interface frozen by N-1) | one review plus the coordinator's | L |
 
 3p may start against N-1's frozen interface and a stub before 3n merges; it cannot finish until
 it runs against the real ycash6 call.
@@ -282,7 +345,7 @@ Strictly in this order.
 
 | Risk | Handling |
 |---|---|
-| kogany cannot build a shielded coinbase | N-1 finds out in Wave 0; 3k is scoped accordingly and the lead architect decides whether the shielded part holds the release. The demonstration's pool node is ycashd, so criterion 2 does not depend on it |
+| kogany cannot build a shielded coinbase | N-1 found it cannot today; **decided (D-4): beta3 is held for it**, and 3k builds the prover and loads the parameters. The demonstration's pool node is ycashd, so criterion 2 does not depend on it; the release does |
 | Proving time makes each new block slow for many shielded miners | N-1 measures it; parallel requests; the empty-block bridge stays off unless the measurement demands it and the lead architect agrees |
 | A miner program truncates or rejects long usernames | F-1 tests miniZ with Sapling and post-quantum usernames early; fallback: another Equihash 192,7 miner in the image |
 | A fast-testnet node is missed at T-2 and forks off | The node-by-node checklist with reported versions; the height has 400 blocks of margin; the chain advances only a few blocks an hour without a burst |

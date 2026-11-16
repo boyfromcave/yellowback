@@ -249,8 +249,13 @@ subsidy, never of the fees.
   `ycash6/src/main.cpp:6267-6283`): one output of `subsidy / 20` to
   `GetFoundersRewardScriptAtHeight(height)`, whatever `-ydf` says. `fundrule` is `"mandated"`.
 - **Optional** (from `nYdfMandateEndHeight` on): one output of `subsidy * n / 100` to the same
-  script, where `n` is the node's `-ydf` (`GetArg("-ydf", DEFAULT_YDF_FEE_PERCENTAGE)`, at most
-  `MAX_YDF_FEE_PERCENTAGE` = 5), if that value is above 0. `fundrule` is `"optional"`. With `n` = 0,
+  script, where `n` is the node's `-ydf` (`GetArg("-ydf", DEFAULT_YDF_FEE_PERCENTAGE)`), if that
+  value is above 0. *Correction (2026-11-16, from the implementation):* revision 2 said "at most
+  `MAX_YDF_FEE_PERCENTAGE` = 5"; no line caps it there. Every line accepts 0 to 100 and resets a
+  value outside that range to the default, 0, at startup (`ycash6/src/init.cpp:1688-1697`,
+  `ycash-dd/src/init.cpp:956-958`, kogany `Config::ydf_percentage`,
+  `crates/zakura-rpc/src/config/mining.rs:189-200`), and the call uses the same value as the stock
+  coinbase. `fundrule` is `"optional"`. With `n` = 0,
   the default since beta3 item 4, there is no fund output, `fund` is 0 and `fundrule` is `"none"`:
   the miner is paid in full unless the pool operator opted in.
 - **Before the Ycash fork** (regtest without the Ycash upgrade): the founders' reward rule of that
@@ -408,9 +413,19 @@ before the first colon.
 | 16 | -26 | `yellowback-unhealthy: <reason>; restart with -reindex-yellowback` | as `getblocktemplate` |
 | 17 | -32603 | `coinbase construction failed: <detail>` | the prover or the signer failed, or (kogany) the Sapling output parameters are not loaded (§9); never expected on a correctly installed node |
 
-Order of checks: rows 1 to 7 (in that order), then 14 to 16, then 10, 8, 13, 11 and 5 in step 3,
-then 17, 12, and 10 again. A wrong number of parameters is each line's usual usage error and is
-not part of the contract.
+Order of checks, as implemented and tested on all three lines (*corrected 2026-11-16*; revision 2
+listed row 5 twice): rows 1 to 7 (in that order), then 14, 15, 16, then 10, 8, 13 in step 3, then,
+for each transaction id in the request's order, row 11 before row 5, then 17, 12, and 10 again.
+
+Outside the contract, recorded so no test expects otherwise:
+
+- A wrong number of parameters is each line's usual usage error: `-32602` on ycash6 (its
+  parameter table, `src/rpc/common.h`), `-1` (the help text) on ycash-dd and kogany.
+- kogany never returns row 14 (Zakura's `getblocktemplate` has no peer check, so ycashd's
+  "Ycash is not connected!" has no counterpart), and never returns row 15 on a test network (its
+  synced-to-tip check does not run there).
+- On regtest below the Ycash upgrade height kogany reports `fundrule` `"none"` where the C++ lines
+  report the founders' reward of that era as `"mandated"` (§5.2); no network of ours is there.
 
 ## 8. yolo: paired jobs
 

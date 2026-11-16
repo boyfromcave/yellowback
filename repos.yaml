@@ -223,3 +223,9 @@ kogany-site:
   url: https://github.com/boyfromcave/kogany-site.git
   branch: upgrade/vault       # GitHub default; net new, no baseline
   what: kogany-site, the Kogany website (static HTML, a dependency-free Python build, build-time snapshot cards), served at kogany.ycash.team from S3 + CloudFront (the infrastructure is in ycash-ops)
+
+ycash-team-site:
+  role: app
+  url: https://github.com/boyfromcave/ycash-team-site.git
+  branch: upgrade/vault       # GitHub default; net new, no baseline
+  what: ycash-team-site, the ycash.team landing page (plain static files, no build step, no dependencies; a start page and a one-screen page per product), served at the apex ycash.team since 2026-11-15 from S3 + CloudFront (the infrastructure is in ycash-ops, site/ycash-team)

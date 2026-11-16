@@ -53,6 +53,7 @@ yellowback-workspace/
 ├── ycash-infra/     THE LIGHT-WALLET BACKEND (ycash-infra), its own repo, branch `upgrade/vault` — Kubernetes (kind + EKS), plan ycash-infra/docs/plans/ycash-infra-plan.md
 ├── ycash-ops/       THE OPERATIONS REPO (ycash-ops), PRIVATE, its own repo, branch `main` (no `upgrade/vault` yet) — the GitHub Actions that deploy the testnets on AWS from ycash-infra's recipes; no account identifiers in it
 ├── kogany-site/     THE KOGANY WEBSITE (kogany-site), its own repo, branch `upgrade/vault` — static site served at kogany.ycash.team (S3 + CloudFront, infrastructure in ycash-ops)
+├── ycash-team-site/ THE LANDING PAGE (ycash-team-site), its own repo, branch `upgrade/vault` — static site served at ycash.team since 2026-11-15 (S3 + CloudFront, infrastructure in ycash-ops)
 ├── wyec/            THE BRIDGE CONTRACTS (wYEC), its own repo, branch `upgrade/vault` — the Ethereum side of the vault upgrade's bridge, plan docs/plans/yellowback-upgrade-plan.md §4.3
 ├── docs/
 │   ├── spec/        yellowback-risk-profile.md (READ FIRST: the collateral model as the upgrade/vault node
@@ -77,11 +78,11 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines (a third, `kogany`, just started), eleven component repos.** Yellowback is an overlay on the node
+**One overlay, two node lines (a third, `kogany`, just started), twelve component repos.** Yellowback is an overlay on the node
 (`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
 the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
-parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye), the light-wallet backend (ycash-infra) and the Kogany website (kogany-site), each in its own
+parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye), the light-wallet backend (ycash-infra), the Kogany website (kogany-site) and the ycash.team landing page (ycash-team-site), each in its own
 repo and each reaching the node only through a public interface (README.md, the components table).
 The node fork (`ycash-dd`) adds the Yellowback overlay and its `yed_*`
 RPCs; the wallet fork (`yecwallet-dd`) adds the Yellowback screens on top of those RPCs and bundles
@@ -246,6 +247,11 @@ new, no reference and no baseline. It deploys `ycashd`, `lightwalletd-dd`, its o
 (`yindex`) and the `yew/web` bundle on Kubernetes; it reaches `ycashd` only through stock JSON-RPC,
 reaches `lightwalletd-dd` only by running its image, builds images from the workspace trees rather
 than copying source, and never needs a node or lightwalletd change (`ycash-infra/AGENTS.md`).
+The ycash.team landing page goes in `ycash-team-site/` only — its own public repository on
+`upgrade/vault`, net new, no reference and no baseline: plain static files (a start page and a
+one-screen page per product), no build step, no dependencies, and no call to any node. Its facts
+come only from the products' own READMEs and release notes; its hosting (S3 + CloudFront at the apex,
+`www` redirecting) is in ycash-ops (`site/ycash-team`), and a push to `upgrade/vault` deploys it.
 On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash and YEW still need no
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
@@ -382,7 +388,7 @@ compares against the last fetch instead, for working offline.
 make            # list targets (same as `make help`)
 make bootstrap  # fresh machine: clone every repo in repos.yaml at its pin, create .venv (SSH=1 to push)
 make pull       # every other day: fast-forward each repo from its remote (DRY=1, NOREF=1, SHORT=1)
-make status     # git status across the workspace and its twenty-six clones: fetches origin, ahead/behind, pins
+make status     # git status across the workspace and its twenty-seven clones: fetches origin, ahead/behind, pins
 make status-short   # same, without the per-file listing
 make pins       # one line per repo, machine-readable
 make diff       # fork deltas: each of the seven forks vs its -legacy baseline
