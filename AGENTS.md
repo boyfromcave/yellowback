@@ -269,8 +269,8 @@ scheme-visible post-quantum address prefixes, D-9, and 10 the beta3 additions to
 `getblockchaininfo`, the address of a post-quantum input, `gettransaction`'s real fee, the `-ydf`
 default 0; clients accept 9 and 10. The constant is `YELLOWBACK_RPC_VERSION` in
 `src/rpc/yellowback.cpp` on both C++ node lines and `YED_RPC_VERSION` in kogany's
-`crates/kogany-rpc/src/yed/mod.rs`; `upgrade/vault` says 9 until the beta3 integration step R-1
-merges (kogany #42 and the C++ twins). Hawkeye parses only the post-quantum owner shape and needs
+`crates/kogany-rpc/src/yed/mod.rs`; all three say 10 on `upgrade/vault` since the beta3
+integration step R-1 (ycash-dd #193, ycash6 #131, kogany #42, 2026-11-16). Hawkeye parses only the post-quantum owner shape and needs
 9 or later, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
 calls, chain-viz's set/vault panels).
 
