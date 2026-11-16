@@ -445,7 +445,7 @@ green). Legend: `[x]` done and verified, `[~]` in flight, `[ ]` not started.
 - [x] **`mainnet-prefix-v1`** harvested locally from a synced mainnet ycashd (2026-11-04):
   - export of 3,080,000 blocks in 22 min; cross-check against koganyd restored from the kogany archive at nine heights 2,300,000..H_S; pack and verify;
   - import checks on both lines reached H_S with the same best hash and UTXO hash `58b9a13c47dc011d…` (24,008,592 outputs);
-  - published to `https://ycash-contributors-object-store.s3.amazonaws.com/snapshots/prefix/mainnet-prefix-v1/`, `SHA256SUMS` pin `456e820511ade7d9ffd8db41b168ee6063050bb05e2af6a651072bbfb74eecd3`, signed, 310 objects public
+  - published to the snapshot store, served at `https://snapshots.ycash.team/prefix/mainnet-prefix-v1/`, `SHA256SUMS` pin `456e820511ade7d9ffd8db41b168ee6063050bb05e2af6a651072bbfb74eecd3`, signed, 310 objects public
 - [x] `testnet-prefix-v1` published to the same store the same way, `SHA256SUMS` pin `c7b55a2a6770df8108d910572cca2dbf643a0418eb0b2d556879928a43cbc403`
 - [x] **WP-1 / WP-2 merged 2026-11-05**: librustzcash6#19 (`d384b90d4`), ycash6#73 (`06c148851`), ycash-dd#151 (`7b1972254`); H_S and its checkpoint compiled in; release guard R8 refuses a tag without them
 - [x] ycash-infra: the prefix-frame image built and published (`sha256:23fbcb4e…a27e3`); `prefixRestore` on for fast (#26, #28), slow and legacy (#30); `import.sh` bash 3.2 fix (#27); kogany regtest RPC port 18832 (#29)
