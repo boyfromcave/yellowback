@@ -1,6 +1,6 @@
 # Security CI
 
-Every Yellowback repository runs the same security legs in GitHub Actions, in three workflows:
+Every Yellowback code repository runs the same security legs in GitHub Actions, in three workflows:
 `semgrep.yml`, `codeql.yml` and `secops.yml`. Results go to *Security → Code scanning* (SARIF, one
 category per tool) and to each run's summary. The only pull requests the legs ever open are Semgrep's
 rolling bucket PRs (at most four, `semgrep/critical|high|medium|low`, updated in place) and at most one
@@ -56,8 +56,15 @@ in that repository.
 | wyec | solidity, typescript, secrets, actions | javascript-typescript, actions | yes | yes | npm | Slither, npm audit | github-actions, npm |
 | hawkeye | rust, solidity, python, secrets, actions | rust, python, actions | yes | yes | Cargo, npm | cargo-deny, Slither | github-actions, cargo, npm |
 | ycash-infra | go, terraform, kubernetes, dockerfile, python, secrets, actions | go, python, actions | yes | yes | Go | govulncheck, gosec, Checkov | github-actions, gomod, docker, terraform |
+| kogany | rust, python, bash, dockerfile, secrets, actions | rust, python, actions | yes | yes | Cargo, pip | cargo-deny | github-actions, cargo, pip |
+| zakura-common-ycash | rust, python, bash, dockerfile, secrets, actions | rust, python, actions | yes | yes | Cargo, pip | cargo-deny, cargo-vet | github-actions, cargo, docker |
 
 Each repository's own `SECURITY-CI.md` (or its docs) is authoritative for its exceptions.
+
+Three repositories are outside this table: the static sites `kogany-site` and `ycash-team-site`
+(static pages; each runs only its own build or check and its deploy workflow) and the private
+operations repository `ycash-ops` (its `check.yml` checks its Terraform, its pins of ycash-infra and
+its scripts, offline).
 
 Most component repositories also run a fourth workflow, `code-scanning.yml`: on a push that changes
 `contrib/secops/code-scanning-dismissals.json`, nightly and by hand, it dismisses the code-scanning

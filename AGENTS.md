@@ -58,7 +58,7 @@ yellowback-workspace/
 ├── docs/
 │   ├── spec/        yellowback-risk-profile.md (READ FIRST: the collateral model as the upgrade/vault node
 │   │                enforces it, vs DigiDollar), the DigiDollar upstream docs, and the generated v3/harden
-│   │                spec (`make spec`; the upgrade/vault spec is generated into the node trees, `make spec-in-term`)
+│   │                spec (`make spec`; the upgrade/vault spec is generated into the node trees, now by the prefix line's `make spec-prefix`)
 │   ├── plans/       THE DEVELOPMENT PLANS (current = yellowback-upgrade-plan.md, the vault network upgrade,
 │   │                its Execution status block is authoritative; yellowback-evidence-based-hardening-plan.md
 │   │                = harden/yellowback, the no-upgrade fallback; v3 = yellowback-v3-development-plan.md
@@ -78,8 +78,8 @@ yellowback-workspace/
 └── AGENTS.md / CLAUDE.md   (this file; CLAUDE.md is a symlink to it)
 ```
 
-**One overlay, two node lines (a third, `kogany`, just started), twelve component repos.** Yellowback is an overlay on the node
-(`ycash-dd` and `ycash6`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
+**One overlay, three node lines, twelve component repos.** Yellowback is an overlay on the node
+(`ycash-dd` and `ycash6`, and the third line `kogany`, below) — on `upgrade/vault`, the one registered rule module (`YED\0`) on
 the vault network upgrade's lock/unlock primitive, beside the wYEC bridge template; around it sit the GUI wallet, lightwalletd, the mobile wallet
 (YEW), the mining pool (yolo), the visualizer (chain-viz), x402 agent payments (x402-ycash), the
 parameter calibration tool (yb-calibration), the wYEC bridge contracts (wyec), the bridge attestor (hawkeye), the light-wallet backend (ycash-infra), the Kogany website (kogany-site) and the ycash.team landing page (ycash-team-site), each in its own
@@ -126,12 +126,15 @@ merged `2b062412c5..b44ec121d` (20 commits) into the then integration branch `va
 pin; the overlay was ported on `vaults/kogany-compat` and reached `upgrade/vault` with the W9 wave-gate
 merge (kogany#1, #4), so `make diff` (which reads `upgrade/vault`) shows it; new work lands on `upgrade/vault` (rule 2). It is a third codebase lineage
 (Rust, the Zebra architecture, no `src/main.cpp`, no `CCoins`), so the crosswalk is new work:
-`docs/mapping.md` gets a section for it before the first port, and the four-part check (rule 4)
-applies as on the other lines. Until it carries the overlay, the both-lines rules above (one
-change on every line, the shared branch ID, clients tested against each line) do not yet include
-it (beyond the shared-defect rule's W2 clause above), and `make spec` / the release train do not
-cover it; kogany becomes a qualified line only at the end of its plan's W9, by the lead architect's
-sign-off (K-19). Its crate fork is **`zakura-common-ycash`** (K-2: one feature-gated fork of
+`docs/mapping.md` §24 is its section, and the four-part check (rule 4)
+applies as on the other lines. It carries the overlay since the W9 gate and is released as
+`koganyd` (`v1.8.0-ycash.betaN`, beside ycashd 6.22.0-betaN); in the beta3 run it is the third line
+of the reference order ycash-dd → ycash6 → kogany, and a shared change is matched there.
+`make spec` writes ycash6's spec and contract copies into `kogany/doc`, but the release train
+(`releases/*.yaml`) does not name kogany, and kogany becomes a qualified line only by the lead
+architect's sign-off (K-19, still open); until then the both-lines rules above (one change on every
+line, the shared branch ID, clients tested against each line) bind it through the shared-defect
+rule's W2 clause above. Its crate fork is **`zakura-common-ycash`** (K-2: one feature-gated fork of
 `zakura-core/common`, `ycash` cargo feature; with the feature off the crates are upstream's), pinned
 by exact `git` rev in kogany's `[patch.crates-io]` as `ycash6` pins `librustzcash6`; its baseline
 `zakura-common-ycash-legacy` is the upstream commit that reproduces the crates.io releases kogany
@@ -214,18 +217,22 @@ only; the `yed_*` RPC surface — plus, on `upgrade/vault`, the vault primitive'
 (plan §4.7; upgrade plan §9). The bridge daemon uses only those plus stock RPCs.
 Mobile-wallet (YEW) client code — the YEW core and its shells: `app`, `web`, `yewd` (the YEW core as a
 daemon, the kogany wallet sidecar, `yew/yewd/`; kogany plan K-22) — goes in `yew/` only — its own
-repository on `main`, not a fork, so it has no `-legacy` baseline (and `yewd` has no `repos.yaml`
+repository on `upgrade/vault`, not a fork, so it has no `-legacy` baseline (and `yewd` has no `repos.yaml`
 row of its own) — and lightwalletd's `CompactTxStreamer` + `YellowbackStreamer`
 gRPC services are its sole interface (`docs/plans/yellowback-wallet-plan.md`).
-Pool software goes in `yolo/` only — also its own repository on `main` (`ref/yolo` is the Perl
-reference it rewrites) — and the node's stock mining RPCs (`getblocktemplate`, `submitblock`,
-`validateaddress`, `getblockchaininfo`) are its sole interface: a pool never calls `yed_*` and
-never needs a node change (`docs/plans/role-pool-regtest-plan.md` §6).
-The visualizer goes in `chain-viz/` only — its own repository on `main` — and it is a strictly
+Pool software goes in `yolo/` only — also its own repository on `upgrade/vault` (`ref/yolo` is the
+Perl reference it rewrites) — and the node's mining RPCs are its sole interface: the stock
+`getblocktemplate`, `submitblock`, `validateaddress`, `z_validateaddress` and `getblockchaininfo`,
+and `getcoinbasetemplatefor`, the node RPC beta3 added on all three node lines so that a pool can
+pay a Sapling or post-quantum miner in full at the miner's own address (yolo's paired jobs; contract
+`docs/plans/beta3/getcoinbasetemplatefor.md`). A pool never calls `yed_*`, and needs no node change
+of its own beyond that one RPC, which is the node's (stateless, read-only, no consensus change;
+`docs/plans/role-pool-regtest-plan.md` §6).
+The visualizer goes in `chain-viz/` only — its own repository on `upgrade/vault` — and it is a strictly
 read-only sidecar: it reaches the node through the stock read RPCs (`getblock`, `getrawmempool`,
 `getchaintips`, `getblocktemplate`, …), the read-only `yed_*` RPCs and the node's notify hooks,
 never writes a transaction, and never needs a consensus change (`docs/plans/chain-viz-plan.md` §4).
-x402 agent payments go in `x402-ycash/` only — its own repository on `main`, net new, no reference
+x402 agent payments go in `x402-ycash/` only — its own repository on `upgrade/vault`, net new, no reference
 and no baseline — and it reaches the node only through stock RPCs (`gettxout`, `sendrawtransaction`,
 `signrawtransaction` as a verifier, `z_*` receipt RPCs) and the read-only `yed_*` RPCs: no node
 change on either node line, nothing for node or pool operators to enable
@@ -255,11 +262,16 @@ come only from the products' own READMEs and release notes; its hosting (S3 + Cl
 On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash and YEW still need no
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
-branch, YEW signs vault spends; yolo needed no source change and is tested mining across the
-activation), `rpcversion` 9 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
-scheme-visible post-quantum address prefixes, D-9:
-`YELLOWBACK_RPC_VERSION` in `src/rpc/yellowback.cpp` on both node lines; Hawkeye parses only the
-post-quantum owner shape and needs this line, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
+branch, YEW signs vault spends; yolo needed no source change for the activation and is tested
+mining across it), `rpcversion` 9 or 10 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
+scheme-visible post-quantum address prefixes, D-9, and 10 the beta3 additions to stock calls with no
+`yed_*` shape change, B3-D5: `getcoinbasetemplatefor`, `transparentPools` in `getblock` and
+`getblockchaininfo`, the address of a post-quantum input, `gettransaction`'s real fee, the `-ydf`
+default 0; clients accept 9 and 10. The constant is `YELLOWBACK_RPC_VERSION` in
+`src/rpc/yellowback.cpp` on both C++ node lines and `YED_RPC_VERSION` in kogany's
+`crates/kogany-rpc/src/yed/mod.rs`; `upgrade/vault` says 9 until the beta3 integration step R-1
+merges (kogany #42 and the C++ twins). Hawkeye parses only the post-quantum owner shape and needs
+9 or later, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
 calls, chain-viz's set/vault panels).
 
 > The `feature/` prefix is deliberate. Git cannot hold a branch named `x` and a branch named
