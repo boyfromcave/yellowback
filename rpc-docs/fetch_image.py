@@ -67,7 +67,13 @@ class Registry:
             raise SystemExit("fetch_image: registry asked for %r, only anonymous bearer tokens are supported" % challenge)
         fields = dict(p.split("=", 1) for p in challenge[7:].split(","))
         fields = {k.strip(): v.strip().strip('"') for k, v in fields.items()}
-        query = {"service": fields.get("service", self.registry),
+        # The realm comes from the registry's response header: only an https URL is followed, so a
+        # registry (or a redirect) cannot point the token request at file://, ftp:// or plain http.
+        realm = urllib.parse.urlsplit(fields.get("realm", ""))
+        if realm.scheme != "https" or not realm.netloc:
+            raise SystemExit("fetch_image: registry gave a token realm that is not an https URL: %r"
+                             % fields.get("realm"))
+        query ={"service": fields.get("service", self.registry),
                  "scope": fields.get("scope", "repository:%s:pull" % self.repo)}
         with urllib.request.urlopen(fields["realm"] + "?" + urllib.parse.urlencode(query), timeout=60) as r:
             body = json.load(r)
