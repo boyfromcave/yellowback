@@ -24,7 +24,7 @@ transplant *anything* from `ref/digibyte` into `ycash-dd`, find the row here. Ea
 | Zakura (zakura-core) | `ref/zakura` | `main` @ commit (2026-11-02; a Zcash full node in Rust, Zebra lineage; v1.8.0-rc1 lineage, pinned by commit by the lead architect's choice; first pinned at `2b062412c5`, re-pinned after the upstream sync of 2026-11-02, §24) | `b44ec121d` |
 | Working fork (patched librustzcash) | `librustzcash6` | branch `feature/yellowback` off `librustzcash6-legacy` (= `ref/librustzcash6`); zero-delta until the port needs it | `ec525fae82` |
 | Working fork (Zakura, the third node line) | `kogany` | branch `upgrade/vault` off `kogany-legacy` (= `ref/zakura`); kogany work on `upgrade/vault` (`vaults/kogany-compat` until 2026-11-05, a record); crosswalk §24 | `b44ec121d` |
-| Working fork (zakura-core/common, the common fork) | `zakura-common-ycash` | branch `upgrade/vault` off `zakura-common-ycash-legacy` (the W0-b base; no `ref/` checkout); kogany pins it by rev in `[patch.crates-io]`, §24 | TODO (W0-b) |
+| Working fork (zakura-core/common, the common fork) | `zakura-common-ycash` | branch `upgrade/vault` off `zakura-common-ycash-legacy` (the W0-b base; no `ref/` checkout); kogany pins it by rev in `[patch.crates-io]`, §24 | `bdbca121628d` (zakura-core/common "prepare Common 5.0.0-rc.2", the W0-b base, `repos.yaml`) |
 | yolo pool (Perl, yecdev) | `ref/yolo` | `main` @ commit (2020-12-17; no tag) — reference for the Rust `yolo/`, §17 | `c9c155c6` |
 | Inzyght block explorer (miodragpop) | `ref/inzyght` | `main` @ commit (2026-09-26, version 1.0.9; its own repository `miodragpop/inzyght`, no tag) — reference for a vault-upgrade explorer, §25 | `17f505f273` |
 
@@ -893,7 +893,9 @@ while executing the plan go below these, cited against `yew/` at the commit wher
 
 
 **Beta3 run, 2026-11-16 (yewd against ycashd's wallet, item 14).** Cited at yew `up/b3-yewd-gaps`
-(yew #46, **open, not merged**).
+(yew #46, open when cited; merged 2026-11-16, so the line numbers are the branch tip's). Since then
+yew #47 (merged 2026-11-16) serves `importaddress` and `importpubkey` watch-only: the second row
+below is superseded for those two calls.
 
 | Reference behaviour | Ycash / YEW reality | Adaptation |
 |---|---|---|
@@ -922,7 +924,7 @@ Rows from `docs/plans/role-pool-regtest-plan.md` (the Y-F findings). `ref/yolo` 
 
 
 **Beta3 run, 2026-11-16 (paired jobs, item 3p).** Cited at yolo `up/b3-paired-jobs` (yolo #16,
-**open, not merged**); node citations at each line's `origin/upgrade/vault` (ycash-dd `13d4275a1`,
+open when cited; merged 2026-11-16, so the line numbers are the branch tip's); node citations at each line's `origin/upgrade/vault` (ycash-dd `13d4275a1`,
 ycash6 `55c2bfaf8`).
 
 | Perl yolo does | Yellowback needs | Adaptation |
@@ -1223,7 +1225,8 @@ onto ycash6 `upgrade/vault-in-term` as branch `it6/port`; T2 `bdfed3228..dc7b79a
 
 **Beta3 run, 2026-11-16.** Citations at each line's `origin/upgrade/vault` (ycash-dd `13d4275a1`,
 ycash6 `55c2bfaf8`, kogany `b8d28cda1`) unless *int-1* is named: `up/b3-integration-1`, the
-integration pull requests ycash-dd #192 and ycash6 #130 (**open, not merged**).
+integration pull requests ycash-dd #192 and ycash6 #130 (open when cited; both merged 2026-11-16, so
+*int-1* line numbers are the branch tip's).
 
 | What a port assumes | What Ycash or this workspace has | Consequence |
 |---|---|---|
@@ -1234,6 +1237,15 @@ integration pull requests ycash-dd #192 and ycash6 #130 (**open, not merged**).
 | `gettransaction`'s `amount` is the same on both lines for the same send | it is upstream's figure, which depends on `CWalletTx::IsFromMe`: on v4.5.0 a transparent debit only (`ycash-dd/src/wallet/wallet.h:875-878`), on 6.x also a wallet Sprout, Sapling or Orchard nullifier (`ycash6/src/wallet/wallet.cpp:6967-6990`) | for a Sapling-funded send `amount` differs between the lines; the fee fix (item 1) leaves it alone and the shared test expects a per-line `amount` (`qa/rpc-tests/wallet_gettransaction_fee.py:20-23`, *int-1*) |
 | a mempool entry's sigop count is the consensus count | ycash6's entry carries the policy count: legacy plus P2SH plus 20 per `OP_CHECKPQSIG` (`ycash6/src/main.cpp:2081-2089`, entry :2119); consensus counts legacy plus P2SH only (`ConnectBlock`, :3805, :3900) | any consensus-side sum must recount: `getcoinbasetemplatefor` sums `GetLegacySigOpCount + GetP2SHSigOpCount` itself (`ycash6/src/rpc/mining.cpp:1162`, *int-1*); the assembler's use of the entry count (`ycash6/src/miner.cpp:535`) over-counts post-quantum spends, which is safe |
 | a wrong number of parameters gets the same error on every line | `getcoinbasetemplatefor` with the wrong count answers `-32602` on ycash6 (its parameter table, `ycash6/src/rpc/common.h:85`, *int-1*) and `-1` (the help text) on ycash-dd and kogany | outside the call's contract (design note §7); no cross-line test expects one code |
+
+**Beta3 run, rows of the `getcoinbasetemplatefor` note (§12) that landed with the merged code.**
+Citations at ycash-dd `origin/upgrade/vault` `54eea2a5e` and ycash6 `origin/upgrade/vault` `3ed5a96c2`.
+
+| What a port assumes | What Ycash or this workspace has | Consequence |
+|---|---|---|
+| `getblocktemplate.coinbasetxn` reports the fund output the same way on both lines | ycash-dd always prints `ydfpercentage`, `foundersreward` (the fund output's value by the rule the coinbase is built with: the mandated 5 %, or past the mandate the `-ydf` share, 0 by default), `foundersaddress` and `required` (`ycash-dd/src/rpc/mining.cpp:742-762`); ycash6 prints `foundersreward` only while an output is mandated, no `ydfpercentage`, and `required: true` always (`ycash6/src/rpc/mining.cpp:776-786`) | a client must not derive the fund rule from these keys; `getcoinbasetemplatefor`'s `fund` and `fundrule` are the same on both lines |
+| a Sapling coinbase with a bad binding signature is refused with one reason | ycash-dd: `bad-txns-sapling-binding-signature-invalid` (`ycash-dd/src/main.cpp:1340-1344`); ycash6, through the 6.x bundle verifier: `bad-sapling-bundle-authorization` (`ycash6/src/main.cpp:2294-2296`) | same verdict, different reason string; cross-line tests compare acceptance, not the string |
+| a template always has room for the coinbase a pool pairs with it | both assemblers reserve 1,000 bytes for the header and the coinbase together (`ycash-dd/src/miner.cpp:491`; ycash6 `resetBlock`, `ycash6/src/miner.cpp:316-321`); a 192,7 header is 1,487 bytes and a Sapling coinbase 1,119 (note §10), so a template within about 600 bytes of `MAX_BLOCK_SIZE` cannot take a Sapling coinbase | `getcoinbasetemplatefor` refuses with `coinbase-does-not-fit: …` (`ycash-dd/src/rpc/mining.cpp:1270-1273`, `ycash6/src/rpc/mining.cpp:1203-1206`); the assembler is unchanged |
 
 ## 20. x402 agent payments — what other chains' x402 bindings use versus what Ycash has (`x402-ycash/`, its own repository)
 
@@ -1654,7 +1666,8 @@ after which `ref/zakura` and `kogany-legacy` moved to `b44ec121d`. Each row has 
 
 **Beta3 run, 2026-11-16.** Citations: `kogany/…` at kogany `origin/upgrade/vault` `b8d28cda1` unless
 a branch is named: *int-2* is `up/b3-kogany-integration-2` (kogany #39), *reorg* is
-`up/b3-reorg-parity` (kogany #37), both **open, not merged**; `ycash6/…` and `ycash-dd/…` at their
+`up/b3-reorg-parity` (kogany #37), both open when cited and merged 2026-11-16 (so their line numbers
+are the branch tips'); `ycash6/…` and `ycash-dd/…` at their
 `origin/upgrade/vault` (`55c2bfaf8`, `13d4275a1`).
 
 | # | Ycash does X in Y via M | Zakura's Z, lacking M | Adaptation W | Rung, and why not lower |
@@ -1666,6 +1679,8 @@ a branch is named: *int-2* is `up/b3-kogany-integration-2` (kogany #39), *reorg*
 | M24-122 | ycashd scores `high-hash` 50 (`ycash6/src/main.cpp:5956-5959`, `ycash-dd/src/main.cpp:4657-4660`) | kogany scores `DifficultyFilter` 100 (`kogany/crates/zakura-consensus/src/error.rs:875-885`) | documented, not changed (reorg note R5, approved): same rejection; kogany bans after one such block, ycashd after two | none needed: an honest block always meets its target |
 | M24-123 | ycashd checks the Equihash solution (`invalid-solution`, 100) before the hash (`high-hash`) (`ycash6/src/main.cpp:5950-5959`, `ycash-dd/src/main.cpp:4652-4660`) | Zakura checks the difficulty filter first, deliberately ("Do the difficulty checks first, to raise the threshold for attacks", `kogany/crates/zakura-consensus/src/block.rs:513-516`) | documented, not changed (reorg note R6, approved): for a block bad in both the reason is `high-hash` on kogany and `invalid-solution` on ycashd; same verdict | none needed: no validity difference |
 | M24-124 | ycashd's `getcoinbasetemplatefor` refuses as `getblocktemplate` does: `Ycash is not connected!` (-9) without peers and `Ycash is downloading blocks...` (-10) in initial download (design note §7 rows 14, 15) | Zakura's `getblocktemplate` has no peer check, and its synced-to-tip check returns early on test networks (`check_synced_to_tip`, *int-2* `crates/zakura-rpc/src/methods/types/get_block_template.rs:1301-1306`) | kogany never returns row 14 and never row 15 on a test network (*int-2* `get_block_template/coinbase_for.rs:701-704`); below the Ycash upgrade height on regtest its `fundrule` is `"none"` (`CoinbaseAmounts::derive`, :376-380) where the C++ lines report the founders' reward as `"mandated"` | RPC only; no network of ours is below the Ycash upgrade |
+| M24-125 | *(cited at kogany `origin/upgrade/vault` `bfb80361c`, ycash6 `3ed5a96c2`)* ycashd builds a Sapling coinbase for a Sapling `-mineraddress` with the Sapling output parameters it loads at start (`ycash6/src/miner.cpp:237-250`) | Zakura links the Sapling verifying keys only and builds every coinbase with `NoSaplingProver` (`kogany/crates/zakura-rpc/src/methods/types/transaction/no_sapling.rs:20`) | under `ycash`, kogany reads ycashd's `sapling-output.params` (3,592,860 bytes, SHA-256 checked) once at start, from `mining.sapling_output_params` or ycashd's parameter directory (`kogany/crates/zakura-rpc/src/config/mining.rs:111-124`), and proves a Sapling reward output with it (`transaction.rs:519-530`); without it a Sapling coinbase is refused with `Sapling output parameters are not loaded` (`transaction/sapling_coinbase.rs:43`) and transparent and post-quantum coinbases are unaffected | RPC and miner only (decision D-4 of the `getcoinbasetemplatefor` note); no consensus change: the verifier was always there |
+| M24-126 | *(cited at kogany `origin/upgrade/vault` `bfb80361c`, ycash6 `3ed5a96c2`)* ycashd's `getcoinbasetemplatefor` decodes a post-quantum address as a transaction destination, like a transparent one, and pays its 35-byte script through the script-output miner address (`ycash6/src/rpc/mining.cpp:1090-1096`) | Zakura's `MinerAddress` has no post-quantum variant (`kogany/crates/zakura-rpc/src/methods/types/get_block_template/miner_address.rs:15-38`) | `getcoinbasetemplatefor` has its own `Payout` with a `Pq` variant (`get_block_template/coinbase_for.rs:204-213`), decoded with `decode_pq_address` before the Zcash address parser (:274-277); `mining.miner_address` still cannot name a post-quantum address | RPC only; a post-quantum `miner_address` was not requested |
 
 ## 25. Inzyght block explorer — `ref/inzyght` → an explorer for the vault-upgrade node line (survey, 2026-11-14)
 
