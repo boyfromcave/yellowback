@@ -2,7 +2,14 @@
 
 Copyright (c) 2026 The Ycash developers.
 
-**Revision 1 (2026-11-16): the runbook, prepared; nothing in it has been run.** The coordinator
+**Revision 2 (2026-11-16, afternoon): brought up to date with what is now deployed; the
+demonstration itself has not been run.** Since revision 1 the pool runs in per-miner mode (§1,
+P-4), the miner image accepts Sapling and post-quantum usernames, the light-wallet node has its four
+fixed peers (P-7), and a post-quantum reward can be moved with `z_sendmany` (ycash-dd #195, ycash6
+#133, yew #52), so §7's "may be unspendable" is now a step with a documented procedure. Settled
+**[CHECK]** items are marked *settled* in §8.
+
+Revision 1 (2026-11-16): the runbook, prepared. The coordinator
 follows it in Wave 5 after T-1..T-4 (`beta3-plan.md` §5) and fills in §9; from then on it is the
 record of beta3's second success criterion (`beta3-plan.md` §1, §9). Places where the repositories
 did not settle a fact are marked **[CHECK]** and listed again in §8: the coordinator resolves each
@@ -14,6 +21,9 @@ Sources, at the commits read: the plan (`beta3-plan.md` §1, §2.1, §5 Wave 5, 
 `images/miner/README.md`, `infra/testnet-seeds/nodes/` and its `seedctl`, `scripts/vast-fleet.py`),
 ycash-ops `main` `e72c77c` (`.github/workflows/miners.yml`, `miners/fleet.json`, `testnet-pools/`,
 `docs/testnet-pools.md`, `docs/testnet-lightwallet.md`), ycash6 `upgrade/vault` `3ed5a96c2`.
+Revision 2 re-read ycash-infra `upgrade/vault` `f2ce919` (#55, the per-miner mode), ycash-ops `main`
+`09c1432` (#34, #35: `testnet-pools/nodes/main.tf`, `testnet-lightwallet/nodes/main.tf`), yolo
+`b3abf81` (`src/stratum.rs`, `src/pairs.rs`) and ycash6 `upgrade/vault` `883a7fdc2` (#133).
 
 ## 0. What is shown, and the order
 
@@ -24,7 +34,7 @@ no development-fund output (the fund default is 0 in beta3 and the fast testnet'
 
 | # | Step | Section | Spends |
 |---|---|---|---|
-| 1 | The one-card username check (may run now, against today's pool) | §3 | about $0.02 to $0.09 |
+| 1 | The one-card username check (best after P-3; may run now, §3) | §3 | about $0.02 to $0.09 |
 | 2 | The demonstration wallet: node, four payout addresses, spare addresses funded | §2 | nothing |
 | 3 | Preconditions P-1..P-11, each ticked with its command's output | §1 | nothing |
 | 4 | The four-miner burst, fee-paying transactions during it, the live watch | §4, §5 | about $0.24 to $0.36 |
@@ -53,11 +63,11 @@ Each is checked by a command; paste the output (trimmed) into §9. Shorthands us
 |---|---|---|---|
 | P-1 | **Every fast-testnet node runs beta3** (T-2's checklist) | below, node by node | every row's image digest or version is the T-1 candidate's |
 | P-2 | **The mandate end `H_END` is crossed and agreed** (T-4) | below | every node has the same hash at `H_END`; that block has no fund output |
-| P-3 | **The pool's node runs without `-ydf=5`** (after P-1 only) | `testnet-pools/nodes/main.tf` and the running node | no `-ydf` in the args; `getblocksubsidy <tip+1>` `founders` 0 |
-| P-4 | **The pool is in per-miner (paired jobs) mode** with the beta3 yolo | below | yolo started without `--payout`, with `--coinbase-concurrency 2 --max-paired-per-ip 8`; `/status` `"payout":"username"`, `"coinbaseCall":true` |
+| P-3 | **The pool's node runs beta3 and without `-ydf=5`** (after P-1 only) | `testnet-pools/nodes/main.tf` (`local.image`, `local.ydf`) and the running node | the beta3 image; `local.ydf = null`, so no `-ydf` in the args; `getblocksubsidy <tip+1>` `founders` 0 |
+| P-4 | **The pool is in per-miner (paired jobs) mode** with the beta3 yolo | deploy `pools` `status` | deployed since 2026-11-16 (ycash-infra #55, ycash-ops #35): `"payout":"username"`; after P-3 also `"coinbaseCall":true` (it is `false` while the pool's node runs beta2) |
 | P-5 | **`getcoinbasetemplatefor` answers on the pool's node** for all three kinds | below | three answers, `fundrule` `"none"`, `fund` 0, `amount` = subsidy + fees |
 | P-6 | **The pool host has CPU to prove** | `local.cpu_credits` in `testnet-pools/nodes/main.tf` | `"unlimited"` for the run (§5.2) |
-| P-7 | **The light-wallet node has its four peers** (the 2026-11-16 loss) | deploy `lightwallet` `status` | `peers` ≥ 4 and `lightwallet.node.connections` ≥ 4; `phase` `serving` |
+| P-7 | **The light-wallet node has its four peers** (fixed since ycash-ops #34, applied 2026-11-16: both seeds, the pool's node, the explorer's node, by address) | deploy `lightwallet` `status` | `peers` ≥ 4 and `lightwallet.node.connections` ≥ 4; `phase` `serving` |
 | P-8 | **The demonstration wallet is synced, its four addresses recorded** | §2 | `DCLI getblockcount` = the seeds' `blocks`; four addresses in §9 |
 | P-9 | **The fee sources hold coins** | §4.5 | each spare address has a confirmed, non-coinbase balance |
 | P-10 | **The one-card check passed** (or its fallback is in place) | §3 | the 88-character username reached yolo whole |
@@ -108,63 +118,54 @@ The `vout` count at `H_END` is 1 only if the pool's node had already dropped `-y
 first block without a fund output is accepted by every node; it need not be at `H_END` exactly).
 Record the first height without a fund output and that every P-1 node holds it.
 
-### P-3 and P-4: the pool's configuration, and what must change first
+### P-3 and P-4: the pool's configuration, and what changes at the rollout
 
 Where it lives: ycash-ops `testnet-pools/nodes/main.tf` (the `pool` object of
-`networks.yb-fast`, the node's `extra_args`, `local.pool_image`), which calls ycash-infra's
-`infra/testnet-seeds/nodes` module at `testnet-pools/infra.ref`; the module renders yolo's command
-line in `files/seedctl`, `render_pool()`.
+`networks.yb-fast`, the node's `extra_args`, `local.image`, `local.pool_image`, `local.ydf`), which
+calls ycash-infra's `infra/testnet-seeds/nodes` module at `testnet-pools/infra.ref`; the module
+renders yolo's command line in `files/seedctl`, `render_pool()`.
 
-**[CHECK] — a gap, not yet staffed: the module has no per-miner mode.** At ycash-infra
-`upgrade/vault` `dbab91c` the `pool` object requires `payout` (`variables.tf`), and `render_pool()`
-always passes `--payout "<pool.payout>"`, with `--max-connections 64 --max-per-ip 4`, and has no
-way to pass `--coinbase-concurrency` or `--max-paired-per-ip`. Its status filter
-(`pool_status()`) drops `minersByKind`, `minerList`, `coinbaseCall` and `pairs`. No open branch
-changes this. T-3 therefore needs one ycash-infra PR and one ycash-ops PR before P-4 can pass.
-Proposed shape (the implementing lane decides the names):
-
-- ycash-infra, `infra/testnet-seeds/nodes`: `pool.per_miner = optional(bool, false)`,
-  `pool.coinbase_concurrency = optional(number, 2)`, `pool.max_paired_per_ip = optional(number, 8)`.
-  With `per_miner` the yolo command drops `--payout …` and adds
-  `--coinbase-concurrency <n> --max-paired-per-ip <m>`. **The node keeps
-  `-mineraddress=<pool.payout>`** (`locals.tf`): yolo's paired-path checks compare every answer
-  with the stock template's transparent coinbase (design note §8.3), and the swap path writes the
-  transparent miner's script into `vout[0]` of that coinbase. `pool_status()` adds `payout`,
-  `minersByKind`, `minerList`, `coinbaseCall`, `pairs`. A `render.tftest.hcl` and `seedctl.sh`
-  case for each mode.
-- ycash-ops, `testnet-pools/nodes/main.tf`: the module source and `testnet-pools/infra.ref` bumped
-  (`scripts/bump-infra.sh --root testnet-pools <sha>`); `local.pool_image` = the `yolo-image`
-  digest built from yolo `upgrade/vault` at or after `b3abf81` (paired jobs, yolo #16, #17); then
+**Per-miner mode is deployed** (*settled*; ycash-infra #55, ycash-ops #35, applied 2026-11-16). The
+module has `pool.per_miner`, `pool.coinbase_concurrency` and `pool.max_paired_per_ip`; with
+`per_miner` yolo runs without `--payout` and with `--coinbase-concurrency` and
+`--max-paired-per-ip`, and the node keeps `-mineraddress=<pool.payout>` (yolo's paired-path checks
+compare every answer with the stock template's coinbase, design note §8.3, and the swap path writes
+a transparent miner's script into `vout[0]` of that coinbase). ycash-ops sets:
 
 ```hcl
-    yb-fast = {
-      profile    = "fast"
-      # -ydf=5 only while a fast-testnet node may still run beta2 (P-1); removed for P-3
-      extra_args = "-addnode=fastnet-seed.ycash.team:18833"
+      extra_args = join(" ", compact(["-addnode=fastnet-seed.ycash.team:18833", local.ydf == null ? "" : "-ydf=${local.ydf}"]))
       pool = {
-        image                = local.pool_image
-        payout               = local.pool_payout   # the node's -mineraddress; yolo pays usernames
-        per_miner            = true
-        coinbase_concurrency = 2
-        max_paired_per_ip    = 8
+        image                = local.pool_image   # yolo b3abf81 (paired jobs)
+        payout               = local.pool_payout  # the node's -mineraddress; yolo pays usernames
         port                 = 3333
         share_ratio          = 32
+        per_miner            = true
+        coinbase_concurrency = 2
+        max_paired_per_ip    = 2
       }
-    }
 ```
 
-`-rpcthreads`: yolo needs at least `--coinbase-concurrency` + 2 = 4, which is ycashd's default;
-no line is needed unless the concurrency is raised. The order is T-3, then deploy `pools` `upgrade`
-(the node and yolo recreated on the images in `main.tf`, data kept), then `-ydf=5` removed and
-`upgrade` again once P-1 is complete (or both in one `upgrade` if every node is already on beta3).
+At most **two** Sapling or post-quantum payout addresses per source IP (not yolo's default 8): a
+rented miner has its own address, so the four-miner run is not affected. `-rpcthreads`: yolo needs
+at least `--coinbase-concurrency` + 2 = 4, which is ycashd's default, so no line is needed.
 
-Checks, on the pool host (SSM):
+**What is still beta2 on the pool host:** `local.image` is the 6.22.0-beta2 ycashd and
+`local.ydf = 5`. So today `status` shows `"payout":"username"` and `"coinbaseCall":false`:
+transparent miners are paid at their own address (with the 5 % fund output, as every block before
+`H_END` must carry), and yolo refuses Sapling and post-quantum usernames ("this pool cannot pay …
+addresses now (its node does not serve getcoinbasetemplatefor)"). The order at the rollout: set
+`local.image` to the T-1 beta3 digest, deploy `pools` `upgrade` (node and yolo recreated, data
+kept); once P-1 is complete set `local.ydf = null` and `upgrade` again (or both in one `upgrade` if
+every node already runs beta3).
+
+Checks, on the pool host (SSM), and from deploy `pools` `status` (its filter now passes `payout`,
+`minersByKind`, `minerList`, `coinbaseCall` and `pairs` through):
 
 ```bash
 sudo docker inspect yolo-yb-fast --format '{{json .Config.Cmd}}'     # no --payout; the two options
-sudo docker inspect ycashd-yb-fast --format '{{json .Config.Cmd}}'   # no -ydf
+sudo docker inspect ycashd-yb-fast --format '{{json .Config.Cmd}}'   # no -ydf after P-3
 curl -s 127.0.0.1:3334/status | jq '{payout, coinbaseCall, minersByKind, pairs, height, nodeUp}'
-$HCLI getblocksubsidy $(( $($HCLI getblockcount) + 1 )) | jq .founders  # 0
+$HCLI getblocksubsidy $(( $($HCLI getblockcount) + 1 )) | jq .founders  # 0 after P-3
 ```
 
 ### P-5: the call, once per kind, and its timing
@@ -290,10 +291,13 @@ change, and the demonstration does not need one (D-5: yolo accepts the label, F-
 address). yolo's label handling is covered by its own tests and by the stratum check of §4.7,
 which needs no rental.
 
-**When:** now, against the pool as it runs today (`--payout`): the username is then only a name,
-nothing is paid to it, so any valid 88-character testnet Sapling address will do (`Z1_ADDR` once
-§2 exists, or the item 17 test wallet's `ytestsapling129y30…` address in
-`/Users/boy/yew-fastnet-check/a/send.log`). It does not depend on beta3.
+**When:** best after P-3, when the pool's node runs beta3: the Sapling username is then accepted and
+paid, so use `Z1_ADDR` (§2). It can also run now: the pool is in per-miner mode on a beta2 node, so
+yolo refuses a Sapling username, but only after it has split off any label and validated the
+address, and its log line quotes what it received, which settles the length all the same (any
+valid 88-character testnet Sapling address will do then, for example the item 17 test wallet's
+`ytestsapling129y30…` address in `/Users/boy/yew-fastnet-check/a/send.log`; the miner is then
+disconnected and mines nothing).
 
 **Inputs** (Actions → `miners` → Run workflow, ref `main`):
 
@@ -311,11 +315,13 @@ The run arms `miners-burst-expire` before renting; the container ends its own re
 
 **Success:**
 
-- **Pool log** (SSM on the pool host, `sudo docker logs yolo-yb-fast 2>&1 | grep 'authorized' | tail`):
-  under `--payout` yolo logs `miner <n>: authorized as "<username>", paying <pool payout>`
-  (`src/stratum.rs`; strings up to 128 bytes are printed whole, in quotes). The quoted username
-  must be **exactly** the 88 characters given, with nothing after them. Count it:
-  `… | sed 's/.*authorized as "\([^"]*\)".*/\1/' | awk '{print length}'` → `88`.
+- **Pool log** (SSM on the pool host, `sudo docker logs yolo-yb-fast 2>&1 | grep -E 'authorized, paying|is a sapling address|Invalid address' | tail`):
+  in per-miner mode yolo logs `miner <n>: authorized, paying "<address>" (sapling[, worker <label>])`
+  on a beta3 node, or `miner <n>: "<address>" is a sapling address, and the node does not serve
+  getcoinbasetemplatefor` on a beta2 node (`src/stratum.rs`; strings up to 128 bytes are printed
+  whole, in quotes). The quoted address must be **exactly** the 88 characters given. Count it:
+  `… | sed 's/[^"]*"\([^"]*\)".*/\1/' | awk '{print length}'` → `88`. A truncated address fails
+  validation instead (an `Invalid address` refusal).
 - **Pool status**: deploy `pools` `status`: `miners` ≥ 1 and `shares`/`accepted` rising.
 - **Miner log**: miners `logs`, network `fast`, `tail` 200: miniZ connected to
   `fastnet-pool.ycash.team:3333`, no authorization error, accepted shares counted. **[CHECK]**
@@ -333,7 +339,7 @@ twenty minutes is about $0.02 to $0.03; at worst the full hour, $0.09.
 | What the log shows | Meaning | Fallback |
 |---|---|---|
 | A username shorter than 88 | miniZ truncates | Sapling miners cannot be shown with miniZ. (a) Another Equihash 192,7 miner: the image carries lolMiner, whose OpenCL filter drops Nvidia cards on Vast (GPU bursts 2 and 6), so in practice a third miner program added to ycash-infra `images/miner` (a change and an image build). (b) A pool-side alias (a short username mapped to the full address): **yolo has no alias map today** (no such flag or file in `--help`, `src/pairs.rs` reads the username itself); it would be a yolo change, and a design question (who may register an alias), so not for beta3 without the lead architect. (c) A shorter label is no help: the bare address is already 88 |
-| `<88 characters>.<something>` | miniZ appends a worker name | With the pool in per-miner mode this is accepted when the suffix is 1 to 32 of `A-Z a-z 0-9 _ -` (D-5; `split_username`); under today's `--payout` it does not matter. Note the suffix, and check that it fits that grammar |
+| `, worker <something>` after the address | miniZ appends a worker name | accepted when the suffix is 1 to 32 of `A-Z a-z 0-9 _ -` (D-5; `split_username`). Note the suffix, and check that it fits that grammar |
 | No `authorized` line, miniZ reports an authorization or protocol error | miniZ refuses the username | as truncation |
 | No connection at all | not a username question (card, driver, pool) | read miners `logs`; the GPU burst notes in `miners/fleet.json` |
 
@@ -366,9 +372,11 @@ overrides it for the slots this burst rents. A fifth, SLH-DSA, miner: `count` 5 
 
 On 2026-11-16 one card mined 247 blocks in about 25 minutes (a block every 6 seconds or so), all
 paying one transparent address plus a 5 % fund output. The fast profile targets 75-second blocks,
-so four cards push the difficulty up; **[CHECK]** how fast it rises on the fast profile (today's
-burst stayed near 6 seconds for 25 minutes: look at `getblockchaininfo.difficulty` and the block
-times of that burst). Either way one hour is enough: at 75-second blocks it gives about 48 blocks,
+so four cards push the difficulty up. Observed later the same day: after a burst the difficulty
+had risen so far that one card found only two blocks in several minutes, so the chain does not
+return to fast blocks at once when cards leave, and a run that starts right after another burst
+starts slow. Check `getblockchaininfo.difficulty` and the last blocks' times before starting and
+note them in §9. Either way one hour is enough: at 75-second blocks it gives about 48 blocks,
 about 12 per miner; at 6 to 20 seconds, several times that. The Sapling miners find fewer than
 their share while blocks come faster than their proofs (§5.2). **One hour; a second one-hour burst
 with the same `payouts` only if after 40 minutes a miner has fewer than three blocks or no
@@ -390,8 +398,9 @@ hour). A second hour, the same again.
 | The chain | `fastnet-explorer.ycash.team`; `$DCLI getblockcount` | blocks arriving; the explorer within a block of the demo node |
 | The pool's node keeps up | deploy `pools` `status` `blocks` vs deploy `seeds` `status` `blocks` | equal, or one apart |
 
-Not visible without SSM: the miner list by kind and the pair round trips (the deploy `status`
-filter drops them until P-4's module change adds them).
+The deploy `status` filter passes `payout`, `minersByKind`, `minerList`, `coinbaseCall` and
+`pairs` through (ycash-infra #55), so the miner list by kind and the pair round trips are visible
+without SSM; the yolo log still needs SSM.
 
 ### 4.5 Fee-paying transactions during the run
 
@@ -416,8 +425,9 @@ requires a coinbase to be shielded and it matures after 100 blocks):
   matrix had not tested from a Sapling source). During the run:
   `$DCLI sendtoaddress <SPARE_T> 0.01` spends from whichever of `SPARE_PQ` / `SPARE_T` the wallet
   picks; to force a post-quantum input, `$DCLI z_sendmany <SPARE_PQ> '[{"address":"<SPARE_T>","amount":0.01}]'`
-  (**[CHECK]** that `z_sendmany` takes a post-quantum source on beta3, else `sendtoaddress` with the
-  only spendable coins being post-quantum).
+  (*settled*: `z_sendmany` takes a post-quantum source since beta2, and beta3's coinbase rule leaves
+  a send that the address's ordinary coins cover unchanged; `sendtoaddress` never spends a
+  post-quantum coin).
 
 Each transaction's fee is known to whoever sent it (yew-cli prints `fee 1000`; `$DCLI
 gettransaction <txid> | jq .fee`, item 1). Record each txid; §4.6 finds the block that holds it.
@@ -584,7 +594,7 @@ defect with the block's evidence, and tell the lead architect. Do not retry unti
    itself off (workflow header of `miners.yml`); confirm that it did.
 3. The pool: leave it in per-miner mode (beta3's intended configuration) or return it to
    `--payout`: the coordinator's choice, recorded in §9. Either way `-ydf` stays off.
-4. The demo node keeps running until §5.1's checks and the 100-block maturity check of §7's first
+4. The demo node keeps running until §5.1's checks and the maturity spends of §7's first
    item are recorded; then `$DCLI stop`. The datadir and the wallet backup stay in
    `/Users/boy/ycash-fastnet-demo/` (B3-D6).
 
@@ -602,14 +612,26 @@ pool host's CPU surplus credits during the run are AWS, not Vast: a few cents, r
 
 ## 7. What the demonstration does not prove
 
-- **That the coins can be spent.** The fast testnet requires a coinbase to be shielded and matures
-  it after 100 blocks. The transparent miner can shield its coinbase (`z_shieldcoinbase`). For the
-  **post-quantum miner** this is open: beta2's interoperability matrix found post-quantum coins
-  removed from `z_sendmany`'s inputs (PQ → Sapling refused), so a post-quantum coinbase may be
-  unspendable with today's wallet while being consensus-valid to spend. Try it once after 100
-  blocks (`$DCLI z_shieldcoinbase <PQ_ADDR> <SPARE_Z>`) and record the answer; a failure is a
-  finding for after beta3, not a failure of the demonstration. The Sapling notes become spendable
-  at maturity; one spend from each Sapling payout address is a cheap extra check.
+- **That the coins can be spent** is shown only after the run, at maturity, and is a cheap extra
+  step rather than part of the criterion. The fast testnet requires a coinbase to be shielded; a
+  coinbase can be spent from its 101st confirmation (100 blocks deep). The transparent miner
+  shields with `z_shieldcoinbase`. The **post-quantum miner** uses `z_sendmany` (beta3: ycash-dd
+  #195, ycash6 #133; ycash6 `doc/yellowback-mining.md` §13): `z_shieldcoinbase` refuses a
+  post-quantum source and `z_mergetoaddress` leaves coinbase out. The procedure, after 101
+  confirmations:
+
+  ```bash
+  $DCLI z_sendmany "$PQ_ADDR" "[{\"address\":\"$SPARE_Z\",\"amount\":1}]"
+  # -4 "... To spend the selected coins, send exactly <a> to shielded recipients (the <s> selected less the fee <f>)."
+  $DCLI z_sendmany "$PQ_ADDR" "[{\"address\":\"$SPARE_Z\",\"amount\":<a>}]"
+  # an opid; z_getoperationresult gives the txid: its vin is the coinbase, its vout empty
+  ```
+
+  Coins are taken largest first, so one call moves one reward unless the amount is above the
+  largest one. A recipient that is not shielded is refused with the coinbase named. Record the
+  txid and that the Sapling balance rose by the reward less the fee; a failure here is a defect.
+  The Sapling notes become spendable at maturity too; one spend from each Sapling payout address
+  is a cheap extra check.
 - **kogany as the pool's node.** The pool's node is ycashd; kogany's `getcoinbasetemplatefor`
   (3k) is proven by its own tests and the cross-line acceptance, not here (plan §8). The local
   koganyd validating every block of the run is shown (P-1: it follows the same chain).
@@ -628,9 +650,8 @@ pool host's CPU surplus credits during the run are AWS, not Vast: a few cents, r
 
 1. **The beta3 mandate end (`H_END`)**: is the cut's value compiled into beta3, and is the chain
    past it? With the provisional 600,000 the criterion cannot be shown (P-2).
-2. **The pool's per-miner mode does not exist in the deployment yet**: a ycash-infra module change
-   (`--payout` optional, the two new options, the status fields) and a ycash-ops change are needed
-   for T-3 (P-4). Nobody is on it as of this revision.
+2. *Settled.* The pool's per-miner mode is deployed (ycash-infra #55, ycash-ops #35); what remains
+   is the pool node's beta3 image and `local.ydf = null` (P-3).
 3. **`rpcversion` on the fast testnet**: `yed_getinfo` probably refuses there; use the digest and
    version evidence instead (P-1).
 4. The pool's node has the Sapling output parameters and answers a Sapling `getcoinbasetemplatefor`
@@ -639,13 +660,18 @@ pool host's CPU surplus credits during the run are AWS, not Vast: a few cents, r
    architect's yes, the prefix import, or a P2P sync started early); the wallet's datadir
    subdirectory; whether the fast testnet requires the backup acknowledgement.
 6. The post-quantum address in the wallet's views (`gettransaction` details), the explorer's
-   post-quantum pages, and `z_sendmany` with a post-quantum source or recipient on beta3 (§2, §4.5).
+   post-quantum pages, and the Sapling → post-quantum direction on beta3 (§2, §4.5). *Settled:*
+   `z_sendmany` from a post-quantum source, and the post-quantum coinbase's spend (§7).
 7. The exact yew-cli command line item 17 used (§4.5).
-8. How fast the fast profile's difficulty rises under four cards (§4.3).
+8. How fast the fast profile's difficulty rises under four cards (§4.3); *partly answered*: it
+   stays high after a burst (two blocks in several minutes with one card).
 9. `chainSupply.valueDeltaZat` present and calibrated on a known block (§4.6), and
    `z_listreceivedbyaddress` with immature coinbase notes (§5.1).
 10. Whether the local explorer ycashd (`/Users/boy/ycash-explorer`) follows the fast testnet (P-1).
 11. miniZ's log wording for a connection and accepted shares (§3).
+12. *Settled:* the miner image accepts Sapling (`ytestsapling1…`, 88) and post-quantum (`tqf…` /
+    `tqs…`, 53) payout addresses as usernames (ycash-infra `images/miner/README.md`; the fleet and
+    image rebuilt in ycash-ops #35); the light-wallet node's four peers (P-7).
 
 ## 9. Record (filled in by the coordinator)
 
