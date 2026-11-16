@@ -18,7 +18,7 @@ One file per release, `releases/v<version>.yaml` (testnet plan §5.4), in the fl
 ```yaml
 release:
   version: 6.22.0-rc1        # 6.22.N, 6.22.N-rcM or 6.22.N-betaM
-  rpcversion: 8              # the node's YELLOWBACK_RPC_VERSION
+  rpcversion: 9              # the node's YELLOWBACK_RPC_VERSION
   workspace: <40-hex>        # the workspace commit whose spec and contract copies the clients carry
 testnet:
   fast-vault-height: 510400  # testnet-yb-fast's UPGRADE_VAULT height

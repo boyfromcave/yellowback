@@ -75,6 +75,11 @@ ran (`node_suites_binary`).
 The ONLY failure may be that client-pin mismatch, which the record names under
 `node_suites_ci_build_problems`. A `qualified: true` record is not expected for beta2. From beta3 on, the pins are aligned first (above).
 
+The proof run was made on 2026-11-16 (`rc-qualify` run 43798820497 on `upgrade/vault`): the train,
+the candidate, the six package shards, the sidecars and steps 2 to 4 were all green. The CI-build
+evidence half was skipped (no `node_suites_run` was given), so the record job ended red with
+`"qualified": false`, as ruled.
+
 ## Running it in CI
 
 From the workspace's `upgrade/vault` (or a branch carrying the train under review):

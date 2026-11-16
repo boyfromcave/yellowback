@@ -127,7 +127,8 @@ with `mine N 4` → `generate`. The scenario checklist is
   `yellowback.code-workspace` gain both folders (`ref/yolo` read-only in the editor).
 - `AGENTS.md` layout block and rule 2 name the new repos: pool software goes in `yolo/` only;
   its sole interface to the node is `getblocktemplate` / `submitblock` / `validateaddress` /
-  `getblockchaininfo` over JSON-RPC (no `yed_*` RPC, no shell-outs).
+  `getblockchaininfo` over JSON-RPC (no `yed_*` RPC, no shell-outs). *(Beta3: the interface is now
+  these plus `z_validateaddress` and `getcoinbasetemplatefor`, for yolo's paired jobs; see §6.)*
 - `docs/mapping.md` §17: "Pool software (yolo)" — the impedance rows this plan finds (Y-F1,
   Y-F2, and whatever the agents hit).
 - `make status` counts, `make pins` rows: the repo count is a literal in three places; grep
@@ -359,6 +360,17 @@ only for convenience; it drives `yolo` directly.
 - **No node changes.** Nothing in this plan touches `ycash-dd/src/`. If yolo needs a node
   behaviour that is missing, that is a finding for §7, not a patch: the point is to test the
   node as pools will meet it.
+- **The node interface since beta3.** yolo reaches the node over JSON-RPC only, and never calls
+  `yed_*`. Through this plan that meant `getblockchaininfo`, `getblocktemplate`, `submitblock` and
+  `validateaddress`. Beta3 (item 3, yolo #16) adds two calls for paired jobs, which pay a Sapling or
+  post-quantum miner in full at the miner's own address (`yolo/src/rpc.rs:187-217`):
+  `z_validateaddress`, a stock call that classifies a Sapling username (`validateaddress` calls it
+  invalid), and `getcoinbasetemplatefor`, a node RPC that beta3 added on all three node lines
+  (ycash-dd, ycash6, kogany) for exactly this purpose (contract
+  `docs/plans/beta3/getcoinbasetemplatefor.md`). So the pool needed one node change, made in the
+  node lines' own beta3 work and not by this plan: a stateless, read-only RPC with no consensus
+  change, beside `getblocktemplate` and `submitblock`, which are untouched. A transparent miner
+  still uses only the stock calls (the `vout[0]` swap).
 - The Python miner is a fixture: correctness over speed; no C extensions, no GPU.
 - `yolo` must not depend on anything Yellowback-specific to *function*: a plain Ycash node
   without `-yellowback` yields empty `coinbaseaux.flags` and yolo behaves as the Perl did.

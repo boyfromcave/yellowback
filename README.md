@@ -10,9 +10,10 @@ vault's owner can still get the YEC back.
 Vault owners sign with **post-quantum keys** from day one. The vault system is general-purpose: it
 knows nothing about dollars or other chains. Applications add their own rules on top.
 
-> **Status: in development.** Everything runs on regtest and on a one-laptop devnet. No activation
-> height is set on mainnet or testnet, and the upgrade has not been adopted by the Ycash
-> Foundation.
+> **Status: public beta.** The vault upgrade runs on regtest, on a one-laptop devnet and on a public
+> fast testnet. The second beta (ycashd 6.22.0-beta2, koganyd 1.8.0-ycash beta2) is released; beta3
+> is in progress. No activation height is set on mainnet, and the upgrade has not been adopted by
+> the Ycash Foundation.
 
 ## What's inside
 
@@ -36,7 +37,7 @@ knows nothing about dollars or other chains. Applications add their own rules on
   silent.
 - **Post-quantum signatures:** vault owners use SLH-DSA, and YED holders and transfers use
   Falcon-512, through one new opcode (`OP_CHECKPQSIG`). Plain YEC can use post-quantum addresses
-  too (`sq…`); the shielded (Sapling) pool is unchanged.
+  too (`sqf…` for Falcon, `sqs…` for SLH-DSA); the shielded (Sapling) pool is unchanged.
 
 ### Applications
 
@@ -53,9 +54,11 @@ on Ycash".
 
 | | |
 |---|---|
-| Vault upgrade | Built on both node lines, running on regtest and devnet |
+| Vault upgrade | Built on all three node lines (ycashd 6.22, ycashd 4.5 and kogany), running on regtest, the devnet and the public fast testnet |
 | Post-quantum layer | On `upgrade/vault` in every repo, with the fee and attestor rules; `upgrade/quantum-vaults` is the branch it was built on, kept as history |
-| Mainnet / testnet | **No activation height set.** Mainnet activation is not scheduled |
+| Releases | Beta2 published: ycashd `v6.22.0-beta2` and koganyd `v1.8.0-ycash.beta2` (pre-releases). Beta3 is in progress ([beta3 plan](docs/plans/beta3/beta3-plan.md)) |
+| Public services | The fast testnet (`-testnet -testnetprofile=fast`, the vault upgrade active) with public seeds, a mining pool, an explorer at [fastnet-explorer.ycash.team](https://fastnet-explorer.ycash.team) and a light-wallet server at `fastnet-lightwallet.ycash.team`; the landing page [ycash.team](https://ycash.team) |
+| Mainnet | **No activation height set.** Mainnet activation is not scheduled |
 | Reviews | Internal: a [security audit](docs/audits/yellowback-security-audit-20261001.md) and a [Falcon consensus audit](docs/audits/yellowback-falcon-consensus-audit-20261010.md). No external audit yet |
 
 ## Components
@@ -64,13 +67,14 @@ Each component is its own git repository, cloned side by side into this workspac
 
 | Component | Repo | What it does |
 |---|---|---|
-| Node, Ycash 6.20 line (**release line**) | [ycash6](https://github.com/boyfromcave/ycash6) | `ycashd` 6.20.0 with the vault upgrade and Yellowback; releases are built here |
+| Node, Ycash 6.20 line (**release line**) | [ycash6](https://github.com/boyfromcave/ycash6) | `ycashd` 6.20.0 with the vault upgrade and Yellowback; releases (6.22.x) are built here |
 | Rust library for the 6.20 node | [librustzcash6](https://github.com/boyfromcave/librustzcash6) | the patched librustzcash that `ycash6` builds against |
-| Node, Zakura line (just started) | [kogany](https://github.com/boyfromcave/kogany) | a fork of [Zakura](https://github.com/zakura-core/zakura), a Zcash full node in Rust; the third node line, nothing ported yet |
+| Node, Zakura line | [kogany](https://github.com/boyfromcave/kogany) | `koganyd`, a fork of [Zakura](https://github.com/zakura-core/zakura), a Zcash full node in Rust, with the vault upgrade and Yellowback; the third node line, released as `v1.8.0-ycash.betaN` |
+| Rust crates for kogany | [zakura-common-ycash](https://github.com/boyfromcave/zakura-common-ycash) | the fork of Zakura's shared crates that `kogany` builds against (a `ycash` cargo feature) |
 | Node, Ycash 4.5 line | [ycash-dd](https://github.com/boyfromcave/ycash-dd) | the same upgrade on `ycashd` 4.5.0, where changes land first |
 | Desktop wallet | [yecwallet-dd](https://github.com/boyfromcave/yecwallet-dd) | YecWallet (Qt) with a Yellowback tab; bundles the node |
 | Light-client server | [lightwalletd](https://github.com/boyfromcave/lightwalletd) | lightwalletd with read-only Yellowback and vault calls (local dir `lightwalletd-dd/`) |
-| Mobile wallet | [yew](https://github.com/boyfromcave/yew) | YEW, an iOS/Android wallet for YEC and YED (a web wallet is in progress) |
+| Mobile wallet | [yew](https://github.com/boyfromcave/yew) | YEW, an iOS/Android wallet for YEC and YED; also the web wallet and `yewd`, the wallet daemon that runs beside `koganyd` |
 | Mining pool | [yolo](https://github.com/boyfromcave/yolo) | a stratum solo-pool server for GPU miners, in Rust |
 | Chain visualizer | [chain-viz](https://github.com/boyfromcave/chain-viz) | a read-only live dashboard of blocks, the mempool, vaults and Yellowback |
 | Agent payments | [x402-ycash](https://github.com/boyfromcave/x402-ycash) | pay-per-request HTTP 402 payments in YEC and YED for software agents |
@@ -120,8 +124,9 @@ and attestors signing them. See
 | [Upgrade plan](docs/plans/yellowback-upgrade-plan.md) | the vault upgrade: requirements, design, spec, status |
 | [Quantum plan](docs/plans/yellowback-quantum-plan.md) and [spec](docs/plans/yellowback-quantum-spec.md) | the post-quantum layer |
 | [Fees spec](docs/plans/yellowback-quantum-fees-spec.md) | how Yellowback and network fees are priced |
-| [Hawkeye bridge plan](hawkeye/docs/hawkeye-bridge-plan.md) | the bridge attestor |
+| [Hawkeye bridge plan](https://github.com/boyfromcave/hawkeye/blob/upgrade/vault/docs/hawkeye-bridge-plan.md) | the bridge attestor |
 | [All plans](docs/plans/README.md) | one plan per component |
+| [Beta3 plan](docs/plans/beta3/beta3-plan.md) | the release in progress: what beta3 adds and its status |
 | [Mapping](docs/mapping.md) | how each mechanism maps from DigiByte's DigiDollar to Ycash |
 | [Acknowledgements](docs/innovation-acknowledgements.md) | what DigiDollar contributed, and where Yellowback differs |
 
@@ -171,11 +176,11 @@ to the node source, in [docs/spec/yellowback-risk-profile.md](docs/spec/yellowba
 Read [AGENTS.md](AGENTS.md) before changing anything. The short version:
 
 - **`ref/` is read-only.** It holds pinned upstream checkouts for reading and grepping.
-- **Code goes in the component's own repo**, and a node change is made on both node lines together.
+- **Code goes in the component's own repo**, and a node change is made on every node line together.
 - **`upgrade/vault` is the line being built.** `harden/yellowback` is the no-upgrade fallback.
 - **Consensus code is never tidied or refactored.** Change only what the feature needs, with two
   independent reviews.
 - **Porting from DigiByte?** Read [docs/mapping.md](docs/mapping.md) first: DigiByte and Ycash
   are very different codebases.
-- **Security CI.** Every repository runs Semgrep, CodeQL, zizmor, gitleaks and OSV-Scanner; see
+- **Security CI.** Every code repository runs Semgrep, CodeQL, zizmor, gitleaks and OSV-Scanner; see
   [SECURITY-CI.md](SECURITY-CI.md) for the gates and how to accept a finding.
