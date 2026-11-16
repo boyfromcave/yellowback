@@ -79,6 +79,7 @@ Each component is its own git repository, cloned side by side into this workspac
 | Ethereum contracts | [wyec](https://github.com/boyfromcave/wyec) | the wYEC token and bridge contracts (drafts, not audited, not deployed) |
 | Infrastructure | [ycash-infra](https://github.com/boyfromcave/ycash-infra) | Kubernetes deployment of the light-wallet backend: `ycashd` pool, lightwalletd, address index, gateway |
 | Kogany website | [kogany-site](https://github.com/boyfromcave/kogany-site) | the static site for the Kogany node, served at [kogany.ycash.team](https://kogany.ycash.team) |
+| Landing page | [ycash-team-site](https://github.com/boyfromcave/ycash-team-site) | the ycash.team start page for newcomers: one tile and one short page per product, served at [ycash.team](https://ycash.team) |
 | Operations (private) | ycash-ops | the Ycash developers' deployment of the testnets on AWS from ycash-infra's recipes, run from GitHub Actions |
 
 Every client reaches the node only through its public RPCs (the mobile and web wallets through
