@@ -6,7 +6,12 @@ each component's own notes: ycash6 and ycash-dd `doc/release-notes.md` (the beta
 notes, YecWallet `docs/release-notes/release-notes-6.22.0-beta3.md`. Where this text and a
 component's own notes differ, the component's notes are right: correct this file. Two values are
 filled in at the release-candidate cut: the fast testnet's mandate-end height (`<H_END>`, the
-fast-testnet tip at the cut plus 400) and the yew commit yewd is built from (`<YEW COMMIT>`).*
+fast-testnet tip at the cut plus 400) and the yew commit yewd is built from (`<YEW COMMIT>`). One
+sentence is confirmed at the cut, marked `<TO CONFIRM AT THE CUT>` (section 8). Changes from
+pull requests still open when this draft was written are described as shipped and must be checked
+against the merged code at the cut: ycash-dd #194 and ycash6 #132 (the value-pool index resumes
+after an unclean stop; ycash6's `-reindex-chainstate` with a wallet), kogany #43 and #44 (pins and
+the beta release guard; the backup and redial fixes) and yew #53 (the web wallet's answers).*
 
 Beta3 is the third public beta of the Ycash vault network upgrade and of Ycash Yellowback (YED),
 the dollar built on it. It ships as one tested set, the release train
@@ -18,7 +23,7 @@ the dollar built on it. It ships as one tested set, the release train
 | ycash-dd (the reference line; no binaries) | tag `vault-params/v6.22.0-beta3` | boyfromcave/ycash-dd |
 | koganyd (Ycash on Zakura, Rust; pre-release, not a qualified line) | `v1.8.0-ycash.beta3` | boyfromcave/kogany releases |
 | YecWallet (desktop, bundles ycashd `v6.22.0-beta3`; its first packaged release) | `v6.22.0-beta3` | boyfromcave/yecwallet-dd releases |
-| YEW (mobile and web wallet) and yewd (kogany's wallet daemon) | the train's yew commit | source |
+| YEW (mobile and web wallet) and yewd (kogany's wallet daemon) | the train's yew commit | source; the web wallet is also hosted for the fast testnet at https://fastnet-wallet.ycash.team |
 | lightwalletd, yolo, chain-viz, x402-ycash, Hawkeye | the train's commits | source |
 
 **It is a beta.** It runs on regtest, the one-laptop devnet and the public fast testnet
@@ -46,7 +51,7 @@ of address that is** (transparent, Sapling or post-quantum).
    the default, so `-ydf=-1` now means 0 where it meant 5.
 3. **RPC clients: accept `rpcversion` 10.** `yed_getinfo.rpcversion` is 10 on all three node lines
    (beta2: 9). No `yed_*` field changes shape; 10 tells a client the node has every beta3 addition
-   (section 6). A client that requires exactly 9 must be changed. Every beta3 client (lightwalletd,
+   (section 7). A client that requires exactly 9 must be changed. Every beta3 client (lightwalletd,
    YecWallet, YEW and yewd, chain-viz, x402-ycash, Hawkeye) accepts 9 and 10.
 4. **Allow for a slower first start.**
    - ycashd 6.22.0-beta3 fills its new value-pool index once: about 30 seconds on a mainnet node
@@ -67,6 +72,13 @@ of address that is** (transparent, Sapling or post-quantum).
    bytes), read from `mining.sapling_output_params` or ycashd's parameter directory and checked by
    its SHA-256 (ycash-infra release `zcash-params-v1`). Without it a Sapling coinbase is refused
    ("Sapling output parameters are not loaded"); transparent and post-quantum mining are unaffected.
+7. **Miners paid at a post-quantum address: use a ycashd or yewd wallet for that address.** Only
+   those wallets can move a post-quantum block reward (section 3, "A post-quantum reward"). The YEW
+   app and the web wallet cannot tell that a coin is a coinbase, so a reward paid to one of their
+   addresses shows as spendable but their sends are refused (section 8).
+8. **ycash6 operators: do not combine `-reindex-chainstate` with `-rescan`.** The node now refuses
+   to start with both (also when `-salvagewallet` or `-zapwallettxes` implies `-rescan`). Start with
+   `-reindex-chainstate` alone, then use `-rescan` on a later start if you need it.
 
 ## 2. Node operators
 
@@ -79,10 +91,31 @@ of address that is** (transparent, Sapling or post-quantum).
   pools by `id`, never by position. A node-side index, not a consensus rule: a failed write turns it
   off until the next restart. koganyd also answers `getblockchaininfo.transactions`, the chain's
   transaction count, as ycashd does.
+- **The value-pool index resumes after an unclean stop** (ycashd and ycash-dd). After a kill or a
+  power loss the node continues from the last block whose ancestors all have a record, where it
+  used to fill the index again from the seed or from genesis, answering -28 throughout. Two log
+  lines say where it resumed. `-reindex` and `-reindex-chainstate` still rebuild it.
+- **ycashd: a wallet node survives `-reindex-chainstate`.** A node with a wallet (the default)
+  started with `-reindex-chainstate` stopped on an assertion inherited from upstream zcashd; it now
+  waits until the rebuilt chain reaches the wallet's last block, logs when it waits and when it
+  resumes, and the wallet's balances read low until then. `-reindex-chainstate` together with
+  `-rescan` is refused at start (item 8 above). ycash-dd has no `-reindex-chainstate`.
 - **koganyd stops on a reorganisation deeper than 99 blocks**, as ycashd does, logs ycashd's
   message and exits with status 1. Unlike ycashd it writes `ycash-reorg-refused` in the state
   directory and every start stops again while that file exists; `docs/kogany.md` ("Deep
-  reorganisations") has the steps.
+  reorganisations") has the steps. `invalidateblock` goes through the same guard, counted from the
+  parent of the invalidated block as on ycashd, so the boundary is the same 99 blocks; a refused
+  `invalidateblock` answers an error, leaves the block valid and the tip where it was, and stops
+  the node with the record. A refusal is always either recorded or, if the record cannot be
+  written, reported as such when the node stops.
+- **koganyd keeps up with a peer while it holds a stale side branch.** Its non-finalized backup
+  rewrote every block two chains share at every tip update, so a follower with a stale side branch
+  crawled until those blocks were finalized; each block is now written once.
+- **A koganyd left without any peer connection redials after 10 seconds**, doubling the wait after
+  each failed attempt at an address (10, 20, 40, 80 s, then about two minutes); with any connection
+  open the upstream two-minute wait stands. An inbound reconnection from an address that connected
+  in the last two minutes or so is still refused by the per-IP limit, so it is koganyd's own dial
+  that restores the link.
 - **koganyd checks a header's difficulty target before the median-time rules**, ycashd's order;
   the set of accepted blocks is unchanged.
 - **Snapshot restores** (`contrib/bootstrap/ycash-bootstrap`): a refused or failed restore exits
@@ -117,6 +150,26 @@ of address that is** (transparent, Sapling or post-quantum).
   (default 8) caps the shielded and post-quantum payout addresses per source IP.
 - **A pool's node interface** is now `getblocktemplate`, `submitblock`, `validateaddress`,
   `z_validateaddress`, `getblockchaininfo` and `getcoinbasetemplatefor`. A pool never calls `yed_*`.
+- **koganyd as a pool's node**: its Sapling and post-quantum coinbases (through
+  `getcoinbasetemplatefor`) are accepted by ycashd: kogany's mixed-node CI mines paired Sapling and
+  post-quantum blocks on koganyd and a ycashd peer accepts every one.
+- **The fast-testnet pool runs in per-miner mode** (`fastnet-pool.ycash.team:3333`): the stratum
+  username is the payout address. Transparent miners are paid at their own address now; Sapling and
+  post-quantum miners are paid once the pool's node runs beta3 (until then the pool's `status`
+  shows `"coinbaseCall": false`). At most two Sapling or post-quantum payout addresses per source
+  IP there. The pool's node keeps the 5 % fund share until every fast-testnet node runs beta3
+  (section 1, item 1).
+- **A post-quantum reward.** Where a coinbase must be shielded (mainnet and the testnets), no
+  wallet call could spend a reward paid to a post-quantum address. `z_sendmany` from that address
+  (ycashd, ycash-dd and yewd) now spends its mature coinbase (101 confirmations) when every
+  recipient is shielded and the address's other coins do not cover the send. Such a send makes no
+  change: a send that would leave change is refused with the exact amount to send ("… To spend the
+  selected coins, send exactly <a> to shielded recipients …"); send that amount. Coins are taken
+  largest first, so one call moves one reward unless the amount is above the largest one. With a
+  transparent or post-quantum recipient the coinbase is never used, and the refusal says how much
+  coinbase the address holds. `z_shieldcoinbase` and `z_mergetoaddress` do not move it; ycash6
+  `doc/yellowback-mining.md` §13 has a worked example. Transparent (ECC) and Sapling rewards are
+  unchanged.
 - `getblocksubsidy`'s `founders` past the mandate is this node's `-ydf` share. ycash6's
   `getblocktemplate` has no `coinbasetxn.ydfpercentage` (ycash-dd's has) and shows
   `foundersreward` only while the mandate runs.
@@ -150,8 +203,18 @@ of address that is** (transparent, Sapling or post-quantum).
   `z_mergetoaddress` from post-quantum addresses, vault-call coin locks released, vault funding
   change listed, and the fees ycashd's wallet charges for each transaction shape.
 - **A light-wallet server for the fast testnet** at `fastnet-lightwallet.ycash.team` (gRPC over TLS
-  for the app, gRPC-web for the web wallet). It serves YEC; its Yellowback service is off there
-  (no YED attestor set on the fast testnet).
+  for the app, gRPC-web for the web wallet), the built-in testnet default of both. It serves YEC;
+  its Yellowback service is off there (no YED attestor set on the fast testnet). Its node keeps
+  fixed connections to four fast-testnet nodes (both seeds, the pool's node and the explorer's), so
+  a transaction sent through it reaches the pool's node directly.
+- **The YEW web wallet is hosted for the fast testnet** at https://fastnet-wallet.ycash.team: a
+  testnet build with that server fixed (it cannot be changed there) and a banner saying the coins
+  have no value. The recovery phrase and keys stay in the browser, encrypted at rest under a
+  passkey or a passphrase, and are never sent. A merge never changes what the name serves: a
+  maintainer deploys a reviewed commit by hand, and `scripts/verify-bundle.sh` compares what the
+  site serves with a build of that commit. A second tab on the same wallet is told the wallet is
+  open elsewhere; a screen shows an answer only for the selection it was asked for (an address
+  picked in Receive, a Send preview). https://ycash.team has a YEW Web tile and page.
 
 ## 5. Explorers
 
@@ -169,7 +232,14 @@ of address that is** (transparent, Sapling or post-quantum).
   in vaults; chain-viz's block tooltip shows it. The fast-testnet explorer is
   https://fastnet-explorer.ycash.team.
 
-## 6. What `rpcversion` 10 covers
+## 6. Other clients
+
+- **x402-ycash** runs unchanged against the beta3 nodes; its tests were run against both C++ node
+  lines at `rpcversion` 10.
+- **lightwalletd, YecWallet, YEW and yewd, chain-viz, Hawkeye and x402-ycash accept `rpcversion` 9
+  and 10.** chain-viz's block tooltip shows `transparentPools` by id.
+
+## 7. What `rpcversion` 10 covers
 
 | Call or field | Change |
 |---|---|
@@ -177,12 +247,30 @@ of address that is** (transparent, Sapling or post-quantum).
 | `getblockchaininfo`, `getblock` (verbosity 1, 2) | new `transparentPools`; `valuePools` unchanged; koganyd adds `transactions` |
 | `getrawtransaction` (verbose), `getblock` verbosity 2, `getblockdeltas`, REST `/rest/tx` | `address` of an input spending a post-quantum output |
 | `gettransaction` | `fee` for every funding shape; absent when a transparent input's funding transaction is not held |
+| `z_sendmany` from a post-quantum address | spends its mature coinbase to shielded recipients with no change; new refusal text naming the exact amount (wallet only) |
 | `-ydf`, `getblocksubsidy` `founders` | default 0; past the mandate `founders` is this node's `-ydf` share |
 
-## 7. Known limitations
+## 8. Known limitations
 
 - **Not on mainnet**, and **no YED attestor set on any public network**: YED cannot be minted on the
   fast testnet with this release.
+- **The fast testnet's fund mandate ends at a height set at the release candidate**, `<H_END>`.
+  Every fast-testnet node must run beta3 before the chain reaches it; a node on beta2 or older
+  stops following the chain there (section 1, item 1).
+- **The YEW app and the web wallet cannot spend a post-quantum block reward.** The light-client
+  coin listing (lightwalletd's `GetAddressUtxos`) carries no coinbase flag, so they show such a
+  reward as spendable and the node refuses their sends. Pay post-quantum rewards to an address a
+  ycashd or yewd wallet holds.
+- **yewd's post-quantum coinbase spend** follows the C++ wallets' rule, strings and fee, and is
+  covered by yew's own tests. `<TO CONFIRM AT THE CUT: whether the shared script
+  wallet_pq_coinbase_spend.py has also passed with yewd in front of a real koganyd and ycashd; if
+  it has, say "and proven against real nodes"; if not, say "it has not yet been run against real
+  nodes">`
+- **The hosted web wallet is for the fast testnet only**, by decision: a web page is whatever its
+  server sends on that visit. Money belongs in the apps. The web wallet cannot send post-quantum to
+  private, private to post-quantum, or fund a mint from the private balance (the app can).
+- **The web wallet's passkey path has no automated test** (no browser authenticator in the
+  headless runs); the passphrase path is the one the automated runs walk.
 - `gettransaction`'s `fee` and `details[].fee` can differ for a Sapling-funded send (the second counts
   the transparent debit only).
 - **Value pools below the seed**: on a ycashd that filled the index from the compiled seed (mainnet
@@ -193,6 +281,13 @@ of address that is** (transparent, Sapling or post-quantum).
   is complete or in order.** Name `getblocktemplate`'s list verbatim, or the block is invalid.
 - **A nearly full block has no room for a Sapling coinbase**: the node refuses
   (`coinbase-does-not-fit`) and the miner keeps its previous job until the next template.
+- **koganyd's 99-block guard needs the non-finalized backup to survive a restart.** With the
+  backup turned off (`state.should_backup_non_finalized_state = false`; it is on by default) a
+  restarted koganyd has only its finalized blocks, no tip to keep, and follows its peers' best
+  chain, where a ycashd would stop again. koganyd warns of this at every start with the backup off;
+  keep it on wherever the node must be able to refuse a deep reorganisation.
+- **koganyd's non-finalized backup files are written non-atomically** (as upstream Zakura writes
+  them): a kill in mid-write can leave a short file, which the next backup counts as written.
 - **koganyd**: not a qualified node line; no wallet in the node (yewd is the wallet, built from
   source); wrong argument counts answer `-1` where ycashd answers `-32602`; a miner must quote the
   price with `yed_setquote` where Yellowback is live; different peer scores for some invalid blocks
@@ -204,7 +299,7 @@ of address that is** (transparent, Sapling or post-quantum).
 - The other limitations of beta2 stand (ycash6 `doc/release-notes/release-notes-6.22.0-beta2.md`,
   "Known limitations").
 
-## 8. Verifying the downloads
+## 9. Verifying the downloads
 
 ycashd and YecWallet: `SHA256SUMS`, its keyless cosign bundle (identity: the repository's release
 workflow at the tag), GitHub build provenance (`gh attestation verify`), and the Yellowback lead

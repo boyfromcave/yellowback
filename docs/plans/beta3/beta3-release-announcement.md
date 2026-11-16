@@ -53,6 +53,11 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
    `sapling-output.params`, the file ycashd uses (from ycashd's parameter directory, or the path in
    `mining.sapling_output_params`). Without it a Sapling coinbase is refused with "Sapling output
    parameters are not loaded"; transparent and post-quantum mining are unaffected.
+6. **Miners paid at a post-quantum address should use a ycashd or yewd wallet for it.** Those are
+   the wallets that can move a post-quantum block reward (below). The YEW app and the web wallet
+   cannot, so do not give a pool one of their post-quantum addresses.
+7. **ycashd operators: start with `-reindex-chainstate` alone.** The node now refuses to start when
+   it is combined with `-rescan`; rescan on a later start if you need to.
 
 ## For node operators
 
@@ -76,6 +81,15 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
   Snapshot bundles can now be stored in parts of 1 GiB, so bundles above 50 GB can be published,
   and ycashd's restore tool (`ycash-bootstrap`) restores a mainnet state bundle. On mainnet the bundle's signature is always required
   (`--allow-unsigned` is refused).
+- **ycashd recovers faster from a crash.** After an unclean stop its value-pool index carries on
+  from where it was, instead of being built again. A node with a wallet no longer stops when it is
+  started with `-reindex-chainstate`; it waits until the rebuilt chain catches up with the wallet.
+- **kogany's guard covers `invalidateblock` too**, at the same 99-block boundary as ycashd, and a
+  refusal is always either recorded or reported.
+- **kogany keeps up with its peers in two cases where it used to fall behind**: while it holds a
+  stale side branch (it now writes each block of its backup once, not at every new block), and
+  when it has lost its only connection (it redials after 10 seconds, backing off, instead of
+  waiting two minutes).
 - **Builders of kogany from source** use the pinned Rust toolchain, 1.100.0
   (`rust-toolchain.toml`).
 
@@ -95,6 +109,19 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
   the job's transactions ("paired jobs"). yolo's `/status` shows miners by payout kind.
 - **No pool can ask for less.** There is no amount to request, and yolo never drops a
   transaction from a paired job: the coinbase always claims every fee of the block it is mined in.
+- **kogany can be a pool's node for every kind of miner.** The Sapling and post-quantum coinbases
+  koganyd builds are accepted by ycashd, tested in kogany's automated runs.
+- **A post-quantum miner can now move its reward.** On mainnet and the testnets a block reward has
+  to be moved into the shielded pool before it can be spent elsewhere, and until now no wallet
+  command could do that for a reward paid to a post-quantum address. In ycashd and yewd,
+  `z_sendmany` from that address now does it, once the reward has 101 confirmations and when every
+  recipient is a shielded address. Such a send cannot leave change: name an amount, and if it would
+  leave change the wallet refuses and tells you the exact amount to send instead. One call moves
+  one reward unless you ask for more than the largest one. `z_shieldcoinbase` and
+  `z_mergetoaddress` do not move it. Transparent and Sapling rewards work as before.
+- **The fast-testnet pool already pays each miner at its own address** (`fastnet-pool.ycash.team`):
+  your stratum username is your payout address. Sapling and post-quantum miners are paid there once
+  the pool's own node runs beta3.
 - The pool's node interface is now `getblocktemplate`, `submitblock`, `validateaddress`,
   `z_validateaddress`, `getblockchaininfo` and `getcoinbasetemplatefor`. A pool never calls
   `yed_*`.
@@ -113,7 +140,16 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
 - **`gettransaction` shows the real fee** for every way a send can be funded (a shielded-funded
   send showed a wrong fee, or none, before). It is a display fix; balances are unaffected.
 - **A light-wallet server for the fast testnet**: `fastnet-lightwallet.ycash.team`, for the YEW app
-  (gRPC over TLS) and the web wallet (gRPC-web).
+  (gRPC over TLS) and the web wallet (gRPC-web), and their built-in testnet default. It keeps fixed
+  connections to four fast-testnet nodes, the mining pool's among them, so a payment sent through
+  it reaches the miners quickly.
+- **The YEW web wallet, hosted for the fast testnet**, at https://fastnet-wallet.ycash.team. Your
+  recovery phrase and keys stay in your browser, encrypted, and are never sent anywhere. The site
+  changes only when a maintainer deploys a reviewed version by hand, and anyone can check that what
+  it serves matches the published source. Fast-testnet coins have no value.
+- **Other programs**: the x402 agent-payment library runs unchanged against beta3, and the
+  light-wallet server, the desktop and mobile wallets, the chain visualizer, the bridge attestor and
+  the x402 library all accept nodes at RPC version 9 or 10.
 
 ## For explorers
 
@@ -130,8 +166,9 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
 
 ## New places
 
-- https://ycash.team: one page for newcomers, with a short page per product.
+- https://ycash.team: one page for newcomers, with a short page per product, YEW Web among them.
 - `fastnet-lightwallet.ycash.team`: the fast testnet's light-wallet server.
+- https://fastnet-wallet.ycash.team: the YEW web wallet for the fast testnet.
 
 ## Known limits
 
@@ -140,7 +177,17 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
 - **YED is not live on the fast testnet** (no attestor set there). The light-wallet server there
   serves YEC; its Yellowback service is off.
 - **The fast testnet's mandate-end height is fixed at the release candidate**; until then builds
-  carry a placeholder far above the chain tip.
+  carry a placeholder far above the chain tip. Every fast-testnet node must run beta3 before the
+  chain reaches that height.
+- **The YEW app and the web wallet cannot spend a post-quantum block reward.** They cannot see that
+  a coin is a block reward, so they show it as spendable and their sends are refused. Pay such
+  rewards to an address held in ycashd or yewd.
+- **The web wallet is for the fast testnet only.** A web page is whatever its server sends on each
+  visit, so real money belongs in the apps. Its passkey sign-in is not covered by the automated
+  tests (the passphrase sign-in is).
+- **kogany's protection against deep reorganisations needs its block backup to survive a
+  restart.** The backup is on by default; with it turned off, a restarted koganyd follows its
+  peers' best chain where ycashd would stop. koganyd warns at every start when the backup is off.
 - **A stateless call cannot see a whole block.** The node pays in full for the transactions a pool
   names; it cannot tell whether a block carries more. yolo checks every coinbase against the
   node's own template and never pairs one with other transactions. A miner can check any block
