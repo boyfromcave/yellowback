@@ -16,6 +16,14 @@ Two kinds of miner, as on the network:
         template's target changes (the 450 s rule). With pace N, a block found sooner than N
         seconds after the pool first saw the tip is held and submitted at that moment.
 
+The pool is modelled twice. mech="seen" is the note's first model: the header time is the moment
+the pool first saw the tip, the release is that moment + N. mech="issued" is the mechanism as
+built (section 4a): every block-target solution of the first N seconds on a tip is a candidate,
+one is chosen at random, its header time is the node's curtime of its own job (read ISSUE seconds
+after the tip was seen, or, for a share `paired` of the winners, whose jobs follow the mempool,
+at any moment up to the solution), and it is submitted N seconds after that job was read. Section
+13 compares the two; "stamp gap" is the difference between consecutive header times.
+
 Standard library only. Run: python3 fast-testnet-block-pacing-sim.py
 """
 import random
@@ -67,14 +75,28 @@ def find(rng, sols, start, chain):
     return switch + rng.expovariate(sols * LIMIT / 2 ** 256), LIMIT, switch
 
 
-def run(hours, pool=lambda t: 0.0, cpu=lambda t: 0.0, pace=0, seed=1, **chain_args):
+ISSUE = 2.0                     # s after the tip is seen at which a reconnecting miner's job is read
+
+
+def run(hours, pool=lambda t: 0.0, cpu=lambda t: 0.0, pace=0, seed=1, mech="seen", paired=0.0, keep=None, **chain_args):
     """Returns rows (wall time, interval, difficulty, miner) for every block in `hours`."""
     rng, chain, now, rows = random.Random(seed), Chain(**chain_args), 0.0, []
+    if keep is not None:
+        keep.append(chain)
     while now < hours * 3600:
         seen = now                                        # the pool first sees this tip
         pt, ptarget, pswitch = find(rng, pool(now), now + OVERHEAD, chain)
         ct, ctarget, _ = find(rng, cpu(now), now, chain)
         release = max(pt, seen + pace) if pace else pt
+        if mech == "issued" and pt != float("inf"):
+            stamp = seen + ISSUE                          # the winning job's curtime
+            if pace and pt < seen + pace:                 # candidates: one at random among them
+                won = rng.uniform(pt, seen + pace)
+                if rng.random() < paired:
+                    stamp = rng.uniform(stamp, max(stamp, won))
+            else:
+                stamp = min(stamp, pt)
+            seen, release = stamp, (max(pt, stamp + pace) if pace else pt)
         if release == float("inf") and ct == float("inf"):  # nobody mines: step to the next change
             now += 60
             continue
@@ -128,3 +150,15 @@ if __name__ == "__main__":
          run(13, pool=burst(1), cpu=c2, spacing=30), after)
     show("12. consensus variant: 75 s spacing, minimum-difficulty gap 2 x 75 s; one GPU 1 h, then CPU",
          run(13, pool=burst(1), cpu=c2, gap=2), after)
+
+    print("\n13. the mechanism as built against the note's first model: GPUs for 1 h, no CPU, three seeds")
+    print("  model                          N  cards  blocks  mean s   D at 1 h   stamp gap min / mean")
+    for label, kw in (("first model (seen)", dict(mech="seen")), ("built, no paired miner", dict(mech="issued")),
+                      ("built, 3 of 4 winners paired", dict(mech="issued", paired=0.75))):
+        for n, cards in ((60, 1), (60, 4), (90, 1)):
+            for seed in (1, 2, 3):
+                keep = []
+                rows = run(1, pool=lambda t: cards * GPU, pace=n, seed=seed, keep=keep, **kw)
+                c = keep[0]
+                gaps = [b - a for a, b in zip(c.times[41:], c.times[42:])]
+                print(f"  {label:29s} {n:3d} {cards:5d} {len(rows):7d} {statistics.mean(r[1] for r in rows):7.1f} {c.difficulty():9.2f} {min(gaps):10d} / {statistics.mean(gaps):.1f}")

@@ -33,14 +33,16 @@ only raises the difficulty until blocks take 75 seconds again.**
    blocks), or a higher proof-of-work limit, which is a consensus change.
 
 **Recommended (option A): `yolo --min-block-interval <seconds>`, off by default, set on the
-fast-testnet pool.** The pool holds a block it has found until the tip is that many seconds old,
-then submits it. The header times stay honest and end up that many seconds apart, so the difficulty
-rule sees a slow chain and leaves the difficulty at 1. No consensus change, no node change, no
-change in any miner.
+fast-testnet pool.** The pool holds a block it has found until the node time in its header is that
+many seconds old, then submits it. The header times stay the node's own and end up at least that
+many seconds apart, so the difficulty rule sees a slow chain and leaves the difficulty at 1. No
+consensus change, no node change, no change in any miner. (Section 4a, "Why the header times are
+spaced", answers the question whether holding a block leaves its timestamp too close to its
+parent's: it does not.)
 
 | | Value | A GPU on | After the GPU leaves |
 |---|---|---|---|
-| Bursts, as today | **60** | a block every 60 s; difficulty 1.5 after 1 h, 2.2 after 2 h, 4.6 after 4 h | CPUs at difficulty 1 within the hour: about 8 minutes a block with two threads |
+| Bursts, as today | **60** | a block every 60 to 75 s (section 4a); difficulty 1.5 after 1 h, 2.2 after 2 h, 4.6 after 4 h | CPUs at difficulty 1 within the hour: about 8 minutes a block with two threads |
 | A card always on | **90** | a block every 80 s for ever, difficulty stays 1; a two-thread CPU beside it finds 1 block in 6 | no such period |
 
 Decisions for the lead architect:
@@ -201,21 +203,70 @@ question asks for.
 The mechanism, and why this one:
 
 - **Chosen: hold, then submit.** Jobs are exactly today's: the header time is the node's `curtime`
-  when the job is made, the bits are the node's. When a miner's submit meets the block target less
-  than N seconds after the pool first saw this tip, the pool answers the miner `true`, keeps the
-  block, and calls `submitblock` when the tip is N seconds old. The next job is made then, with the
-  node's time then. Header times are therefore N seconds apart, each at most N seconds older than
-  the moment the block is published: never in the future, never rolled, and always consistent with
-  the bits the node served (the 450-second rule depends on the header time, so a pool that changed
-  the time by itself could build a `bad-diffbits` block; this one cannot). Miners see nothing new:
-  the same job, shares answered as before, no idle period. If the chain moves while a block is
-  held (someone else found one), the held block is dropped and counted.
-- **Rejected: no job until N seconds have passed.** Stratum has no pause; miners would keep working
-  on the old job or be given a target they cannot meet, and whether miniZ stays connected through
-  a minute of that is unknown (it already drops its connection at every new block, ycash-ops#16).
-- **Rejected: jobs dated tip time + N.** Consensus would accept it (up to the clock + 4 h), but the
-  pool does not know the tip's header time from `getblocktemplate`, and a date pushed across the
-  450-second line changes the required bits.
+  of the template the job was built from, the bits are the node's for that time, and a miner must
+  echo that time (yolo refuses any other `ntime`, `src/stratum.rs` `bad-ntime`; no rolling). A
+  submit that meets the block target and passes the Equihash check is answered `true` and kept as
+  a candidate instead of going to the node. The pool calls `submitblock` for it N seconds after it
+  read that job's template from the node, and builds the next job only from a template read after
+  the node accepted the block (`template_stale`, as today). Miners see nothing new: the same jobs,
+  every submit answered at once, no idle period. If the chain moves while a block is held (someone
+  else found one), the held block is dropped and counted; it is never submitted on a stale tip.
+- **Why the header times are spaced (the point to settle before any code).** A held block does
+  carry an old time: the one its job was given, a few seconds after the pool saw the tip. But the
+  pool saw that tip only when the parent was *published*, and the parent was published N seconds
+  after *its* job time. So block k has time t(k) = the node clock when its job was read, it is
+  published at t(k) + N or later, and every job on top of it is read after that: t(k+1) >= t(k) + N.
+  Each timestamp is N seconds behind its block's publication and N seconds after its parent's
+  timestamp, not seconds after it. The rule reads only the timestamps (section 1), so it sees
+  N-second blocks. What would make the difficulty climb is a block whose time is close to its
+  parent's *time*; with this mechanism that needs a job read before the parent was published,
+  which does not exist. The guarantee needs the release to be counted from the held block's own
+  job, not from the moment the tip was first seen: yolo rebuilds a job with the newest `curtime`
+  whenever a miner reconnects, fills a job's share set, or (a paired miner) gets a new coinbase,
+  so a block found late on a tip can carry a time up to N seconds after the tip was seen. Counted
+  from the tip, the gaps would average N and could each be anything from 0 to 2 N; counted from
+  the job, each is at least N.
+- **Which solution is held: one at random, not the first.** At difficulty 1 a card has a block in
+  under a second, so "the first submit wins" pays the miner whose job arrives first. A transparent
+  miner's job is built at once; a Sapling or post-quantum miner's needs a `getcoinbasetemplatefor`
+  answer first (a proof, for Sapling) and would never win. So every block-target solution received
+  in the first N seconds on a tip is a candidate and the held one is replaced by the k-th with
+  probability 1/k: each solution has the same chance, each miner wins in proportion to the
+  solutions it found, and the block is always the winner's own, paying it in full. Only one block
+  is kept in memory. Every candidate's Equihash solution is verified before it counts.
+- **The price of both.** A winner whose job was read d seconds after the tip was seen is published
+  at tip + d + N. Transparent miners that stay connected have d near 0; miniZ reconnects at every
+  block (d about 2 s); a paired miner on a busy mempool has any d up to N. Simulated (scenario 13):
+  N = 60 gives a block every 62 s with no paired miner and every 72 to 75 s when three winners in
+  four are paired and their jobs follow the mempool; the difficulty after one hour is 1.3 and 1.0
+  to 1.1. Never more than 2 N.
+- **Where the times are not N apart, and why that is not ours to fix.** (i) A block from another
+  pool or a solo miner carries whatever time its miner chose. (ii) After a stop of more than three
+  hours the node's `curtime` is capped at median-time-past + 3 h (section 2), so the first blocks
+  share a time and then jump: the pool still publishes them N seconds apart, and the jumps lower
+  the difficulty, they never raise it. (iii) A regtest chain generated in a burst has a
+  median-time-past ahead of the clock and `curtime` = median-time-past + 1 until the clock passes.
+- **Rejected: no job, or an unsolvable job, until the tip is N seconds old** (the same as taking
+  only solutions whose job is at least that old). The timestamps would be the most honest (seconds
+  before publication). But stratum has no pause: miners would keep working on the old job (every
+  submit stale) or get a target they cannot meet, with no accepted share for a minute at a time;
+  yolo itself disconnects a miner that is silent for three keepalive periods, and whether miniZ
+  stays connected through it is unknown (it already drops its connection at every new block,
+  ycash-ops#16). And once the minute is over the first job delivered wins the block, which is the
+  unfairness above with no window to average it out.
+- **Rejected: jobs dated max(`curtime`, tip time + N), submitted when the clock reaches that time.**
+  Consensus would accept the time on all three lines (above median-time-past, at most
+  median-time-past + 3 h and the clock + 4 h), and the timestamp would equal the publication time.
+  But the bits belong to the time: a date pushed across tip time + 450 s needs the limit as bits,
+  one below it needs the window's, and the node served bits for `curtime` only, so the pool would
+  have to compute the rule itself or build a `bad-diffbits` block. `getblocktemplate` and
+  `getcoinbasetemplatefor` do not give the tip's header time either (`mintime` is the
+  median-time-past + 1), so it needs a call outside the pool's interface. The header time would no
+  longer be "what the node said", the property that fixed Y-F5 and Y-F10.
+- **Rejected: every job on a tip carries the first job's time** (so that all candidates are equal
+  and the spacing is exactly N). The bits would still fit, but the block would pair one template's
+  time with a later template's transactions and tag; nothing checks today that every rule on three
+  node lines is indifferent to that.
 - **Rejected: spacing the timestamps without spacing the blocks** (header times 75 s apart, blocks
   every 30 s). The times run ahead of the clock by 45 s a block and hit the 3-hour and 4-hour
   bounds after about 240 blocks; every explorer and wallet shows wrong times meanwhile.
@@ -292,22 +343,25 @@ card always on with the pool at 90 gives a block every 80 seconds and room for C
 
 ```
 --min-block-interval <SECONDS>    0 (default): off, today's behaviour, byte for byte.
-                                  1..=300: a block found sooner than this after the pool first
-                                  saw the current tip is held and submitted at that moment.
+                                  1..=300: a block is submitted no sooner than this after its
+                                  job's time was read from the node; until then it is held.
 ```
 
-- **The clock** is the pool's monotonic clock at the poller's "new height" event (`src/poller.rs`,
-  `apply_template`); at start-up, the first template. No new RPC.
-- **The first** block-target submit on a tip is the held block; its miner is answered `true` at
-  once (the pool has already checked target and Equihash solution, as today). Later block-target
-  submits on the same tip are answered as shares. This holds for paired jobs (Sapling and
-  post-quantum payouts) as well: the held block is the finder's own, paying it in full.
-- **Release:** at the deadline, if the current template is still on the same parent,
-  `submitblock`; the result is logged and counted as today. Otherwise the block is dropped and
-  `heldStale` counts it.
+- **The clock** is the pool's monotonic clock. Every job remembers when its template was read from
+  the node (`template_at` in `src/poller.rs` `apply_template`; a paired job, when its pair was
+  built), and the tip remembers when the poller first saw it. No new RPC.
+- **Candidates:** a submit that meets the block target and verifies, on the current tip. If none is
+  held and its job is already N seconds old, it goes to the node at once, as today. Otherwise it
+  is answered `true` at once and held, or, while the tip is less than N seconds old, takes the
+  held one's place with probability 1/k. The miner stays on its job. This holds for paired jobs
+  (Sapling and post-quantum payouts) as well: the held block is its finder's own.
+- **Release:** N seconds after the held block's job was read, if the current template is still on
+  the same parent, `submitblock`; the result is logged and counted as today. When the poller sees
+  another parent first, the block is dropped and `heldStale` counts it.
 - **Refused on mainnet:** `getblockchaininfo` `chain` = `main` and a value above 0 is a start-up
   error. Holding a block there loses it to any other miner.
-- **`/status`:** `minBlockInterval`, `held` (height, seconds until release), `heldStale`.
+- **`/status`:** `minBlockInterval`, `nextBlockInSeconds` (0 when a block could be submitted now),
+  `held` (height, candidates, seconds until release), `heldStale`.
 - **Where it is set** (names only): ycash-infra `infra/testnet-seeds/nodes`, a `min_block_interval`
   key in the `pool` object beside `share_ratio` (`variables.tf`, `files/seedctl`, `tests/seedctl.sh`,
   the README); ycash-ops `testnet-pools/nodes/main.tf`, beside `share_ratio = 32`, and
@@ -315,13 +369,17 @@ card always on with the pool at 90 gives a block every 80 seconds and room for C
 
 ### Tests
 
-1. Unit: the hold decision at the boundary; release on time; a held block dropped when the parent
-   changes; only the first block held; off means no code path changes; the mainnet refusal.
+1. Unit, with a fake clock: the hold decision at the boundary; release counted from the job; the
+   random replacement (each of k candidates held with probability 1/k, none after the window); a
+   held block dropped when the parent changes; off means no code path changes; the mainnet refusal.
 2. Wire (`tests/wire.rs`): a recorded submit before the deadline is answered `true` and reaches
    `submitblock` only after it; the status fields.
 3. Regtest (`tests/regtest.rs`, the 48,5 stratum miner), with an interval of 5 s: ten blocks whose
-   header times are at least 5 s apart and whose arrival times are too; a block mined by the node
-   during a hold drops the held one and nothing invalid is submitted; the same with a paired job.
+   header times are at least 5 s apart and whose arrival times are too (the chain is first left
+   alone until the clock has passed its median-time-past); a block mined by the node during a hold
+   drops the held one and nothing invalid is submitted; transparent, Sapling and post-quantum
+   miners side by side, each winning blocks whose coinbase pays it in full; with the flag at 0 the
+   existing tests pass unchanged.
 4. The simulation in this directory, kept as the record of the numbers.
 5. On the fast testnet, the acceptance run: one card for an hour at 60 gives 55 to 65 blocks and
    leaves difficulty below 2; miniZ stays connected through the holds (to be seen, not assumed).
@@ -331,8 +389,9 @@ card always on with the pool at 90 gives a block every 80 seconds and room for C
 Its runbook (`beta3/beta3-plan.md` section 9) expects 75-second blocks and about 24 blocks a miner
 in two hours. Unpaced, four cards from difficulty 1 give about 300 blocks in the first hour, most
 of them seconds apart, and end near difficulty 225 with the same reset pattern afterwards. With
-the pool at 60: 120 blocks in two hours, about 30 a miner, the first finder of each block chosen by
-chance among the four, each block paying its finder in full; fee-paying transactions sent during
+the pool at 60: 100 to 115 blocks in two hours (a block every 62 to 75 s, section 4a), about 25 to
+30 a miner, the finder of each block chosen at random among the solutions of its minute, each block
+paying its finder in full; fee-paying transactions sent during
 the run wait at most a minute. This is the case for P-4.
 
 ### The mandate-end margin
@@ -367,5 +426,6 @@ on purpose.
 - Simulation: `python3 docs/plans/fast-testnet-block-pacing-sim.py` (standard library, seeded,
   about ten seconds). Scenario numbers in its output: 1–3 CPU only, 4 the burst, 5 paced bursts,
   6 a card that stays, 7 paced and staying, 7b longer paced sessions, 8–9 four cards, 10 a small
-  steady miner, 11–12 the consensus variants. The 80-second and several-seed figures of section 4a
+  steady miner, 11–12 the consensus variants, 13 the mechanism as built (random candidate, release
+  counted from the job, paired miners) beside the first model, with the gaps between header times. The 80-second and several-seed figures of section 4a
   come from the same `run()` with `pace=80` and seeds 1 to 3.
