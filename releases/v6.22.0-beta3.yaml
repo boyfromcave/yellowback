@@ -15,7 +15,7 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: cd575cc7b7d77208115e37811c421248586fd9dd      # the upgrade/vault commit v6.22.0-beta3 is cut at (the version bump and the final mandate end included)
+  commit: 8bfd4621e4f4d023314a00d4a5fb31655e019fe1      # the upgrade/vault commit v6.22.0-beta3 is cut at (the version bump and the final mandate end included)
   tag: v6.22.0-beta3
 ycash-dd:
   commit: 7c4d8af68acc6638904e82c35058be7c1cea5cb2      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at (same mandate end as ycash6)
@@ -25,7 +25,7 @@ librustzcash6:
 lightwalletd-dd:
   commit: 56660e56838052ab0f9e7555e2e068e4471fc0b3      # upgrade/vault after the rpcversion 9..10 change (MinRPCVersion); = ycash6's LWD_COMMIT default
 yecwallet-dd:
-  commit: 534fcf66e05ee03acb60df959b7c01166b370ef5      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
+  commit: b9c616b3623157d9607d192a6a339f466abeff92      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
 yew:
   commit: 47898988da9cf73fb7417c9d111273ce104ff20a      # upgrade/vault after the rpcversion 9..=10 change and the regenerated ycashd_rpc.json; the commit kogany's notes name for yewd
 yolo:
