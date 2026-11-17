@@ -42,7 +42,7 @@ parent's: it does not.)
 
 | | Value | A GPU on | After the GPU leaves |
 |---|---|---|---|
-| Bursts, as today | **60** | a block every 60 to 75 s (section 4a); difficulty 1.5 after 1 h, 2.2 after 2 h, 4.6 after 4 h | CPUs at difficulty 1 within the hour: about 8 minutes a block with two threads |
+| Bursts, as today | **60** | a block every 62 to 65 s (section 4a); difficulty 1.5 after 1 h, 2.2 after 2 h, 4.6 after 4 h | CPUs at difficulty 1 within the hour: about 8 minutes a block with two threads |
 | A card always on | **90** | a block every 80 s for ever, difficulty stays 1; a two-thread CPU beside it finds 1 block in 6 | no such period |
 
 Decisions for the lead architect:
@@ -230,22 +230,46 @@ The mechanism, and why this one:
   under a second, so "the first submit wins" pays the miner whose job arrives first. A transparent
   miner's job is built at once; a Sapling or post-quantum miner's needs a `getcoinbasetemplatefor`
   answer first (a proof, for Sapling) and would never win. So every block-target solution received
-  in the first N seconds on a tip is a candidate and the held one is replaced by the k-th with
-  probability 1/k: each solution has the same chance, each miner wins in proportion to the
+  in a tip's selection window, its first N/6 seconds (10 s of 60), is a candidate and the held one
+  is replaced by the k-th with probability 1/k: each solution has the same chance, each miner wins in proportion to the
   solutions it found, and the block is always the winner's own, paying it in full. Only one block
   is kept in memory. Every candidate's Equihash solution is verified before it counts.
-- **The price of both.** A winner whose job was read d seconds after the tip was seen is published
-  at tip + d + N. Transparent miners that stay connected have d near 0; miniZ reconnects at every
-  block (d about 2 s); a paired miner on a busy mempool has any d up to N. Simulated (scenario 13):
-  N = 60 gives a block every 62 s with no paired miner and every 72 to 75 s when three winners in
-  four are paired and their jobs follow the mempool; the difficulty after one hour is 1.3 and 1.0
-  to 1.1. Never more than 2 N.
-- **Where the times are not N apart, and why that is not ours to fix.** (i) A block from another
-  pool or a solo miner carries whatever time its miner chose. (ii) After a stop of more than three
-  hours the node's `curtime` is capped at median-time-past + 3 h (section 2), so the first blocks
-  share a time and then jump: the pool still publishes them N seconds apart, and the jumps lower
-  the difficulty, they never raise it. (iii) A regtest chain generated in a burst has a
-  median-time-past ahead of the clock and `curtime` = median-time-past + 1 until the clock passes.
+- **The price of both, and why the window is short.** A winner whose job was read d seconds after
+  the tip was seen is published at tip + d + N. On the fast-testnet pool d follows the solution
+  closely: with `--share-ratio 32` a card fills a job's 128 remembered shares in about 3 s and is
+  moved to a fresh job with the newest `curtime`; a paired miner's job follows the mempool. A
+  window as long as the interval would therefore put the winner anywhere in it and stretch the
+  mean block interval to about 1.5 N. With N/6 the cost is half the window: simulated (scenario
+  13), N = 60 gives a block every 62 to 65 s and difficulty 1.2 to 1.3 after one hour of one card
+  or of four (1.3, 1.8 and 3.2 after 1, 2 and 4 hours with the two-thread CPU beside it, where the
+  first model gave 1.5, 2.2 and 4.6); N = 90 gives 92 to 98 s and difficulty 1.0. Ten seconds are
+  enough to even out job delivery; when no solution falls in the window (a higher difficulty) the
+  first one afterwards is the block, the ordinary race.
+- **The spacing holds only while the node's `curtime` is its clock.** That is the usual case, and
+  the argument above assumes it. It fails in two: (i) after a stop of more than three hours the
+  node caps `curtime` at median-time-past + 3 h (section 2) until the chain's times have caught up
+  with the clock, so the first blocks' header times advance as the median does, several blocks
+  with one time and then a jump: less than N apart, or far more. The pool still publishes them N
+  seconds apart, and the jumps lower the difficulty, they never raise it. (ii) A regtest chain
+  generated in a burst has a median-time-past ahead of the clock and `curtime` = median-time-past
+  + 1 until the clock passes. And a block from another pool or a solo miner carries whatever time
+  its miner chose.
+- **The hold is not the same for every miner.** It is counted from the block's own job, and a job
+  is renewed with the node's newest time when its share set fills, when the miner reconnects and,
+  for a paired miner, whenever the transaction set changes. A winner with a newer job waits until
+  N after that newer time, so on a busy mempool a Sapling or post-quantum block is held a little
+  longer and is a little more exposed to another miner's block. Among the candidates of the
+  selection window the difference is at most the window; with `--share-ratio` above 1 transparent
+  jobs are renewed every few seconds too. It cannot be evened out and keep the spacing: a block
+  released sooner than N after its own time lets the next block's time follow by less than N,
+  and one time for every job on a tip is the rejected mechanism below. What is evened out: a
+  paired job's hold runs from the read of its template, not from the arrival of its coinbase, so
+  the node's proving time is not added. Who wins is not affected.
+- **One block a parent.** From the release until the node has answered, further solutions on that
+  parent are shares: without that, a solution on a job as old as the held one's would go to the
+  node beside it. The tip is checked again after the wait for a submit slot, immediately before
+  `submitblock`; a submit that does not reach the node is tried again every second while the tip
+  stands.
 - **Rejected: no job, or an unsolvable job, until the tip is N seconds old** (the same as taking
   only solutions whose job is at least that old). The timestamps would be the most honest (seconds
   before publication). But stratum has no pause: miners would keep working on the old job (every
@@ -352,16 +376,20 @@ card always on with the pool at 90 gives a block every 80 seconds and room for C
   built), and the tip remembers when the poller first saw it. No new RPC.
 - **Candidates:** a submit that meets the block target and verifies, on the current tip. If none is
   held and its job is already N seconds old, it goes to the node at once, as today. Otherwise it
-  is answered `true` at once and held, or, while the tip is less than N seconds old, takes the
-  held one's place with probability 1/k. The miner stays on its job. This holds for paired jobs
+  is answered `true` at once and credited as a share; it is held, or, while the tip is less than
+  N/6 seconds old, takes the held one's place with probability 1/k. A solution that is not the
+  held block is never answered stale or invalid. The miner stays on its job. This holds for paired jobs
   (Sapling and post-quantum payouts) as well: the held block is its finder's own.
 - **Release:** N seconds after the held block's job was read, if the current template is still on
   the same parent, `submitblock`; the result is logged and counted as today. When the poller sees
   another parent first, the block is dropped and `heldStale` counts it.
-- **Refused on mainnet:** `getblockchaininfo` `chain` = `main` and a value above 0 is a start-up
-  error. Holding a block there loses it to any other miner.
+- **Only on a testnet or regtest:** a value above 0 starts only where `getblockchaininfo` `chain`
+  is `test` or `regtest` (the node lines report `main`, `test` for every testnet profile, and
+  `regtest`; any other answer is refused like `main`). Holding a block on mainnet loses it to any
+  other miner. The chain is asked again whenever the node was unreachable and answers again,
+  before any work is built; if it is no longer one of the two, the pool stops with an error.
 - **`/status`:** `minBlockInterval`, `nextBlockInSeconds` (0 when a block could be submitted now),
-  `held` (height, candidates, seconds until release), `heldStale`.
+  `held` (height, miner, candidates, seconds until release), `heldStale`, `paceCandidates`.
 - **Where it is set** (names only): ycash-infra `infra/testnet-seeds/nodes`, a `min_block_interval`
   key in the `pool` object beside `share_ratio` (`variables.tf`, `files/seedctl`, `tests/seedctl.sh`,
   the README); ycash-ops `testnet-pools/nodes/main.tf`, beside `share_ratio = 32`, and
@@ -389,8 +417,8 @@ card always on with the pool at 90 gives a block every 80 seconds and room for C
 Its runbook (`beta3/beta3-plan.md` section 9) expects 75-second blocks and about 24 blocks a miner
 in two hours. Unpaced, four cards from difficulty 1 give about 300 blocks in the first hour, most
 of them seconds apart, and end near difficulty 225 with the same reset pattern afterwards. With
-the pool at 60: 100 to 115 blocks in two hours (a block every 62 to 75 s, section 4a), about 25 to
-30 a miner, the finder of each block chosen at random among the solutions of its minute, each block
+the pool at 60: 110 to 116 blocks in two hours (a block every 62 to 65 s, section 4a), about 28
+a miner, the finder of each block chosen at random among the solutions of its minute, each block
 paying its finder in full; fee-paying transactions sent during
 the run wait at most a minute. This is the case for P-4.
 
@@ -426,6 +454,7 @@ on purpose.
 - Simulation: `python3 docs/plans/fast-testnet-block-pacing-sim.py` (standard library, seeded,
   about ten seconds). Scenario numbers in its output: 1–3 CPU only, 4 the burst, 5 paced bursts,
   6 a card that stays, 7 paced and staying, 7b longer paced sessions, 8–9 four cards, 10 a small
-  steady miner, 11–12 the consensus variants, 13 the mechanism as built (random candidate, release
-  counted from the job, paired miners) beside the first model, with the gaps between header times. The 80-second and several-seed figures of section 4a
+  steady miner, 11–12 the consensus variants, 13 the mechanism as built (random candidate of the
+  selection window, release counted from the job) beside the first model, with the gaps between
+  header times. The 80-second and several-seed figures of section 4a
   come from the same `run()` with `pace=80` and seeds 1 to 3.
