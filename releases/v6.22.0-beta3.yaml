@@ -27,7 +27,7 @@ lightwalletd-dd:
 yecwallet-dd:
   commit: b9c616b3623157d9607d192a6a339f466abeff92      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
 yew:
-  commit: 47898988da9cf73fb7417c9d111273ce104ff20a      # upgrade/vault after the rpcversion 9..=10 change and the regenerated ycashd_rpc.json; the commit kogany's notes name for yewd
+  commit: 6feaf99c10f847d6301616e487db9a16bb4da2a3      # upgrade/vault: 47898988 (the commit kogany's notes name for yewd; the same yewd, app and web code) plus the devnet suites' fee-floor correction, tests only (yew #55)
 yolo:
   commit: eef18acdefda5cacc5e3e22022a263115cf073cf      # upgrade/vault with the paired jobs (yolo #16) and the beta3 notes; = ycash6's YOLO_COMMIT default
 chain-viz:
