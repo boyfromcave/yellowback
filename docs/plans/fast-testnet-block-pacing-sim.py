@@ -18,11 +18,12 @@ Two kinds of miner, as on the network:
 
 The pool is modelled twice. mech="seen" is the note's first model: the header time is the moment
 the pool first saw the tip, the release is that moment + N. mech="issued" is the mechanism as
-built (section 4a): every block-target solution of the first N seconds on a tip is a candidate,
-one is chosen at random, its header time is the node's curtime of its own job (read ISSUE seconds
-after the tip was seen, or, for a share `paired` of the winners, whose jobs follow the mempool,
-at any moment up to the solution), and it is submitted N seconds after that job was read. Section
-13 compares the two; "stamp gap" is the difference between consecutive header times.
+built in yolo (section 4a): every block-target solution of the first N/6 seconds on a tip is a
+candidate and one is chosen at random; its header time is the node's curtime of its own job,
+which was read at most `jobage` seconds before the solution (with --share-ratio 32 a card fills a
+job's 128 shares in about 3 s and is moved to a fresh one) and never before ISSUE seconds after
+the tip was seen; it is submitted N seconds after that job was read. Section 13 compares the
+two; "stamp gap" is the difference between consecutive header times.
 
 Standard library only. Run: python3 fast-testnet-block-pacing-sim.py
 """
@@ -78,7 +79,7 @@ def find(rng, sols, start, chain):
 ISSUE = 2.0                     # s after the tip is seen at which a reconnecting miner's job is read
 
 
-def run(hours, pool=lambda t: 0.0, cpu=lambda t: 0.0, pace=0, seed=1, mech="seen", paired=0.0, keep=None, **chain_args):
+def run(hours, pool=lambda t: 0.0, cpu=lambda t: 0.0, pace=0, seed=1, mech="seen", jobage=3.2, keep=None, **chain_args):
     """Returns rows (wall time, interval, difficulty, miner) for every block in `hours`."""
     rng, chain, now, rows = random.Random(seed), Chain(**chain_args), 0.0, []
     if keep is not None:
@@ -89,14 +90,10 @@ def run(hours, pool=lambda t: 0.0, cpu=lambda t: 0.0, pace=0, seed=1, mech="seen
         ct, ctarget, _ = find(rng, cpu(now), now, chain)
         release = max(pt, seen + pace) if pace else pt
         if mech == "issued" and pt != float("inf"):
-            stamp = seen + ISSUE                          # the winning job's curtime
-            if pace and pt < seen + pace:                 # candidates: one at random among them
-                won = rng.uniform(pt, seen + pace)
-                if rng.random() < paired:
-                    stamp = rng.uniform(stamp, max(stamp, won))
-            else:
-                stamp = min(stamp, pt)
-            seen, release = stamp, (max(pt, stamp + pace) if pace else pt)
+            window = max(1.0, pace / 6)
+            won = rng.uniform(pt, seen + window) if pace and pt < seen + window else pt   # the held solution
+            stamp = min(won, max(seen + ISSUE, won - rng.uniform(0, jobage)))             # its job's curtime
+            seen, release = stamp, (max(won, stamp + pace) if pace else pt)
         if release == float("inf") and ct == float("inf"):  # nobody mines: step to the next change
             now += 60
             continue
@@ -153,8 +150,8 @@ if __name__ == "__main__":
 
     print("\n13. the mechanism as built against the note's first model: GPUs for 1 h, no CPU, three seeds")
     print("  model                          N  cards  blocks  mean s   D at 1 h   stamp gap min / mean")
-    for label, kw in (("first model (seen)", dict(mech="seen")), ("built, no paired miner", dict(mech="issued")),
-                      ("built, 3 of 4 winners paired", dict(mech="issued", paired=0.75))):
+    for label, kw in (("first model (seen)", dict(mech="seen")), ("built, jobs up to 3.2 s old", dict(mech="issued")),
+                      ("built, jobs as old as the tip", dict(mech="issued", jobage=1e9))):
         for n, cards in ((60, 1), (60, 4), (90, 1)):
             for seed in (1, 2, 3):
                 keep = []
@@ -162,3 +159,7 @@ if __name__ == "__main__":
                 c = keep[0]
                 gaps = [b - a for a, b in zip(c.times[41:], c.times[42:])]
                 print(f"  {label:29s} {n:3d} {cards:5d} {len(rows):7d} {statistics.mean(r[1] for r in rows):7.1f} {c.difficulty():9.2f} {min(gaps):10d} / {statistics.mean(gaps):.1f}")
+    for h in (1, 2, 4):
+        keep = []
+        rows = run(h, pool=lambda t: GPU, cpu=lambda t: CPU, pace=60, mech="issued", keep=keep)
+        print(f"  built, one GPU and the CPU, N 60, {h} h: {len(rows)} blocks, {sum(r[3] == 'cpu' for r in rows)} by the CPU, difficulty {keep[0].difficulty():.2f}")
