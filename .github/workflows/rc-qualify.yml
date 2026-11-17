@@ -162,6 +162,14 @@ jobs:
         run: |
           set -euo pipefail
           tagged=$(gh api "repos/$NODE_REPO/commits/refs/tags/$TAG" --jq .sha 2>/dev/null || true)
+          # On an API error gh prints the error body on stdout: a missing tag answers 422 "No commit
+          # found" (or 404), which is "no tag yet"; anything else that is not a commit id is refused.
+          if [[ ! $tagged =~ ^[0-9a-f]{40}$ ]]; then
+            case "$tagged" in
+              ''|*'No commit found'*|*'"status":"404"'*) tagged="" ;;
+              *) echo "cannot tell whether $NODE_REPO has the tag $TAG: $tagged"; exit 1 ;;
+            esac
+          fi
           if [ -z "$PROVING_RUN" ]; then
             [ -n "$tagged" ] || { echo "$NODE_REPO has no tag $TAG yet: qualify before the tag with proving_run"; exit 1; }
             [ "$tagged" = "$COMMIT" ] || { echo "$TAG names $tagged, the train says $COMMIT"; exit 1; }
