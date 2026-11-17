@@ -7,7 +7,7 @@
 release:
   version: 6.22.0-beta3
   rpcversion: 10           # B3-D5: one step 9 -> 10 at integration (R-1); extract_spec.py --check-beta3
-  workspace: placeholder   # the workspace upgrade/vault commit whose spec and contract copies the clients carry; = ycash6's YB_WORKSPACE_COMMIT default (dbf53a83db4e, #63's spec commit, unless the spec changes again)
+  workspace: dbf53a83db4ee5fbb54992fbc4274b3902f1c5f5   # the workspace upgrade/vault commit whose spec and contract copies the clients carry; = ycash6's YB_WORKSPACE_COMMIT default (dbf53a83db4e, #63's spec commit, unless the spec changes again)
 testnet:
   fast-vault-height: 510400  # testnet-yb-fast's UPGRADE_VAULT height, unchanged since beta2 (src/chainparams.cpp, both lines)
   fast-set-id: none          # no YED attestor set on the fast testnet in beta3 (a beta may leave it unset)
@@ -15,26 +15,26 @@ testnet:
   slow-set-id: none
   bundle-height: none
 ycash6:
-  commit: placeholder      # the upgrade/vault commit v6.22.0-beta3 is cut at (the version bump and the final mandate end included)
+  commit: 8bfd4621e4f4d023314a00d4a5fb31655e019fe1      # the upgrade/vault commit v6.22.0-beta3 is cut at (the version bump and the final mandate end included)
   tag: v6.22.0-beta3
 ycash-dd:
-  commit: placeholder      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at (same mandate end as ycash6)
+  commit: 7c4d8af68acc6638904e82c35058be7c1cea5cb2      # the upgrade/vault commit vault-params/v6.22.0-beta3 is cut at (same mandate end as ycash6)
   tag: vault-params/v6.22.0-beta3
 librustzcash6:
-  commit: placeholder      # the rev ycash6's Cargo.toml [patch.crates-io] builds against at ycash6.commit
+  commit: d384b90d47aca1c70f972089841e24cd0211937a      # the rev ycash6's Cargo.toml [patch.crates-io] builds against at ycash6.commit
 lightwalletd-dd:
-  commit: placeholder      # upgrade/vault after the rpcversion 9..10 change (MinRPCVersion); = ycash6's LWD_COMMIT default
+  commit: 56660e56838052ab0f9e7555e2e068e4471fc0b3      # upgrade/vault after the rpcversion 9..10 change (MinRPCVersion); = ycash6's LWD_COMMIT default
 yecwallet-dd:
-  commit: placeholder      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
+  commit: b9c616b3623157d9607d192a6a339f466abeff92      # upgrade/vault after the rpcversion 9..10 change and the re-copied contract (rpcversion 10)
 yew:
-  commit: placeholder      # upgrade/vault after the rpcversion 9..=10 change and the regenerated ycashd_rpc.json; the commit kogany's notes name for yewd
+  commit: 47898988da9cf73fb7417c9d111273ce104ff20a      # upgrade/vault after the rpcversion 9..=10 change and the regenerated ycashd_rpc.json; the commit kogany's notes name for yewd
 yolo:
-  commit: placeholder      # upgrade/vault with the paired jobs (yolo #16) and the beta3 notes; = ycash6's YOLO_COMMIT default
+  commit: eef18acdefda5cacc5e3e22022a263115cf073cf      # upgrade/vault with the paired jobs (yolo #16) and the beta3 notes; = ycash6's YOLO_COMMIT default
 chain-viz:
-  commit: placeholder      # upgrade/vault with chain-viz #11 (rpcversion 9 and 10, transparentPools); = ycash6's CHAINVIZ_COMMIT default
+  commit: 35d8eae6aca2c013429e7b63727bc3d8f7685f48      # upgrade/vault with chain-viz #11 (rpcversion 9 and 10, transparentPools); = ycash6's CHAINVIZ_COMMIT default
 x402-ycash:
-  commit: placeholder      # upgrade/vault with x402-ycash #23 (tests cover 9 and 10)
+  commit: df30be74e94cc6b1b4983b7729bd23584186a9b5      # upgrade/vault with x402-ycash #23 (tests cover 9 and 10)
 hawkeye:
-  commit: placeholder      # upgrade/vault with hawkeye #44 (README: node rpcversion 9 or 10)
+  commit: 6ae73879bb5d5b49d7ca1e5c21ff03fe20b30339      # upgrade/vault with hawkeye #44 (README: node rpcversion 9 or 10)
 wyec:
-  commit: placeholder      # hawkeye's pin (eth/tools/fetch-wyec.sh WYEC_COMMIT) at hawkeye.commit, not wyec's head
+  commit: e9ea41aa185c348c4f6c72085b18bff8eda49bb5      # hawkeye's pin (eth/tools/fetch-wyec.sh WYEC_COMMIT) at hawkeye.commit, not wyec's head

@@ -162,8 +162,28 @@ class Train(unittest.TestCase):
         self.assertIn("TRAIN_YCASH_DD_COMMIT=00247d5c3e4e6be3c563ec031b6d639a1f47c62c", lines)
         self.assertTrue(all(line.startswith("TRAIN_") for line in lines), out)
 
-    def test_refuses_the_beta3_skeleton(self):
+    def test_reads_the_beta3_train(self):
         code, out = run("train", os.path.join(WORKSPACE, "releases", "v6.22.0-beta3.yaml"))
+        self.assertEqual(code, 0, out)
+        lines = out.splitlines()
+        self.assertIn("TRAIN_RELEASE_VERSION=6.22.0-beta3", lines)
+        self.assertIn("TRAIN_YCASH6_COMMIT=8bfd4621e4f4d023314a00d4a5fb31655e019fe1", lines)
+        self.assertIn("TRAIN_YCASH6_TAG=v6.22.0-beta3", lines)
+        self.assertIn("TRAIN_YCASH_DD_COMMIT=7c4d8af68acc6638904e82c35058be7c1cea5cb2", lines)
+        self.assertTrue(all(line.startswith("TRAIN_") for line in lines), out)
+
+    def test_refuses_a_skeleton(self):
+        # The beta3 train with its ycash6 commit put back to `placeholder`: the skeleton it was before the cut.
+        with open(os.path.join(WORKSPACE, "releases", "v6.22.0-beta3.yaml"), encoding="utf-8") as fh:
+            text = fh.read()
+        skeleton = text.replace("commit: 8bfd4621e4f4d023314a00d4a5fb31655e019fe1", "commit: placeholder", 1)
+        self.assertNotEqual(skeleton, text)
+        directory = tempfile.mkdtemp(prefix="rc-train-")
+        self.addCleanup(shutil.rmtree, directory)
+        path = os.path.join(directory, "v6.22.0-beta3.yaml")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(skeleton)
+        code, out = run("train", path)
         self.assertEqual(code, 1, out)
         self.assertIn("is a skeleton", out)
         self.assertIn("ycash6.commit", out)
