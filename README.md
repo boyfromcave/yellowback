@@ -121,6 +121,7 @@ and attestors signing them. See
 
 | Read | For |
 |---|---|
+| [Reference architecture](docs/architecture/README.md) | one diagram of every component, the protocol on each connection, and the main data paths |
 | [Upgrade plan](docs/plans/yellowback-upgrade-plan.md) | the vault upgrade: requirements, design, spec, status |
 | [Quantum plan](docs/plans/yellowback-quantum-plan.md) and [spec](docs/plans/yellowback-quantum-spec.md) | the post-quantum layer |
 | [Fees spec](docs/plans/yellowback-quantum-fees-spec.md) | how Yellowback and network fees are priced |
