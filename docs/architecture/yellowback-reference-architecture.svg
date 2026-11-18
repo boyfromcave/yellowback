@@ -1,0 +1,447 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1160" width="1240" height="1160" role="img" aria-labelledby="title desc">
+<title id="title">Ycash vaults and Yellowback: reference architecture</title>
+<desc id="desc">How the Ycash nodes (ycashd and koganyd), the light-client stack, the desktop wallet, the mining pool, the explorer, x402 payments, the bridge attestor and the operations tooling fit together, with the protocol on every connection.</desc>
+<defs>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+<marker id="m-0891b2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0891b2"/></marker>
+<marker id="s-0891b2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0891b2"/></marker>
+<marker id="m-a21caf" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a21caf"/></marker>
+<marker id="s-a21caf" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a21caf"/></marker>
+<marker id="m-2563eb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
+<marker id="s-2563eb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
+<marker id="m-64748b" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+<marker id="s-64748b" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+<marker id="m-ea580c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker>
+<marker id="s-ea580c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker>
+<marker id="m-94a3b8" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+<marker id="s-94a3b8" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+<marker id="m-059669" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+<marker id="s-059669" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+</defs>
+<rect x="0" y="0" width="1240" height="1160" fill="#f6f7fb"/>
+<text x="24" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="800" fill="#1f2937" text-anchor="start">Ycash vaults and Yellowback: reference architecture</text>
+<text x="24" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#5b6472" text-anchor="start">Everything the Ycash developers build and run, by layer. Every client reaches a node only through its public interface; the node is the only place a rule lives.</text>
+<text x="1216" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#5b6472" text-anchor="end">beta3 · November 2026</text>
+<rect x="50" y="86" width="262" height="22" rx="11" fill="#0f766e" fill-opacity="0.10"/>
+<text x="181.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#0f766e" text-anchor="middle">LIGHT-CLIENT WALLETS</text>
+<rect x="322" y="86" width="124" height="22" rx="11" fill="#4338ca" fill-opacity="0.10"/>
+<text x="384.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#4338ca" text-anchor="middle">FULL-NODE WALLET</text>
+<rect x="456" y="86" width="156" height="22" rx="11" fill="#b45309" fill-opacity="0.10"/>
+<text x="534.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#b45309" text-anchor="middle">MINING</text>
+<rect x="622" y="86" width="280" height="22" rx="11" fill="#0369a1" fill-opacity="0.10"/>
+<text x="762.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#0369a1" text-anchor="middle">INSIGHT</text>
+<rect x="912" y="86" width="160" height="22" rx="11" fill="#be185d" fill-opacity="0.10"/>
+<text x="992.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#be185d" text-anchor="middle">PAYMENTS</text>
+<rect x="1082" y="86" width="132" height="22" rx="11" fill="#6d28d9" fill-opacity="0.10"/>
+<text x="1148.0" y="101" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" letter-spacing="0.6" fill="#6d28d9" text-anchor="middle">BRIDGE</text>
+<rect x="14" y="118" width="1212" height="96" rx="14" fill="#eef1f6" stroke="#e1e6ee"/>
+<text x="34" y="166.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.6" fill="#5b6472" text-anchor="middle" transform="rotate(-90 34 166.0)">USERS</text>
+<rect x="14" y="226" width="1212" height="306" rx="14" fill="#ffffff" stroke="#e1e6ee"/>
+<text x="34" y="379.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.6" fill="#5b6472" text-anchor="middle" transform="rotate(-90 34 379.0)">SERVICES</text>
+<rect x="14" y="544" width="1212" height="302" rx="14" fill="#fdf7e7" stroke="#efdfae"/>
+<text x="34" y="695.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.6" fill="#5b6472" text-anchor="middle" transform="rotate(-90 34 695.0)">NODES</text>
+<rect x="14" y="858" width="1212" height="196" rx="14" fill="#eceff3" stroke="#dde2e9"/>
+<text x="34" y="956.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.6" fill="#5b6472" text-anchor="middle" transform="rotate(-90 34 956.0)">OPERATIONS</text>
+<rect x="50" y="128" width="262" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="128" width="262" height="12" rx="10" fill="#0f766e"/>
+<rect x="51" y="133" width="260" height="8" fill="#ffffff"/>
+<text x="60" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f766e" text-anchor="start">People: phones and browsers</text>
+<text x="60" y="169.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">non-custodial: keys never leave the device</text>
+<text x="60" y="185.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">YEC and YED; Sapling and post-quantum too</text>
+<rect x="322" y="128" width="124" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="322" y="128" width="124" height="12" rx="10" fill="#4338ca"/>
+<rect x="323" y="133" width="122" height="8" fill="#ffffff"/>
+<text x="332" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#4338ca" text-anchor="start">Desktop users</text>
+<text x="332" y="169.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">macOS · Linux ·</text>
+<text x="332" y="185.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">Windows</text>
+<rect x="456" y="128" width="156" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="456" y="128" width="156" height="12" rx="10" fill="#b45309"/>
+<rect x="457" y="133" width="154" height="8" fill="#ffffff"/>
+<text x="466" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#b45309" text-anchor="start">GPU miners</text>
+<text x="466" y="169.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">lolMiner · miniZ</text>
+<text x="466" y="185.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">Equihash 192,7</text>
+<text x="466" y="200.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">(rented on Vast.ai)</text>
+<rect x="622" y="128" width="280" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="622" y="128" width="280" height="12" rx="10" fill="#0369a1"/>
+<rect x="623" y="133" width="278" height="8" fill="#ffffff"/>
+<text x="632" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#0369a1" text-anchor="start">Anyone with a browser</text>
+<text x="632" y="169.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">block, transaction and address pages,</text>
+<text x="632" y="185.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">chain value pools, live chain dashboards</text>
+<rect x="912" y="128" width="160" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="912" y="128" width="160" height="12" rx="10" fill="#be185d"/>
+<rect x="913" y="133" width="158" height="8" fill="#ffffff"/>
+<text x="922" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#be185d" text-anchor="start">Software agents</text>
+<text x="922" y="169.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">TypeScript / Python SDK,</text>
+<text x="922" y="185.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5b6472" text-anchor="start">CLI, x402-light (Rust)</text>
+<rect x="1082" y="128" width="63" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="1082" y="128" width="63" height="12" rx="10" fill="#6d28d9"/>
+<rect x="1083" y="133" width="61" height="8" fill="#ffffff"/>
+<text x="1092" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#6d28d9" text-anchor="start">Ethereum</text>
+<text x="1092" y="169" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">wYEC</text>
+<rect x="1151" y="128" width="63" height="76" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="1151" y="128" width="63" height="12" rx="10" fill="#6d28d9"/>
+<rect x="1152" y="133" width="61" height="8" fill="#ffffff"/>
+<text x="1161" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#6d28d9" text-anchor="start">NEAR</text>
+<text x="1161" y="169" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">nYEC</text>
+<rect x="50" y="238" width="124" height="56" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="238" width="124" height="12" rx="10" fill="#0f766e"/>
+<rect x="51" y="243" width="122" height="8" fill="#ffffff"/>
+<text x="60" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f766e" text-anchor="start">YEW app</text>
+<text x="60" y="279" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">iOS · Android (Flutter)</text>
+<rect x="188" y="238" width="124" height="56" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="188" y="238" width="124" height="12" rx="10" fill="#0f766e"/>
+<rect x="189" y="243" width="122" height="8" fill="#ffffff"/>
+<text x="198" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f766e" text-anchor="start">YEW web</text>
+<text x="198" y="279" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">browser wallet</text>
+<rect x="50" y="300" width="262" height="24" rx="7" fill="#0f766e" fill-opacity="0.12" stroke="#0f766e" stroke-opacity="0.5"/>
+<text x="181" y="316" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#0f766e" text-anchor="middle">YEW core (Rust) · builds and signs on the device</text>
+<rect x="50" y="352" width="262" height="46" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="352" width="262" height="12" rx="10" fill="#0f766e"/>
+<rect x="51" y="357" width="260" height="8" fill="#ffffff"/>
+<text x="60" y="376" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#0f766e" text-anchor="start">TLS + gRPC-web gateway</text>
+<text x="60" y="389" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Envoy on EKS · proxy on the lightwallet host</text>
+<rect x="50" y="424" width="84" height="92" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="424" width="84" height="12" rx="10" fill="#0f766e"/>
+<rect x="51" y="429" width="82" height="8" fill="#ffffff"/>
+<text x="60" y="448" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f766e" text-anchor="start">yindex</text>
+<text x="60" y="464.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">address</text>
+<text x="60" y="479.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">index +</text>
+<text x="60" y="493.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">PostgreSQL</text>
+<rect x="144" y="424" width="168" height="92" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="144" y="424" width="168" height="12" rx="10" fill="#0f766e"/>
+<rect x="145" y="429" width="166" height="8" fill="#ffffff"/>
+<text x="154" y="448" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f766e" text-anchor="start">lightwalletd-dd</text>
+<text x="154" y="464.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Go · compact blocks</text>
+<text x="154" y="479.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">CompactTxStreamer (YEC)</text>
+<text x="154" y="493.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">YellowbackStreamer (YED)</text>
+<text x="154" y="508.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">read-only vault calls</text>
+<path d="M110,324 L110,352" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="115.0" y="330" width="34.0" height="16" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.1"/>
+<text x="132" y="341.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">gRPC</text>
+<path d="M250,324 L250,352" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="252.0" y="330" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.1"/>
+<text x="280" y="341.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">gRPC-web</text>
+<path d="M92,398 L92,424" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M228,398 L228,424" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="93.4" y="403" width="133.2" height="16" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.1"/>
+<text x="160" y="414.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">gRPC, routed by method</text>
+<rect x="322" y="238" width="124" height="162" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="322" y="238" width="124" height="12" rx="10" fill="#4338ca"/>
+<rect x="323" y="243" width="122" height="8" fill="#ffffff"/>
+<text x="332" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#4338ca" text-anchor="start">YecWallet</text>
+<text x="332" y="279" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">Qt 6 full-node</text>
+<text x="332" y="294" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">wallet</text>
+<text x="332" y="309" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">(yecwallet-dd)</text>
+<text x="332" y="324" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">Yellowback tab</text>
+<text x="332" y="339" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">bundles ycashd</text>
+<text x="332" y="354" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">or uses your own</text>
+<rect x="456" y="238" width="156" height="122" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="456" y="238" width="156" height="12" rx="10" fill="#b45309"/>
+<rect x="457" y="243" width="154" height="8" fill="#ffffff"/>
+<text x="466" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#b45309" text-anchor="start">yolo pool (Rust)</text>
+<text x="466" y="278.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">stratum :3333</text>
+<text x="466" y="293.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">pays each miner in full</text>
+<text x="466" y="307.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">at its own address</text>
+<text x="466" y="322.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.7" font-weight="400" fill="#5b6472" text-anchor="start">getblocktemplate</text>
+<text x="466" y="336.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.7" font-weight="400" fill="#5b6472" text-anchor="start">getcoinbasetemplatefor</text>
+<text x="466" y="351.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.7" font-weight="400" fill="#5b6472" text-anchor="start">submitblock · 1 s poll</text>
+<rect x="456" y="380" width="134" height="136" rx="10" fill="#ffffff" stroke="#b45309" stroke-width="1.4" stroke-dasharray="6 4" filter="url(#sh)"/>
+<text x="466" y="404" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="start">Price attestors</text>
+<text x="466" y="420.3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.3" font-weight="400" fill="#5b6472" text-anchor="start">pool quotes:</text>
+<text x="466" y="434.6" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.3" font-weight="400" fill="#5b6472" text-anchor="start">yellowback-quote</text>
+<text x="466" y="448.90000000000003" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.3" font-weight="400" fill="#5b6472" text-anchor="start">bonded set: 7</text>
+<text x="466" y="463.20000000000005" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.3" font-weight="400" fill="#5b6472" text-anchor="start">yellowback-attest</text>
+<text x="466" y="477.50000000000006" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.3" font-weight="400" fill="#5b6472" text-anchor="start">agents, one host</text>
+<rect x="470" y="491" width="106" height="17" rx="8.5" fill="#fff7ed" stroke="#b45309" stroke-opacity="0.55"/>
+<text x="523.0" y="502.92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" fill="#b45309" text-anchor="middle">BETA4 · PLANNED</text>
+<rect x="622" y="238" width="186" height="52" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="622" y="238" width="186" height="12" rx="10" fill="#0369a1"/>
+<rect x="623" y="243" width="184" height="8" fill="#ffffff"/>
+<text x="632" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#0369a1" text-anchor="start">TLS proxy (Caddy)</text>
+<text x="632" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">fastnet-explorer.ycash.team</text>
+<rect x="622" y="316" width="96" height="200" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="622" y="316" width="96" height="12" rx="10" fill="#0369a1"/>
+<rect x="623" y="321" width="94" height="8" fill="#ffffff"/>
+<text x="632" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0369a1" text-anchor="start">Inzyght</text>
+<text x="632" y="356.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">block explorer</text>
+<text x="632" y="371.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">C++ · Drogon</text>
+<text x="632" y="385.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">+ PostgreSQL</text>
+<text x="632" y="400.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start"></text>
+<text x="632" y="414.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">upstream</text>
+<text x="632" y="429.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">project by</text>
+<text x="632" y="443.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">miodragpop,</text>
+<text x="632" y="458.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">built locally,</text>
+<text x="632" y="472.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">never copied</text>
+<rect x="724" y="316" width="84" height="200" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="724" y="316" width="84" height="12" rx="10" fill="#0369a1"/>
+<rect x="725" y="321" width="82" height="8" fill="#ffffff"/>
+<text x="734" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0369a1" text-anchor="start">/pools/</text>
+<text x="734" y="356.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">value-pools</text>
+<text x="734" y="371.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">page (ours)</text>
+<text x="734" y="385.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Python</text>
+<text x="734" y="400.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start"></text>
+<text x="734" y="414.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">totals per</text>
+<text x="734" y="429.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">pool, now and</text>
+<text x="734" y="443.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">over time;</text>
+<text x="734" y="458.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">3 read calls</text>
+<rect x="814" y="238" width="88" height="278" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="814" y="238" width="88" height="12" rx="10" fill="#0369a1"/>
+<rect x="815" y="243" width="86" height="8" fill="#ffffff"/>
+<text x="824" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0369a1" text-anchor="start">chain-viz</text>
+<text x="824" y="278.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">read-only</text>
+<text x="824" y="293.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">live</text>
+<text x="824" y="307.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">dashboard:</text>
+<text x="824" y="322.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">tips, forks,</text>
+<text x="824" y="336.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">reorgs,</text>
+<text x="824" y="351.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">mempool,</text>
+<text x="824" y="365.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">vaults, YED,</text>
+<text x="824" y="380.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">revenue</text>
+<text x="824" y="394.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">ledger</text>
+<text x="824" y="409.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start"></text>
+<text x="824" y="423.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">never writes,</text>
+<text x="824" y="438.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">holds no key</text>
+<path d="M670,290 L670,316" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M766,290 L766,316" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="701.0" y="295" width="34.0" height="16" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.1"/>
+<text x="718" y="306.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#94a3b8" text-anchor="middle">HTTP</text>
+<rect x="908" y="232" width="168" height="294" rx="12" fill="none" stroke="#be185d" stroke-opacity="0.45" stroke-dasharray="4 3"/>
+<rect x="912" y="238" width="126" height="62" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="912" y="238" width="126" height="12" rx="10" fill="#be185d"/>
+<rect x="913" y="243" width="124" height="8" fill="#ffffff"/>
+<text x="922" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#be185d" text-anchor="start">Paid chain API</text>
+<text x="922" y="278.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">HTTP 402 · YEC, YED</text>
+<text x="922" y="293.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">(x402-ycash)</text>
+<rect x="912" y="326" width="126" height="62" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="912" y="326" width="126" height="12" rx="10" fill="#be185d"/>
+<rect x="913" y="331" width="124" height="8" fill="#ffffff"/>
+<text x="922" y="350" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#be185d" text-anchor="start">Facilitator</text>
+<text x="922" y="366.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">/verify · /settle</text>
+<text x="922" y="381.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">relays payments</text>
+<rect x="912" y="414" width="126" height="62" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="912" y="414" width="126" height="12" rx="10" fill="#be185d"/>
+<rect x="913" y="419" width="124" height="8" fill="#ffffff"/>
+<text x="922" y="438" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#be185d" text-anchor="start">Faucet</text>
+<text x="922" y="454.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">testnet coins,</text>
+<text x="922" y="469.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">capped, PoW-gated</text>
+<text x="916" y="498" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#be185d" text-anchor="start" font-style="italic">fast-testnet x402 host</text>
+<text x="916" y="512" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#5b6472" text-anchor="start">payments refill the faucet</text>
+<path d="M960,300 L960,326" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="973.0" y="305" width="34.0" height="16" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.1"/>
+<text x="990" y="316.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#94a3b8" text-anchor="middle">HTTP</text>
+<rect x="1082" y="238" width="132" height="150" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="1082" y="238" width="132" height="12" rx="10" fill="#6d28d9"/>
+<rect x="1083" y="243" width="130" height="8" fill="#ffffff"/>
+<text x="1092" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#6d28d9" text-anchor="start">Hawkeye</text>
+<text x="1092" y="278.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">bridge attestor</text>
+<text x="1092" y="293.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">sidecar (Rust)</text>
+<text x="1092" y="307.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">lock → mint</text>
+<text x="1092" y="322.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">burn → release</text>
+<text x="1092" y="336.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">challenge, slash</text>
+<text x="1092" y="351.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">own ycashd:</text>
+<text x="1092" y="365.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">set_* · vault_*</text>
+<text x="1088" y="410" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#5b6472" text-anchor="start" font-style="italic">wyec (Ethereum) and</text>
+<text x="1088" y="424" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#5b6472" text-anchor="start" font-style="italic">wyec-near contracts:</text>
+<text x="1088" y="452" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#1f2937" text-anchor="start"></text>
+<text x="1088" y="438" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#5b6472" text-anchor="start" font-style="italic">drafts, not audited,</text>
+<text x="1088" y="452" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#5b6472" text-anchor="start" font-style="italic">not deployed</text>
+<rect x="50" y="576" width="1164" height="132" rx="12" fill="#fffdf6" stroke="#d9b54a" stroke-width="1.6" filter="url(#sh)"/>
+<text x="64" y="602" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#a16207" text-anchor="start">ycashd</text>
+<text x="138" y="602" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2937" text-anchor="start">the Ycash full node (C++) · JSON-RPC · P2P</text>
+<rect x="64" y="616" width="372" height="44" rx="8" fill="#fef3c7" stroke="#e6c35c"/>
+<text x="74" y="634" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="start">ycash6 · release line 6.22.x</text>
+<text x="74" y="651" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Zcash 6.x lineage · v6.22.0-beta3 published</text>
+<rect x="446" y="616" width="300" height="44" rx="8" fill="#fef3c7" stroke="#e6c35c"/>
+<text x="456" y="634" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="start">ycash-dd · 4.5.0 line</text>
+<text x="456" y="651" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">same overlay; changes land here first</text>
+<rect x="756" y="616" width="200" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="766" y="634" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#475569" text-anchor="start">librustzcash6</text>
+<text x="766" y="651" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Rust library ycash6 builds on</text>
+<text x="974" y="634" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">Ycash consensus + the</text>
+<text x="974" y="650" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">vault upgrade's rules</text>
+<rect x="64" y="672" width="229" height="22" rx="11" fill="#a16207"/>
+<text x="178.7" y="687" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fffbeb" text-anchor="middle">Vault network upgrade · 0x6d5b7a31</text>
+<rect x="301.4" y="672" width="193" height="22" rx="11" fill="#a16207"/>
+<text x="397.79999999999995" y="687" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fffbeb" text-anchor="middle">Yellowback (YED) rule module</text>
+<rect x="502.19999999999993" y="672" width="266" height="22" rx="11" fill="#a16207"/>
+<text x="635.1999999999999" y="687" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fffbeb" text-anchor="middle">Post-quantum addresses · Falcon, SLH-DSA</text>
+<rect x="776.1999999999999" y="672" width="120" height="22" rx="11" fill="#a16207"/>
+<text x="835.9999999999999" y="687" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fffbeb" text-anchor="middle">Value-pool index</text>
+<rect x="903.8" y="672" width="150" height="22" rx="11" fill="#a16207"/>
+<text x="978.8499999999999" y="687" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#fffbeb" text-anchor="middle">Insight indexes + ZMQ</text>
+<rect x="50" y="728" width="164" height="104" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="728" width="164" height="12" rx="10" fill="#0f766e"/>
+<rect x="51" y="733" width="162" height="8" fill="#ffffff"/>
+<text x="60" y="752" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f766e" text-anchor="start">yewd</text>
+<text x="60" y="768.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">the YEW core as a</text>
+<text x="60" y="783.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">daemon: answers</text>
+<text x="60" y="797.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">ycashd's wallet RPCs,</text>
+<text x="60" y="812.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">forwards the rest</text>
+<rect x="276" y="728" width="336" height="104" rx="12" fill="#fffdf6" stroke="#d9b54a" stroke-width="1.6" filter="url(#sh)"/>
+<text x="290" y="754" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#a16207" text-anchor="start">koganyd</text>
+<text x="372" y="754" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1f2937" text-anchor="start">Rust node (kogany)</text>
+<text x="290" y="773" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Zakura lineage · v1.8.0-ycash.beta3 · no wallet</text>
+<text x="290" y="789" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">same network and rules: vaults, YED, post-quantum</text>
+<rect x="290" y="798" width="190" height="24" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="300" y="814" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#475569" text-anchor="start">zakura-common-ycash crates</text>
+<path d="M214,780 L276,780" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="217.0" y="760" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="245" y="771.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<rect x="656" y="728" width="558" height="104" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="656" y="728" width="558" height="12" rx="10" fill="#64748b"/>
+<rect x="657" y="733" width="556" height="8" fill="#ffffff"/>
+<text x="666" y="752" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#64748b" text-anchor="start">Ycash P2P network</text>
+<text x="666" y="769" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">mainnet · testnet-yb-fast · testnet-yb-slow · testnet-legacy</text>
+<text x="666" y="784" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">seeds: fastnet-seed · slownet-seed · legacy-seed .ycash.team</text>
+<text x="666" y="799" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="start">node lines interoperate block for block</text>
+<path d="M612,780 L656,780" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#m-64748b)" marker-start="url(#s-64748b)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="619.7" y="757" width="28.5" height="16" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.1"/>
+<text x="634" y="768.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#64748b" text-anchor="middle">P2P</text>
+<path d="M935,708 L935,728" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#m-64748b)" marker-start="url(#s-64748b)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="955.7" y="710" width="28.5" height="16" rx="8" fill="#ffffff" stroke="#64748b" stroke-width="1.1"/>
+<text x="970" y="721.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#64748b" text-anchor="middle">P2P</text>
+<path d="M92,516 L92,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M228,516 L228,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="132.0" y="548" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="160" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M384,400 L384,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="356.0" y="548" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="384" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M600,360 L600,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="572.0" y="546" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="600" y="557.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M523,516 L523,576" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="497.7" y="552" width="50.6" height="16" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.1"/>
+<text x="523" y="563.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#94a3b8" text-anchor="middle">planned</text>
+<path d="M534,204 L534,238" fill="none" stroke="#ea580c" stroke-width="2.2" marker-end="url(#m-ea580c)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="492.2" y="213" width="83.6" height="16" rx="8" fill="#ffffff" stroke="#ea580c" stroke-width="1.1"/>
+<text x="534" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#ea580c" text-anchor="middle">stratum (TCP)</text>
+<path d="M660,516 L660,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M690,576 L690,516" fill="none" stroke="#0891b2" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#m-0891b2)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="644.2" y="548" width="61.6" height="16" rx="8" fill="#ffffff" stroke="#0891b2" stroke-width="1.1"/>
+<text x="675" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#0891b2" text-anchor="middle">RPC + ZMQ</text>
+<path d="M766,516 L766,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="738.0" y="548" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="766" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M846,516 L846,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M876,576 L876,516" fill="none" stroke="#0891b2" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#m-0891b2)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="830.2" y="548" width="61.6" height="16" rx="8" fill="#ffffff" stroke="#0891b2" stroke-width="1.1"/>
+<text x="861" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#0891b2" text-anchor="middle">RPC + ZMQ</text>
+<path d="M715,204 L715,238" fill="none" stroke="#a21caf" stroke-width="2" marker-end="url(#m-a21caf)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="695.2" y="213" width="39.5" height="16" rx="8" fill="#ffffff" stroke="#a21caf" stroke-width="1.1"/>
+<text x="715" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#a21caf" text-anchor="middle">HTTPS</text>
+<path d="M858,204 L858,238" fill="none" stroke="#a21caf" stroke-width="2" marker-end="url(#m-a21caf)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="841.0" y="213" width="34.0" height="16" rx="8" fill="#ffffff" stroke="#a21caf" stroke-width="1.1"/>
+<text x="858" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#a21caf" text-anchor="middle">HTTP</text>
+<path d="M980,204 L980,238" fill="none" stroke="#a21caf" stroke-width="2" marker-end="url(#m-a21caf)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="997.0" y="213" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#a21caf" stroke-width="1.1"/>
+<text x="1025" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#a21caf" text-anchor="middle">HTTP 402</text>
+<path d="M1038,269 L1066,269 L1066,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M1038,357 L1056,357 L1056,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M1038,445 L1046,445 L1046,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="1012.0" y="548" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="1040" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M1200,388 L1200,576" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="1144.0" y="548" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="1172" y="559.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M1113,238 L1113,204" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M1183,238 L1183,204" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="1120.0" y="213" width="56.1" height="16" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="1.1"/>
+<text x="1148" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#2563eb" text-anchor="middle">JSON-RPC</text>
+<path d="M912,196 L896,196 L896,220 L317,220 L317,470 L312,470" fill="none" stroke="#f6f7fb" stroke-width="6.7" stroke-linejoin="round"/>
+<path d="M912,196 L896,196 L896,220 L317,220 L317,470 L312,470" fill="none" stroke="#059669" stroke-width="1.7" stroke-dasharray="6 3" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="347.2" y="212" width="105.7" height="16" rx="8" fill="#ffffff" stroke="#059669" stroke-width="1.1"/>
+<text x="400" y="223.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#059669" text-anchor="middle">gRPC · x402-light</text>
+<rect x="492.2" y="213" width="83.6" height="16" rx="8" fill="#ffffff" stroke="#ea580c" stroke-width="1.1"/>
+<text x="534" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#ea580c" text-anchor="middle">stratum (TCP)</text>
+<rect x="695.2" y="213" width="39.5" height="16" rx="8" fill="#ffffff" stroke="#a21caf" stroke-width="1.1"/>
+<text x="715" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#a21caf" text-anchor="middle">HTTPS</text>
+<rect x="841.0" y="213" width="34.0" height="16" rx="8" fill="#ffffff" stroke="#a21caf" stroke-width="1.1"/>
+<text x="858" y="224.4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" fill="#a21caf" text-anchor="middle">HTTP</text>
+<rect x="50" y="870" width="170" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="870" width="170" height="12" rx="10" fill="#475569"/>
+<rect x="51" y="875" width="168" height="8" fill="#ffffff"/>
+<text x="60" y="894" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">ycash-ops (private)</text>
+<text x="60" y="910.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">GitHub Actions deploy</text>
+<text x="60" y="925.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">the testnets on AWS</text>
+<rect x="246" y="870" width="280" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="246" y="870" width="280" height="12" rx="10" fill="#475569"/>
+<rect x="247" y="875" width="278" height="8" fill="#ffffff"/>
+<text x="256" y="894" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">ycash-infra</text>
+<text x="256" y="910.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Helm chart (kind, EKS) · Terraform EC2 hosts</text>
+<text x="256" y="925.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">for seeds, pool, explorer, lightwallet, x402</text>
+<path d="M220,903 L246,903" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="540" y="870" width="180" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="540" y="870" width="180" height="12" rx="10" fill="#475569"/>
+<rect x="541" y="875" width="178" height="8" fill="#ffffff"/>
+<text x="550" y="894" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">Releases on GitHub</text>
+<text x="550" y="910.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">ycashd · koganyd · YecWallet</text>
+<text x="550" y="925.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">signed checksums</text>
+<rect x="734" y="870" width="200" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="734" y="870" width="200" height="12" rx="10" fill="#475569"/>
+<rect x="735" y="875" width="198" height="8" fill="#ffffff"/>
+<text x="744" y="894" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">snapshots.ycash.team</text>
+<text x="744" y="910.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">chain-state bundles, in parts,</text>
+<text x="744" y="925.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">fingerprinted</text>
+<rect x="960" y="870" width="254" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="960" y="870" width="254" height="12" rx="10" fill="#475569"/>
+<rect x="961" y="875" width="252" height="8" fill="#ffffff"/>
+<text x="970" y="894" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">ycash-bootstrap (in ycash6)</text>
+<text x="970" y="910.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">checks a bundle, then loads it into a</text>
+<text x="970" y="925.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">new ycashd, cut off from the network</text>
+<path d="M934,903 L960,903" fill="none" stroke="#a21caf" stroke-width="1.8" marker-end="url(#m-a21caf)" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="50" y="952" width="200" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="50" y="952" width="200" height="12" rx="10" fill="#475569"/>
+<rect x="51" y="957" width="198" height="8" fill="#ffffff"/>
+<text x="60" y="976" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">ycash.team</text>
+<text x="60" y="992.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">landing page</text>
+<text x="60" y="1007.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">(ycash-team-site)</text>
+<rect x="262" y="952" width="200" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="262" y="952" width="200" height="12" rx="10" fill="#475569"/>
+<rect x="263" y="957" width="198" height="8" fill="#ffffff"/>
+<text x="272" y="976" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">kogany.ycash.team</text>
+<text x="272" y="992.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">the Kogany site</text>
+<text x="272" y="1007.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">(kogany-site)</text>
+<rect x="474" y="952" width="230" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="474" y="952" width="230" height="12" rx="10" fill="#475569"/>
+<rect x="475" y="957" width="228" height="8" fill="#ffffff"/>
+<text x="484" y="976" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">RPC reference</text>
+<text x="484" y="992.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">every release's RPC reference,</text>
+<text x="484" y="1007.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">GitHub Pages (rpc-docs)</text>
+<rect x="716" y="952" width="230" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="716" y="952" width="230" height="12" rx="10" fill="#475569"/>
+<rect x="717" y="957" width="228" height="8" fill="#ffffff"/>
+<text x="726" y="976" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">Zcash parameters</text>
+<text x="726" y="992.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">Sapling/Sprout files, project-hosted</text>
+<text x="726" y="1007.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">(ycash-infra zcash-params-v1)</text>
+<rect x="958" y="952" width="256" height="66" rx="10" fill="#ffffff" stroke="#d5dae3" stroke-width="1" filter="url(#sh)"/>
+<rect x="958" y="952" width="256" height="12" rx="10" fill="#475569"/>
+<rect x="959" y="957" width="254" height="8" fill="#ffffff"/>
+<text x="968" y="976" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#475569" text-anchor="start">yb-calibration (offline)</text>
+<text x="968" y="992.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">derives and checks the constants</text>
+<text x="968" y="1007.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="start">each release builds into the node</text>
+<text x="620.0" y="1042" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#5b6472" text-anchor="middle" font-style="italic">Static sites on S3 + CloudFront; testnet services on one EC2 host each; the light-wallet backend also runs on EKS or kind.</text>
+<rect x="14" y="1066" width="1212" height="74" rx="12" fill="#ffffff" stroke="#e1e6ee"/>
+<text x="30" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5b6472" text-anchor="start">CONNECTIONS</text>
+<path d="M128,1082 L162,1082" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#m-2563eb)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="170" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">JSON-RPC</text>
+<path d="M244.0,1082 L278.0,1082" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#m-059669)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="286.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">gRPC / gRPC-web</text>
+<path d="M402.0,1082 L436.0,1082" fill="none" stroke="#ea580c" stroke-width="2.2" marker-end="url(#m-ea580c)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="444.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">stratum</text>
+<path d="M512.0,1082 L546.0,1082" fill="none" stroke="#a21caf" stroke-width="2" marker-end="url(#m-a21caf)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="554.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">HTTPS / HTTP</text>
+<path d="M652.0,1082 L686.0,1082" fill="none" stroke="#0891b2" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#m-0891b2)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="694.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">ZMQ notify</text>
+<path d="M780.0,1082 L814.0,1082" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#m-64748b)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="822.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">P2P</text>
+<path d="M866.0,1082 L900.0,1082" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="908.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">internal HTTP</text>
+<path d="M1012.0,1082 L1046.0,1082" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#m-94a3b8)" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="1054.0" y="1086" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#1f2937" text-anchor="start">planned</text>
+<text x="30" y="1116" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5b6472" text-anchor="start">NODE FEATURES</text>
+<rect x="130" y="1104" width="60" height="18" rx="9" fill="#a16207"/>
+<text x="200" y="1117" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#1f2937" text-anchor="start">badge: a rule or index inside the node, not a separate process</text>
+<rect x="590" y="1103" width="60" height="20" rx="6" fill="#fff" stroke="#b45309" stroke-dasharray="6 4"/>
+<text x="660" y="1117" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#1f2937" text-anchor="start">dashed card: planned, not built</text>
+<text x="1210" y="1117" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#5b6472" text-anchor="end">Arrows point from the caller to the server.</text>
+</svg>
