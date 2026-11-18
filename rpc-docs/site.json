@@ -410,11 +410,10 @@
       {
         "id": "kogany",
         "title": "kogany and yewd",
-        "pending": "yew #27 (up/b2-pq-prefix: D-9 prefixes, any-to-any z_sendmany, vault_lock from, z_gettotalbalance, listaddresses in yewd) is open, with up/b2-yewd-ecc-only (sendtoaddress/sendmany ECC coins only) stacked on it unpushed; kogany #20 (D-9 in koganyd) is open; yew upgrade/vault afd55507, kogany upgrade/vault 0a3ee02a (2026-11-12)",
-        "pendingText": "This table is yewd as merged today, which still writes post-quantum addresses without the scheme letter. The yewd of this release is in review: the D-9 prefixes, `z_sendmany` between every type, `vault_lock` funded from any type, `z_gettotalbalance` and `listaddresses`, and `sendtoaddress` and `sendmany` limited to ECC coins as on the ycashd lines. kogany's D-9 change is in review too.",
+        "source": "yew upgrade/vault 6feaf99 (yewd README, the beta3 release train: yew #27, #28, #52, #54), kogany v1.8.0-ycash.beta3 (#20, D-9 in koganyd)",
         "paragraphs": [
-          "kogany has no wallet. It validates, relays and mines transactions; for the mixed shapes this is tested on a chain recorded on a C++ line and replayed into kogany (kogany#17: Sapling spends and outputs beside post-quantum and vault scripts, with negative controls). Still open: an FN-DSA input beside a Sapling spend, a vault unlock beside Sapling parts, and reject-reason parity with both C++ lines. The wallet of the kogany product is `yewd`, a separate process that answers the wallet RPCs.",
-          "yewd does not serve `z_gettotalbalance`, `listaddresses` or `z_mergetoaddress` (it answers only the post-quantum refusals of `z_mergetoaddress` and `z_shieldcoinbase`)."
+          "kogany has no wallet. It validates, relays and mines transactions; for the mixed shapes this is tested on a chain recorded on a C++ line and replayed into kogany (kogany#17: Sapling spends and outputs beside post-quantum and vault scripts, with negative controls). Still open: an FN-DSA input beside a Sapling spend, a vault unlock beside Sapling parts, and reject-reason parity with both C++ lines. The wallet of the kogany product is `yewd`, a separate process that answers the wallet RPCs. Both write post-quantum addresses with the scheme letter (D-9, below).",
+          "yewd answers as the ycashd lines do: `z_sendmany` between every address type, `sendtoaddress`, `sendmany` and `fundrawtransaction` choosing ECC coins only, `vault_lock` funded from any type with `\"from\"`, and `z_gettotalbalance` and `listaddresses` for balances and addresses by type. `z_mergetoaddress` merges ECC, post-quantum and Sapling sources, but not P2SH coins: a named P2SH source is refused and `ANY_TADDR` leaves them out. `z_shieldcoinbase` is not served; a post-quantum coinbase is shielded with `z_sendmany` from its address, to shielded recipients only and with no change."
         ],
         "tables": [
           {
@@ -431,23 +430,26 @@
                 "ECC",
                 "`sendtoaddress`, `sendmany`, `z_sendmany`",
                 "`z_sendmany`",
-                "`sendtoaddress`, `sendmany`",
-                "`vault_lock` (the wallet's ECC coins only)"
+                "`sendtoaddress`, `sendmany`, `z_sendmany`",
+                "`vault_lock` (default, or `\"from\"` an ECC address: change back to it)"
               ],
               [
                 "Sapling",
                 "`z_sendmany`",
                 "`z_sendmany`",
-                "refused: `z_sendmany cannot pay a post-quantum address; use sendtoaddress or sendmany`",
-                "`yed_mint` from a Sapling address"
+                "`z_sendmany`",
+                "`vault_lock` with `\"from\"` the Sapling address; `yed_mint` from a Sapling address"
               ],
               [
                 "Post-quantum",
-                "`sendtoaddress`, `sendmany` (they select post-quantum coins with the rest); `z_sendmany` from the address is refused",
-                "refused",
-                "`sendtoaddress`, `sendmany`",
-                "not offered"
+                "`z_sendmany` from the address (change returns to it)",
+                "`z_sendmany` from the address",
+                "`z_sendmany` from the address",
+                "`vault_lock` with `\"from\"` the address (change back to it)"
               ]
+            ],
+            "notes": [
+              "When the ECC coins do not cover a `sendtoaddress` or `sendmany` and the wallet holds post-quantum coins, the call is refused with the C++ lines' text, which points to `z_sendmany` from the post-quantum address."
             ]
           }
         ]
