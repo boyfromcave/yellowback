@@ -1,0 +1,4 @@
+yed_getattestations
+
+This node's attestation pool (W5): every held attestation, ascending seq then citedHeight.
+

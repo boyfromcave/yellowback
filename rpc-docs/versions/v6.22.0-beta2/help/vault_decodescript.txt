@@ -1,0 +1,7 @@
+vault_decodescript "hex"
+
+Decode a vault primitive script: a vault V or intent I scriptPubKey, a `YV` act OP_RETURN, or a member
+bond B redeem script. Returns {"type": "vault"|"intent"|"act"|"bond"|"none", ...fields}.
+> ycash-cli vault_decodescript "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_decodescript", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

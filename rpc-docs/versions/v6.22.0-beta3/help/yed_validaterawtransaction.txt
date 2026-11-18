@@ -1,0 +1,5 @@
+yed_validaterawtransaction "hex"
+
+Dry run of §3.8 at the tip over a one-transaction pseudo-block (MempoolCheck's predicate) plus script verification
+at tip + 1 (the vault flags, the set state at the tip and BIP68); "invalidReason" says why when "valid" is false.
+

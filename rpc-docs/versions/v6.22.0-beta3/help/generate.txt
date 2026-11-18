@@ -1,0 +1,17 @@
+generate numblocks
+
+Mine blocks immediately (before the RPC call returns)
+
+Note: this function can only be used on the regtest network
+
+Arguments:
+1. numblocks    (numeric, required) How many blocks are generated immediately.
+
+Result
+[ blockhashes ]     (array) hashes of blocks generated
+
+Examples:
+
+Generate 11 blocks
+> ycash-cli generate 11
+

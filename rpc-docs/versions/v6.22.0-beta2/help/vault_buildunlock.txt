@@ -1,0 +1,15 @@
+vault_buildunlock "outpoint" [{"address"|"script": .., "amount": x}, ...] ( rebuild )
+
+Build the UNLOCK spend of a vault: one intent I per recipient (released to it after the vault's delay), the
+remainder re-locked in a byte-identical vault, the fee from this wallet's inputs (unsigned; never from the
+vault's value). Collect the set's unlock signatures with set_signunlock on the members' nodes, then vault_send.
+Call once: the build is remembered in the wallet (across restarts) and returned byte-identical when called again
+with the same recipients; if its fee inputs were spent meanwhile it is re-funded (vault_refee), keeping its
+sighash. Other recipients are refused while a build exists: members sign once (a second, different unlock
+signature is an equivocation). rebuild=true discards the remembered build (only before anyone signed it).
+
+Result: {"hex", "intents": [{"vout", "amount", "recipient", "recipienthash"}], "required", "sighash",
+"build" ("new", "reused" or "refunded")}
+> ycash-cli vault_buildunlock "txid:0" '[{"address":"..","amount":1}]'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_buildunlock", "params": ["txid:0", [{"address":"..","amount":1}]] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

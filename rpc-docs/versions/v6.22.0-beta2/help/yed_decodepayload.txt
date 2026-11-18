@@ -1,0 +1,4 @@
+yed_decodepayload "hex"
+
+Decode a version-3 Yellowback payload (the data push, a whole OP_RETURN script, or a raw transaction). Allowed while unhealthy.
+

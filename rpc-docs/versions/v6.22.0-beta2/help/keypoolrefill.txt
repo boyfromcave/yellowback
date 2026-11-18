@@ -1,0 +1,16 @@
+keypoolrefill ( newsize )
+
+Supported on Ycash. The transparent keypool supplies getrawchangeaddress, the
+transparent change of sendtoaddress / sendmany, and the mining coinbase key.
+
+Fills the keypool associated with the legacy transparent value pool. This should only be
+used when interoperability with legacy Bitcoin infrastructure is required.
+
+
+Arguments
+1. newsize     (numeric, optional, default=100) The new keypool size
+
+Examples:
+> ycash-cli keypoolrefill 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "keypoolrefill", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

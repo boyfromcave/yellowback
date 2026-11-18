@@ -1,0 +1,34 @@
+listaddressgroupings ( asOfHeight )
+
+Lists groups of transparent addresses which have had their common ownership
+made public by common use as inputs or as the resulting change in past transactions.
+
+Arguments:
+1. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+[
+  [
+    [
+      "ycashaddress",     (string) The Ycash address
+      amount,                 (numeric) The amount in YEC
+    ]
+    ,...
+  ]
+  ,...
+]
+
+Bitcoin compatibility:
+The zero-argument form is compatible.
+Examples:
+> ycash-cli listaddressgroupings 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "listaddressgroupings", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

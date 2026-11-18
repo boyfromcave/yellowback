@@ -1,0 +1,22 @@
+getaddressesbyaccount "account"
+
+Supported on Ycash. A compatibility shim for integrations written against the
+2018-era ycashd API: only the default account "" exists.
+
+Returns the list of transparent addresses in the given account. For the
+default account "" this returns every transparent address the wallet has
+ever generated or imported. Any non-empty account returns an empty array.
+
+Arguments:
+1. "account"  (string, required) Account name. Only "" returns results.
+
+Result:
+[
+  "ycashaddress"  (string) a transparent Ycash address belonging to the wallet
+  ,...
+]
+
+Examples:
+> ycash-cli getaddressesbyaccount ""
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddressesbyaccount", "params": [""] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

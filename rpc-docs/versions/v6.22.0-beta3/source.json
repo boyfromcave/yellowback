@@ -1,0 +1,17 @@
+{
+  "version": "v6.22.0-beta3",
+  "line": "ycash6",
+  "tag": "v6.22.0-beta3",
+  "tagCommit": "8bfd4621e4f4d023314a00d4a5fb31655e019fe1",
+  "binary": {
+    "commit": "8bfd4621e4f4d023314a00d4a5fb31655e019fe1",
+    "version": "Ycash Daemon version v6.22.0-beta3-8bfd4621e"
+  },
+  "commitMismatch": null,
+  "contracts": [
+    "doc/vault-rpc-contract.json",
+    "doc/yellowback-rpc-contract.json"
+  ],
+  "capturedAt": "2026-11-18T06:15:28Z",
+  "methods": 236
+}

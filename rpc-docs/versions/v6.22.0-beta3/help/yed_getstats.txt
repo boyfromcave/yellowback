@@ -1,0 +1,10 @@
+yed_getstats
+
+Totals plus the tip snapshot: supply, collateral, vault counts, prices, sigma, global ratio, cap, halts.
+globalRatioBps (HALT-2) is collateralZat at pMint against openDebtCents, the mintedCents of every ACTIVE and
+CLAIMING vault (globalRatioDenominator "openDebt"); supplyCents (<= openDebtCents) is what MINT-6 caps.
+mintableClasses: the term classes a mint can use now -- every enabled class when nothing halts and the cap has room;
+under a GLOBAL_RATIO halt alone (W16) and once the cap is reached (W20), those whose base ratio reaches
+params.recapRatioBps (IT-5: class C with the in-term parameter set); none under any other halt, and none while
+mintRequiresArmed and the tip is not ARMED (H-1). A class with an empty term range is never listed (H-5).
+

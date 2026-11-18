@@ -1,0 +1,19 @@
+z_getalldiversifiedaddresses "zaddr"
+
+Returns every Sapling address in the wallet that shares the same
+spending key (IVK/FVK) as the given address -- i.e. all of its peer
+diversified addresses.
+
+Arguments:
+1. "zaddr"   (string, required) A Sapling address held by the wallet
+
+Result:
+[
+  "zaddr"   (string) a peer diversified Sapling address
+  ,...
+]
+
+Examples:
+> ycash-cli z_getalldiversifiedaddresses "ys1..."
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getalldiversifiedaddresses", "params": ["ys1..."] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

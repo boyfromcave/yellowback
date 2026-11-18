@@ -1,0 +1,64 @@
+gettransaction "txid" ( includeWatchonly verbose asOfHeight )
+
+Returns detailed information about in-wallet transaction <txid>. This does not
+include complete information about shielded components of the transaction; to obtain
+details about shielded components of the transaction use `z_viewtransaction`.
+
+Arguments:
+1. "txid"    (string, required) The transaction id
+2. includeWatchonly    (bool, optional, default=false) Whether to include watchonly addresses in balance calculation and details[]
+3. verbose       (bool, optional, default=false) Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decoderawtransaction). Currently, only the default value is supported.
+4. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+{
+  "status" : "mined|waiting|expiringsoon|expired",    (string) The transaction status, can be 'mined', 'waiting', 'expiringsoon' or 'expired'
+  "version" : "x",       (string) The transaction version
+  "amount" : x.xxx,        (numeric) The transaction amount in YEC
+  "amountZat" : x          (numeric) The amount in yoshis
+  "confirmations" : n,     (numeric) The number of confirmations
+  "blockhash" : "hash",  (string) The block hash
+  "blockindex" : xx,       (numeric) The block index
+  "blocktime" : ttt,       (numeric) The time in seconds since epoch (1 Jan 1970 GMT)
+  "txid" : "transactionid",   (string) The transaction id.
+  "time" : ttt,            (numeric) The transaction time in seconds since epoch (1 Jan 1970 GMT)
+  "timereceived" : ttt,    (numeric) The time received in seconds since epoch (1 Jan 1970 GMT)
+  "details" : [
+    {
+      "address" : "zcashaddress",   (string) The Ycash address involved in the transaction
+      "category" : "send|receive",    (string) The category, either 'send' or 'receive'
+      "amount" : x.xxx                  (numeric) The amount in YEC
+      "amountZat" : x                   (numeric) The amount in yoshis
+      "vout" : n,                       (numeric) the vout value
+    }
+    ,...
+  ],
+  "vjoinsplit" : (DEPRECATED) [
+    {
+      "anchor" : "treestateref",          (string) Merkle root of note commitment tree
+      "nullifiers" : [ string, ... ]      (string) Nullifiers of input notes
+      "commitments" : [ string, ... ]     (string) Note commitments for note outputs
+      "macs" : [ string, ... ]            (string) Message authentication tags
+      "vpub_old" : x.xxx                  (numeric) The amount removed from the transparent value pool
+      "vpub_new" : x.xxx,                 (numeric) The amount added to the transparent value pool
+    }
+    ,...
+  ],
+  "hex" : "data"         (string) Raw data for transaction
+}
+
+Bitcoin compatibility:
+Compatible up to three arguments, but can only use the default value for `verbose`.
+Examples:
+> ycash-cli gettransaction "1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d"
+> ycash-cli gettransaction "1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d" true
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "gettransaction", "params": ["1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

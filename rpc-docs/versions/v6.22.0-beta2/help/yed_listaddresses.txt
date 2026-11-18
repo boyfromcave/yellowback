@@ -1,0 +1,11 @@
+yed_listaddresses ( includeEmpty )
+
+This wallet's Yellowback (YED) addresses: every address that holds YED or appears in the history, with its
+address-book label, the confirmed YED it holds, how many
+indexed transactions moved YED to or from it and the block time of the last one. Sorted by address.
+
+Arguments:
+1. includeEmpty (boolean, optional, default false) also list the unused addresses yed_getnewaddress issued
+
+Result: [ { "address", "label", "confirmedCents", "txCount", "lastUsed" } ]  (lastUsed: UTC seconds, null when unused)
+

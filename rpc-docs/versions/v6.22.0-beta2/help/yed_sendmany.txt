@@ -1,0 +1,4 @@
+yed_sendmany {"yedaddress":cents,...}
+
+Send YED to up to 14 Yellowback addresses in one transaction.
+

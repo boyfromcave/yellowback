@@ -1,0 +1,27 @@
+z_validateaddress "address"
+
+Return information about the given address.
+
+Arguments:
+1. "address"   (string, required) The address to validate
+
+Result:
+{
+  "isvalid" : true|false,        (boolean) If the address is valid or not. If not, this is the only property returned.
+  "address" : "addr",          (string) The address validated
+  "address_type" : "xxxx",     (string) "p2pkh", "p2sh", "sprout", "sapling" or "pq" (a post-quantum address)
+  "type" : "xxxx",             (string) "p2pkh", "p2sh", "sprout", "sapling" or "pq" (DEPRECATED, legacy attribute)
+  "ismine" : true|false,         (boolean) If the address is yours or not
+  "pqscheme" : n,                (numeric) [pq] 1 = SLH-DSA-SHA2-128s (sqs…/tqs…/rqs…), 2 = FN-DSA-512 (sqf…/tqf…/rqf…)
+  "pqschemename" : "name",     (string) [pq] "SLH-DSA-SHA2-128s" or "FN-DSA-512"
+  "pqkeyhash" : "hex",         (string) [pq] SHA256(scheme || public key), as in its TX_PQPKH script
+  "payingkey" : "hex",         (string) [sprout] The hex value of the paying key, a_pk
+  "transmissionkey" : "hex",   (string) [sprout] The hex value of the transmission key, pk_enc
+  "diversifier" : "hex",       (string) [sapling] The hex value of the diversifier, d
+  "diversifiedtransmissionkey" : "hex", (string) [sapling] The hex value of pk_d
+}
+
+Examples:
+> ycash-cli z_validateaddress "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_validateaddress", "params": ["ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

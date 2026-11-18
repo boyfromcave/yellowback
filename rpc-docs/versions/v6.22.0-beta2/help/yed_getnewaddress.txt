@@ -1,0 +1,12 @@
+yed_getnewaddress ( "type" "label" )
+
+A fresh Yellowback (YED) address of this wallet. The default follows the holder policy
+(quantum spec A-13): a P2PKH address from the keypool (added to the address book) until Falcon is active, a
+post-quantum FN-DSA-512 address (53 characters) once it is.
+
+Arguments:
+1. "type" (string, optional) "p2pkh"; "pq" (a post-quantum holder key: FN-DSA-512 once Falcon is active,
+   SLH-DSA-SHA2-128s before); "pqowner" (an SLH-DSA-SHA2-128s key, as vault_getnewowner); null or "" = the default
+2. "label" (string, optional, default "") stored in the wallet's address book with the address (so it travels
+   with wallet.dat; yed_listaddresses reports it); not for "pqowner", whose key stays out of the address book
+

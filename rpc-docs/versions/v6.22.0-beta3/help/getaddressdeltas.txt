@@ -1,0 +1,81 @@
+getaddressdeltas {"addresses": ["taddr", ...], ("start": n), ("end": n), ("chainInfo": true|false)}
+
+Returns all changes for an address.
+
+Returns information about all changes to the given transparent addresses within the given (inclusive)
+
+block height range, default is the full blockchain.
+If start or end are not specified, they default to zero.
+If start is greater than the latest block height, it's interpreted as that height.
+
+If end is zero, it's interpreted as the latest block height.
+
+WARNING: getaddressdeltas is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+{
+  "addresses":
+    [
+      "address" (string) The base58check encoded address
+      ,...
+    ]
+  "start"       (number, optional) The start block height
+  "end"         (number, optional) The end block height
+  "chainInfo"   (boolean, optional, default=false) Include chain info in results, only applies if start and end specified
+}
+(or)
+"address"       (string) The base58check encoded address
+
+Result:
+[
+  {
+    "satoshis"  (number) The difference of yoshis
+    "txid"      (string) The related txid
+    "index"     (number) The related input or output index
+    "height"    (number) The block height
+    "address"   (string) The base58check encoded address
+  }, ...
+]
+
+(or, if chainInfo is true):
+
+{
+  "deltas":
+    [
+      {
+        "satoshis"    (number) The difference of yoshis
+        "txid"        (string) The related txid
+        "index"       (number) The related input or output index
+        "height"      (number) The block height
+        "address"     (string)  The address base58check encoded
+      }, ...
+    ],
+  "start":
+    {
+      "hash"          (string)  The start block hash
+      "height"        (numeric) The height of the start block
+    }
+  "end":
+    {
+      "hash"          (string)  The end block hash
+      "height"        (numeric) The height of the end block
+    }
+}
+
+Examples:
+> ycash-cli getaddressdeltas '{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "start": 1000, "end": 2000, "chainInfo": true}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddressdeltas", "params": [{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"], "start": 1000, "end": 2000, "chainInfo": true}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

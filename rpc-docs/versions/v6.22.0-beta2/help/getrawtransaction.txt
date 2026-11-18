@@ -1,0 +1,166 @@
+getrawtransaction "txid" ( verbose "blockhash" )
+
+NOTE: If "blockhash" is not provided and the -txindex option is not enabled, then this call only
+works for mempool transactions. If either "blockhash" is provided or the -txindex option is
+enabled, it also works for blockchain transactions. If the block which contains the transaction
+is known, its hash can be provided even for nodes without -txindex. Note that if a blockhash is
+provided, only that block will be searched and if the transaction is in the mempool or other
+blocks, or if this node does not have the given block available, the transaction will not be found.
+
+Return the raw transaction data.
+
+If verbose=0, returns a string that is serialized, hex-encoded data for 'txid'.
+If verbose is non-zero, returns an Object with information about 'txid'.
+
+Arguments:
+1. "txid"      (string, required) The transaction id
+2. verbose     (numeric, optional, default=0) If 0, return a string of hex-encoded data, otherwise return a JSON object
+3. "blockhash" (string, optional) The block in which to look for the transaction
+
+Result (if verbose is not set or set to 0):
+"data"      (string) The serialized, hex-encoded data for 'txid'
+
+Result (if verbose > 0):
+{
+  "in_active_chain": b,        (bool) Whether specified block is in the active chain or not (only present with explicit "blockhash" argument)
+  "hex" : "data",              (string) The serialized, hex-encoded data for 'txid'
+  "txid" : "id",               (string) The transaction id (same as provided)
+  "authdigest" : "id",         (string) The transaction's auth digest. For pre-v5 transactions this will be ffff..ffff
+  "size" : n,                  (numeric) The transaction size
+  "overwintered" : b,          (bool, optional) Whether the overwintered flag is set
+  "version" : n,               (numeric) The version
+  "versiongroupid" : "hex",    (string, optional) The version group ID
+  "locktime" : ttt,            (numeric) The lock time
+  "expiryheight" : ttt,        (numeric, optional) The block height after which the transaction expires
+  "vin" : [                    (array of json objects)
+     {                    (coinbase transactions)
+       "coinbase": "hex", (string) The coinbase scriptSig as hex
+       "sequence": n      (numeric) The script sequence number
+     },
+     {                    (non-coinbase transactions)
+       "txid": "id",      (string) The transaction id
+       "vout": n,         (numeric) 
+       "scriptSig": {     (json object) The script
+         "asm": "asm",    (string) asm
+         "hex": "hex"     (string) hex
+       },
+       "sequence": n      (numeric) The script sequence number
+       "value": n         (numeric, optional) The value of the output being spent in YEC
+       "valueSat": n      (numeric, optional) The value of the output being spent, in zats
+       "address": n       (string, optional) The address of the output being spent
+     }
+     ,...
+  ],
+  "vout" : [              (array of json objects)
+     {
+       "value" : x.xxx,            (numeric) The value in YEC
+       "valueZat" : n,             (numeric) The value in zats
+       "valueSat" : n,             (numeric) The value in zats
+       "n" : n,                    (numeric) index
+       "scriptPubKey" : {          (json object)
+         "asm" : "asm",            (string) the asm
+         "hex" : "hex",            (string) the hex
+         "reqSigs" : n,            (numeric) The required sigs
+         "type" : "pubkeyhash",    (string) The type, eg 'pubkeyhash'
+         "addresses" : [           (json array of string)
+           "ycashaddress"          (string) Ycash address
+           ,...
+         ]
+       }
+     }
+     ,...
+  ],
+  "vjoinsplit" : [        (array of json objects, only for version >= 2)
+     {
+       "vpub_old" : x.xxx,         (numeric) public input value in YEC
+       "vpub_oldZat" : n,          (numeric) public input value in zats
+       "vpub_new" : x.xxx,         (numeric) public output value in YEC
+       "vpub_newZat" : n,          (numeric) public output value in zats
+       "anchor" : "hex",           (string) the anchor
+       "nullifiers" : [            (json array of string)
+         "hex"                     (string) input note nullifier
+         ,...
+       ],
+       "commitments" : [           (json array of string)
+         "hex"                     (string) output note commitment
+         ,...
+       ],
+       "onetimePubKey" : "hex",    (string) the onetime public key used to encrypt the ciphertexts
+       "randomSeed" : "hex",       (string) the random seed
+       "macs" : [                  (json array of string)
+         "hex"                     (string) input note MAC
+         ,...
+       ],
+       "proof" : "hex",            (string) the zero-knowledge proof
+       "ciphertexts" : [           (json array of string)
+         "hex"                     (string) output note ciphertext
+         ,...
+       ]
+     }
+     ,...
+  ],
+  "valueBalance" : x.xxx,  (numeric, optional) The net value of Sapling Spends minus Outputs in YEC
+  "valueBalanceZat" : n,   (numeric, optional) The net value of Sapling Spends minus Outputs in yoshis
+  "vShieldedSpend" : [     (array of json objects, only for version >= 3)
+     {
+       "cv" : "hex",           (string) Value commitment to the input note
+       "anchor" : "hex",       (string) Merkle root of the Sapling note commitment tree
+       "nullifier" : "hex",    (string) The nullifier of the input note
+       "rk" : "hex",           (string) The randomized public key for spendAuthSig
+       "proof" : "hex",        (string) A zero-knowledge proof using the Sapling Spend circuit
+       "spendAuthSig" : "hex", (string) A signature authorizing this Spend
+     }
+     ,...
+  ],
+  "vShieldedOutput" : [            (array of json objects, only for version >= 3)
+     {
+       "cv" : "hex",             (string) Value commitment to the input note
+       "cmu" : "hex",            (string) The u-coordinate of the note commitment for the output note
+       "ephemeralKey" : "hex",   (string) A Jubjub public key
+       "encCiphertext" : "hex",  (string) The output note encrypted to the recipient
+       "outCiphertext" : "hex",  (string) A ciphertext enabling the sender to recover the output note
+       "proof" : "hex",          (string) A zero-knowledge proof using the Sapling Output circuit
+     }
+     ,...
+  ],
+  "bindingSig" : "hash",          (string, optional) The Sapling binding sig
+  "orchard" : {                   (JSON object with Orchard-specific information)
+     "actions" : [                (JSON array of objects)
+       {
+         "cv" : "hex",            (string) A value commitment to the net value of the input note minus the output note
+         "nullifier" : "hex",     (string) The nullifier of the input note
+         "rk" : "hex",            (string) The randomized validating key for spendAuthSig
+         "cmx" : "hex",           (string) The x-coordinate of the note commitment for the output note
+         "ephemeralKey" : "hex",  (string) An encoding of an ephemeral Pallas public key
+         "encCiphertext" : "hex", (string) The output note encrypted to the recipient
+         "outCiphertext" : "hex", (string) A ciphertext enabling the sender to recover the output note
+         "spendAuthSig" : "hex"   (string) A signature authorizing the spend in this Action
+       }
+       ,...
+     ],
+     "valueBalance" : x.xxx,      (numeric, optional) The net value of Orchard Actions in YEC
+     "valueBalanceZat" : n,       (numeric, optional) The net value of Orchard Actions in yoshis
+     "flags" : { (optional)
+       "enableSpends"  : true|false (bool)
+       "enableOutputs" : true|false (bool)
+     },
+     "anchor" : "hex",          (string, optional) A root of the Orchard note commitment tree at some block height in the past
+     "proof" : "hex",           (string, optional) Encoding of aggregated zk-SNARK proofs for Orchard Actions
+     "bindingSig" : "hex"       (string, optional) An Orchard binding signature on the SIGHASH transaction hash
+  },
+  "joinSplitPubKey" : "hex",      (string, optional) An encoding of a JoinSplitSig public validating key
+  "joinSplitSig" : "hex",         (string, optional) The Sprout binding signature
+  "blockhash" : "hash",           (string) the block hash
+  "height" : n,                   (numeric) the block height
+  "confirmations" : n,            (numeric) The confirmations
+  "time" : ttt,                   (numeric) The transaction time in seconds since epoch (Jan 1 1970 GMT)
+  "blocktime" : ttt               (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)
+}
+
+Examples:
+> ycash-cli getrawtransaction "mytxid"
+> ycash-cli getrawtransaction "mytxid" 1
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getrawtransaction", "params": ["mytxid", 1] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+> ycash-cli getrawtransaction "mytxid" 0 "myblockhash"
+> ycash-cli getrawtransaction "mytxid" 1 "myblockhash"
+

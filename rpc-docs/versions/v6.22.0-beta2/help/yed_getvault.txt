@@ -1,0 +1,4 @@
+yed_getvault "txid"
+
+The vault record created by the MINT transaction txid (vault outpoint txid:0) plus derived fields.
+

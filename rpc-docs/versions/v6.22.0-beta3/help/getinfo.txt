@@ -1,0 +1,30 @@
+getinfo
+Returns an object containing various state info.
+
+Result:
+{
+  "version": xxxxx,           (numeric) the server version
+  "build": xxxxx,             (string)  the build number
+  "subversion": xxxxx,        (string)  the server sub-version identifier
+  "protocolversion": xxxxx,   (numeric) the protocol version
+  "walletversion": xxxxx,     (numeric, optional) the wallet version, if wallet functionality is enabled
+  "balance": xxxxxxx,         (numeric, optional) the total Ycash balance of the wallet, if wallet functionality is enabled
+  "blocks": xxxxxx,           (numeric) the current number of blocks processed in the server
+  "timeoffset": xxxxx,        (numeric) the time offset (deprecated; always 0)
+  "connections": xxxxx,       (numeric) the number of connections
+  "proxy": "host:port",     (string, optional) the proxy used by the server
+  "difficulty": xxxxxx,       (numeric) the current difficulty
+  "testnet": true|false,      (boolean) if the server is using testnet or not
+  "keypoololdest": xxxxxx,    (numeric, optional) the timestamp (seconds since GMT epoch) of the oldest pre-generated key in the key pool, if wallet functionality is enabled
+  "keypoolsize": xxxx,        (numeric, optional) how many new keys are pre-generated
+  "unlocked_until": ttt,      (numeric, optional) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked, if wallet functionality is available and the wallet is encrypted
+  "paytxfee": x.xxxx,         (numeric) the transaction fee rate set in YEC per 1000 bytes
+  "relayfee": x.xxxx,         (numeric) minimum relay fee rate for transactions in YEC per 1000 bytes
+  "errors": "..."           (string) message describing the latest or highest-priority error
+  "errorstimestamp": "..."  (string) timestamp associated with the latest or highest-priority error
+}
+
+Examples:
+> ycash-cli getinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

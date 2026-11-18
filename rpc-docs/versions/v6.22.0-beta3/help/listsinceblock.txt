@@ -1,0 +1,53 @@
+listsinceblock ( "blockhash" target-confirmations includeWatchonly includeRemoved includeChange asOfHeight )
+
+Get all transactions in blocks since block [blockhash], or all transactions if omitted
+
+Arguments:
+1. "blockhash"   (string, optional) The block hash to list transactions since
+2. target-confirmations:    (numeric, optional) The confirmations required, must be 1 or more
+3. includeWatchonly:        (bool, optional, default=false) Include transactions to watchonly addresses (see 'importaddress')4. includeRemoved           (bool, optional, default=true) Show transactions that were removed due to a reorg in the "removed" array (not guaranteed to work on pruned nodes)
+5. includeChange            (bool, optional, default=false) Also add entries for change outputs. Currently, only the default value is supported.
+6. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+
+Result:
+{
+  "transactions": [
+    "address":"zcashaddress",    (string) The Ycash address of the transaction. Not present for move transactions (category = move).
+    "category":"send|receive",     (string) The transaction category. 'send' has negative amounts, 'receive' has positive amounts.
+    "status" : "mined|waiting|expiringsoon|expired",    (string) The transaction status, can be 'mined', 'waiting', 'expiringsoon' 
+                                                                    or 'expired'. Available for 'send' and 'receive' category of transactions.
+    "amount": x.xxx,          (numeric) The amount in YEC. This is negative for the 'send' category, and for the 'move' category for moves 
+                                          outbound. It is positive for the 'receive' category, and for the 'move' category for inbound funds.
+    "amountZat": x.xxx,       (numeric) The amount in yoshis. Negative and positive are the same as for the 'amount' field.
+    "vout" : n,               (numeric) the vout value
+    "fee": x.xxx,             (numeric) The amount of the fee in YEC. This is negative and only available for the 'send' category of transactions.
+    "confirmations": n,       (numeric) The number of confirmations for the transaction. Available for 'send' and 'receive' category of transactions.
+    "blockhash": "hashvalue",     (string) The block hash containing the transaction. Available for 'send' and 'receive' category of transactions.
+    "blockindex": n,          (numeric) The block index containing the transaction. Available for 'send' and 'receive' category of transactions.
+    "blocktime": xxx,         (numeric) The block time in seconds since epoch (1 Jan 1970 GMT).
+    "txid": "transactionid",  (string) The transaction id. Available for 'send' and 'receive' category of transactions.
+    "time": xxx,              (numeric) The transaction time in seconds since epoch (Jan 1 1970 GMT).
+    "timereceived": xxx,      (numeric) The time received in seconds since epoch (Jan 1 1970 GMT). Available for 'send' and 'receive' category of transactions.
+    "comment": "...",       (string) If a comment is associated with the transaction.
+    "to": "...",            (string) If a comment to is associated with the transaction.
+  ],
+  "removed": [...]            (array of objects, optional) structure is the same as "transactions" above, only present if includeRemoved=true
+                              Note: currently this only returns an empty array.
+  "lastblock": "lastblockhash"     (string) The hash of the last block
+}
+
+Bitcoin compatibility:
+Compatible up to five arguments, but can only use the default value for `includeChange`, and only returns an empty array for "removed".
+Examples:
+> ycash-cli listsinceblock 
+> ycash-cli listsinceblock "000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad" 6
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "listsinceblock", "params": ["000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad", 6] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

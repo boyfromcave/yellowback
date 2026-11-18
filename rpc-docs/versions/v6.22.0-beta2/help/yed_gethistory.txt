@@ -1,0 +1,4 @@
+yed_gethistory from to
+
+The Snapshots records (§3.6) for startHeight <= from <= h <= to <= tip; at most 2,016 rows per call.
+

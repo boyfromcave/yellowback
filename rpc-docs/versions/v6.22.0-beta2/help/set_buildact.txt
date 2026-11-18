@@ -1,0 +1,20 @@
+set_buildact "type" {params}
+
+Build an act transaction funded by this wallet (inputs unsigned; vin[0], which the act signatures bind, is
+fixed) carrying no act signatures yet. The build is remembered. Collect signatures with set_signact, then
+set_sendact on this node, which signs only the coins chosen for these outputs.
+
+Arguments:
+1. "type"   (string, required) create | join | heartbeat | remove | equivocation | winddown
+2. params   (object, required)
+   create:       as set_create
+   join:         {"setid", "bondamount", "bondlocktime", "memberkey" (any compressed key; default a new wallet key)}
+   heartbeat:    {"setid", "memberkey"}
+   remove:       {"setid", "memberkey" (the member removed), "burn": bool (default false: bond returned)}
+   equivocation: as set_equivocation's proof
+   winddown:     {"setid"}
+
+Result: {"hex", "type", "complete", "signatures", "required"}
+> ycash-cli set_buildact "remove" '{"setid":"..","memberkey":".."}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_buildact", "params": ["winddown", {"setid":".."}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

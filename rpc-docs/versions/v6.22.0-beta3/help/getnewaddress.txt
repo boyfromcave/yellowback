@@ -1,0 +1,32 @@
+getnewaddress ( "type"|"" ( "type" ) )
+
+Supported on Ycash. This is the way to get a new transparent ("p2pkh") or
+post-quantum ("pq", "pqslh") address. Unified-address accounts (z_getnewaccount,
+z_getaddressforaccount) need NU5, which has no activation height on Ycash.
+
+Returns a new transparent Ycash address.
+Payments received by this API are visible on-chain and do not otherwise
+provide privacy protections; they should only be used in circumstances 
+where it is necessary to interoperate with legacy Bitcoin infrastructure.
+
+Arguments (the type may come first, getnewaddress pq, or second after the empty string, getnewaddress "" pq):
+1. "type"|(dummy) (string, optional) "p2pkh", "pq" or "pqslh": the address type (see 2.), and then no second
+                  argument. Or the DEPRECATED placeholder: the empty string "", which may be followed by the type.
+                  Any other string is refused ("Accounts are unsupported"); the type names are lower case.
+2. "type"        (string, optional, default "p2pkh") "p2pkh", or "pq": a post-quantum address
+                  (sqf…/sqs… mainnet, tqf…/tqs… testnet, rqf…/rqs… regtest: f = FN-DSA-512, s = SLH-DSA; 53 characters) from the wallet's seed, FN-DSA-512 once
+                  Falcon is active at the next block, SLH-DSA-SHA2-128s before (the YED holder policy, as
+                  yed_getnewaddress "pq"); "pqslh": always SLH-DSA-SHA2-128s (larger spends, hash-based only).
+                  Needs the vault upgrade active at the next block and an unlocked wallet.
+                  A post-quantum address receives plain YEC; z_sendmany and z_mergetoaddress spend it (fee by
+                  size, change back to it); sendtoaddress, sendmany and z_shieldcoinbase never do.
+
+Result:
+"zcashaddress"    (string) The new transparent Ycash address
+
+Examples:
+> ycash-cli getnewaddress 
+> ycash-cli getnewaddress pq
+> ycash-cli getnewaddress "" "pq"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getnewaddress", "params": ["pq"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

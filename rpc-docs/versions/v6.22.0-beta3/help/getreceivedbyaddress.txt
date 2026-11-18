@@ -1,0 +1,38 @@
+getreceivedbyaddress "zcashaddress" ( minconf inZat asOfHeight )
+
+Returns the total amount received by the given transparent Ycash address in transactions with at least minconf confirmations.
+
+Arguments:
+1. "zcashaddress"  (string, required) The Ycash address for transactions.
+2. minconf         (numeric, optional, default=1) Only include transactions confirmed at least this many times.
+3. inZat           (bool, optional, default=false) Get the result amount in yoshis (as an integer).
+4. asOfHeight       (numeric, optional, default=-1) Execute the query as if it
+                    were run when the blockchain was at the height specified by
+                    this argument. The default is to use the entire blockchain
+                    that the node is aware of. -1 can be used as in other RPC
+                    calls to indicate the current height (including the
+                    mempool), but this does not support negative values in
+                    general. A “future” height will fall back to the current
+                    height. Any explicit value will cause the mempool to be
+                    ignored, meaning no unconfirmed tx will be considered.
+                    `minconf` must be at least 1 when `asOfHeight` is provided.
+
+Result:
+amount   (numeric) The total amount in YEC(or yoshis if inZat is true) received at this address.
+
+Bitcoin compatibility:
+Compatible with up to two arguments.
+Examples:
+
+The amount from transactions with at least 1 confirmation
+> ycash-cli getreceivedbyaddress "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP"
+
+The amount including unconfirmed transactions, zero confirmations
+> ycash-cli getreceivedbyaddress "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" 0
+
+The amount with at least 6 confirmations, very safe
+> ycash-cli getreceivedbyaddress "s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP" 6
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getreceivedbyaddress", "params": ["s1bHiHvZu5x8yprHJbAYZtEYgfHKCdUTmkP", 6] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

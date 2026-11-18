@@ -1,0 +1,12 @@
+participateswap "contract" "contracttxid" vout "counterpartyaddress" ( "label" )
+
+Register interest in an existing on-chain HTLC as a participant. Does not
+fund anything; just records the contract so monitorswap / claimswap can find it.
+
+Arguments:
+1. "contract"              (string, required) The HTLC redeem script in hex
+2. "contracttxid"          (string, required) The contract transaction ID
+3. vout                     (numeric, required) The contract output index
+4. "counterpartyaddress"   (string, required) Counterparty (typically the initiator) -- recorded as metadata
+5. "label"                 (string, optional) User-defined label
+

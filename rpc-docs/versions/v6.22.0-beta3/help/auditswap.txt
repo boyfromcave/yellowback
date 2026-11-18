@@ -1,0 +1,10 @@
+auditswap "contract" "contracttxid" vout
+
+Audit an atomic swap contract: verify it parses, locate the funded output,
+and return the contract parameters.
+
+Arguments:
+1. "contract"        (string, required) The HTLC redeem script in hex
+2. "contracttxid"    (string, required) The funding transaction ID
+3. vout              (numeric, required) The funded output index
+

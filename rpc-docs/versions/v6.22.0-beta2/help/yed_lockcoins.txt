@@ -1,0 +1,4 @@
+yed_lockcoins
+
+Re-run Yellowback coin locking against the index (maintenance). Returns the outpoints locked.
+

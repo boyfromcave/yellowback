@@ -1,0 +1,11 @@
+set_importsigned [{"setid", "prevout", "role", "sighash"}, ...]
+
+Import set sign-once records (07/F-5), as set_listsigned printed them on the wallet that signed. A record that
+differs from one this wallet holds for the same (setid, prevout) refuses the whole import: two signing histories
+for one key are never merged silently. Identical records are skipped. The import does NOT clear the restore
+marker (the history may be stale): set_acknowledgerestore does, once the operator has checked it is complete.
+
+Result: {"imported", "present"}
+> ycash-cli set_importsigned '[{"setid":"..","prevout":"txid:0","role":1,"sighash":".."}]'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_importsigned", "params": [[{"setid":"..","prevout":"txid:0","role":1,"sighash":".."}]] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

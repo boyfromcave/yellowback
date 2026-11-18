@@ -1,0 +1,20 @@
+vault_getinfo
+
+The vault primitive's upgrade and set-state database (docs/vault-rpc.md).
+
+Result:
+{
+  "branchid": "6d5b7a31",   (string) this network's UPGRADE_VAULT consensus branch ID (testnet-yb-slow: its own)
+  "activationheight": n,    (numeric) -1 when not scheduled
+  "active": true|false,     (boolean) active at the next block
+  "height": n,              (numeric) the chain tip
+  "attestorsetid": "hex" | null, (string) the set the registered module governs (the YED attestor set;
+                             regtest: -yellowbackattestorset), null when none: then the module validates inertly
+  "moduleactive": true|false, (boolean) a registered module governs a set on this node
+  "dbtip": {"hash","height"} | null,  the block the set state is at
+  "sets": n, "vaults": n, "intents": n, "lockedvalue": x.xxx,
+  "statehash": "hex"        (string) digest of the whole set state
+}
+> ycash-cli vault_getinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_getinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

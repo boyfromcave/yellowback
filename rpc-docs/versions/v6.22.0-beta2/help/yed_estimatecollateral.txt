@@ -1,0 +1,10 @@
+yed_estimatecollateral cents lockBlocks ( priceMicroUsd )
+
+The collateral (zatoshi, rounded up to 1,000) to mint cents with a lock of lockBlocks at the reference snapshot
+R = tip - REF_LAG (or at the given P_mint, PRICE_MIN..PRICE_MAX). requiredZat is MINT-5's ratio clause only;
+requiredZatFloored = requiredZat rounded up to 1,000 is what a mint locks (MINT-5': the 4 * FEE_MIN floor went with
+D-Q-23). protocolFeeCents / protocolFeeZat (FEE-1' at the estimate's pMint) and attestFeeZat (half of it when ARMED)
+are the mint's fees. Never refuses for MINTPOL-1: mintBlocked says whether yed_mint would refuse at this R (the
+halts, MINT_REQUIRES_ARMED, the supply cap with the mempool's mints) and mintBlockedReason is the identifier it
+would throw ("" when not blocked), so a wallet can show the figure next to the reason.
+

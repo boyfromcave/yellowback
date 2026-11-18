@@ -1,0 +1,11 @@
+vault_app "outpoint" ( [{"address"|"script": .., "amount": x}, ...] )
+
+Build the APP spend (selector 4, nLockTime = appheight) of a vault for a module: the intents and re-lock as
+vault_buildunlock, fee from this wallet, unsigned. A registered module adds its own outputs / rules; with no
+module for the tag the primitive alone governs it (S-2, S-3). The build is remembered; vault_send on this
+node signs only the coins it chose for these outputs.
+
+Result: {"hex", "intents"}
+> ycash-cli vault_app "txid:0" '[{"address":"..","amount":1}]'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_app", "params": ["txid:0", []] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

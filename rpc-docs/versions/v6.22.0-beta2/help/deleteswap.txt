@@ -1,0 +1,8 @@
+deleteswap "swapid"
+
+Delete an atomic swap record from the wallet. CANNOT BE UNDONE.
+Does NOT broadcast or interact with the chain.
+
+Arguments:
+1. "swapid"  (string, required) "<contractTxid>:<vout>"
+

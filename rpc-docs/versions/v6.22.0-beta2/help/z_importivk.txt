@@ -1,0 +1,21 @@
+z_importivk "ivk" "zaddr" ( rescan startHeight )
+
+Adds a Sapling incoming viewing key (as returned by z_exportivk) to the wallet.
+Because the ivk alone is insufficient to recover the corresponding payment
+address, the zaddr that the key belongs to must be passed explicitly.
+
+Arguments:
+1. "ivk"             (string, required) The incoming viewing key ("zivks...")
+2. "zaddr"           (string, required) The Sapling zaddr the ivk belongs to.
+3. rescan             (string, optional, default="whenkeyisnew") Rescan the wallet for transactions - "yes", "no" or "whenkeyisnew"
+4. startHeight        (numeric, optional, default=0) Block height to start the rescan from
+
+Result:
+{
+  "address": "..."   (string) The Sapling zaddr the ivk was imported for
+}
+
+Examples:
+> ycash-cli z_importivk "zivks..." "ys1..." no
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_importivk", "params": ["zivks...", "ys1..."] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+
