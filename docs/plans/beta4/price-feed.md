@@ -1,6 +1,6 @@
 # beta4: a real price feed on the fast testnet (items 3c-3f)
 
-**Revision 1 (2026-11-18), for the Yellowback lead architect's decision.** This plan covers beta4 list
+**Revision 2 (2026-11-18).** Revision 1 was written for the Yellowback lead architect's decision. Revision 2 records two decisions taken the same day: D-8 (the post-quantum payout key ships in beta4, §5) and the 3b quote cadence (§0.1). This plan covers beta4 list
 items 3c (highly available attestors), 3d (an attestor without a full node), 3e (the release part: the
 attestor set on chain and its id compiled into ycash6, ycash-dd and kogany) and 3f (a post-quantum payout
 key in the coinbase tag). Items 3a (pool quotes in the coinbase tag) and 3b (quote cadence) have their
@@ -22,7 +22,13 @@ blocks 24 h.
 | 3c | **Split, not round robin.** 9 house seats on 3 hosts (3+3+3), in 3 different regions, one key per seat and no key on two hosts, 20 YEC bond per seat (180 YEC). Losing one host costs nothing for about 12 minutes. After that a mint fails at about 1 block in 4, and the user retries at the next block. After about 24 h the dead seats go DORMANT and minting is fully back. Losing two hosts halts minting and claims, but not owner redemption. | 3-4 (ycash-infra, ycash-ops) |
 | 3d | **The attest agent gets a lightwalletd backend.** It signs locally with its own guard file, sends statements over gossip and over a new `YellowbackStreamer.SubmitAttestation`, and does heartbeats, joins and exits through YEW-core set-act builders. A light host needs no node at all, only two lightwalletd endpoints. | 17-24 over lightwalletd-dd, ycash6/ycash-dd contrib, yew, ycash-infra |
 | 3e | Run the ceremony on the live chain with `--seats 9 --bond 20` (the script accepts a chain past the fork), compile the id in on all three lines, then upgrade. The C++ nodes replay 510,400..tip in place. **kogany nodes must resync**, because otherwise they stop at the first block. The gap between `SET_CREATE` and the upgrade must be kept short and scanned for acts on the set. | 8-11 + ops |
-| 3f | **Defer the tag v2.** It fits (a 49-byte tag, 55 of the 100 scriptSig bytes), but it is a YED consensus change on three lines plus yolo, YEW and lightwalletd (about 10-14 days). Meanwhile post-quantum pools set a separate ECC `-yellowbackpayoutaddress`. Decide before the mainnet gate: while YED is not live on mainnet, v2 can replace v1 there with no transition. | 0 now; 10-14 later |
+| 3f | **Decided: tag v2 in beta4**, in the same consensus release as the set id. It adds a 49-byte tag (scheme + 32-byte post-quantum key hash) and keeps v1 for ECC payees; both are valid from YED's start, so no extra activation height is needed. Enforcement fees are paid to a 35-byte PQPKH. These fees are not coinbase outputs, so the shield-first rule does not apply to them. rpcversion becomes 11, and the change is made on ycash-dd, ycash6 and kogany together, plus yolo, YEW and the Python model (§5). | 16-21 |
+
+### 0.1 Recorded: the 3b quote cadence (lead architect, 2026-11-18)
+
+`yellowback-quote` fetches and calls `yed_setquote` **every 60-75 s**, with no heartbeat and no change
+threshold. The lead architect chose accuracy over job churn: every call rebuilds the template
+(`quoteGeneration`), so pools see about one extra job per 75 s block. The details are in the 3a/3b plan.
 
 ## 1. How attestation works today (from the code)
 
@@ -375,71 +381,154 @@ the miners first, then the seeds and lightwalletd, then announce.
 | T5 | Parameter tables with the compiled id | all three |
 | T6 | Regtest 3 × 3 hosts: one host killed, mint success per block around 76 %, DORMANT after the liveness window, revive. Two hosts killed: halt; owner redemption still works | ycash6 |
 
-## 5. Item 3f: a post-quantum payout key in the tag
+## 5. Item 3f: a post-quantum payout key in the tag (decided: beta4)
 
-### 5.1 Why the payout key is 20 bytes
+**Decided by the lead architect on 2026-11-18 (D-8):** the tag v2 ships in beta4, in the same consensus
+release as the attestor set id (3e). There is no later consensus change for it.
+
+### 5.1 Today: v1 and its 20-byte key
 
 - **The tag** (`src/yellowback/tag.h:17-21`, `tag.cpp:38-55`) is 36 bytes: `"YED!"`, version 0x01, flags, priceMicroUsd u64, sourceMask u16, **payoutKey Hash160 (20)**. It is pushed as `0x24` + 36, so it takes 37 bytes of scriptSig.
 - **FindTag** (`tag.cpp:57-80`) requires the BIP34 height push first, then scans for `24 59 45 44 21`.
+  - The first match decides (TAG-5).
   - An unknown version means "no tag", and the block stays valid (TAG-4, `tag.h:29-30`).
-- **Consensus pays fees to P2PKH(payoutKey):**
+- **Consensus pays enforcement fees to P2PKH(payoutKey):**
   - E(R) is the deduplicated payoutKeys of the quote tags in the payee window, minus pinned keys (`state.cpp:1554-1573`).
-  - MINT-8 (`state.cpp:423-430`) and RED-3' (`:644-657`) require the fee output to be exactly a 25-byte P2PKH (`P2PKHKey`, `:88-94`).
-  - PIN-1 pins by `uint160` (`:1740-1748`), and `TagRecord.payoutKey` is `uint160` (`view.h:185-200`).
-- **The payout address must be P2PKH.** `-yellowbackpayoutaddress` is refused unless it is P2PKH (`src/init.cpp:1648-1655`). It defaults to `-mineraddress` only if that is P2PKH (`:2467-2472`); otherwise no tag is emitted (`policy.cpp:30`).
-- **kogany** has the same rules: `crates/kogany-yellowback/src/codecs/tag.rs:22-111`, E(R) at `lookups.rs:79-97`, `state/mint.rs:238-246`, `state/redeem.rs:187-201`. Its payout is the P2PKH hash of `mining.miner_address` (`kogany-rpc/src/yed/live.rs:51-86`).
+  - MINT-8 (`state.cpp:423-430`) and RED-3' (`:644-657`) accept only a 25-byte P2PKH fee output (`P2PKHKey`, `:88-94`).
+  - PIN-1 pins by `uint160` (`:1740-1748`). `TagRecord.payoutKey` is `uint160` (`view.h:185-200`), and so are the vault fee records (`state.cpp:493,776`).
+- **The payout address must be P2PKH.** `-yellowbackpayoutaddress` and `-yellowbackpreferredpayee` are refused unless P2PKH (`src/init.cpp:1648-1655`). The default is `-mineraddress`, used only if it is P2PKH (`:2467-2472`).
+- **kogany** has the same rules: `crates/kogany-yellowback/src/codecs/tag.rs:22-111`, E(R) at `lookups.rs:79-97`, `state/mint.rs:238-246`, `state/redeem.rs:187-201`. Its payout key comes from `mining.miner_address`, P2PKH only (`kogany-rpc/src/yed/live.rs:51-86`).
 
-### 5.2 What a tag v2 would change
+### 5.2 v1 alongside v2, or v2 replacing v1: **both accepted from YED start**
 
-**Format:** v2 = `"YED!"`, 0x02, flags, price u64, sourceMask u16, **scheme u8, hash32**. That is 49 bytes,
-a 50-byte push, and 13 bytes more than v1. A post-quantum payout output is `0x20 <hash32> OP_1|OP_2
-OP_CHECKPQSIG`, 35 bytes (`src/script/standard.cpp:67-75`, `script.h:184`), with
-hash = SHA256(scheme ‖ pk) (`script.h:669-696`).
+YED goes live with this release on the fast testnet. Its start height is the Vault height, applied
+retroactively (§4.1). It is not live on mainnet (`params.cpp:185-188`). No tag of either version exists
+on any public chain yet, so the choice costs no transition either way, and **neither option needs its own
+activation height**. v2 is valid from YED's start on every network.
 
-**scriptSig budget** (100 bytes max, `main.cpp:1864-1865`; the height push is 4 bytes up to 8,388,607):
+| | **Keep v1 and add v2 (recommended)** | v2 only, carrying both kinds of key |
+|---|---|---|
+| ECC pools (yolo with a transparent payout, existing tooling) | unchanged, 37 bytes of scriptSig | must move to a v2 encoding; 50 bytes for everyone |
+| New consensus | one more parse path; payee becomes "P2PKH or PQPKH" | a new parse with variable-length keys; every regtest and golden vector changes |
+| One payee, one encoding | yes: v1 is ECC only, v2 is post-quantum only (scheme 1 or 2, any other value means no tag) | yes |
+| Risk | lowest: v1 code, vectors and harness keep working | rewrites the tested path in the same release as the set id |
 
-| Producer | v1 (used / free) | v2 (used / free) | v1 + v2 both (used / free) |
-|---|---|---|---|
-| Template, `getblocktemplate`, `getcoinbasetemplatefor` (`<h> OP_0` + tag, `miner.cpp:296`) | 42 / 58 | 55 / 45 | 92 / 8 |
-| Internal miner (`<h> <extranonce ≤ 6>`, `miner.cpp:817-818`) | ≤ 47 / ≥ 53 | ≤ 60 / ≥ 40 | ≤ 97 / ≥ 3 |
-| kogany (data shrunk to a 5-byte marker when tight, `zakura-rpc .../get_block_template/ycash.rs:259-300`) | 46 | 59 | 96 |
+### 5.3 The v2 specification
 
-yolo puts its extranonce in the header nonce, not the coinbase (`yolo/src/stratum.rs:27-33`). Its
-`--text` truncates to what is left (`tx.rs:182-206`).
+**Byte layout** (49 bytes, little-endian, pushed as `0x31` + 49 = 50 bytes):
 
-**v2 fits.** Carrying both versions would leave yolo almost no text.
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 4 | magic `"YED!"` (59 45 44 21) |
+| 4 | 1 | version **0x02** |
+| 5 | 1 | flags (bit 0 signal; bits 1-7 zero) |
+| 6 | 8 | priceMicroUsd u64 (PRICE_MIN..PRICE_MAX, as v1) |
+| 14 | 2 | sourceMask u16 |
+| 16 | 1 | **payoutScheme**: 0x01 SLH-DSA-SHA2-128s or 0x02 FN-DSA-512 (`crypto/pq/scheme.h:20`). Anything else means no tag |
+| 17 | 32 | **payoutHash** = SHA256(scheme ‖ pk), the `CPQKeyID` hash (`script.h:669-696`) |
 
-**Consensus surface** (C++ lines together, kogany in the same change set):
+**FindTag** scans for either pattern, `24 59 45 44 21` (v1) or `31 59 45 44 21` (v2), after the height
+push. The first match of either decides, as TAG-5 does today. A v2 with a bad scheme, short data or a
+failed IsValidTag means no tag, and the block stays valid (TAG-4 unchanged).
 
-- `TagRecord` and the parse (`tag.cpp`, `view.h`), with SCHEMA_VERSION 15 → 16, which rebuilds the index;
-- E(R) becomes a set of payee *scripts* and PIN-1 is keyed by (scheme, hash);
-- `P2PKHKey` in MINT-8 and RED-3' becomes "the payee's exact script, 25 or 35 bytes", along with the vault fee records (`state.cpp:493,776`);
-- policy and `init.cpp`, so that a PQ address is accepted;
-- kogany: `codecs/tag.rs`, `lookups.rs`, `state/mint.rs`, `state/redeem.rs`, `live.rs`, plus the golden vectors.
+**The payee script** of a v2 tag is TX_PQPKH: `0x20 <payoutHash> OP_<scheme> OP_CHECKPQSIG`, 35 bytes
+(`src/script/standard.cpp:67-75`). Both schemes are live on the testnets and mainnet
+(`pqFalconHeight` 0, `chainparams.cpp:160,479`).
+
+**scriptSig budget** (consensus: 2 to 100 bytes, `main.cpp:1864-1865`). The height push is 4 bytes
+for heights up to 8,388,607. A block carries one tag.
+
+| Producer | v1 (used / free) | v2 (used / free) |
+|---|---|---|
+| Template, `getblocktemplate`, `getcoinbasetemplatefor` (`<h> OP_0` + tag, `miner.cpp:296`) | 42 / 58 | 55 / 45 |
+| Internal miner (`<h> <extranonce, ≤ 6 bytes>`, `miner.cpp:817-818`, which asserts ≤ 100) | ≤ 47 / ≥ 53 | ≤ 60 / ≥ 40 |
+| kogany (5-byte marker when tight, `zakura-rpc .../get_block_template/ycash.rs:259-300`) | 46 | 59 |
+| yolo: `<h>` ‖ tag ‖ push(text), with the extranonce in the header nonce (`yolo/src/stratum.rs:27-33`, `tx.rs:182-206`) | text ≤ 58 | text ≤ 44 |
+
+**The consensus change** is made on the three lines together (ycash-dd, ycash6 and kogany in one change
+set, with the two-reviewer gate):
+
+- `TagRecord` carries the payee as (kind u8: 0 for P2PKH, or the scheme; hash 20 or 32). This changes the state hash, so **SCHEMA_VERSION 15 → 16** and the index is rebuilt (`view.h:89`).
+- E(R), PIN-1 (`pinnedKeys`) and the wallet-policy registry (`Registered`, `Penalized`, `AccuracyBps` and `DefaultPayee`, `state.cpp:1575-1640`) are keyed by the payee script instead of `CKeyID`.
+- MINT-8, RED-3' and the vault fee records (`state.cpp:423-430,644-657,493,776`) match the fee output's exact scriptPubKey: either the 25-byte P2PKH or the 35-byte PQPKH of an eligible payee. The amount clauses are unchanged.
+- The attestor fee (AFEE-1, `state.cpp:298-310`) stays P2PKH, because attestor keys are secp256k1.
+- kogany mirrors each of these: `codecs/tag.rs`, `view`, `lookups.rs:79-97,134`, `state/mint.rs`, `state/redeem.rs`, plus new golden vectors shared with the C++ lines.
+- Four-part check, for the PR body: DigiByte has no coinbase payee. The Ycash adaptation is a template-level payee match inside the module, with no opcode and no new transaction field. That is the module rung, the cheapest one that can carry a post-quantum payee.
+
+**Fee outputs are not coinbase outputs.**
+
+- An enforcement fee is an output of the user's MINT, REDEEM or claim transaction (`state.cpp:423-430`, `txbuilder.cpp:172,237,304`).
+- So the post-quantum coinbase rule (100-block maturity, then shielded at the exact amount; beta4 item 7) **does not apply** to the fees. A post-quantum fee output is spendable after one confirmation, to any destination.
+- Only the pool's **block reward**, if paid to a post-quantum address, has that rule. That is item 7's subject and unchanged here. A pool should still pay its block rewards to a ycashd or yewd wallet.
+- Spend cost: an SLH-DSA input is about 8 kB of scriptSig (`policy.cpp:392-393`), and a Falcon input is under 2 kB, so pools should prefer FN-DSA payout addresses.
+- The post-quantum dust threshold is about 3 × 100 zat/kB × 8 kB ≈ 2,400 zat (`policy.cpp:390-406`, `policy.h:116`). The smallest fee is $1 (`params.cpp:48`), so dust is never an issue.
+
+**Node options and policy (both C++ lines):**
+
+- `-yellowbackpayoutaddress` and `-yellowbackpreferredpayee` accept P2PKH or a post-quantum address: `tqf…` / `tqs…` on the testnets, `sqf…` / `sqs…` on mainnet, `rqf…` / `rqs…` on regtest (`init.cpp:1648-1655`).
+- The default from `-mineraddress` now takes a post-quantum mining address too (`:2467-2472`). A Sapling `-mineraddress` still gives no tag (`policy.cpp:30`).
+- The miner emits v1 for a P2PKH payee and v2 for a post-quantum one.
+
+**kogany:** `set_payout_address` and `is_p2pkh_address` (`live.rs:51-86`) accept a post-quantum `mining.miner_address`. A separate `yed.payout_address` setting is added, matching `-yellowbackpayoutaddress`.
+
+**RPC contract: rpcversion 10 → 11** (`YELLOWBACK_RPC_VERSION`, ycash6 `src/rpc/yellowback.cpp:62`; kogany `YED_RPC_VERSION`, `crates/kogany-rpc/src/yed/mod.rs`):
+
+- `yed_gettag` gains `version` (1 or 2) and `payoutScheme` (`"p2pkh"`, `"fn-dsa-512"` or `"slh-dsa-sha2-128s"`), and its `payoutAddress` may be a post-quantum address (`yellowback.cpp:501`).
+- The same "may be post-quantum" rule applies to:
+  - `yed_getinfo.miner.payoutAddress` (`:720`);
+  - `yed_listminers[].payoutAddress` (`:1175`);
+  - `yed_setquote`'s `next.payoutAddress` (`:1267`);
+  - `yed_getfeepayee`'s `default` and `eligible` (`:1305`);
+  - every `payee` field of the TxLog, history and tx-info readers and of the wallet build results (`:417,1701,1762`; `yellowbackwallet.cpp:339,623,1126,1791`).
+- The text of `yed_setquote`'s `no-payout-address` refusal changes.
+- `make spec` updates the contract copies, and a `docs/plans/beta4/rpc-contract-delta.md` records the delta.
 
 **Clients:**
 
-- yolo `tag.rs` (whose `PRICE_MAX` is also wrong: $100 instead of 4,294,967,295, `yolo/src/tag.rs:16`, a log-only defect to fix either way);
-- YEW's fee-payee output (`yew/core/src/build/mint.rs:473-496`);
-- the GUI wallet;
-- lightwalletd `GetFeePayee`;
-- chain-viz.
+| Client | Change |
+|---|---|
+| YEW core | `p2pkh_of_address` (`yew/core/src/build/mint.rs:2262`, used for the fee payee at `claim.rs:866` and in mint and redeem) becomes "script of address" for P2PKH and post-quantum. `fee_payee` (`mint.rs:377`) is unchanged |
+| ycash6 / ycash-dd wallet builders | none: they already build `GetScriptForDestination(payee)` (`txbuilder.cpp:172,237,304`). Only the payee type widens |
+| yolo | `src/tag.rs` decodes v2 (pattern, 49-byte body, scheme, hash) and shows the post-quantum payout. Its PRICE_MAX is fixed to 4,294,967,295 (it says 100,000,000 at `tag.rs:16`, a log-only defect). The `--text` room falls to 44 bytes |
+| `yellowback-quote` and `yellowback_price.py` | the quote agent calls only `yed_setquote`, so the node builds the tag and the agent is unaffected. The Python model's `encode_tag` and `decode_tag` (`contrib/yellowback/yellowback_price.py:860-891`, which assert 20 bytes) and `pool/check-coinbase` learn v2 |
+| lightwalletd-dd | none in code: payee strings pass through (`YedPayee`, `walletrpc/yellowback.proto:238-241`). Contract samples and tests are updated |
+| YecWallet, chain-viz | display and revenue ledger are keyed by address strings (`yecwallet-dd/src/yellowbacktab.cpp`; `chain-viz/src/model/revenue.rs`). Check that post-quantum strings render, and update the contract fixtures |
 
-**Activation:**
+**Tests:**
 
-- New tags change medians and E(R), so this is a YED rule change.
-- On the **fast testnet** it is free only if it ships in the same release as the id (3e), because no tag exists before YED is live there. After that it needs a height gate.
-- On **mainnet** YED is not live (`params.cpp:185-188`), so v2 can simply replace v1 before the gate-passing release.
+| # | Test | Lines |
+|---|---|---|
+| V1 | Golden vectors for v1 and v2: encode, FindTag (v1 first, v2 first, a bad scheme), the state hash after a v2 tag | ycash-dd, ycash6, kogany (shared vectors) |
+| V2 | Regtest: a pool with an `rqf…` payout. MINT, owner REDEEM and claim REDEEM each pay the 35-byte payee. A P2PKH fee output to that payee is refused (`bad-mint-fee`, `vault-spend-bad-payee`). Then a mixed E(R) of v1 and v2 payees | ycash6, ycash-dd |
+| V3 | The scriptSig budget at height 8,388,607 with a 6-byte extranonce and a v2 tag (60 bytes); `getcoinbasetemplatefor` with a v2 tag; kogany's marker path | ycash6, kogany |
+| V4 | The fee output spent at one confirmation to a transparent destination: no coinbase rule applies | ycash6 |
+| V5 | Cross-line state-hash parity with v2 tags (the mixed kogany harness) | all three |
+| V6 | yolo: a v2 tag decoded from a live template; text truncation at 44 bytes | yolo |
+| V7 | YEW: a mint and a claim against a post-quantum payee | yew |
 
-**Effort:** about 10-14 agent-days plus the two-reviewer gate. The pieces are 2-3 per C++ line, 3-4 for kogany, and 2-3 for the clients and tests.
+**Effort (agent-days):**
 
-### 5.3 Recommendation
+| Area | Days |
+|---|---|
+| ycash-dd consensus, RPC and init | 4-5 |
+| ycash6 port (identical files) | 1-2 |
+| kogany | 3-4 |
+| Contract, rpcversion 11, `make spec` | 1 |
+| yolo | 1 |
+| Python model and check-coinbase | 1 |
+| YEW core | 1 |
+| lightwalletd-dd, YecWallet and chain-viz fixtures | 1 |
+| Tests V1-V7 | 3-4 |
+| **Total** | **16-21**, plus the two-reviewer gate |
 
-Do not put v2 in beta4. Wiring it into the 3e release would delay the price feed by about two weeks for a
-gain limited to fee income. A post-quantum pool keeps its block rewards post-quantum and sets
-`-yellowbackpayoutaddress` to a separate ECC address, so only the YED fee income is ECC-exposed.
+### 5.4 Release ordering
 
-Decide v2 before the mainnet gate (D-8). Taking it then costs no transition and no dual tag.
+v2 is on the beta4 critical path. It lands in P1 with the id slot, in the same consensus PRs on the three
+lines. The ceremony (P3) runs only once those PRs are approved and the release branch is frozen, so the
+gap between `SET_CREATE` and the upgrade stays short (§4.2).
+
+Because YED starts retroactively at 510,400, the gap scan covers **every coinbase from 510,400** for
+either tag pattern, as well as set acts. A stray `YED!` push in that range would become a tag record.
 
 ## 6. Decisions for the lead architect
 
@@ -452,20 +541,22 @@ Decide v2 before the mainnet gate (D-8). Taking it then costs no transition and 
 | D-5 | Ceremony order | **ceremony on beta3, short scanned gap, then release**; pre-signed `SET_CREATE` (new code, malleability risk) | ceremony first, gap scanned |
 | D-6 | Light attestor route; lightwalletd accepting statements | **agent over lightwalletd + `SubmitAttestation`**; yewd with a lightwalletd backend; full nodes only | agent over lightwalletd; full-node hosts until it passes |
 | D-7 | Cancel watcher on light seats | **defer: light seats sign prices and heartbeats only**; port the cancel path (+4-6 days) | defer; full-node hosts keep it meanwhile (cancel schedule up to 4 co-signers, `params.cpp:116`) |
-| D-8 | Tag v2 (post-quantum payout key) | in beta4 with 3e; **later, before the mainnet gate**; never | later; ECC payout address meanwhile |
+| D-8 | Tag v2 (post-quantum payout key) | **decided 2026-11-18: in beta4, in the same consensus release as the set id** | - |
+| D-10 | v1 beside v2, or v2 only | **keep v1 for ECC payees and add v2 for post-quantum ones, both valid from YED start**; v2 only, for every payee | keep v1 + add v2 (§5.2) |
+| D-11 | 3b quote cadence | **decided 2026-11-18: every 60-75 s, no heartbeat, no change threshold** | - |
 | D-9 | kogany fast-testnet nodes at the upgrade | **resync, or restore a new-release snapshot, plus a startup "resync required" check**; an in-place YED rebuild (larger) | resync + startup check |
 
 ## 7. Phased tasks
 
 | Phase | Work | Repos | Depends on |
 |---|---|---|---|
-| P0 | Decisions D-1..D-9; record the T-5 amendment in the testnet plan | workspace | — |
-| P1 | Id slot in `TestFastParams` on the three lines (empty); tests T2-T5; kogany startup check; ceremony test T1 | ycash6, ycash-dd, kogany | P0 |
+| P0 | Decisions D-1..D-7, D-9, D-10 (D-8 and D-11 decided); record the T-5 amendment in the testnet plan | workspace | — |
+| P1 | One consensus change set on the three lines (ycash-dd → ycash6 → kogany), behind the two-reviewer gate: the id slot in `TestFastParams` (left empty) and the tag v2 (§5.3: tag, payee matching, SCHEMA_VERSION 16, payout-address options, rpcversion 11); tests T2-T5 and V1-V5; kogany startup check; ceremony test T1 | ycash6, ycash-dd, kogany | P0 |
+| P1b | v2 clients: yolo `tag.rs` (and PRICE_MAX), YEW core payee script, Python model and check-coinbase, contract fixtures in lightwalletd-dd, YecWallet and chain-viz; V6-V7 | yolo, yew, ycash6 + ycash-dd contrib, lightwalletd-dd, yecwallet-dd, chain-viz | P1 contract |
 | P2 | Seat host recipe for 3 hosts with full nodes (ycashd wallet, or yewd + koganyd), the agent, the subscribe agent beside the lightwalletd node, monitoring | ycash-infra, ycash-ops | P0 |
-| P3 | Ceremony (§4.3 steps 2-4), gap scan, id filled, beta4 tag, upgrade in order, kogany resync | all node lines, ycash-ops | P1, P2, 3a ready |
+| P3 | Ceremony (§4.3 steps 2-4) once P1 is approved and frozen; gap scan for set acts and for both tag patterns from 510,400; id filled; beta4 tag; upgrade in order; kogany resync | all node lines, ycash-ops | P1, P1b, P2, 3a ready |
 | P4 | Wallet retry: on `bundle-insufficient` rebuild at the next block (ycashd wallet, yewd, YEW). Test T6 | ycash6, ycash-dd, yew | P1 |
 | P5 | Light attestor: lightwalletd `SubmitAttestation` / `GetTag`, agent lightwalletd backend, signer, guard, YEW-core set acts, second lightwalletd; regtest acceptance; move the hosts to light | lightwalletd-dd, ycash6 + ycash-dd contrib, yew, ycash-infra | P3 |
-| P6 | (D-8, later) tag v2 on three lines and clients | all | decision |
 
 **Acceptance of the item:**
 
