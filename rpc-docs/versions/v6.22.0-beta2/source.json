@@ -1,0 +1,17 @@
+{
+  "version": "v6.22.0-beta2",
+  "line": "ycash6",
+  "tag": "v6.22.0-beta2",
+  "tagCommit": "fbc9f625c657eca50ddc09e5065e8ed0d3a33a48",
+  "binary": {
+    "commit": "c8f25b0ba067ed9eb5f8907220028471d9a4106d",
+    "version": "Ycash Daemon version v6.22.0-beta2-c8f25b0ba"
+  },
+  "commitMismatch": "the published beta2 binaries (macOS aarch64 release asset) report c8f25b0ba; the tag fbc9f625c adds two rc-qualify commits after it: git diff c8f25b0ba v6.22.0-beta2 touches only .github/workflows/rc-qualify.yml, doc/yellowback-release.md and qa/, no src/rpc, src/wallet or doc/*-rpc-contract.json file",
+  "contracts": [
+    "doc/vault-rpc-contract.json",
+    "doc/yellowback-rpc-contract.json"
+  ],
+  "capturedAt": "2026-11-18T06:15:18Z",
+  "methods": 235
+}

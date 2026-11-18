@@ -1,0 +1,10 @@
+yed_signattestation seq priceMicroUsd ( citedHeight )
+
+Sign one 74-byte attestation with the attestor hot key held in this wallet (the agent's RPC; the key never leaves the
+node). Equivocation guard (S16): <datadir>/yellowback/attest-signed.dat records every (seq, citedHeight, price, sig)
+ever signed, fsynced before returning; the same price again returns the recorded signature with reused = true, a
+different price is refused with equivocation-guard. citedHeight defaults to tip - REF_LAG. Refused with
+attest-unknown-seq, attest-key-not-held, attest-range, attest-stale, equivocation-guard.
+
+Result: { "hex", "seq", "priceMicroUsd", "citedHeight", "reused" }
+

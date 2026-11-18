@@ -1,0 +1,25 @@
+z_listaccounts
+
+Not available on Ycash (needs NU5): unified-address accounts need the NU5 network upgrade,
+which has no activation height on Ycash, so this call is refused. Use getnewaddress (transparent,
+post-quantum) and z_getnewaddress (Sapling) for addresses, and z_getbalance / z_gettotalbalance
+for balances.
+
+Returns the list of accounts created with z_getnewaccount.
+
+Result:
+[
+   {
+     "account": "uint",           (uint) The account id
+     "addresses": [
+        {
+           "diversifier":  "uint",        (string) A diversifier used in the account
+           "ua":  "address",              (string) The unified address corresponding to the diversifier.
+        }
+     ]
+   }
+]
+
+Examples:
+> ycash-cli z_listaccounts 
+

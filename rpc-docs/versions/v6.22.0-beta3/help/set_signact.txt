@@ -1,0 +1,15 @@
+set_signact "hex" ( "setid" )
+
+Add this wallet's act signatures to an act transaction: the member's own signature (join, heartbeat), the
+admit key or current-member co-signatures (join), or current-member signatures (remove, winddown), up to the
+number the act needs at the next block. The transaction's inputs must not be signed yet (the act output is
+rewritten; set_sendact signs them).
+
+Arguments:
+1. "hex"    (string, required) the act transaction
+2. "setid"  (string, optional) checked against the act's set
+
+Result: {"hex", "type", "complete", "signatures", "required"}
+> ycash-cli set_signact "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_signact", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

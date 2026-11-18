@@ -1,0 +1,14 @@
+set_signunlock "hex" ( {"acknowledgerestore": true} )
+
+Add this wallet's current-member unlock signatures (OP_CHECKSETSIG role 1 of the vault's setid) to a vault
+UNLOCK spend, up to the set's unlockthreshold. The signatures bind the vault input and every output, not the fee
+inputs (SIGHASH_ALL|ANYONECANPAY), so build first; a re-funded build (vault_refee) keeps them valid. Sign once:
+the wallet records (setid, prevout) -> (role, sighash) before signing and refuses a different spend of the
+prevout. A wallet restored from a seed or that imported a member key refuses (set-sign-restored) a prevout it
+has no record for until set_acknowledgerestore (after importing its history with set_importsigned), or
+acknowledgerestore=true states this key never signed a spend of that prevout.
+
+Result: {"hex", "complete", "signatures", "required", "sighash", "setsigs": [{"key","sig"}]}
+> ycash-cli set_signunlock "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_signunlock", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

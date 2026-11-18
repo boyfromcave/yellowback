@@ -1,0 +1,29 @@
+getcompactblockrange start count
+
+Returns compact representations of a contiguous range of blocks as an
+array of hex-encoded `cash.z.wallet.sdk.rpc.CompactBlock` protobufs
+(compact_formats.proto), starting at height `start` for `count` blocks.
+This is the batched, single-call fast path for a lightwalletd backend.
+
+WARNING: getcompactblockrange is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -compactblocks
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+compactblocks=1
+
+Arguments:
+1. start                 (numeric, required) The starting block height
+2. count                 (numeric, required) The number of blocks (1..10000)
+
+Result:
+[                        (array) one hex-encoded CompactBlock per block
+  "data", ...
+]
+
+Examples:
+> ycash-cli getcompactblockrange 12800 100
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getcompactblockrange", "params": [12800, 100] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

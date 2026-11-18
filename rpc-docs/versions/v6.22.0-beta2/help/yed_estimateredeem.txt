@@ -1,0 +1,15 @@
+yed_estimateredeem "vaultTxid"
+
+Quote of yed_redeem for an own vault (IT-9): the burn, the pool fee and, before lockHeight, the early-redeem
+fee a redeem confirming in the next block pays, and whether yed_redeem would go ahead now. Signs nothing,
+locks nothing, commits nothing; never refuses for the vault's state (error says why a redeem would: canRedeem is
+judged on spendable YED, yed_getbalance.spendableCents, and is false with vault-spend-pending while a spend of
+the vault is in the mempool).
+
+Arguments:
+1. "vaultTxid"  (string, required) the mint transaction id (the vault is its output 0)
+
+Result: { "vault", "status", "termClass", "lockHeight", "height", "early", "burnedCents",
+          "collateralZat", "pMint", "protocolFeeCents", "protocolFeeZat", "feeZat", "earlyRedeemFeeBps",
+          "earlyRedeemFeeCents", "earlyRedeemFeeZat", "payee", "canRedeem", "error" }  (rpcversion 8: the fees in dollars at pMint)
+

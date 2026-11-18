@@ -1,0 +1,32 @@
+z_getbalance "address" ( minconf inZat )
+
+Supported on Ycash. Its upstream replacement, z_getbalanceforaccount, needs
+NU5, which has no activation height on Ycash.
+
+Returns the balance of a taddr or zaddr belonging to the node's wallet.
+
+CAUTION: If the wallet has only an incoming viewing key for this address, then spends cannot be
+detected, and so the returned balance may be larger than the actual balance.
+Arguments:
+1. "address"        (string) The selected address. It may be a transparent address (ECC, or post-quantum of
+                   either scheme) or a shielded address of this wallet. An address the wallet does not hold is refused:
+                   transparent or post-quantum (no key and no watch-only script), or shielded (no spending or viewing
+                   key). A watch-only transparent address answers.
+2. minconf          (numeric, optional, default=1) Only include transactions confirmed at least this many times
+                   (as z_gettotalbalance: unconfirmed own change is left out at 1 and counted at 0).
+3. inZat            (bool, optional, default=false) Get the result amount in yoshis (as an integer).
+
+Result:
+amount              (numeric) The total amount in YEC(or yoshis if inZat is true) received at this address.
+
+Examples:
+
+The total amount received by address "myaddress"
+> ycash-cli z_getbalance "myaddress"
+
+The total amount received by address "myaddress" at least 5 blocks confirmed
+> ycash-cli z_getbalance "myaddress" 5
+
+As a JSON RPC call
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_getbalance", "params": ["myaddress", 5] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

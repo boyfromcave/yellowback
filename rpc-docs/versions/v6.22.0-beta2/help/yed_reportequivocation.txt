@@ -1,0 +1,8 @@
+yed_reportequivocation "attestationHexA" "attestationHexB" ( wait )
+
+Report two attestations of one attestor for one height at two prices (EQV-1): the carrier step with a bundle of
+exactly the two, then a transaction carrying the EQUIVOCATION payload. The attestor is EJECTED when it confirms.
+Refused with not-equivocation (the message says which condition fails), attest-malformed.
+
+Result: { "txid", "carrierTxid", "pending", "refHeight", "seq", "citedHeight", "priceA", "priceB" }
+

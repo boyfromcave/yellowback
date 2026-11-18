@@ -1,0 +1,12 @@
+set_listsigned
+
+The wallet's set sign-once records (07/F-5): for every (setid, prevout) its member keys signed a spend of, the
+role (1 unlock, 2 cancel) and the sighash signed. Back them up with wallet.dat (the seed does not carry them);
+import them on a restored wallet with set_importsigned, then set_acknowledgerestore. dumpwallet / z_exportwallet
+write them
+as vaultsetsig= lines, and "restored" says whether set_signunlock / set_signcancel refuse (set-sign-restored).
+
+Result: {"restored", "records": [{"setid", "prevout", "role", "sighash"}]}
+> ycash-cli set_listsigned 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_listsigned", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

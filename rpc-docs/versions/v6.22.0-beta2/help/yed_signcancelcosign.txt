@@ -1,0 +1,16 @@
+yed_signcancelcosign "intentoutpoint" ( priceMicroUsd seq )
+
+Co-sign the attestor CANCEL of a YED claimant intent with the attestor member key held in this wallet (CAN-2 + C4b,
+the cancel-limit design): one 65-byte recoverable signature over (attestor set, intent, the claim's refHeight R,
+priceMicroUsd, blockHash(R)) -- the member's co-signature AND its signed price statement at R. A member whose regular
+attestation at R carries another price is slashable by EQV-1, so the price is locked through the equivocation guard
+(S16, yed_signattestation's): the default is the price this key already signed for R; a different price is refused
+(equivocation-guard); with no prior signature the price must be given and is recorded for R. The price must say the
+vault was NOT claimable (collateral x price >= debt x CLAIM_THRESHOLD), else cancel-statement-claimable. seq defaults to
+the first current member whose key this wallet holds. Hand the result's cosig to whoever builds the cancel
+(yed_buildcancel's cosigs).
+
+Result: { "cosig" (hex, 69 bytes), "seq", "priceMicroUsd", "citedHeight", "reused" }
+> ycash-cli yed_signcancelcosign "txid:0" 50000
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "yed_signcancelcosign", "params": ["txid:0", 50000] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

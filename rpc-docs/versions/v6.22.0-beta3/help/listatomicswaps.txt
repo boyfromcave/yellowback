@@ -1,0 +1,7 @@
+listatomicswaps ( "status" )
+
+List atomic swap records in the wallet, optionally filtered by status.
+
+Arguments:
+1. "status"  (string, optional) One of: initiated, participated, claimed, refunded, expired, abandoned
+

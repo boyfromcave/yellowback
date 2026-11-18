@@ -1,0 +1,18 @@
+getblocksubsidy height
+
+Returns block subsidy reward, taking into account the mining slow start and the founders reward, of block at index provided.
+
+Arguments:
+1. height         (numeric, optional) The block height.  If not provided, defaults to the current height of the chain.
+
+Result:
+{
+  "miner" : x.xxx,              (numeric) The mining reward amount in YEC.
+  "founders" : x.xxx,           (numeric) The founders' reward amount in YEC.
+  "totalblocksubsidy" : x.xxx,  (numeric) The total value of the block subsidy in YEC.
+}
+
+Examples:
+> ycash-cli getblocksubsidy 1000
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getblocksubsidy", "params": [1000] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

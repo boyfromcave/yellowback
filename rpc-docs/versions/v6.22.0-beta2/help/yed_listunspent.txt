@@ -1,0 +1,5 @@
+yed_listunspent ( "dummy" )
+
+YED outputs that are mine, with whether each is spent by an unconfirmed transaction and whether it is locked.
+Argument: "dummy" (string, optional) ignored; accepted for compatibility.
+

@@ -1,0 +1,14 @@
+z_setmigration enabled
+When enabled the Sprout to Sapling migration will attempt to migrate all funds from this wallet’s
+Sprout addresses to either the address for Sapling account 0 or the address specified by the parameter
+'-migrationdestaddress'.
+
+This migration is designed to minimize information leakage. As a result for wallets with a significant
+Sprout balance, this process may take several hours. The migration works by sending, up to 5, as many
+transactions as possible whenever the blockchain reaches a height equal to 99 modulo 100. The transaction
+amounts are picked according to the random distribution specified in ZIP 308. The migration will end once
+the wallet’s Sprout balance is below 0.01 YEC.
+
+Arguments:
+1. enabled  (boolean, required) 'true' or 'false' to enable or disable respectively.
+

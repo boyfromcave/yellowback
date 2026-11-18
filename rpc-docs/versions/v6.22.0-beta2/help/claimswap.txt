@@ -1,0 +1,11 @@
+claimswap "contract" "contracttxid" vout "secret" ( "recipientaddress" )
+
+Claim funds from an atomic swap by revealing the secret.
+
+Arguments:
+1. "contract"            (string, required) The HTLC redeem script in hex
+2. "contracttxid"        (string, required) The contract transaction ID
+3. vout                  (numeric, required) The contract output index
+4. "secret"              (string, required) The 32-byte secret in hex
+5. "recipientaddress"    (string, optional) The address to receive claimed funds (defaults to the contract's recipient)
+

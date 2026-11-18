@@ -1,0 +1,4 @@
+yed_gettxinfo "txid"
+
+The index's record of a confirmed transaction that created or spent Tokens/Vaults (N7).
+

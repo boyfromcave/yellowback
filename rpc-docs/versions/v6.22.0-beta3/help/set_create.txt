@@ -1,0 +1,16 @@
+set_create {params}
+
+Create a signer set (a SET_CREATE act), funded and signed by this wallet, and broadcast it. The set id is
+the transaction id; the set exists from the next block on.
+
+Arguments:
+1. params  (object, required)
+   {"seats":n, "unlockthreshold":n, "cancelthreshold":n (default 1), "slashthreshold":n (default unlockthreshold),
+    "open":bool (default false), "ratelimitbps":n (default 0 = none), "ratewindow":n (default 144),
+    "livenesswindow":n (default 1000), "bondmin":amount (default 1), "bondlockmin":n (default 0),
+    "maturity":n (default and minimum: the network's exit window, D-Q-31), "admitkey":"hex" (default: a new wallet key)}
+
+Result: {"txid", "setid", "admitkey"}
+> ycash-cli set_create '{"seats":3,"unlockthreshold":2,"cancelthreshold":1,"slashthreshold":2}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_create", "params": [{"seats":3,"unlockthreshold":2}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

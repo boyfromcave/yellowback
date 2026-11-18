@@ -1,0 +1,18 @@
+zcbenchmark benchmarktype samplecount ( arg )
+
+arg (optional): the thread count for createjoinsplit and solveequihash, the JoinSplit hex for
+verifyjoinsplit.
+
+Runs a benchmark of the selected benchmark type samplecount times,
+returning the running times of each sample.
+
+Output: [
+  {
+    "runningtime": runningtime
+  },
+  {
+    "runningtime": runningtime
+  }
+  ...
+]
+

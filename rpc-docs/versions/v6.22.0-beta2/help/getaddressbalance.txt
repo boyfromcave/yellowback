@@ -1,0 +1,41 @@
+getaddressbalance {"addresses": ["taddr", ...]}
+
+Returns the balance for addresses.
+
+WARNING: getaddressbalance is disabled.
+To enable it, restart ycashd with the following command line options:
+-experimentalfeatures and -insightexplorer or:
+-experimentalfeatures and -lightwalletd
+
+Alternatively add these two lines to the ycash.conf file:
+
+experimentalfeatures=1
+insightexplorer=1
+
+or:
+
+experimentalfeatures=1
+lightwalletd=1
+
+Arguments:
+{
+  "addresses":
+    [
+      "address"  (string) The base58check encoded address
+      ,...
+    ]
+}
+(or)
+"address"  (string) The base58check encoded address
+
+Result:
+{
+  "balance"  (string) The current balance in yoshis
+  "received"  (string) The total number of yoshis received (including change)
+  "txcount"  (numeric) The number of distinct transactions touching the given address(es)
+}
+
+Examples:
+> ycash-cli getaddressbalance '{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"]}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getaddressbalance", "params": [{"addresses": ["smDw2LWkeuJ1NGBDDZvdNbzY8A9D1mkkDZm"]}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

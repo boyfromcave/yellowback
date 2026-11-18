@@ -1,0 +1,18 @@
+vault_buildcancel "intentoutpoint" ( rebuild )
+
+Build the CANCEL spend of an intent before it matures: its value back into the vault it was unlocked from
+(I-2), fee from this wallet (unsigned; never from the intent's value). Collect the cancel set's signatures with
+set_signcancel, then vault_send.
+An intent still in the mempool can be cancelled too: the cancel spends it as a mempool child. Called again for
+the same intent it returns the same transaction (remembered in the wallet, across restarts); if its fee inputs
+were spent meanwhile it is re-funded (vault_refee) with the same sighash (members sign once: a second, different
+cancel signature is an equivocation). rebuild=true discards the remembered build (only before anyone signed it).
+A YED claim intent (tag YED) is refused: its cancel must also refund the claim's burn (CAN-1), which
+yed_buildcancel builds.
+
+Result: {"hex", "required", "cancelsetid", "deadline" (the last height a cancel can confirm at; for an
+unconfirmed intent, if the intent confirms in the next block), "intentconfirmed", "sighash", "build" ("new",
+"reused" or "refunded")}
+> ycash-cli vault_buildcancel "txid:0"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_buildcancel", "params": ["txid:0"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

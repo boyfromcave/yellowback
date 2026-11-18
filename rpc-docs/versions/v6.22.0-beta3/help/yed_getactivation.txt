@@ -1,0 +1,6 @@
+yed_getactivation
+
+The vault upgrade's status (upgrade plan §15.10, U-22): Yellowback is consensus from the UPGRADE_VAULT
+activation height with the network's attestor set; ACT-1..7 (signalling, lock-in, the valve, the sunset)
+are retired. Result: {status "active"|"pending", activationHeight, branchId, attestorSetId, claimDelay, height}.
+

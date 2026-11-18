@@ -1,0 +1,17 @@
+z_exportviewingkey "zaddr"
+
+Returns the full viewing key corresponding to 'zaddr' in the format specified by
+https://zips.z.cash/protocol/protocol.pdf#addressandkeyencoding.
+z_importviewingkey can be used to import Sprout and Sapling exported in this format;
+import of unified viewing keys is not yet supported.
+
+Arguments:
+1. "zaddr"   (string, required) The zaddr for the viewing key
+
+Result:
+"vkey"                  (string) The viewing key
+
+Examples:
+> ycash-cli z_exportviewingkey "myaddress"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_exportviewingkey", "params": ["myaddress"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

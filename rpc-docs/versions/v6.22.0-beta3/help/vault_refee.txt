@@ -1,0 +1,15 @@
+vault_refee "hex"
+
+Re-fund a vault UNLOCK or CANCEL spend (01/V-2): every input but the vault/intent input is replaced by this
+wallet's coins; the template input (with any set signatures already on it) and every output stay as they are,
+so the signatures stay valid: they are over SIGHASH_ALL|ANYONECANPAY, which binds the template input and the
+outputs, not the fee inputs. Anyone may re-fund. Use it when a fee input of a signed spend was spent elsewhere.
+The outputs, the builder's change included, are bound, so there can be no new change output: the new input is one
+coin worth exactly what the outputs need beyond the template coin plus the fee (an existing coin within 1,000
+zatoshi of it, else a self-send of exactly that amount, broadcast now, that the spend chains on). The fee never
+comes from the vault's value (S-2, I-1, I-2). The new input is unsigned and locked: vault_send on this node signs it.
+
+Result: {"hex", "sighash" (unchanged), "fee", "replaced": ["txid:n", ...]}
+> ycash-cli vault_refee "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_refee", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

@@ -1,0 +1,27 @@
+getdeprecationinfo
+Returns an object containing current version and deprecation block height. Applicable only on mainnet.
+
+Result:
+{
+  "version": xxxxx,                          (numeric) the server version
+  "subversion": "/MagicBean:x.y.z[-v]/",     (string) the server subversion string
+  "deprecationheight": xxxxx,                (numeric, deprecated) the block height at which this version will deprecate and shut down
+  "end_of_service": {                        (object, optional) information about end-of-service halt, not present for testnet
+                                             or regtest nodes
+    "block_height": xxxxx,                   (numeric) the block height at which this version will reach its the end of its service period and shut down
+    "estimated_time": xxxxx                  (numeric) the approximate time at which this version is expected to reach the end-of-service height,
+                                             in seconds since epoch (midnight Jan 1 1970 GMT). Please note that given the variability of block times,
+                                             the actual end-of-service halt may vary from this time by hours or even days; this value is provided
+                                             solely for informational purposes and should not be relied upon to remain accurate. If the end-of-service
+                                             height for this node has already been reached, this timestamp may be in the past.
+  },
+  "deprecated_features": [...],              (array of string) a list of currently-deprecated but not yet disabled features
+  "disabled_features": [...]                 (array of string) a list of the deprecated and currently-disabled features that should be expected to be
+                                             removed in an upcoming release. These features can be re-enabled via use of the '-allowdeprecated'
+                                             configuration option.
+}
+
+Examples:
+> ycash-cli getdeprecationinfo 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getdeprecationinfo", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

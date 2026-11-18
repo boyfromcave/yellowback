@@ -1,0 +1,11 @@
+set_getinfo "setid" ( height )
+
+One signer set: its SET_CREATE parameters, rate fields, members and their status, and whether the set is
+current / dormant / released, evaluated at `height` (default: the next block) over the state at the tip.
+
+Arguments:
+1. "setid"   (string, required) the txid of the set's SET_CREATE transaction
+2. height     (numeric, optional) the height to evaluate the §15.4 predicates at
+> ycash-cli set_getinfo "setid"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_getinfo", "params": ["setid", 120] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

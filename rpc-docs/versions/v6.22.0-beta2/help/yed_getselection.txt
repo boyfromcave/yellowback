@@ -1,0 +1,4 @@
+yed_getselection refHeight "selectorHex"
+
+selected(refHeight, selector) (v3 §3.7, W9) with weights, statuses and this node's pool coverage.
+

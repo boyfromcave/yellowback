@@ -1,0 +1,14 @@
+vault_send "hex" ( {"dryrun":bool, "allowinputs":["txid:n",...], "allowoutflow":n} )
+
+Sign this wallet's (fee) inputs of a vault spend built by vault_buildunlock / vault_buildcancel /
+yed_buildcancel / vault_app / vault_refee, keeping the template input's scriptSig, and broadcast it.
+Signs only coins this wallet's remembered build chose for these exact outputs. Any other spendable coin of
+this wallet is refused (vault-send-foreign-input) unless allowinputs names it, and nothing is signed. The
+wallet's net outflow above the fee cap is refused (vault-send-outflow) unless allowoutflow is at least
+that outflow. dryrun returns a preview and does not sign or broadcast.
+
+Result (dryrun false or omitted): "txid"
+Result (dryrun true): {"template", "act", "sign", "foreign", "outputs", "fee", "outflow", "wouldrefuse"}
+> ycash-cli vault_send "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "vault_send", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

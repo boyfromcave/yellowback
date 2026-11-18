@@ -1,0 +1,10 @@
+refundswap "contract" "contracttxid" vout ( "refundaddress" )
+
+Refund an atomic swap after the locktime has expired.
+
+Arguments:
+1. "contract"         (string, required) The HTLC redeem script in hex
+2. "contracttxid"     (string, required) The contract transaction ID
+3. vout               (numeric, required) The contract output index
+4. "refundaddress"    (string, optional) Address to send refunded funds to (default: the contract's initiator)
+

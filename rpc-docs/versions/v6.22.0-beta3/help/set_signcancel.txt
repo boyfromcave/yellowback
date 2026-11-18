@@ -1,0 +1,9 @@
+set_signcancel "hex" ( {"acknowledgerestore": true} )
+
+Add this wallet's current-member cancel signatures (OP_CHECKSETSIG role 2 of the intent's cancelsetid) to an
+intent CANCEL spend, up to the cancel set's cancelthreshold. Sign once, acknowledgerestore: as set_signunlock.
+
+Result: as set_signunlock
+> ycash-cli set_signcancel "hex"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "set_signcancel", "params": ["hex"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

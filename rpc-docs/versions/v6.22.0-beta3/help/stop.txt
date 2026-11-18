@@ -1,0 +1,7 @@
+stop ( detach )
+
+Stop Ycash server.
+
+Arguments:
+1. detach   (boolean, optional) DEPRECATED and ignored; accepted for compatibility.
+

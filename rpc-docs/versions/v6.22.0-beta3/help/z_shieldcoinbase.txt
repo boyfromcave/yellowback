@@ -1,0 +1,33 @@
+z_shieldcoinbase "fromaddress" "tozaddress" ( fee ) ( limit ) ( memo ) ( privacyPolicy )
+
+Shield transparent coinbase funds by sending to a shielded zaddr.  This is an asynchronous operation and utxos
+selected for shielding will be locked.  If there is an error, they are unlocked.  The RPC call `listlockunspent`
+can be used to return a list of locked utxos.  The number of coinbase utxos selected for shielding can be limited
+by the caller. Any limit is constrained by the consensus rule defining a maximum
+transaction size of 100000 bytes before Sapling, and 2000000 bytes once Sapling activates.
+
+Arguments:
+1. "fromaddress"         (string, required) The address is a taddr or "*" for all taddrs belonging to the wallet.
+2. "toaddress"           (string, required) The address is a zaddr.
+3. fee                   (numeric, optional, default=null) The fee amount in YEC to attach to this transaction. The default behavior
+                         is the fee for the active -feepolicy: the Ycash per-Sapling-output
+                         fee (peroutput, the default), or ZIP 317 (zip317).
+4. limit                 (numeric, optional, default=50) Limit on the maximum number of utxos to shield.  Set to 0 to use as many as will fit in the transaction.
+5. "memo"                (string, optional) Encoded as hex. This will be stored in the memo field of the new note.
+6. privacyPolicy         (string, optional, default="AllowRevealedSenders") Policy for what information leakage is acceptable.
+                         This allows the same values as z_sendmany, but only "AllowRevealedSenders" and "AllowLinkingAccountAddresses"
+                         are relevant.
+
+Result:
+{
+  "remainingUTXOs": xxx    (numeric) Number of coinbase utxos still available for shielding.
+  "remainingValue": xxx    (numeric) Value of coinbase utxos still available for shielding.
+  "shieldingUTXOs": xxx    (numeric) Number of coinbase utxos being shielded.
+  "shieldingValue": xxx    (numeric) Value of coinbase utxos being shielded.
+  "opid": xxx          (string) An operationid to pass to z_getoperationstatus to get the result of the operation.
+}
+
+Examples:
+> ycash-cli z_shieldcoinbase "s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw" "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "z_shieldcoinbase", "params": ["s1kTb43xroRcuscGeiajocxn3PkRhZ9eRNw", "ys1z7rejlpsa98s2rrrfkwmaxu53e4ue0ulcrw0h4x5g8jl04tak0d3mm47vdtahatqrlknghgfflq"] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

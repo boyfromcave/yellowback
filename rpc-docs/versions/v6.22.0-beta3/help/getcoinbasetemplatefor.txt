@@ -1,0 +1,48 @@
+getcoinbasetemplatefor "address" {"previousblockhash":"hex","txids":["hex",...]}
+
+Returns a complete coinbase transaction that pays "address" for the block template the caller names.
+A pool calls it once per miner and template and pairs the answer with the header fields and the
+transactions of the getblocktemplate reply it holds; getblocktemplate and submitblock are unchanged.
+The node keeps nothing between calls. There is no amount argument: the node derives the amount itself, the
+block subsidy plus the fee of every named transaction (from its own mempool), less the development-fund
+output this node's own coinbase carries at that height (required during the mandate; afterwards the -ydf
+share, 0 by default).
+Needs neither a wallet nor -mineraddress.
+
+Arguments:
+1. "address"      (string, required) The payout address: transparent (P2PKH or P2SH), Sapling, or a
+                    post-quantum YEC address. A Sapling address needs Heartwood active at the next height,
+                    a post-quantum one the Vault upgrade.
+2. template        (json object, required) Exactly these two keys; any other key is refused.
+     {
+       "previousblockhash" : "hex",   (string, required) previousblockhash of the getblocktemplate reply
+       "txids" : ["hex", ...]         (array, required) the hash of every entry of that reply's transactions, in order (at most 50000)
+     }
+
+Result:
+{
+  "data" : "hex",               (string) the serialized coinbase transaction, complete and valid as returned
+  "hash" : "hex",               (string) its transaction id
+  "height" : n,                 (numeric) the height the coinbase is for: the tip's height plus one
+  "previousblockhash" : "hex",  (string) echo of the request
+  "addresstype" : "type",       (string) "p2pkh", "p2sh", "sapling" or "pq"
+  "subsidy" : n,                (numeric) the block subsidy at height, in yoshis
+  "fund" : n,                   (numeric) the value of the coinbase's development-fund output, whichever rule put it there;
+                                0 exactly when the coinbase has no such output
+  "fundrule" : "rule",          (string) "mandated" (consensus requires the output at height: subsidy / 20), "optional" (the mandate
+                                has ended and this node's -ydf is above 0: that share of the subsidy) or "none"
+  "fees" : n,                   (numeric) the sum of the fees of the named transactions
+  "amount" : n,                 (numeric) what the address receives: subsidy - fund + fees, under every fundrule
+  "txcount" : n,                (numeric) the number of transaction ids the amount was derived from
+  "flags" : "hex",              (string) the scriptSig bytes after <height> OP_0 (the Yellowback quote tag, or empty), as getblocktemplate's coinbaseaux.flags
+  "sigops" : n                  (numeric) the coinbase's legacy signature-operation count
+}
+
+A reference that no longer holds is refused with "template-stale: ..." (the tip moved, or a named
+transaction left the mempool): fetch getblocktemplate again. "coinbase-does-not-fit: ..." means the block
+of the named transactions has no room for this coinbase.
+
+Examples:
+> ycash-cli getcoinbasetemplatefor "address" '{"previousblockhash":"hash","txids":["txid"]}'
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getcoinbasetemplatefor", "params": ["address", {"previousblockhash":"hash","txids":["txid"]}] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+

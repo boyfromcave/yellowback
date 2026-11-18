@@ -1,0 +1,12 @@
+getblockcount
+
+Returns the height of the most recent block in the best valid block chain (equivalently,
+the number of blocks in this chain excluding the genesis block).
+
+Result:
+n    (numeric) The height of the most recent block.
+
+Examples:
+> ycash-cli getblockcount 
+> curl --user myusername --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getblockcount", "params": [] }' -H 'content-type: text/plain;' http://127.0.0.1:8832/
+
