@@ -16,7 +16,10 @@ the dollar built on it. It ships as one tested set:
 - **koganyd, kogany 1.8.0-ycash beta3**, the Ycash full node in Rust, with `yewd`, its wallet daemon;
 - the programs tested with them: the YEW mobile and web wallet, the YecWallet desktop wallet (its
   first packaged release), the light-wallet server lightwalletd, the yolo mining pool, the chain
-  visualizer, the x402 agent-payment library and the Hawkeye bridge attestor.
+  visualizer, the x402 agent-payment library and the Hawkeye bridge attestor. YEW, the web wallet
+  and `yewd` are source releases: build yewd from yew `47898988da9cf73fb7417c9d111273ce104ff20a`
+  (the commit kogany's beta3 notes name); the release train pins yew
+  `6feaf99c10f847d6301616e487db9a16bb4da2a3`, the same code plus a test-only correction (yew #55).
 
 It is a beta. It runs on regtest, on the one-laptop devnet and on the public fast testnet. No
 activation height is set on mainnet: the vault upgrade is not active on Ycash mainnet, and nothing
@@ -33,8 +36,8 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
    your node builds pays the whole reward and every fee to the miner. While the mandate lasts,
    the 5 % fund output is a consensus rule and is paid whatever this setting says.
 2. **Every fast-testnet node must run beta3 before the fast testnet's fund mandate ends.** On the
-   fast testnet (`-testnet -testnetprofile=fast`) the mandate now ends at its own height, set at
-   the release candidate. From that height a block without the fund output is valid; a node on an
+   fast testnet (`-testnet -testnetprofile=fast`) the mandate now ends at its own height,
+   **512,417**. From that height a block without the fund output is valid; a node on an
    older build rejects it and stops following the chain. A node upgraded late may need
    `clearbanned` to reconnect to its peers. A pool that keeps `-ydf=5` until every node has
    upgraded mines blocks that old and new nodes both accept. Mainnet, the other testnets and
@@ -176,9 +179,9 @@ post-quantum miners side by side, each the block reward plus every fee of the bl
   Foundation has not adopted it.
 - **YED is not live on the fast testnet** (no attestor set there). The light-wallet server there
   serves YEC; its Yellowback service is off.
-- **The fast testnet's mandate-end height is fixed at the release candidate**; until then builds
-  carry a placeholder far above the chain tip. Every fast-testnet node must run beta3 before the
-  chain reaches that height.
+- **The fast testnet's mandate ended at height 512,417** (crossed 2026-11-17 16:15 UTC, block
+  `000ca3b75b7bf14a3f54c82765251e4d76cc20f38f5102efe9306be01d9fd34d`, no fund output from then on).
+  A fast-testnet node on beta2 or older stops following the chain there; upgrade it to beta3.
 - **The YEW app and the web wallet cannot spend a post-quantum block reward.** They cannot see that
   a coin is a block reward, so they show it as spendable and their sends are refused. Pay such
   rewards to an address held in ycashd or yewd.

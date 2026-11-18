@@ -5,8 +5,8 @@ each component's own notes: ycash6 and ycash-dd `doc/release-notes.md` (the beta
 `doc/release-notes/v1.8.0-ycash.beta3.md`, yew `docs/release-notes-beta3.md`, yolo's README and
 notes, YecWallet `docs/release-notes/release-notes-6.22.0-beta3.md`. Where this text and a
 component's own notes differ, the component's notes are right: correct this file. Two values are
-filled in at the release-candidate cut: the fast testnet's mandate-end height (`<H_END>`, the
-fast-testnet tip at the cut plus 400) and the yew commit yewd is built from (`<YEW COMMIT>`). One
+filled in at the release-candidate cut: the fast testnet's mandate-end height (512,417, the
+fast-testnet tip at the cut plus 400) and the yew commit yewd is built from (`47898988da9cf73fb7417c9d111273ce104ff20a`; the train pins `6feaf99c1`, the same code plus a test-only correction). One
 sentence is confirmed at the cut, marked `<TO CONFIRM AT THE CUT>` (section 8). Changes from
 pull requests still open when this draft was written are described as shipped and must be checked
 against the merged code at the cut: ycash-dd #194 and ycash6 #132 (the value-pool index resumes
@@ -36,8 +36,8 @@ of address that is** (transparent, Sapling or post-quantum).
 
 ## 1. What you must do when upgrading
 
-1. **Fast-testnet nodes: upgrade before height `<H_END>`.** On testnet-yb-fast the Ycash
-   Development Fund mandate now ends at its own height, `<H_END>` (ycashd
+1. **Fast-testnet nodes: upgrade before height 512,417.** On testnet-yb-fast the Ycash
+   Development Fund mandate now ends at its own height, 512,417 (ycashd
    `TESTNET_FAST_YDF_MANDATE_END_HEIGHT`, koganyd `mandate_end::TESTNET_FAST`). From that height a
    block without the 5 % fund output is valid; **this is one-way**: a node on beta2 or older rejects
    the first such block and stops following the chain. ycashd also bans the peer that sent it (24
@@ -198,7 +198,7 @@ of address that is** (transparent, Sapling or post-quantum).
 - **yewd restored from its phrase with a build older than yew `fc56fba7`** (the beta2 train named
   `6d9017e`) should be restored again with this one (the post-quantum fee, YED burn guard and seed
   restore fixes).
-- **yewd** (kogany's wallet daemon, built from yew `<YEW COMMIT>`): watch-only imports
+- **yewd** (kogany's wallet daemon, built from yew `47898988da9cf73fb7417c9d111273ce104ff20a`): watch-only imports
   (`importaddress`, `importpubkey`) with the watch-only reads, `getunconfirmedbalance`,
   `z_mergetoaddress` from post-quantum addresses, vault-call coin locks released, vault funding
   change listed, and the fees ycashd's wallet charges for each transaction shape.
@@ -254,7 +254,7 @@ of address that is** (transparent, Sapling or post-quantum).
 
 - **Not on mainnet**, and **no YED attestor set on any public network**: YED cannot be minted on the
   fast testnet with this release.
-- **The fast testnet's fund mandate ends at a height set at the release candidate**, `<H_END>`.
+- **The fast testnet's fund mandate ended at 512,417** (2026-11-17 16:15 UTC).
   Every fast-testnet node must run beta3 before the chain reaches it; a node on beta2 or older
   stops following the chain there (section 1, item 1).
 - **The YEW app and the web wallet cannot spend a post-quantum block reward.** The light-client
