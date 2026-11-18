@@ -1,6 +1,6 @@
 # beta4: a real price feed on the fast testnet (items 3c-3f)
 
-**Revision 2 (2026-11-18).** Revision 1 was written for the Yellowback lead architect's decision. Revision 2 records two decisions taken the same day: D-8 (the post-quantum payout key ships in beta4, §5) and the 3b quote cadence (§0.1). This plan covers beta4 list
+**Revision 3 (2026-11-18): every decision is taken.** The Yellowback lead architect decided D-1..D-11 on 2026-11-18 (§6). Revision 2 recorded D-8 (the post-quantum payout key in beta4, §5) and the 3b cadence (§0.1). Revision 3 records the rest. It also brings the cancel watcher onto light seats in beta4 (D-7, changed from revision 1's recommendation, §3.3) and revises the effort and phases to match. This plan covers beta4 list
 items 3c (highly available attestors), 3d (an attestor without a full node), 3e (the release part: the
 attestor set on chain and its id compiled into ycash6, ycash-dd and kogany) and 3f (a post-quantum payout
 key in the coinbase tag). Items 3a (pool quotes in the coinbase tag) and 3b (quote cadence) have their
@@ -19,10 +19,10 @@ blocks 24 h.
 
 | Item | Recommendation | Effort (agent-days) |
 |---|---|---|
-| 3c | **Split, not round robin.** 9 house seats on 3 hosts (3+3+3), in 3 different regions, one key per seat and no key on two hosts, 20 YEC bond per seat (180 YEC). Losing one host costs nothing for about 12 minutes. After that a mint fails at about 1 block in 4, and the user retries at the next block. After about 24 h the dead seats go DORMANT and minting is fully back. Losing two hosts halts minting and claims, but not owner redemption. | 3-4 (ycash-infra, ycash-ops) |
-| 3d | **The attest agent gets a lightwalletd backend.** It signs locally with its own guard file, sends statements over gossip and over a new `YellowbackStreamer.SubmitAttestation`, and does heartbeats, joins and exits through YEW-core set-act builders. A light host needs no node at all, only two lightwalletd endpoints. | 17-24 over lightwalletd-dd, ycash6/ycash-dd contrib, yew, ycash-infra |
-| 3e | Run the ceremony on the live chain with `--seats 9 --bond 20` (the script accepts a chain past the fork), compile the id in on all three lines, then upgrade. The C++ nodes replay 510,400..tip in place. **kogany nodes must resync**, because otherwise they stop at the first block. The gap between `SET_CREATE` and the upgrade must be kept short and scanned for acts on the set. | 8-11 + ops |
-| 3f | **Decided: tag v2 in beta4**, in the same consensus release as the set id. It adds a 49-byte tag (scheme + 32-byte post-quantum key hash) and keeps v1 for ECC payees; both are valid from YED's start, so no extra activation height is needed. Enforcement fees are paid to a 35-byte PQPKH. These fees are not coinbase outputs, so the shield-first rule does not apply to them. rpcversion becomes 11, and the change is made on ycash-dd, ycash6 and kogany together, plus yolo, YEW and the Python model (§5). | 16-21 |
+| 3c | **Decided (D-1..D-4): split, not round robin.** 9 house seats on 3 hosts (3+3+3), in 3 different regions, one key per seat and no key on two hosts, 20 YEC bond per seat (180 YEC). Losing one host costs nothing for about 12 minutes. After that a mint fails at about 1 block in 4, and the user retries at the next block. After about 24 h the dead seats go DORMANT and minting is fully back. Losing two hosts halts minting and claims, but not owner redemption. | 3-4 (ycash-infra, ycash-ops) |
+| 3d | **Decided (D-6, D-7): the attest agent gets a lightwalletd backend, cancel watcher included.** It signs locally with its own guard file and sends statements over gossip and over a new `YellowbackStreamer.SubmitAttestation`. Heartbeats, joins, exits and the cancel transaction are built in YEW core, and lightwalletd adds `GetTxOut` and `GetMempoolTxids` for the watcher. A light host needs no node at all, only two lightwalletd endpoints. | 29-39 over lightwalletd-dd, ycash6/ycash-dd contrib, yew, ycash-infra |
+| 3e | **Decided (D-5, D-9).** Run the ceremony on the live chain with `--seats 9 --bond 20` (the script accepts a chain past the fork), compile the id in on all three lines, then upgrade. The C++ nodes replay 510,400..tip in place. **kogany nodes must resync**, because otherwise they stop at the first block. The gap between `SET_CREATE` and the upgrade must be kept short and scanned for acts on the set. | 8-11 + ops |
+| 3f | **Decided (D-8, D-10): tag v2 in beta4**, in the same consensus release as the set id. It adds a 49-byte tag (scheme + 32-byte post-quantum key hash) and keeps v1 for ECC payees; both are valid from YED's start, so no extra activation height is needed. Enforcement fees are paid to a 35-byte PQPKH. These fees are not coinbase outputs, so the shield-first rule does not apply to them. rpcversion becomes 11, and the change is made on ycash-dd, ycash6 and kogany together, plus yolo, YEW and the Python model (§5). | 16-21 |
 
 ### 0.1 Recorded: the 3b quote cadence (lead architect, 2026-11-18)
 
@@ -162,10 +162,10 @@ seated list.
 | E. A + a key-less cold spare | 9 | as A, then 100 % once the spare takes over | as A | as A | none, if fencing is done | 3 + 1 cold |
 
 - With 4 of 9 seats dead (for example A, plus one seat restarting elsewhere), 34/84 = 40 % of blocks still work. With 5 dead it is 12 %.
-- At 76 % a user waits 1.3 blocks on average. Nothing is lost, but every fourth attempt shows `bundle-insufficient`. A wallet retry over the next block or two (§6, P4) hides it.
+- At 76 % a user waits 1.3 blocks on average. Nothing is lost, but every fourth attempt shows `bundle-insufficient`. A wallet retry over the next block or two (§7, P4) hides it.
 - Seats beyond 9 are standbys only. They are seated when a seated seat goes DORMANT, not before. A tenth to twelfth house seat would leave the immediate numbers unchanged and would use up the open seats meant for outside attestors (15 in all, `params.cpp:111`).
 
-**Recommendation: layout A**, with E's spare as a runbook rather than a running machine. The details:
+**Decided: layout A** (D-1, D-2), with E's spare as a runbook rather than a running machine. The details:
 
 - **9 house seats instead of T-5's 7.** Seven seats are exactly ATTEST_ARM_MIN, and at 43 % the 3-seat host matters too much. 9 fills N_SLOTS, so outside joiners displace house seats only by out-ranking them (SeatRank, `EvictionVictim` `state.cpp:2133-2163`).
 - **3 hosts in 3 regions,** or at least 3 availability zones (D-2).
@@ -251,7 +251,7 @@ lightwalletd endpoints.
 | Signing | in the agent: the message of §1.1 and a compact low-S signature. YEW core already has `attest_message` and verification (`yew/core/src/bundle.rs:73-194`) | **new**: a signer and guard in the agent, porting the `attest-signed.dat` semantics (yewd's signer has the same logic in `yewd/signer/src/attest.rs:5-26`) |
 | Statement delivery | (a) iroh gossip, unchanged; (b) **new `YellowbackStreamer.SubmitAttestation(bytes 74)` → `yed_addattestation`** on the lightwalletd's node, which is the node whose pool YEW's `BuildBundle` reads | **new** in lightwalletd-dd |
 | Heartbeat, join, exit, withdraw | build the `SET_HEARTBEAT`, `SET_JOIN` and `SET_REMOVE` (self) acts and the bond spend in YEW core, funded from a transparent UTXO (`GetAddressUtxos`), sent with `SendTransaction` | **new** in yew core. The act codec exists in `yew/yewd/proto/src/act.rs:20,167-222`; core has no set-act builder |
-| Cancel watcher | `ListVaults`, `GetVault`, `DecodePayload`, `GetAttestations` exist; cosign signing and `set_signcancel` would be new | **deferred** (D-7) |
+| Cancel watcher | §3.3 | **in beta4** (D-7) |
 
 **New lightwalletd-dd calls.** These need no node change: every one is an allow-listed proxy, like the
 existing ones (`common/yellowback.go:8-11,70-111`).
@@ -270,31 +270,81 @@ both statements under the real block hash at citedHeight (`state.cpp:2033`). So 
 liveness, not the bond. Two endpoints in different regions cover that. Today there is one fast-testnet
 lightwalletd, so a second is part of this item (ycash-infra).
 
-### 3.3 Alternatives
+### 3.3 The cancel watcher on light seats (D-7, in beta4)
+
+**What it does today** (`contrib/yellowback/attest/src/cancel.rs:5-29`). It runs once per poll, in three parts:
+
+- **Watcher.** It reads every confirmed YED claim and judges it at the claim's refHeight with the seat's own recorded price. A *wrong-price* claim (the vault was not claimable at that price with `margin_bps` to spare) is co-signed and published.
+- **Gossip.** It takes in other members' 115-byte co-signature frames, checked and rate-limited per peer and per seq.
+- **Collector.** One member drives each claim, chosen by a rota of members in seq order rotated by the intent hash. The driver waits for `cancelsRequired` co-signatures plus spares, then:
+  - builds the cancel (`yed_buildcancel`);
+  - adds the set signature (`set_signcancel`);
+  - broadcasts the carrier and the cancel, re-pushing or rebuilding as needed.
+
+The cancel must confirm within CLAIM_DELAY, which is 20 blocks (about 25 min) on the fast testnet
+(`params.cpp:229`). A first cancel needs 1 co-signature, and each further cancel within CANCEL_QUIET needs
+one more, up to 4 (`yellowbackwallet.cpp:2253-2256`, `params.cpp:116,243`). With 3 seats per host, a
+fourth cancel always needs a second host.
+
+**What the watcher reads, and where a light seat gets it.**
+
+| Read (today's RPC, `cancel.rs` line) | Light source |
+|---|---|
+| Claims in CLAIMING: intent outpoint, refHeight, claim height, burn, `cancelsRequired`, `refundHolder` (`yed_listvaults CLAIMING` :905, `yed_getvault` :1257) | `YellowbackStreamer.ListVaults(status "CLAIMING")` and `GetVault` (exist; `yellowback.proto:25,170`) |
+| The claim transaction and its payload (`getrawtransaction` :955, `yed_decodepayload` :961) | `CompactTxStreamer.GetTransaction` (raw) and `YellowbackStreamer.DecodePayload` (exist) |
+| Block hash at a height and reorg detection (`getblockhash` :937) | `GetBlock` and `GetLatestBlock` (exist) |
+| The seat's signed prices on record (`yed_getattestations` :1010) | `GetAttestations` (exists), plus the agent's own guard file |
+| Set and member state (`set_getinfo` :870, `yed_listattestors` :861) | `GetSet` and `ListAttestors` (exist) |
+| Whether an outpoint is spent, with mempool (the intent, the carrier, a lingering cancel, the fee inputs) (`gettxout` :1248, :2127) | **new `GetTxOut(outpoint, includeMempool)` → `gettxout`** |
+| Claims and cancels still in the mempool (`getrawmempool` :2113) | **new `GetMempoolTxids` → `getrawmempool`**. `GetMempoolTx` gives compact transactions without the inputs the check needs |
+| Index sync (`getblockchaininfo` :1044) | `GetChainInfo` and `GetLatestBlock` (exist) |
+
+**How co-signatures and the cancel are submitted.**
+
+- **Co-signatures are not for nodes.** No node keeps a pool of them, and `yed_buildcancel` takes them as arguments. They go to the claim's driver by:
+  - the cancel gossip topic and the members' direct iroh endpoint (both unchanged: `gossip.rs`, `direct.rs`);
+  - the on-chain fallback, an OP_RETURN "YF" transaction (`onchain.rs:1-19`), built by the light agent from its own transparent coin and sent with `SendTransaction`.
+- **Signing is local.** The co-signature is a recoverable secp256k1 signature over `CancelCosignMessage(setId, intent, n, citedHeight, price, blockHash)` (`src/yellowback/state.cpp:2041`). The guard file records it, because a co-signature at a price that conflicts with an attestation is equivocation (C4b, `state.cpp:2018-2022`). The iroh endpoint binding (today `signmessage`, `cancel.rs:1871`) is signed locally too.
+- **The driver builds the cancel in YEW core.** This ports `yed_buildcancel`, the `set_signcancel` signature and the carrier (`yellowbackwallet.cpp:2243-2265`):
+  - the claimed vault is re-created at vout 0, and the claim's burn is refunded at vout 1 to `refundHolder`;
+  - the carrier holding the co-signatures (CARRIER_VALUE) is spent as the last input, with the CANCEL_COSIGN marker as the last output;
+  - the member key signs SIGHASH_ALL|ANYONECANPAY under the Vault branch ID;
+  - fees come from the seat's own coins.
+
+  YEW core already builds claims and carriers (`yew/core/src/build/claim.rs`) and signs vault spends, so this is reuse.
+- **Before sending,** the driver checks the cancel with `ValidateRawTransaction` (exists). It then sends the carrier and the cancel with `SendTransaction` through both lightwalletd endpoints, in place of `broadcast_rpc`.
+- **No other lightwalletd write is added.** A mailbox for co-signatures was considered and rejected: it would put state in lightwalletd, and the light agent already runs iroh.
+
+**Trust.** As in §3.2, a lying lightwalletd can hide a claim (liveness) or show a fake one. A fake claim
+produces a co-signature for a claim that does not exist, which no consensus rule counts. Two endpoints,
+and cross-checking a claim on both before co-signing, cover the hiding case.
+
+### 3.4 Alternatives
 
 | Option | Node per seat host | New code | Weak point |
 |---|---|---|---|
-| **Agent over lightwalletd** (§3.2) | none | lightwalletd 2 calls; agent backend and signer; YEW-core set acts | lightwalletd availability (two endpoints); cancel watcher deferred |
+| **Agent over lightwalletd** (§3.2, §3.3; decided D-6) | none | lightwalletd 4 calls; agent backend, signer, cancel watcher; YEW-core set acts and cancel builder | lightwalletd availability (two endpoints) |
 | yewd with a lightwalletd backend | none | yewd backend abstraction over gRPC (wallet RPCs over a light source, the larger change: yewd's whole wallet assumes node RPC); agent unchanged | larger change; yewd becomes a light wallet |
 | One shared full node per region, agents on light hosts calling it | 1 per region | none | `yed_signattestation` needs the seat key in **that node's wallet**, so the region node is the seat holder. That is layout A with full nodes, and the agent hosts add nothing |
 | Today's full node per host (ycashd wallet, or yewd + koganyd) | 1 per host | none | cost (§2.3), sync and restore time |
 
-**Recommendation:**
+**Decided (D-6):** the agent over lightwalletd. The house seats start on full-node hosts only if the light
+agent has not passed its regtest acceptance by the ceremony. They move to light hosts when it passes (P5).
 
-- Ship beta4's first house seats on today's full-node hosts (no new code, 3e is not blocked).
-- Build the light agent in the same wave, and move the hosts to it when it passes the regtest acceptance (P5).
-
-### 3.4 Effort
+### 3.5 Effort
 
 | Repo | Work | Days |
 |---|---|---|
-| lightwalletd-dd | `SubmitAttestation` and `GetTag`, guards, tests against ycash6 and kogany | 2-3 |
+| lightwalletd-dd | `SubmitAttestation`, `GetTag`, `GetTxOut`, `GetMempoolTxids`: guards and tests against ycash6 and kogany | 3-4 |
 | ycash6 (+ ycash-dd copy) `contrib/yellowback/attest` | `[backend] lightwalletd` (tonic client), local signer, guard, key file, heartbeat through YEW core | 6-8 |
+| same | cancel watcher over lightwalletd: the reads of §3.3, local co-signature and binding signing, the on-chain fallback, the driver calling YEW core, sending through both endpoints | 5-7 |
 | yew | core set-act builders (join, heartbeat, self-remove, bond withdraw) and a small `yew-attestor` CLI | 4-6 |
+| yew | core cancel builder: the `yed_buildcancel` port, the co-signature carrier, the set signature | 5-7 |
 | kogany | none in code; confirm lightwalletd-dd over koganyd serves the two new calls | 1 |
 | ycash-infra / ycash-ops | 3 seat hosts, second lightwalletd, secrets, monitoring, "house-operated" label on the status page | 3-4 |
 | tests | regtest: 3 light seats + 6 full seats arm, mint, and lose one host; key-restore with the guard | 2 |
-| **Total** | | **18-24** |
+| tests | regtest: a wrong-price claim cancelled by light seats only (1st to 4th cancel, co-signers on two hosts), the on-chain fallback, a lightwalletd hiding a claim | 2-3 |
+| **Total** | | **29-39** |
 
 ## 4. Item 3e: release part
 
@@ -530,37 +580,48 @@ gap between `SET_CREATE` and the upgrade stays short (§4.2).
 Because YED starts retroactively at 510,400, the gap scan covers **every coinbase from 510,400** for
 either tag pattern, as well as set acts. A stray `YED!` push in that range would become a tag record.
 
-## 6. Decisions for the lead architect
+## 6. Decisions (all taken by the lead architect, 2026-11-18)
 
-| # | Decision | Options | Recommendation |
-|---|---|---|---|
-| D-1 | House seats and layout (amends T-5's 7) | 7 on 3 hosts; **9 on 3 hosts (3+3+3)**; 9 on 9 hosts; round robin with shared keys | 9 on 3 hosts, distinct keys; round robin rejected (§1.6, §2.1) |
-| D-2 | Host placement | 3 AZs in one region; **3 regions** | 3 regions (same cost; survives a region outage) |
-| D-3 | Bond and set floor | **`--bond 20` (set floor 20 for everyone)**; set floor 10 with house joins at 20 (needs a `--bondmin` flag in the ceremony, half a day) | 20 / 20 for beta4 (no code). The 10 / 20 split if outsiders should join at the module floor |
-| D-4 | Set livenessWindow (fixed at `set_create`) | **1,152 (24 h, the profile's)**; shorter, ≥ 40 (dead seats leave sooner, but a longer restart needs a revive) | 1,152 |
-| D-5 | Ceremony order | **ceremony on beta3, short scanned gap, then release**; pre-signed `SET_CREATE` (new code, malleability risk) | ceremony first, gap scanned |
-| D-6 | Light attestor route; lightwalletd accepting statements | **agent over lightwalletd + `SubmitAttestation`**; yewd with a lightwalletd backend; full nodes only | agent over lightwalletd; full-node hosts until it passes |
-| D-7 | Cancel watcher on light seats | **defer: light seats sign prices and heartbeats only**; port the cancel path (+4-6 days) | defer; full-node hosts keep it meanwhile (cancel schedule up to 4 co-signers, `params.cpp:116`) |
-| D-8 | Tag v2 (post-quantum payout key) | **decided 2026-11-18: in beta4, in the same consensus release as the set id** | - |
-| D-10 | v1 beside v2, or v2 only | **keep v1 for ECC payees and add v2 for post-quantum ones, both valid from YED start**; v2 only, for every payee | keep v1 + add v2 (§5.2) |
-| D-11 | 3b quote cadence | **decided 2026-11-18: every 60-75 s, no heartbeat, no change threshold** | - |
-| D-9 | kogany fast-testnet nodes at the upgrade | **resync, or restore a new-release snapshot, plus a startup "resync required" check**; an in-place YED rebuild (larger) | resync + startup check |
+| # | Decision | Decided |
+|---|---|---|
+| D-1 | House seats and layout | **9 house seats on 3 hosts (3+3+3), one key per seat, never a key on two hosts.** Amends T-5's 7. Round robin rejected (§1.6, §2.1) |
+| D-2 | Host placement | **3 regions**, not 3 zones in one region |
+| D-3 | Bond and set floor | **20 YEC for both** the house bond and the set's `bondmin` (`--bond 20`, no ceremony change) |
+| D-4 | Set livenessWindow | **1,152 blocks (about 24 h)** |
+| D-5 | Ceremony order | **Ceremony first, with the scanned gap** (§4.2, §5.4) |
+| D-6 | Light attestor | **The attest agent over lightwalletd:** local signing and guard file, a new `YellowbackStreamer.SubmitAttestation`, join, exit and heartbeat through YEW core (§3.2) |
+| D-7 | Cancel watcher on light seats | **In beta4** (changed from revision 1's "defer"): the reads and submission paths of §3.3, two new lightwalletd reads, the cancel builder in YEW core |
+| D-8 | Tag v2 (post-quantum payout key) | **In beta4, in the same consensus release as the set id** (§5) |
+| D-9 | kogany at the upgrade | **Resync** (or restore a new-release snapshot), **plus a startup check that says "resync required"** |
+| D-10 | v1 beside v2 | **Keep v1 for ECC payees and add v2 for post-quantum; both valid from YED start** (§5.2) |
+| D-11 | 3b quote cadence | **Every 60-75 s, no heartbeat, no change threshold** (§0.1) |
+
+**Total effort (agent-days):**
+
+| Item | Days |
+|---|---|
+| 3c | 3-4 |
+| 3d (cancel watcher included) | 29-39 |
+| 3e | 8-11 |
+| 3f | 16-21 |
+| **Total** | **56-75**, plus ops and the two-reviewer gate |
 
 ## 7. Phased tasks
 
 | Phase | Work | Repos | Depends on |
 |---|---|---|---|
-| P0 | Decisions D-1..D-7, D-9, D-10 (D-8 and D-11 decided); record the T-5 amendment in the testnet plan | workspace | — |
+| P0 | Done: D-1..D-11 decided. Remaining: record the T-5 amendment (9 house seats, 3 regions) in the testnet plan | workspace | — |
 | P1 | One consensus change set on the three lines (ycash-dd → ycash6 → kogany), behind the two-reviewer gate: the id slot in `TestFastParams` (left empty) and the tag v2 (§5.3: tag, payee matching, SCHEMA_VERSION 16, payout-address options, rpcversion 11); tests T2-T5 and V1-V5; kogany startup check; ceremony test T1 | ycash6, ycash-dd, kogany | P0 |
 | P1b | v2 clients: yolo `tag.rs` (and PRICE_MAX), YEW core payee script, Python model and check-coinbase, contract fixtures in lightwalletd-dd, YecWallet and chain-viz; V6-V7 | yolo, yew, ycash6 + ycash-dd contrib, lightwalletd-dd, yecwallet-dd, chain-viz | P1 contract |
-| P2 | Seat host recipe for 3 hosts with full nodes (ycashd wallet, or yewd + koganyd), the agent, the subscribe agent beside the lightwalletd node, monitoring | ycash-infra, ycash-ops | P0 |
-| P3 | Ceremony (§4.3 steps 2-4) once P1 is approved and frozen; gap scan for set acts and for both tag patterns from 510,400; id filled; beta4 tag; upgrade in order; kogany resync | all node lines, ycash-ops | P1, P1b, P2, 3a ready |
+| P2 | Seat host recipe for 3 hosts in 3 regions (light; a full-node fallback, ycashd wallet or yewd + koganyd, only if P5 is late); the subscribe agent beside the lightwalletd node; a second lightwalletd in another region; monitoring | ycash-infra, ycash-ops | P0 |
+| P3 | Ceremony (§4.3 steps 2-4, `--seats 9 --bond 20`, livenessWindow 1,152) once P1 is approved and frozen; gap scan for set acts and for both tag patterns from 510,400; id filled; beta4 tag; upgrade in order; kogany resync | all node lines, ycash-ops | P1, P1b, P2, 3a ready |
 | P4 | Wallet retry: on `bundle-insufficient` rebuild at the next block (ycashd wallet, yewd, YEW). Test T6 | ycash6, ycash-dd, yew | P1 |
-| P5 | Light attestor: lightwalletd `SubmitAttestation` / `GetTag`, agent lightwalletd backend, signer, guard, YEW-core set acts, second lightwalletd; regtest acceptance; move the hosts to light | lightwalletd-dd, ycash6 + ycash-dd contrib, yew, ycash-infra | P3 |
+| P5 | Light attestor, started in parallel with P1: lightwalletd `SubmitAttestation`, `GetTag`, `GetTxOut`, `GetMempoolTxids`; the agent's lightwalletd backend, signer and guard; the cancel watcher over lightwalletd (§3.3); YEW-core set acts and cancel builder; regtest acceptance, including the cancel tests; the seat hosts run light (or move to it if P3 went first on full nodes) | lightwalletd-dd, ycash6 + ycash-dd contrib, yew, ycash-infra | P0 (code); P3 (live) |
 
 **Acceptance of the item:**
 
 - On the fast testnet, `yed_getinfo` shows ARMED and a defined pMint;
 - a YEW mint succeeds;
 - killing one seat host keeps minting at more than 70 % of blocks and owner redemption at 100 %;
+- a wrong-price claim on the fast testnet is cancelled by light seats within CLAIM_DELAY;
 - the status page names the feed house-operated.
