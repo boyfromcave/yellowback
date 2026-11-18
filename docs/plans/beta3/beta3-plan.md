@@ -1,7 +1,7 @@
 # Beta3 plan: 6.22.0-beta3 and a pool that pays shielded miners
 
-**Revision 6 (2026-11-16). Wave 4 (integration) is complete but for five open pull requests;
-Wave 5 has not started; §2 is the record.** Revision 6 brings the status block and the run log up
+**Revision 7 (2026-11-18). Beta3 is released; §2 is the record.** Revision 7 closes the status block (Q, T, D, REL) and adds the close-out entry to the run log. Revision 6 (2026-11-16): Wave 4 (integration) was complete but for five open pull requests;
+Wave 5 had not started. It brought the status block and the run log up
 to 2026-11-16 15:00 UTC: `rpcversion` 10 merged on all three node lines and every client, the
 post-quantum coinbase spend found and fixed in the run, the fast-testnet light-wallet server
 accepted, the hosted web wallet live, the fast-testnet pool in per-miner mode, and the decisions
@@ -82,10 +82,10 @@ Filled in by the coordinator during the run. `[ ]` open, `[~]` in progress, `[x]
 | R-1 | RPC contract version and clients | [x] #193 | [x] #131 | [x] #42 (with the item-5 cut gate and the parity scripts in CI); [~] #43 (pins and contract copies at the rpcversion-10 ycash6) | [x] chain-viz #11, hawkeye #44, x402-ycash #23, lightwalletd-dd #20, yecwallet-dd #22, yew #50; [x] x402-ycash #25 (run against both C++ lines at 10); [x] ycash-infra #54 (the chart accepts 9 to 10) |
 | R-1+ | Found in R-3 and the run: the value-pool index resumes after an unclean stop; ycash6's wallet node survives `-reindex-chainstate` (refused with `-rescan`); koganyd's follow stall (backup writes, isolated redial) | [~] #194 | [~] #132 | [~] #44 | — |
 | R-2 | Documents for beta3 | [x] in #193 | [x] in #131 | [x] in #42 | [x] workspace #64, #65; yolo #17, chain-viz #12, hawkeye #45, x402-ycash #24, ycash-infra #53, common fork #11, kogany-site #13; [~] the final pass (this revision) |
-| Q | Qualification (incl. P-2) | [ ] | [ ] | [ ] | [ ] |
-| T | Testnet rollout, mandate-end height crossed | — | — | — | [x] T-3's pool configuration: per-miner mode, ycash-infra #55, ycash-ops #35 (applied; the pool's node still runs beta2 with `-ydf=5`); [ ] the rest |
-| D | Pool demonstration: four miners | — | — | — | [x] runbook ([`pool-demonstration.md`](pool-demonstration.md)); [ ] the run |
-| REL | Tags, releases, site | [ ] | [ ] | [ ] | [ ] |
+| Q | Qualification (incl. P-2) | [x] | [x] | [x] | [x] rc-qualify run 44066664793, `qualified: true` (2026-11-17) |
+| T | Testnet rollout, mandate-end height crossed | — | — | — | [x] every fast-testnet node on beta3; mandate end 512,417 crossed 2026-11-17 16:15 UTC (`000ca3b7…9fd34d`), no fund output after; pacing live (ycash-ops #41) |
+| D | Pool demonstration: four miners | — | — | — | [x] runbook ([`pool-demonstration.md`](pool-demonstration.md)); [x] the run, four miners paid in full and wallet-verified (2026-11-17) |
+| REL | Tags, releases, site | [x] tag [`vault-params/v6.22.0-beta3`](https://github.com/boyfromcave/ycash-dd/tree/vault-params/v6.22.0-beta3) (7c4d8af68) | [x] [v6.22.0-beta3](https://github.com/boyfromcave/ycash6/releases/tag/v6.22.0-beta3), 2026-11-17 | [x] [v1.8.0-ycash.beta3](https://github.com/boyfromcave/kogany/releases/tag/v1.8.0-ycash.beta3), 2026-11-17 | [x] YecWallet [v6.22.0-beta3](https://github.com/boyfromcave/yecwallet-dd/releases/tag/v6.22.0-beta3), 2026-11-18; train merged (workspace #70, #74); sites kogany-site #14, ycash-team-site #2; all pre-releases, signed |
 
 PR numbers are in the repository of the column (`#192` in the dd column is ycash-dd #192).
 "In #192" means the change is carried by an integration pull request: ycash-dd #192 and ycash6 #130
@@ -220,6 +220,16 @@ Rulings and decisions taken during the run, in order. Each is also written into 
   to redial. Both are upstream Zakura behaviours; a report for its maintainers is drafted.
 - **Open at 15:00 UTC:** kogany #43 (pins; red on the stall #44 fixes, then rerun), kogany #44,
   ycash-dd #194 and ycash6 #132 (a pair), yew #53 (reviewed).
+- **2026-11-18, close-out.** Beta3 released (REL above). The mainnet snapshot bundle at
+  3,105,000 (ycash-state/3, 24 parts) is published at snapshots.ycash.team and a restore from the
+  public URL passed (records: ycash-infra #67; Kogany site parts page: kogany-site #15). The
+  fast-testnet faucet pays post-quantum addresses (ycash-infra #65, ycash-ops #46,
+  ycash-team-site #5). The explorer has a value-pools page at `/pools/` and a menu link to it
+  (ycash-infra #63, #66; ycash-ops #44, #47). The snapshot restorer's fix (`ycash-bootstrap`
+  refused every mainnet restore) is merged on both C++ lines (ycash-dd #200, ycash6 #139) and must
+  ship in beta4. Advisories: chrono RUSTSEC-2026-0543 recorded as informational (ycash-dd #201,
+  ycash6 #140, librustzcash6 #27, hawkeye #46, common fork #12; kogany #46, with libz-sys 1.1.33, still open);
+  humantime RUSTSEC-2026-0542 recorded won't fix in librustzcash6 (the lead architect).
 
 ## 3. Decisions (taken by the lead architect, 2026-11-15)
 
