@@ -87,8 +87,9 @@ cut off from the network. The Zcash parameter files are published as ycash-infra
 `zcash-params-v1` release. The sites are [ycash.team](https://ycash.team)
 ([ycash-team-site](https://github.com/boyfromcave/ycash-team-site)),
 [kogany.ycash.team](https://kogany.ycash.team) ([kogany-site](https://github.com/boyfromcave/kogany-site))
-and `rpc.ycash.team`, every release's RPC reference built from [`rpc-docs/`](../../rpc-docs/README.md)
-and served by GitHub Pages. [yb-calibration](https://github.com/boyfromcave/yb-calibration) runs
+and the [RPC reference](https://boyfromcave.github.io/yellowback/), every release's RPCs built from
+[`rpc-docs/`](../../rpc-docs/README.md) and served by GitHub Pages (`rpc.ycash.team` is its planned
+custom domain). [yb-calibration](https://github.com/boyfromcave/yb-calibration) runs
 offline: it derives and checks the constants each release builds into the node.
 
 ## Data paths
