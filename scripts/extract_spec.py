@@ -194,12 +194,23 @@ THE PREFIX LINE  (the fees line after D-9, docs/plans/yellowback-quantum-spec.md
 
 THE BETA3 LINE  (the prefix line after the beta3 run, docs/plans/beta3/beta3-plan.md B3-D5; `--write-beta3` /
   `--check-beta3`, `make spec-beta3` / `make spec-check-beta3`)
-  The line is `beta3` when the rpc doc's title states rpcversion >= 10 (EXTRACT_SPEC_LINE=beta3 forces it).
+  The line is `beta3` when the rpc doc's title states rpcversion 10 (EXTRACT_SPEC_LINE=beta3 forces it; 11 and above
+  is the beta4 line, below).
   Spec   the prefix line's spec copy, unchanged.
   Contract  the prefix contract of the tree's rpc doc (without its rpcversion-9 test), then the `### 4.13` section of
          docs/plans/beta3/rpc-contract-delta.md (PLAN_BETA3) applied as the prefix delta is: no `yed_*` field changes
          shape, `yed_getinfo.rpcversion` becomes 10 (the run's additions are to stock calls).
   Trees  as the prefix line, with 10 in place of 9.
+
+THE BETA4 LINE  (the beta3 line after tag v2, docs/plans/beta4/price-feed.md section 4.3, D-T9; `--write-beta4` /
+  `--check-beta4`, `make spec-beta4` / `make spec-check-beta4`)
+  The line is `beta4` when the rpc doc's title states rpcversion >= 11 (EXTRACT_SPEC_LINE=beta4 forces it).
+  Spec   the beta3 line's spec copy, unchanged.
+  Contract  the beta3 contract of the tree's rpc doc (without its rpcversion-10 test), then the `### 4.14` section of
+         docs/plans/beta4/rpc-contract-delta.md (PLAN_BETA4) applied as the beta3 delta is: `yed_gettag` gains
+         `payoutScheme` (its `version` is 1 or 2), `yed_getinfo.rpcversion` becomes 11; payee and payout address
+         fields keep their shape (a string, now possibly a post-quantum address).
+  Trees  as the beta3 line, with 11 in place of 10.
 
 WORKTREES
   EXTRACT_SPEC_NODE_DIR / EXTRACT_SPEC_NODE6_DIR / EXTRACT_SPEC_WALLET_DIR / EXTRACT_SPEC_LWD_DIR / EXTRACT_SPEC_KOGANY_DIR
@@ -244,6 +255,10 @@ PREFIX_RPCVERSION = 9    # the first rpcversion of the prefix line (yed_getinfo'
 PLAN_BETA3 = os.path.join(ROOT, "docs", "plans", "beta3", "rpc-contract-delta.md")
 SECTION_BETA3 = "4.13"
 BETA3_RPCVERSION = 10    # the first rpcversion of the beta3 line (no yed_* shape change; stock-call additions)
+# The beta4 line's contract delta: tag v2, a post-quantum payout key (beta4 price-feed plan §4.3, D-T9), on the beta3 delta.
+PLAN_BETA4 = os.path.join(ROOT, "docs", "plans", "beta4", "rpc-contract-delta.md")
+SECTION_BETA4 = "4.14"
+BETA4_RPCVERSION = 11    # the first rpcversion of the beta4 line (yed_gettag.payoutScheme; post-quantum payees)
 NODE_DIR = os.environ.get("EXTRACT_SPEC_NODE_DIR") or os.path.join(ROOT, "ycash-dd")
 WALLET_DIR = os.environ.get("EXTRACT_SPEC_WALLET_DIR") or os.path.join(ROOT, "yecwallet-dd")
 LWD_DIR = os.environ.get("EXTRACT_SPEC_LWD_DIR") or os.path.join(ROOT, "lightwalletd-dd")
@@ -659,14 +674,16 @@ def commands_from_rpcdoc(path, rel=RPCDOC_REL):
 
 
 def doc_line(rpcdoc_path):
-    """`harden`, `upgrade`, `interm`, `quantum`, `fees`, `prefix` or `beta3`: EXTRACT_SPEC_LINE when set, else from the
-    rpc doc's title rpcversion."""
+    """`harden`, `upgrade`, `interm`, `quantum`, `fees`, `prefix`, `beta3` or `beta4`: EXTRACT_SPEC_LINE when set, else
+    from the rpc doc's title rpcversion."""
     forced = os.environ.get("EXTRACT_SPEC_LINE")
     if forced:
-        if forced not in ("harden", "upgrade", "interm", "quantum", "fees", "prefix", "beta3"):
-            die("EXTRACT_SPEC_LINE must be harden, upgrade, interm, quantum, fees, prefix or beta3, not %r" % forced)
+        if forced not in ("harden", "upgrade", "interm", "quantum", "fees", "prefix", "beta3", "beta4"):
+            die("EXTRACT_SPEC_LINE must be harden, upgrade, interm, quantum, fees, prefix, beta3 or beta4, not %r" % forced)
         return forced
     v = rpcdoc_version(rpcdoc_path)
+    if v is not None and v >= BETA4_RPCVERSION:
+        return "beta4"
     if v is not None and v >= BETA3_RPCVERSION:
         return "beta3"
     if v is not None and v >= PREFIX_RPCVERSION:
@@ -711,6 +728,8 @@ def contract_text_upgrade(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
 
 def contract_text(lines, lines_v3=None, rpcdoc_path=RPCDOC, rpcdoc_rel=RPCDOC_REL):
     line = doc_line(rpcdoc_path)
+    if line == "beta4":
+        return contract_text_beta4(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     if line == "beta3":
         return contract_text_beta3(lines, lines_v3, rpcdoc_path, rpcdoc_rel)
     if line == "prefix":
@@ -935,12 +954,14 @@ OVERLAY_LINES = {   # line -> (the check/write command names, the word in messag
     "fees": ("spec-check-fees", "spec-fees", "fees", "--write-fees"),
     "prefix": ("spec-check-prefix", "spec-prefix", "prefix", "--write-prefix"),
     "beta3": ("spec-check-beta3", "spec-beta3", "beta3", "--write-beta3"),
+    "beta4": ("spec-check-beta4", "spec-beta4", "beta4", "--write-beta4"),
 }
 OVERLAY_COPY_MIN = {   # line -> the rpcversion a client contract copy must state to be checked on it (below: skipped)
     "quantum": QUANTUM_RPCVERSION,
     "fees": FEES_RPCVERSION,
     "prefix": PREFIX_RPCVERSION,
     "beta3": BETA3_RPCVERSION,
+    "beta4": BETA4_RPCVERSION,
 }
 
 
@@ -969,7 +990,7 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
     node, node6, wallet, lwd = (d[k] for k in INTERM_TREES)
     rel = lambda p: os.path.relpath(p, ROOT)
     # the quantum and fees lines carry the in-term spec copy unchanged
-    spec = spec_text_quantum() if line in ("quantum", "fees", "prefix", "beta3") else spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
+    spec = spec_text_quantum() if line in ("quantum", "fees", "prefix", "beta3", "beta4") else spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
     copy_min = OVERLAY_COPY_MIN.get(line)
     checks, skipped = [], []
 
@@ -1010,8 +1031,8 @@ def check_interm(lines, lines_v3, write=False, line="interm"):
             checks += [(os.path.join(node6, "doc", "yellowback-spec.md"), spec),
                        (os.path.join(node6, "doc", "yellowback-rpc-contract.json"),
                         contract_text(lines, lines_v3, doc6, RPCDOC6_REL))]
-            if line in ("fees", "prefix", "beta3"):
-                # kogany carries ycash6's fees-line (and prefix- and beta3-line) copies byte for byte (WRITES; same skip-if-no-crate rule)
+            if line in ("fees", "prefix", "beta3", "beta4"):
+                # kogany carries ycash6's fees-line (and prefix-, beta3- and beta4-line) copies byte for byte (WRITES; same skip-if-no-crate rule)
                 kogany, kogany_skipped = kogany_outputs(checks[-2][1], checks[-1][1])
                 checks += kogany
                 if kogany_skipped:
@@ -1296,17 +1317,34 @@ def contract_text_prefix(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version
 
 # ── the beta3 line (the prefix line after the beta3 run, B3-D5) ───────────────────────────────
 
-def contract_text_beta3(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
-    """The beta3 line: the prefix contract of the doc with the beta3 delta applied (THE BETA3 LINE)."""
+def contract_text_beta3(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=True):
+    """The beta3 line: the prefix contract of the doc with the beta3 delta applied (THE BETA3 LINE).
+    check_version=False: a later line's base (the beta4 line), whose doc states its own rpcversion."""
     if not os.path.exists(PLAN_BETA3):
         die("the beta3 line needs %s" % os.path.relpath(PLAN_BETA3, ROOT))
     delta = overlay_delta(read_plan(PLAN_BETA3), PLAN_BETA3, SECTION_BETA3)
     doc_ver = rpcdoc_version(rpcdoc_path)
-    if doc_ver != delta[0]:
+    if check_version and doc_ver != delta[0]:
         die("%s states rpcversion %s; %s %s states %d"
             % (rpcdoc_path, doc_ver, os.path.relpath(PLAN_BETA3, ROOT), SECTION_BETA3, delta[0]))
     doc = json.loads(contract_text_prefix(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=False))
     doc = apply_overlay(doc, rpcdoc_path, PLAN_BETA3, SECTION_BETA3, delta)
+    return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+# ── the beta4 line (the beta3 line after tag v2, beta4 price-feed plan §4.3) ─────────────────
+
+def contract_text_beta4(lines, lines_v3, rpcdoc_path, rpcdoc_rel):
+    """The beta4 line: the beta3 contract of the doc with the beta4 delta applied (THE BETA4 LINE)."""
+    if not os.path.exists(PLAN_BETA4):
+        die("the beta4 line needs %s" % os.path.relpath(PLAN_BETA4, ROOT))
+    delta = overlay_delta(read_plan(PLAN_BETA4), PLAN_BETA4, SECTION_BETA4)
+    doc_ver = rpcdoc_version(rpcdoc_path)
+    if doc_ver != delta[0]:
+        die("%s states rpcversion %s; %s %s states %d"
+            % (rpcdoc_path, doc_ver, os.path.relpath(PLAN_BETA4, ROOT), SECTION_BETA4, delta[0]))
+    doc = json.loads(contract_text_beta3(lines, lines_v3, rpcdoc_path, rpcdoc_rel, check_version=False))
+    doc = apply_overlay(doc, rpcdoc_path, PLAN_BETA4, SECTION_BETA4, delta)
     return json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
@@ -1399,9 +1437,10 @@ def main(argv):
     mode = argv[1] if len(argv) > 1 else "--write"
     if mode not in ("--write", "--check", "--check-workspace", "--check-upgrade", "--write-upgrade", "--check-in-term", "--write-in-term",
                     "--check-quantum", "--write-quantum", "--check-fees", "--write-fees", "--check-prefix", "--write-prefix",
-                    "--check-beta3", "--write-beta3"):
+                    "--check-beta3", "--write-beta3", "--check-beta4", "--write-beta4"):
         die("usage: extract_spec.py [--write|--check|--check-workspace|--check-upgrade|--write-upgrade|--check-in-term|--write-in-term"
-            "|--check-quantum|--write-quantum|--check-fees|--write-fees|--check-prefix|--write-prefix|--check-beta3|--write-beta3]")
+            "|--check-quantum|--write-quantum|--check-fees|--write-fees|--check-prefix|--write-prefix|--check-beta3|--write-beta3"
+            "|--check-beta4|--write-beta4]")
     lines = read_plan()
     lines_v3 = read_plan_v3()
     if mode in ("--check-upgrade", "--write-upgrade"):
@@ -1416,6 +1455,8 @@ def main(argv):
         return check_interm(lines, lines_v3, write=mode == "--write-prefix", line="prefix")
     if mode in ("--check-beta3", "--write-beta3"):
         return check_interm(lines, lines_v3, write=mode == "--write-beta3", line="beta3")
+    if mode in ("--check-beta4", "--write-beta4"):
+        return check_interm(lines, lines_v3, write=mode == "--write-beta4", line="beta4")
     # Each node tree gets the spec of the line it is on (its rpc doc's rpcversion: >= 5 = the vault upgrade),
     # as its contract copies already do; docs/spec in this repo is always the harden line's.
     spec_h = spec_text(lines, lines_v3)
@@ -1427,7 +1468,7 @@ def main(argv):
         if os.path.relpath(path, ROOT).startswith("docs" + os.sep):
             return spec_h
         line = doc_line(os.path.join(tree, "doc", "yellowback-rpc.md"))
-        if line in ("quantum", "fees", "prefix", "beta3"):
+        if line in ("quantum", "fees", "prefix", "beta3", "beta4"):
             return spec_text_quantum()
         if line == "interm":
             return spec_text_interm(read_plan(PLAN_UPGRADE), read_plan_interm())
