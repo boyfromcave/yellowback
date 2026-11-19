@@ -7,7 +7,7 @@ key) for the contract generator (`scripts/extract-spec.sh --write-beta4` / `--ch
 §4.13, `rpcversion` 10) exactly as that one layers on the prefix delta: the generator reads only the `### 4.14`
 section below. A node tree whose `doc/yellowback-rpc.md` states `rpcversion` 10 stays on the beta3 line, untouched.
 
-**One `yed_*` field is new; none changes shape.** `yed_gettag` gains `payoutScheme` (`"p2pkh"`, `"fn-dsa-512"` or
+**One `yed_*` field is new; none changes shape.** `yed_gettag` (and the same tag object in `yed_getprice.tag`) gains `payoutScheme` (`"p2pkh"`, `"fn-dsa-512"` or
 `"slh-dsa-sha2-128s"`), and its `version` (documented since the upgrade line, always `1` until now) is `1` for a P2PKH
 payout key and `2` for a post-quantum one (the 49-byte v2 tag). `yed_getinfo.rpcversion` becomes 11.
 
@@ -29,8 +29,10 @@ the post-quantum form from `rpcversion` 11. The fields (price-feed plan §4.3, a
 
 The fee output a MINT, a claim REDEEM or an owner REDEEM must carry is the eligible payee's script: the 25-byte P2PKH
 or the 35-byte TX_PQPKH (`0x20 <hash> OP_1|OP_2 OP_CHECKPQSIG`). The attestor fee (AFEE-1) stays P2PKH. The options
-`-yellowbackpayoutaddress`, `-yellowbackpreferredpayee` and the `-mineraddress` default (kogany: `mining.miner_address`,
-`yed.payout_address`) accept a post-quantum address of the network.
+`-yellowbackpayoutaddress` and `-yellowbackpreferredpayee` (kogany: `mining.yellowback_payout_address`) accept a
+post-quantum address of the network. The `-mineraddress` default applies to a P2PKH `-mineraddress` only: the internal
+miner refuses a post-quantum `-mineraddress`, and kogany's `mining.miner_address` cannot hold one, so a post-quantum
+payout is set with the payout option.
 
 ### 4.14 RPC contract delta (`rpcversion` 11)
 
@@ -45,6 +47,16 @@ document lacks a field named here or states another `rpcversion`.
 {
   "version": 1,
   "payoutScheme": "p2pkh"
+}
+```
+
+#### `yed_getprice`
+
+```json
+{
+  "tag": {
+    "payoutScheme": "p2pkh"
+  }
 }
 ```
 

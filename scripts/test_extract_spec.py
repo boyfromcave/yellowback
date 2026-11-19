@@ -164,7 +164,8 @@ class Beta4LineVersion(unittest.TestCase):
             es.read_plan(es.PLAN_BETA4), es.PLAN_BETA4, es.SECTION_BETA4)
         self.assertEqual((ver, deltas, args, removed, vault, reshaped),
                          (es.BETA4_RPCVERSION,
-                          {"yed_gettag": {"version": 1, "payoutScheme": "p2pkh"}, "yed_getinfo": {"rpcversion": 11}},
+                          {"yed_gettag": {"version": 1, "payoutScheme": "p2pkh"}, "yed_getprice": {"tag": {"payoutScheme": "p2pkh"}},
+                       "yed_getinfo": {"rpcversion": 11}},
                           {}, [], None, []))
 
     def test_a_doc_without_payout_scheme_lags_the_delta(self):
