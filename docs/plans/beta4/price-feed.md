@@ -369,6 +369,20 @@ becomes a tag record.
 2. seeds, lightwalletd and the explorer;
 3. kogany nodes, by resync.
 
+**YED-live regtests and devnets resync at beta4** (recorded 2026-11-19, P1 review). A chain on which YED was already
+live before beta4 (a devnet, a long-lived regtest) must be resynced from genesis with the beta4 binary, not rebuilt in
+place from its stored blocks under the old index. Before beta4 a `0x31 "YED!"` byte run in a coinbase scriptSig was no
+tag; from beta4 it can be a v2 tag, and a v2 tag that comes first now decides (TAG-5). So a historical block can gain a
+tag record, which changes E(R) and every fee verdict that reads it. SCHEMA_VERSION 16 forces the index rebuild on
+ycashd; the release notes tell operators of such chains to resync (kogany refuses to start: "resync required", D-9).
+The fast testnet and mainnet carry no tag before the release (the gap scan, C-5), so this note concerns private chains.
+
+**Client releases before the node rollout** (recorded 2026-11-19, P1 review: a hard prerequisite of P5, not fixed by
+P1). `rpcversion` 11 makes the shipped clients switch Yellowback off when they meet a beta4 node: lightwalletd-dd
+(`common/yellowback.go`, the known version 10), YEW core (`net/yellowback.rs`) and YecWallet (`RPC_VERSION` 10) all
+treat a newer version as unknown. Their D-T8 updates (accept 11, render post-quantum payees) ship and are deployed
+before step 2 of the rollout order above.
+
 ### 3.4 Tasks
 
 | # | Repo | Change |
@@ -530,5 +544,5 @@ is 4 bytes up to height 8,388,607.
 | P2 | Light attestor and cancel watcher: B-T1..B-T5 | P0 (P1 for D-T7 overlap in yew) | B-1..B-3, B-5..B-10 on regtest |
 | P3 | Hosts: A-T1..A-T4, light (full-node fallback only if P2 is not done) | P0; P2 for light | A-1, A-6, A-7 |
 | P4 | Wallet retry: A-T5 | P1 | A-3, A-4, A-5 |
-| P5 | The ceremony and the release: C-T3..C-T7, beta4 tags, rollout in order (§3.3) | P1, P1b, P3, 3a | C-1, C-5, C-6, C-7, A-2, B-4 |
+| P5 | The ceremony and the release: C-T3..C-T7, beta4 tags, rollout in order (§3.3) | P1, P1b (the D-T8 client releases are a hard prerequisite, §3.3), P3, 3a | C-1, C-5, C-6, C-7, A-2, B-4 |
 | P6 | Fast-testnet confirmation | P5 | C-3 (live), D-1 (`tqf…` live), A-2 held, and a wrong-price claim cancelled by light seats (B-8 live) |

@@ -1264,11 +1264,12 @@ paid coinbase at a post-quantum address"): `-mineraddress` still refuses a post-
 D-T2). Citations at ycash-dd `up/b4-tag-v2` `dcdf224cf` (ycash-dd #207, open when cited). ycash6 and kogany carry the
 same change in their own pull requests (shared-defect rule); their rows follow when those land. Tier: the YED module
 rung (a template match on the fee output inside the module: no opcode, no transaction field, no primitive change).
-Four-part check: DigiByte pays its oracles from a vault fee to keys it learns from the oracle bundle in a coinbase
-`OP_RETURN` output (`ref/digibyte/src/oracle/bundle_manager.cpp:815-828`), never to a coinbase payee; Ycash's YED fee
-payee is named by the coinbase tag in the scriptSig, which held only a Hash160; so the adaptation is a second tag
-version carrying (scheme, `CPQKeyID` hash), and a payee type that is P2PKH or TX_PQPKH everywhere the module held a
-`uint160`.
+Four-part check: DigiByte carries its oracle bundle in an extra zero-value `OP_RETURN` coinbase output
+(`ref/digibyte/src/oracle/bundle_manager.cpp:815-828`) and names no coinbase payee: no DigiByte block names a key a
+DigiDollar fee must pay. The Ycash equivalent is the YED module's own coinbase tag, read from the coinbase scriptSig by a
+byte scan (`ycash-dd/src/yellowback/tag.cpp`), whose v1 layout names a P2PKH Hash160 payee only. So the adaptation is a
+second tag layout carrying (scheme, `CPQKeyID` hash), and a template match inside the module: the fee output is exactly
+the payee's script (25-byte P2PKH or 35-byte TX_PQPKH), with a payee type in place of every `uint160` the module held.
 
 | What a port assumes | What Ycash or this workspace has | Consequence |
 |---|---|---|
