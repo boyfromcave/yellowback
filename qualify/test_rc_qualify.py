@@ -189,6 +189,14 @@ class Train(unittest.TestCase):
         self.assertIn("ycash6.commit", out)
         self.assertNotIn("TRAIN_", out)
 
+    def test_refuses_the_beta4_skeleton_until_it_is_filled_in(self):
+        # rpcversion 11 (beta4) is a known line; the train is not qualifiable while placeholders remain.
+        code, out = run("train", os.path.join(WORKSPACE, "releases", "v6.22.0-beta4.yaml"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("is a skeleton", out)
+        self.assertIn("ycash6.commit", out)
+        self.assertNotIn("TRAIN_", out)
+
     def test_refuses_a_missing_file_and_bad_usage(self):
         code, out = run("train", os.path.join(WORKSPACE, "releases", "v6.22.0-rc99.yaml"))
         self.assertEqual(code, 1, out)

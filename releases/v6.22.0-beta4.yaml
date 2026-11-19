@@ -1,0 +1,40 @@
+# SKELETON (beta4 item 10, "every repo beta4-compatible"): the shape of the 6.22.0-beta4 train, written
+# before its commits exist. Every `placeholder` is filled in by the coordinator at qualification; while
+# one remains, `scripts/release-train.py pins` refuses this file, so the qualification harness (qualify/,
+# .github/workflows/rc-qualify.yml) cannot run against it. Known beta4 commits are filled in already.
+# kogany is not a section here: the train names the qualified lines and their clients only (AGENTS.md,
+# "The third node line"; kogany plan K-19).
+release:
+  version: 6.22.0-beta4
+  rpcversion: 11           # beta4 P1 (price-feed plan §4.3, D-T9): tag v2, post-quantum fee payees; extract_spec.py --check-beta4
+  workspace: 370c4347875faa711801ca272f8aac735efe7763   # the workspace upgrade/vault commit whose spec and contract copies the clients carry: yellowback#80, the beta4 contract line (move it if the spec changes again)
+testnet:
+  fast-vault-height: 510400  # testnet-yb-fast's UPGRADE_VAULT height, unchanged since beta2 (src/chainparams.cpp, both lines)
+  fast-set-id: placeholder   # TEST_FAST_ATTESTOR_SET_ID from the beta4 ceremony (price-feed plan C-T7), or none if beta4 ships without it
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: placeholder      # the upgrade/vault commit v6.22.0-beta4 is cut at (descends from d50e3b843, ycash6 #145)
+  tag: v6.22.0-beta4
+ycash-dd:
+  commit: placeholder      # the upgrade/vault commit vault-params/v6.22.0-beta4 is cut at (descends from ycash-dd #207)
+  tag: vault-params/v6.22.0-beta4
+librustzcash6:
+  commit: placeholder      # the rev ycash6's Cargo.toml [patch.crates-io] builds against at ycash6.commit
+lightwalletd-dd:
+  commit: placeholder      # upgrade/vault after KnownRPCVersion 11 (beta4 item 10, part A)
+yecwallet-dd:
+  commit: placeholder      # upgrade/vault with the rpcversion 11 contract copy (item 10, part A)
+yew:
+  commit: placeholder      # upgrade/vault accepting rpcversion 11 (item 10, part A)
+yolo:
+  commit: placeholder      # upgrade/vault with the tag v2 reader (item 10, part B)
+chain-viz:
+  commit: 15ad0bccfd3269ed9728e8a915153bddb833fcd4      # upgrade/vault with chain-viz #13 (rpcversion 9..11, tag v2, quote cadence, attestor set; beta4 item 9)
+x402-ycash:
+  commit: placeholder      # upgrade/vault with the rpcversion 11 notes (item 10, part B)
+hawkeye:
+  commit: placeholder      # upgrade/vault with the README node requirement 9..11 (item 10, part B)
+wyec:
+  commit: placeholder      # hawkeye's pin (eth/tools/fetch-wyec.sh WYEC_COMMIT) at hawkeye.commit
