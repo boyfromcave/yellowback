@@ -112,7 +112,7 @@ class PrefixLineVersion(unittest.TestCase):
     def test_the_line_follows_the_title(self):
         with tempfile.TemporaryDirectory() as d:
             doc = os.path.join(d, "yellowback-rpc.md")
-            for v, line in ((8, "fees"), (9, "prefix"), (10, "beta3"), (11, "beta3")):
+            for v, line in ((8, "fees"), (9, "prefix"), (10, "beta3"), (11, "beta4"), (12, "beta4")):
                 with open(doc, "w", encoding="utf-8") as fh:
                     fh.write("# Yellowback RPC contract (`yed_*`), rpcversion %d\n" % v)
                 self.assertEqual(es.doc_line(doc), line)
@@ -140,6 +140,38 @@ class Beta3LineVersion(unittest.TestCase):
             es.read_plan(es.PLAN_BETA3), es.PLAN_BETA3, es.SECTION_BETA3)
         self.assertEqual((ver, deltas, args, removed, vault, reshaped),
                          (es.BETA3_RPCVERSION, {"yed_getinfo": {"rpcversion": 10}}, {}, [], None, []))
+
+
+class Beta4LineVersion(unittest.TestCase):
+    def test_a_doc_stating_10_under_a_forced_beta4_line_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            doc = os.path.join(d, "yellowback-rpc.md")
+            with open(doc, "w", encoding="utf-8") as fh:
+                fh.write("# Yellowback RPC contract (`yed_*`), rpcversion 10\n")
+            saved = os.environ.get("EXTRACT_SPEC_LINE")
+            os.environ["EXTRACT_SPEC_LINE"] = "beta4"
+            try:
+                self.assertEqual(es.doc_line(doc), "beta4")
+                self.assertTrue(dies(es.contract_text_beta4, es.read_plan(), es.read_plan_v3(), doc, es.RPCDOC_REL))
+            finally:
+                if saved is None:
+                    del os.environ["EXTRACT_SPEC_LINE"]
+                else:
+                    os.environ["EXTRACT_SPEC_LINE"] = saved
+
+    def test_the_delta_adds_payout_scheme_and_sets_rpcversion_11(self):
+        ver, deltas, args, removed, vault, reshaped = es.overlay_delta(
+            es.read_plan(es.PLAN_BETA4), es.PLAN_BETA4, es.SECTION_BETA4)
+        self.assertEqual((ver, deltas, args, removed, vault, reshaped),
+                         (es.BETA4_RPCVERSION,
+                          {"yed_gettag": {"version": 1, "payoutScheme": "p2pkh"}, "yed_getinfo": {"rpcversion": 11}},
+                          {}, [], None, []))
+
+    def test_a_doc_without_payout_scheme_lags_the_delta(self):
+        delta = es.overlay_delta(es.read_plan(es.PLAN_BETA4), es.PLAN_BETA4, es.SECTION_BETA4)
+        doc = {"yed_gettag": {"args": "<height|blockhash>", "returns": {"found": True, "version": 1}},
+               "yed_getinfo": {"args": "", "returns": {"rpcversion": 10}}}
+        self.assertTrue(dies(es.apply_overlay, doc, "doc", es.PLAN_BETA4, es.SECTION_BETA4, delta))
 
 
 if __name__ == "__main__":

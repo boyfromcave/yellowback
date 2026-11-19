@@ -9,7 +9,7 @@ WORKSPACE     := $(notdir $(CURDIR))
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees spec-prefix spec-check-prefix spec-beta3 spec-check-beta3 release-train-check
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees spec-prefix spec-check-prefix spec-beta3 spec-check-beta3 spec-beta4 spec-check-beta4 release-train-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
@@ -76,6 +76,12 @@ spec-check-beta3: ## The beta3 line's copies (the prefix line after the beta3 ru
 
 spec-beta3: ## Write the beta3 line's copies (the prefix contract with docs/plans/beta3/rpc-contract-delta.md §4.13)
 	@scripts/extract-spec.sh --write-beta3
+
+spec-check-beta4: ## The beta4 line's copies (the beta3 line after tag v2, rpcversion 11; default the main trees, EXTRACT_SPEC_*_DIR override; trees below 11 skipped)
+	@scripts/extract-spec.sh --check-beta4
+
+spec-beta4: ## Write the beta4 line's copies (the beta3 contract with docs/plans/beta4/rpc-contract-delta.md §4.14)
+	@scripts/extract-spec.sh --write-beta4
 
 release-train-check: ## Check every releases/v*.yaml: shape, commits on upgrade/vault, tags, rpcversion, contract copies (testnet plan §5.4; OFFLINE=1: shape only)
 	@python3 scripts/release-train.py check $(if $(OFFLINE),,--online)

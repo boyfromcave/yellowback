@@ -33,6 +33,10 @@
 #                                                    states rpcversion 10 (B3-D5); EXTRACT_SPEC_*_DIR override
 #        scripts/extract-spec.sh --write-beta3       write them: the prefix contract with the beta3 delta
 #                                                    (docs/plans/beta3/rpc-contract-delta.md section 4.13) (`make spec-beta3`)
+#        scripts/extract-spec.sh --check-beta4       the beta4 line's copies (`make spec-check-beta4`): the trees whose rpc doc
+#                                                    states rpcversion 11 (tag v2, D-T9); EXTRACT_SPEC_*_DIR override
+#        scripts/extract-spec.sh --write-beta4       write them: the beta3 contract with the beta4 delta
+#                                                    (docs/plans/beta4/rpc-contract-delta.md section 4.14) (`make spec-beta4`)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.
