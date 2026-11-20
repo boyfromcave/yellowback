@@ -263,14 +263,16 @@ On `upgrade/vault` the client rules above stand — yolo, chain-viz, x402-ycash 
 consensus or node change of their own — but each is a **client update** on its own `upgrade/vault`
 branch: the new branch ID `0x6d5b7a31` for signing or verifying (x402 signs for the next block's
 branch, YEW signs vault spends; yolo needed no source change for the activation and is tested
-mining across it), `rpcversion` 9 or 10 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
+mining across it), `rpcversion` 11 (5 was the vault upgrade, 7 post-quantum owners, 8 the fee rules, 9 the
 scheme-visible post-quantum address prefixes, D-9, and 10 the beta3 additions to stock calls with no
 `yed_*` shape change, B3-D5: `getcoinbasetemplatefor`, `transparentPools` in `getblock` and
 `getblockchaininfo`, the address of a post-quantum input, `gettransaction`'s real fee, the `-ydf`
-default 0; clients accept 9 and 10. The constant is `YELLOWBACK_RPC_VERSION` in
+default 0, and 11 the beta4 price feed, D-8/D-10: v2 coinbase price tags with a post-quantum payout
+key, fee payees keyed by payee script, `yed_gettag.version`/`payoutScheme`; clients accept 11, and
+beta3 (10) is not supported going forward, item 10 of the beta4 list). The constant is `YELLOWBACK_RPC_VERSION` in
 `src/rpc/yellowback.cpp` on both C++ node lines and `YED_RPC_VERSION` in kogany's
-`crates/kogany-rpc/src/yed/mod.rs`; all three say 10 on `upgrade/vault` since the beta3
-integration step R-1 (ycash-dd #193, ycash6 #131, kogany #42, 2026-11-16). Hawkeye parses only the post-quantum owner shape and needs
+`crates/kogany-rpc/src/yed/mod.rs`; all three say 11 on `upgrade/vault` since the beta4
+consensus merge (ycash6 #145, ycash-dd #207, kogany #49, 2026-11-19). Hawkeye parses only the post-quantum owner shape and needs
 9 or later, `hawkeye/README.md` "Node requirement"), and the vault primitive's read RPCs (lightwalletd's read-only vault
 calls, chain-viz's set/vault panels).
 
