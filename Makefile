@@ -6,24 +6,27 @@
 
 REPOS         := scripts/repos.sh
 WORKSPACE     := $(notdir $(CURDIR))
+# The release line every target reads repos.yaml for: vault (default) or yugen (`make status LINE=yugen`).
+LINE          ?= vault
+export LINE
 
 
 .DEFAULT_GOAL := help
-.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees spec-prefix spec-check-prefix spec-beta3 spec-check-beta3 spec-beta4 spec-check-beta4 release-train-check
+.PHONY: help bootstrap pull status status-short pins diff log spec spec-check spec-check-upgrade spec-upgrade spec-in-term spec-check-in-term spec-quantum spec-check-quantum spec-fees spec-check-fees spec-prefix spec-check-prefix spec-beta3 spec-check-beta3 spec-beta4 spec-check-beta4 spec-yugen spec-check-yugen release-train-check
 
 help: ## Show this help
 	@printf '\033[1m$(WORKSPACE)\033[0m\n\n'
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 		| sort \
 		| awk -F':.*?## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
-	@printf '\n  \033[2mrepos.yaml:'; for r in $$($(REPOS) list); do \
+	@printf '\n  \033[2mrepos.yaml (LINE=$(LINE)):'; for r in $$($(REPOS) list); do \
 		case "$$($(REPOS) get $$r role)" in \
 			reference) v=$$($(REPOS) get $$r tag); [ -n "$$v" ] || v=$$($(REPOS) get $$r commit) ;; \
 			fork) v="$$($(REPOS) get $$r branch) off $$($(REPOS) get $$r base)" ;; \
 			*) v="$$($(REPOS) get $$r branch)" ;; esac; \
 		printf '\n    %-18s %s' "$$r" "$$v"; done; printf '\033[0m\n'
 
-bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 for pushable fork clones)
+bootstrap: ## Clone every repo in repos.yaml at its pin and create .venv (SSH=1 pushable clones, LINE=yugen, DRY=1, ONLY="paths")
 	@scripts/bootstrap.sh $(if $(SSH),--ssh) $(if $(NOVENV),--no-venv) $(if $(DRY),--dry-run)
 
 pull: ## Fast-forward every repo from its remote (never merges, rebases or discards; NOREF=1 skips ref/)
@@ -83,6 +86,12 @@ spec-check-beta4: ## The beta4 line's copies (the beta3 line after tag v2, rpcve
 spec-beta4: ## Write the beta4 line's copies (the beta3 contract with docs/plans/beta4/rpc-contract-delta.md §4.14)
 	@scripts/extract-spec.sh --write-beta4
 
+spec-check-yugen: ## The Yugen line's copies (ycash6 upgrade/yugen, rpcversion 12, decision Y-6; EXTRACT_SPEC_*_DIR override; trees not on it skipped)
+	@scripts/extract-spec.sh --check-yugen
+
+spec-yugen: ## Write the Yugen line's copies (the beta4 contract with docs/plans/yugen/rpc-contract-delta.md §4.15)
+	@scripts/extract-spec.sh --write-yugen
+
 release-train-check: ## Check every releases/v*.yaml: shape, commits on upgrade/vault, tags, rpcversion, contract copies (testnet plan §5.4; OFFLINE=1: shape only)
 	@python3 scripts/release-train.py check $(if $(OFFLINE),,--online)
 
@@ -105,6 +114,7 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 	@printf '%-18s %-32s %s\n' repo ref commit
 	@printf '%-18s %-32s %s\n' workspace "$$(git rev-parse --abbrev-ref HEAD)" "$$(git rev-parse --short HEAD)"
 	@for r in $$($(REPOS) list); do \
+		[ -e $$r/.git ] || { printf '%-18s %s\n' "$$r" '(not cloned)'; continue; }; \
 		if [ "$$($(REPOS) get $$r role)" = reference ]; then ref=$$(git -C $$r describe --tags 2>/dev/null || echo 'commit (no tags)'); \
 		else ref=$$(git -C $$r rev-parse --abbrev-ref HEAD); fi; \
 		printf '%-18s %-32s %s\n' "$$r" "$$ref" "$$(git -C $$r rev-parse --short HEAD)"; \
@@ -115,9 +125,10 @@ pins: ## Print just the current HEAD of each repo (machine-readable)
 # Zakura line) on upgrade/vault off kogany-legacy.
 FORKS := $(shell for r in $$($(REPOS) list); do [ "$$($(REPOS) get $$r role)" = fork ] && printf '%s ' "$$r"; done)
 
-diff: ## Fork deltas: every fork vs its -legacy baseline (the app repos have none)
+diff: ## Fork deltas: every fork's line branch (LINE=yugen: upgrade/yugen where set) vs its -legacy baseline (app repos have none)
 	@for f in $(FORKS); do b="$$($(REPOS) get $$f base)"; br="$$($(REPOS) get $$f branch)"; \
 	printf '\033[1m%s\033[0m\n' "$$f"; \
+	[ -e $$f/.git ] || { printf '  \033[2mnot cloned\033[0m\n'; continue; }; \
 	out="$$(git -C $$f diff --stat "$$b...$$br")"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
 	else printf '  \033[2mno changes vs %s\033[0m\n' "$$b"; fi; done
@@ -125,6 +136,7 @@ diff: ## Fork deltas: every fork vs its -legacy baseline (the app repos have non
 log: ## Commits on each fork branch not in its baseline (the app repos have none)
 	@for f in $(FORKS); do b="$$($(REPOS) get $$f base)"; br="$$($(REPOS) get $$f branch)"; \
 	printf '\033[1m%s\033[0m\n' "$$f"; \
+	[ -e $$f/.git ] || { printf '  \033[2mnot cloned\033[0m\n'; continue; }; \
 	out="$$(git -C $$f log --oneline --no-merges "$$b..$$br")"; \
 	if [ -n "$$out" ]; then printf '%s\n' "$$out"; \
 	else printf '  \033[2mno commits on %s beyond %s\033[0m\n' "$$br" "$$b"; fi; done

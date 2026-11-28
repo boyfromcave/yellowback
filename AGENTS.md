@@ -95,8 +95,8 @@ copy: DigiByte's widgets read in-process wallet models; YecWallet reads everythi
 `ycash6` (ycashd 6.20.0, another Ycash developer's rebase onto the Zcash 6.x lineage) carries the
 same overlay, ported with `ycash-dd`'s delta (`make diff`) as the source and `docs/mapping.md` §19
 as the crosswalk, and it is the release line (tag-driven GitHub releases,
-`ycash6/doc/yellowback-release.md`): **6.22.x for `upgrade/vault`**, 6.21.x for the
-`harden/yellowback` fallback; the release workflow refuses a tag whose version does not match its
+`ycash6/doc/yellowback-release.md`): **6.22.x for `upgrade/vault`**, **6.23.x for `upgrade/yugen`**
+(`ycash6/doc/yugen-release.md`), 6.21.x for the `harden/yellowback` fallback; the release workflow refuses a tag whose version does not match its
 line or whose heights are unset. **No activation height is set on any public network**: the old
 `START_HEIGHT` 3,075,000 / `ENFORCE_UNTIL_HEIGHT` 3,495,480 were withdrawn (hardening F-5), the
 upgrade line has neither (no sunset; `UPGRADE_VAULT`'s mainnet height and attestor set are set by
@@ -146,6 +146,26 @@ CI and `kogany-yellowback.yml`; every other upstream workflow is moved to
 `.github/workflows-off/`, where it cannot run (kogany plan §5, W0-c), and jobs are enabled one at a
 time. Actions were turned on for the fork on 2026-11-02, for the kogany workflows only, by the
 procedure in kogany's `.github/README-kogany.md` ("Turning Actions on"); the off set stays off.
+
+**The Yugen line: `upgrade/yugen`** (lead architect, 2026-11-25). Yugen is the post-quantum
+shielded pool network upgrade. Its branch is `upgrade/yugen` in `ycash6`, `librustzcash6`,
+`lightwalletd-dd`, `yecwallet-dd`, `yew`, `yolo` and `x402-ycash` (`repos.yaml` `branch-yugen`),
+plus its own public repositories `yugen-spec`, `yugen-proofs`, `yugen-falcon`, `yugen-proof-a`,
+`yugen-proof-b2` and `yugen-bundler` (`lines: yugen`). Node releases are **6.23.x**. Merges flow
+`upgrade/vault` → `upgrade/yugen` only, never back; `upgrade/vault` stays the default branch.
+`ycash6` and `kogany` agree on the Yugen rules; `ycash-dd` recognises the upgrade and refuses to
+continue after activation. Bundling is optional: every node verifies every Yugen transaction
+itself, and a bundler is never required to use the pool. `docs/mapping.md` §26 is its section.
+`make <target> LINE=yugen` selects the line.
+Yugen work is done in `wt/` worktrees cut from `upgrade/yugen`; a vault-line fix reaches the Yugen
+line by merging `upgrade/vault` into `upgrade/yugen` (the shared-defect rule applies on both
+lines). `UPGRADE_YUGEN` has no mainnet or testnet height; regtest activates it with
+`-nuparams=59474e30:<h>`. A Yugen release train (`releases/v6.23.*.yaml`) pins each component's
+`upgrade/yugen` commit (`upgrade/vault` for the components without one) and pairs the ycashd tag
+with ycash-dd's `vault-params/v<V>`; `make spec-check-yugen` checks its contract line.
+**Release status:** ycashd **v6.23.0-beta4** published 2026-11-27
+(`https://github.com/boyfromcave/ycash6/releases/tag/v6.23.0-beta4`, commit `90fe33410`), paired
+with ycash-dd `vault-params/v6.23.0-beta4` at `49a91daee` (`releases/v6.23.0-beta4.yaml`).
 
 ## Rules
 

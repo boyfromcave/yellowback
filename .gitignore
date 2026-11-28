@@ -19,6 +19,7 @@
 /ycash-ops/
 /kogany-site/
 /ycash-team-site/
+/yugen-*/
 
 # macOS
 .DS_Store

@@ -272,5 +272,48 @@ class Online(unittest.TestCase):
         self.assertEqual(problems, ["lightwalletd-dd: testdata/yellowback/contract.json states rpcversion 8, the train says 9"])
 
 
+    def set_rpcversions(self, versions):
+        """Rewrite each named component's node constant and contract copy to the rpcversion given; new commits."""
+        commits = dict(self.commits)
+        paths = {"ycash-dd": ["src/rpc/yellowback.cpp", "doc/yellowback-rpc-contract.json"],
+                 "ycash6": ["src/rpc/yellowback.cpp", "doc/yellowback-rpc-contract.json"],
+                 "yecwallet-dd": ["docs/yellowback-rpc-contract.json"],
+                 "lightwalletd-dd": ["testdata/yellowback/contract.json"]}
+        for name, ver in versions.items():
+            repo = os.path.join(self.tmp, "src", name)
+            for rel in paths[name]:
+                full = os.path.join(repo, rel)
+                with open(full, "w", encoding="utf-8") as fh:
+                    fh.write("static const int YELLOWBACK_RPC_VERSION = %d;\n" % ver if rel.endswith(".cpp")
+                             else '{"rpcversion": %d}\n' % ver)
+            git(repo, "commit", "-q", "-am", "rpcversion %d" % ver)
+            commits[name] = git(repo, "rev-parse", "HEAD")
+        return commits
+
+    def test_a_yugen_train_checks_the_vault_contract_components_at_11(self):
+        # 6.23.x at rpcversion 12: ycash6 and yecwallet-dd at 12; ycash-dd (decision Y-3) and lightwalletd-dd stay
+        # on the beta4 contract at 11. Two spec checks: the Yugen line on ycash6 + yecwallet-dd, beta4 on the others.
+        commits = self.set_rpcversions({"ycash6": 12, "yecwallet-dd": 12, "ycash-dd": 11, "lightwalletd-dd": 11})
+        git(os.path.join(self.tmp, "src", "workspace"), "branch", "upgrade/yugen")   # a Yugen train's workspace line
+        self.assertEqual(self.run_check(train_text(version="6.23.0-beta4", commits=commits, rpcversion=12)), [])
+        self.assertEqual([m for _, m, _ in self.spec_calls], ["--check-yugen", "--check-beta4"])
+        (_, _, yugen_trees), (_, _, beta4_trees) = self.spec_calls
+        has = lambda trees, var: os.path.isdir(trees[var])
+        self.assertEqual([v for v in sorted(yugen_trees) if has(yugen_trees, v)], ["EXTRACT_SPEC_NODE6_DIR", "EXTRACT_SPEC_WALLET_DIR"])
+        self.assertEqual([v for v in sorted(beta4_trees) if has(beta4_trees, v)], ["EXTRACT_SPEC_LWD_DIR", "EXTRACT_SPEC_NODE_DIR"])
+
+    def test_a_yugen_train_refuses_a_vault_contract_component_at_12_and_a_yugen_one_at_11(self):
+        commits = self.set_rpcversions({"ycash6": 12, "yecwallet-dd": 11, "ycash-dd": 11, "lightwalletd-dd": 12})
+        problems = self.run_check(train_text(version="6.23.0-beta4", commits=commits, rpcversion=12))
+        self.assertEqual(sorted(problems), [
+            "lightwalletd-dd: testdata/yellowback/contract.json states rpcversion 12, the train says 11",
+            "yecwallet-dd: docs/yellowback-rpc-contract.json states rpcversion 11, the train says 12"])
+
+    def test_a_vault_train_still_checks_every_component_at_its_rpcversion(self):
+        self.assertEqual(rt.component_rpcversion("ycash-dd", rt.parse_flat(train_text(rpcversion=11, version="6.22.0-beta4"), "x")), 11)
+        self.assertEqual(rt.spec_groups(rt.parse_flat(train_text(rpcversion=11, version="6.22.0-beta4"), "x")),
+                         [("--check-beta4", list(rt.SPEC_TREES))])
+
+
 if __name__ == "__main__":
     unittest.main()

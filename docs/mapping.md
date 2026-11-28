@@ -1280,6 +1280,22 @@ the payee's script (25-byte P2PKH or 35-byte TX_PQPKH), with a payee type in pla
 | the default payout comes from `-mineraddress` for every payout kind | `-mineraddress` still refuses a post-quantum address at start-up (`ycash-dd/src/init.cpp:1310-1318`: the internal miner pays a P2PKH script); `-yellowbackpayoutaddress` and `-yellowbackpreferredpayee` accept P2PKH or a plain post-quantum address (`:1445-1450`, `:2166-2179`) | a pool with a post-quantum payout key sets `-yellowbackpayoutaddress=sqf…`/`tqf…`/`rqf…` itself; the `-mineraddress` default of MINER-2 yields a v2 tag only once `-mineraddress` accepts a post-quantum address (open on #207: the node document says it does) |
 | a client reads the tag's payee as P2PKH | from `rpcversion` 11 every payee and payout address field may hold a plain post-quantum address (D-9 form) and `yed_gettag` names the scheme (`payoutScheme`, `ycash-dd/src/rpc/yellowback.cpp:505-508`; constant `:62`) | the contract step is `docs/plans/beta4/rpc-contract-delta.md` §4.14 (`make spec-beta4`); the field shapes are unchanged, so a client that validated the string as P2PKH is the one to update (D-T5..D-T8) |
 
+**Beta4 run, 2026-11-26/27: the Yellowback index's storage boundary (a shared defect).** Citations at ycash-dd
+`46a94b6c6` (#226) and ycash6 `3ed7e4748` (#164), both merged on `upgrade/vault`; the line numbers are the same on both.
+Tier: node policy only (the mempool and template paths); no consensus rule, opcode, transaction field or block verdict
+changes, and nothing under `src/consensus/`, `src/script/`, `main.cpp` or `src/primitives/`. Four-part check: DigiByte
+treats an exception while classifying a transaction as a refusal of that transaction only
+(`ref/digibyte/src/digidollar/validation.cpp:627-632`), and it has no separate index whose health can stop the node. The
+Ycash equivalent is the Yellowback index's storage boundary (audit A-3), which did not tell a storage failure from an
+evaluation error. So the adaptation catches `dbwrapper_error` alone as the storage failure, and refuses or skips on
+anything else.
+
+| What a port assumes | What Ycash or this workspace has | Consequence |
+|---|---|---|
+| any exception on the mempool path is a storage failure | `MempoolCheckLocked` (`src/yellowback/index.cpp:656-677`) marked the index unhealthy on every `std::exception`, and the next connected block stops a node whose index is unhealthy | only `dbwrapper_error` marks it unhealthy; any other exception refuses that transaction (`yellowback-check-error`, DoS 0) and the index stays healthy, so a transaction whose evaluation throws cannot stop the node |
+| the same holds for block templates | `FilterTemplate` (`src/yellowback/policy.cpp:47-69`) had the same catch-all | a storage failure still marks the index unhealthy; any other exception skips that template candidate |
+| a fault can be tested only with a broken database | regtest-only `-yellowbacktestfault=storage:mempool` and `error:mempool` inject either kind once (`src/yellowback/index.cpp:143`) | `yellowback_index_tests` and `qa/rpc-tests/yellowback_index.py` cover both; the cross-line shim pins (`qa/yellowback-cross-line.manifest`) moved on both lines together |
+
 ## 20. x402 agent payments — what other chains' x402 bindings use versus what Ycash has (`x402-ycash/`, its own repository)
 
 Added 2026-10-03 with `docs/plans/x402-agent-payments-plan.md` (revision 1; its §3 is the full
@@ -1715,6 +1731,13 @@ are the branch tips'); `ycash6/…` and `ycash-dd/…` at their
 | M24-125 | *(cited at kogany `origin/upgrade/vault` `bfb80361c`, ycash6 `3ed5a96c2`)* ycashd builds a Sapling coinbase for a Sapling `-mineraddress` with the Sapling output parameters it loads at start (`ycash6/src/miner.cpp:237-250`) | Zakura links the Sapling verifying keys only and builds every coinbase with `NoSaplingProver` (`kogany/crates/zakura-rpc/src/methods/types/transaction/no_sapling.rs:20`) | under `ycash`, kogany reads ycashd's `sapling-output.params` (3,592,860 bytes, SHA-256 checked) once at start, from `mining.sapling_output_params` or ycashd's parameter directory (`kogany/crates/zakura-rpc/src/config/mining.rs:111-124`), and proves a Sapling reward output with it (`transaction.rs:519-530`); without it a Sapling coinbase is refused with `Sapling output parameters are not loaded` (`transaction/sapling_coinbase.rs:43`) and transparent and post-quantum coinbases are unaffected | RPC and miner only (decision D-4 of the `getcoinbasetemplatefor` note); no consensus change: the verifier was always there |
 | M24-126 | *(cited at kogany `origin/upgrade/vault` `bfb80361c`, ycash6 `3ed5a96c2`)* ycashd's `getcoinbasetemplatefor` decodes a post-quantum address as a transaction destination, like a transparent one, and pays its 35-byte script through the script-output miner address (`ycash6/src/rpc/mining.cpp:1090-1096`) | Zakura's `MinerAddress` has no post-quantum variant (`kogany/crates/zakura-rpc/src/methods/types/get_block_template/miner_address.rs:15-38`) | `getcoinbasetemplatefor` has its own `Payout` with a `Pq` variant (`get_block_template/coinbase_for.rs:204-213`), decoded with `decode_pq_address` before the Zcash address parser (:274-277); `mining.miner_address` still cannot name a post-quantum address | RPC only; a post-quantum `miner_address` was not requested |
 
+**Beta4 run, 2026-11-26/27: the Yellowback index's storage boundary.** Cited at kogany `c7eb8c7c5` (#55, merged on
+`upgrade/vault`); the C++ rows are in §19 ("Beta4 run, 2026-11-26/27").
+
+| # | Ycash does X in Y via M | Zakura's Z, lacking M | Adaptation W | Rung, and why not lower |
+|---|---|---|---|---|
+| M24-127 | ycashd marks the Yellowback index unhealthy only on `dbwrapper_error` in `MempoolCheck` and `FilterTemplate`; any other exception refuses the transaction or skips the template candidate (ycash-dd #226 `46a94b6c6`, ycash6 #164 `3ed7e4748`, `src/yellowback/index.cpp:656-677`) | kogany's YED state service treated any panic on those paths as a storage failure; Rust has no exception type that names the storage layer | a storage boundary, `yed_storage_boundary` (`crates/zakura-state/src/service/yed.rs:493`): only a storage panic marks the index unhealthy, and any other panic refuses that transaction once or skips the template candidate (`crates/kogany-rpc/src/mining.rs`, `zakurad/src/components/mempool/state_retry.rs`) | node policy only (KF-116); no consensus rule or block verdict changes |
+
 ## 25. Inzyght block explorer — `ref/inzyght` → an explorer for the vault-upgrade node line (survey, 2026-11-14)
 
 `ref/inzyght` is `miodragpop/inzyght` `main` @ `17f505f273` (v1.0.9; line citations at that commit).
@@ -1736,3 +1759,20 @@ repository carries no licence file. Full survey: `wt/handoff/INZYGHT-SURVEY.md` 
 | M25-7 | outputs are `scriptPubKey.type` + `addresses[]`, miner = `addresses.at(0)` (`ref/inzyght/src/models/RpcResponses.h:319-320`, `src/services/BlockIndexer.cc:1501`) | vault outputs decode as `vault` / `vaultintent` with no address and are not in the address index (`GetType` → `UNKNOWN`) | same | a vault view needs the read-only `vault_list` / `vault_decodescript` / `set_list` / `set_getinfo` RPCs, never a new index in the node |
 | M25-8 | YEC only | YED balances and history live behind `yed_*` (`yed_getinfo`, `yed_listvaults`, `yed_gettxinfo`, `yed_getstats`, `yed_getprice`, …) | `yed_getinfo`, `vault_list`, `set_list` present | YED pages read only the read-only `yed_*` RPCs (AGENTS.md rule 2) |
 | M25-9 | peer geolocation posts peer IPs to `http://ip-api.com/batch` (`ref/inzyght/src/services/GeoLocationService.cc:134`) | — | — | an operator choice; off by default in a Yellowback deployment |
+
+## 26. The Yugen line — the post-quantum shielded pool upgrade (`upgrade/yugen`, 2026-11-25)
+
+Yugen is a network upgrade after the vault upgrade. It is built on `upgrade/yugen` in `ycash6`,
+`librustzcash6`, `lightwalletd-dd`, `yecwallet-dd`, `yew`, `yolo` and `x402-ycash`, and in its own
+public repositories `yugen-spec`, `yugen-proofs`, `yugen-falcon`, `yugen-proof-a`, `yugen-proof-b2`
+and `yugen-bundler` (`repos.yaml`, `lines: yugen`; `LINE=yugen make bootstrap`). The node and
+wallets pin the Yugen crates by exact git revision, as `ycash6` pins `librustzcash6`.
+
+| Topic | Vault line | Yugen line |
+|---|---|---|
+| Branch | `upgrade/vault` (GitHub default) | `upgrade/yugen`; merges flow vault → yugen only |
+| Node releases | 6.22.x | 6.23.x |
+| Node lines | `ycash-dd`, `ycash6`, `kogany` | `ycash6` and `kogany` implement the rules; `ycash-dd` recognises the upgrade and refuses to continue after activation |
+| Shielded pools | Sprout, Sapling | Sprout, Sapling, plus the post-quantum Yugen pool |
+| Bundling | n/a | optional; every node verifies every Yugen transaction itself |
+| Workspace tooling | `make <target>` | `make <target> LINE=yugen` (`branch-yugen` in `repos.yaml`) |

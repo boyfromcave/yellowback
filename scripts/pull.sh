@@ -138,9 +138,10 @@ pull_fork() {
 
 pull_app() {
   local path="$1" branch="$2" private="${3:-}"
+  if [ ! -e "$path/.git" ] && [ "$private" = true ]; then return; fi  # private, not cloned: silent
   head2 "$path" "app"
-  if [ ! -e "$path/.git" ] && [ "$private" = true ]; then
-    item "${D}not cloned: a private repository (needs access; make bootstrap SSH=1)${R}"; return
+  if [ ! -e "$path/.git" ] && [ "$("$REPOS" get "$path" published)" = false ]; then
+    item "${D}not cloned: not yet published (repos.yaml published: false)${R}"; return
   fi
   [ -e "$path/.git" ] || { bad "not a git repository — run 'make bootstrap'"; return; }
   run git -C "$path" fetch --quiet --prune origin || { bad "fetch origin failed"; return; }

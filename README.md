@@ -84,6 +84,7 @@ Each component is its own git repository, cloned side by side into this workspac
 | Infrastructure | [ycash-infra](https://github.com/boyfromcave/ycash-infra) | Kubernetes deployment of the light-wallet backend: `ycashd` pool, lightwalletd, address index, gateway |
 | Kogany website | [kogany-site](https://github.com/boyfromcave/kogany-site) | the static site for the Kogany node, served at [kogany.ycash.team](https://kogany.ycash.team) |
 | Landing page | [ycash-team-site](https://github.com/boyfromcave/ycash-team-site) | the ycash.team start page for newcomers: one tile and one short page per product, served at [ycash.team](https://ycash.team) |
+| Yugen line (public, `upgrade/yugen`) | yugen-spec, yugen-proofs, yugen-falcon, yugen-proof-a, yugen-proof-b2, yugen-bundler | the post-quantum shielded pool upgrade: its specification, reference and proof crates, Falcon, and the optional bundler (every node verifies every Yugen transaction itself); `LINE=yugen` only, `docs/mapping.md` §26 |
 | Operations (private) | ycash-ops | the Ycash developers' deployment of the testnets on AWS from ycash-infra's recipes, run from GitHub Actions |
 
 Every client reaches the node only through its public RPCs (the mobile and web wallets through
@@ -108,6 +109,10 @@ make pull        # fast-forward every repo (never merges, rebases or discards)
 make diff        # each fork's changes against its upstream baseline
 make             # list every target
 ```
+
+Every target takes `LINE=yugen` to work on the Yugen line instead (`upgrade/yugen` where a repo
+has it, plus the yugen-* repos); the default is `LINE=vault`. `make bootstrap DRY=1` shows what
+would be cloned; a private repo you cannot reach, or one not yet published, is reported and skipped.
 
 `make bootstrap` builds nothing. Each component's README explains its own build.
 

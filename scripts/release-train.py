@@ -29,14 +29,20 @@ Testnet plan §5.4. One file per release, releases/v<version>.yaml, in the flat 
 `check` (offline) validates the shape: every field present and well formed, the file named after its
 version, tags matching the version, a final release naming both testnet-yb networks. `check --online`
 also clones each component (commit graph only, plus the few files read) and checks:
-  - every commit is on that repository's upgrade/vault (repos.yaml `branch`) or one of its release/*
-    branches, and nowhere else;
+  - every commit is on that repository's line branch or one of its release/* branches (the line branch is
+    repos.yaml `branch`, upgrade/vault, for a 6.22.x train; for a 6.23.x (Yugen) train it is `branch-yugen`,
+    upgrade/yugen, and a component with no `branch-yugen` (no Yugen changes: chain-viz, hawkeye, wyec)
+    stays on its `branch`; the workspace commit is on the line's branch too), and nowhere else;
   - a tag, when it already exists, names the train's commit (a train is written before the tag);
   - rpcversion: the node lines' YELLOWBACK_RPC_VERSION and every client contract copy's top-level
-    "rpcversion" equal the train's;
+    "rpcversion" equal the train's; on a Yugen train (6.23.x) only for the components that speak the
+    Yugen line (ycash6, and yecwallet-dd, which bundles it), while the components that stay on the vault
+    contract by design (YUGEN_VAULT_CONTRACT: ycash-dd under decision Y-3, lightwalletd-dd, which serves
+    no Yugen RPC) state the beta4 line's rpcversion 11 (YUGEN_VAULT_RPCVERSION);
   - the contract copies: the workspace at `workspace` runs its scripts/extract_spec.py check for
     that rpcversion's line against ycash-dd, ycash6, yecwallet-dd and lightwalletd-dd at their
-    train commits (the `make spec-check` logic);
+    train commits (the `make spec-check` logic); on a Yugen train two checks: the Yugen line's against
+    the Yugen components' trees, and the beta4 line's against the YUGEN_VAULT_CONTRACT trees;
   - hawkeye's pinned wyec commit (eth/tools/fetch-wyec.sh WYEC_COMMIT) is the train's wyec commit.
 
 `pins` prints TRAIN_<SECTION>_<KEY>=<value> lines (upper case, '-' as '_'), every value validated,
@@ -59,13 +65,22 @@ WORKSPACE_URL = os.environ.get("RELEASE_TRAIN_WORKSPACE_URL") or "https://github
 # Components a node release is qualified with (testnet plan §5.4), in the order they are reported.
 COMPONENTS = ("ycash6", "ycash-dd", "librustzcash6", "lightwalletd-dd", "yecwallet-dd", "yew", "yolo",
               "chain-viz", "x402-ycash", "hawkeye", "wyec")
+# The Yugen line's own libraries (6.23.x trains only, repos.yaml `lines: yugen`): optional sections,
+# a commit each, on their repository's upgrade/yugen.
+YUGEN_COMPONENTS = ("yugen-bundler", "yugen-spec", "yugen-falcon", "yugen-proof-a", "yugen-proof-b2")
 TAGGED = {"ycash6": "v{version}", "ycash-dd": "vault-params/v{version}"}
 SECTIONS = {
     "release": ("version", "rpcversion", "workspace"),
     "testnet": ("fast-vault-height", "fast-set-id", "slow-vault-height", "slow-set-id", "bundle-height"),
 }
 # rpcversion -> the extract_spec.py check of that line (scripts/extract_spec.py THE ... LINE).
-SPEC_MODE = {5: "--check-upgrade", 6: "--check-in-term", 7: "--check-quantum", 8: "--check-fees", 9: "--check-prefix", 10: "--check-beta3", 11: "--check-beta4"}
+SPEC_MODE = {5: "--check-upgrade", 6: "--check-in-term", 7: "--check-quantum", 8: "--check-fees", 9: "--check-prefix", 10: "--check-beta3", 11: "--check-beta4", 12: "--check-yugen"}
+# On a Yugen (6.23.x) train: the components that stay on the vault (beta4) contract by design, checked at
+# YUGEN_VAULT_RPCVERSION and by the beta4 line's spec check instead of the train's rpcversion. ycash-dd recognises
+# the Yugen upgrade and refuses it (decision Y-3) and serves no Yugen RPC; lightwalletd-dd serves none either (its
+# YellowbackStreamer is the yed_* surface). ycash6 and yecwallet-dd (which bundles ycash6) speak the Yugen line.
+YUGEN_VAULT_CONTRACT = ("ycash-dd", "lightwalletd-dd")
+YUGEN_VAULT_RPCVERSION = 11
 # Where each spec repository keeps what extract_spec.py reads, and its override variable.
 SPEC_TREES = {
     "ycash-dd": ("EXTRACT_SPEC_NODE_DIR", ["doc"]),
@@ -84,7 +99,7 @@ HAWKEYE_WYEC_PIN = "eth/tools/fetch-wyec.sh"
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-VERSION = re.compile(r"^6\.22\.\d+(?:-(?:rc|beta)[1-9]\d*)?$")
+VERSION = re.compile(r"^6\.2[23]\.\d+(?:-(?:rc|beta)[1-9]\d*)?$")
 HEIGHT = re.compile(r"^[1-9]\d{0,8}$")
 # A value not known yet in a skeleton train (see the module doc); never allowed in these fields.
 PLACEHOLDER = "placeholder"
@@ -163,14 +178,24 @@ def validate(train, filename=None):
             problems.append("unknown field %s.%s" % (name, key))
         if got.get("commit") is not None and not HEX40.match(got["commit"]):
             problems.append("%s.commit is not a full 40-hex commit: %r" % (name, got["commit"]))
-    for section in sorted(set(train) - set(SECTIONS) - set(COMPONENTS)):
+    for name in YUGEN_COMPONENTS:
+        got = train.get(name)
+        if got is None:
+            continue
+        for key in sorted(set(got) - {"commit"}):
+            problems.append("unknown field %s.%s" % (name, key))
+        if "commit" not in got:
+            problems.append("missing %s.commit" % name)
+        elif got["commit"] is not None and not HEX40.match(got["commit"]):
+            problems.append("%s.commit is not a full 40-hex commit: %r" % (name, got["commit"]))
+    for section in sorted(set(train) - set(SECTIONS) - set(COMPONENTS) - set(YUGEN_COMPONENTS)):
         problems.append("unknown section %s" % section)
     if problems:
         return problems
     rel, net = train["release"], train["testnet"]
     version = rel["version"]
     if version is None or not VERSION.match(version):
-        problems.append("release.version %r is not a 6.22.x release version" % version)
+        problems.append("release.version %r is not a 6.22.x or 6.23.x release version" % version)
     if version is None:
         return problems
     if rel["rpcversion"] is not None and (not re.match(r"^[1-9]\d*$", rel["rpcversion"])
@@ -213,7 +238,7 @@ def load(path):
 
 def pins(train):
     lines = []
-    for section in list(SECTIONS) + list(COMPONENTS):
+    for section in list(SECTIONS) + list(COMPONENTS) + [n for n in YUGEN_COMPONENTS if n in train]:
         for key, value in train[section].items():
             lines.append("TRAIN_%s_%s=%s" % (section.upper().replace("-", "_"), key.upper().replace("-", "_"), value))
     return lines
@@ -296,14 +321,44 @@ def spec_check(workspace_dir, mode, trees):
     return proc.returncode == 0, (proc.stdout + proc.stderr).strip()
 
 
+def yugen_train(train):
+    """A 6.23.x train is the Yugen line's: its commits are on upgrade/yugen (repos.yaml `branch-yugen`)."""
+    return train["release"]["version"].startswith("6.23.")
+
+
+def line_branch(entry, yugen):
+    """The branch a train's commit must be on: `branch-yugen` for a Yugen train when the repository has
+    one, else `branch` (a component with no Yugen changes is pinned on its upgrade/vault)."""
+    return (entry.get("branch-yugen") if yugen else None) or entry.get("branch")
+
+
+def component_rpcversion(name, train):
+    """The rpcversion a component of the train must state: the train's, or on a Yugen train the vault
+    contract's for a YUGEN_VAULT_CONTRACT component."""
+    if yugen_train(train) and name in YUGEN_VAULT_CONTRACT:
+        return YUGEN_VAULT_RPCVERSION
+    return int(train["release"]["rpcversion"])
+
+
+def spec_groups(train):
+    """[(extract_spec.py mode, [components whose trees it reads])]: one check for a 6.22.x train; on a Yugen
+    train the train's line for the Yugen components and the beta4 line for the YUGEN_VAULT_CONTRACT ones."""
+    rpc = int(train["release"]["rpcversion"])
+    if not yugen_train(train):
+        return [(SPEC_MODE[rpc], list(SPEC_TREES))]
+    return [(SPEC_MODE[rpc], [n for n in SPEC_TREES if n not in YUGEN_VAULT_CONTRACT]),
+            (SPEC_MODE[YUGEN_VAULT_RPCVERSION], [n for n in SPEC_TREES if n in YUGEN_VAULT_CONTRACT])]
+
+
 def check_online(train, scratch, log=print):
     problems = []
     manifest = repos()
     rpc = int(train["release"]["rpcversion"])
+    yugen = yugen_train(train)
     remotes = {}
-    for name in COMPONENTS:
+    for name in COMPONENTS + tuple(n for n in YUGEN_COMPONENTS if n in train):
         entry = manifest.get(name) or {}
-        url, branch = entry.get("url"), entry.get("branch")
+        url, branch = entry.get("url"), line_branch(entry, yugen)
         if not url or not branch:
             problems.append("%s: no url/branch in repos.yaml" % name)
             continue
@@ -323,32 +378,37 @@ def check_online(train, scratch, log=print):
     if problems:
         return problems
     for name in ("ycash-dd", "ycash6"):
-        got = node_rpcversion(remotes[name].show(train[name]["commit"], NODE_RPC_SOURCE))
-        if got != rpc:
-            problems.append("%s: YELLOWBACK_RPC_VERSION is %s, the train says %d" % (name, got, rpc))
+        got, want = node_rpcversion(remotes[name].show(train[name]["commit"], NODE_RPC_SOURCE)), component_rpcversion(name, train)
+        if got != want:
+            problems.append("%s: YELLOWBACK_RPC_VERSION is %s, the train says %d" % (name, got, want))
     for name, path in CLIENT_CONTRACTS.items():
-        got = contract_rpcversion(remotes[name].show(train[name]["commit"], path))
-        if got != rpc:
-            problems.append("%s: %s states rpcversion %s, the train says %d" % (name, path, got, rpc))
+        got, want = contract_rpcversion(remotes[name].show(train[name]["commit"], path)), component_rpcversion(name, train)
+        if got != want:
+            problems.append("%s: %s states rpcversion %s, the train says %d" % (name, path, got, want))
     pinned = wyec_pin(remotes["hawkeye"].show(train["hawkeye"]["commit"], HAWKEYE_WYEC_PIN))
     if pinned != train["wyec"]["commit"]:
         problems.append("hawkeye: %s pins wyec %s, the train says %s" % (HAWKEYE_WYEC_PIN, pinned, train["wyec"]["commit"]))
     if problems:
         return problems
-    ws = Remote("workspace", WORKSPACE_URL, "upgrade/vault", scratch)
+    ws_branch = "upgrade/yugen" if yugen else "upgrade/vault"
+    ws = Remote("workspace", WORKSPACE_URL, ws_branch, scratch)
     if not ws.on_branch(train["release"]["workspace"]):
-        return ["workspace: %s is not on upgrade/vault" % train["release"]["workspace"]]
+        return ["workspace: %s is not on %s" % (train["release"]["workspace"], ws_branch)]
     ws_dir = ws.materialize(train["release"]["workspace"], ["scripts", "docs"], os.path.join(scratch, "workspace"))
-    trees = {}
-    for name, (var, paths) in SPEC_TREES.items():
-        trees[var] = remotes[name].materialize(train[name]["commit"], paths, os.path.join(scratch, name + "-tree"))
-    ok, output = spec_check(ws_dir, SPEC_MODE[rpc], trees)
-    for line in output.splitlines():
-        log("     | " + line)
-    if not ok:
-        problems.append("the contract and spec copies differ from the workspace's (extract_spec.py %s)" % SPEC_MODE[rpc])
-    else:
-        log("ok   contract and spec copies (extract_spec.py %s at workspace %s)" % (SPEC_MODE[rpc], train["release"]["workspace"][:12]))
+    for mode, names in spec_groups(train):
+        trees = {}
+        for name, (var, paths) in SPEC_TREES.items():
+            # a tree outside this group points nowhere, so extract_spec.py skips it ("no such tree")
+            trees[var] = (remotes[name].materialize(train[name]["commit"], paths, os.path.join(scratch, name + "-tree"))
+                          if name in names else os.path.join(scratch, "not-in-this-check", name))
+        ok, output = spec_check(ws_dir, mode, trees)
+        for line in output.splitlines():
+            log("     | " + line)
+        if not ok:
+            problems.append("the contract and spec copies differ from the workspace's (extract_spec.py %s)" % mode)
+        else:
+            log("ok   contract and spec copies (extract_spec.py %s, %s, at workspace %s)"
+                % (mode, ", ".join(names), train["release"]["workspace"][:12]))
     return problems
 
 

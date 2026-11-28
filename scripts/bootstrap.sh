@@ -8,7 +8,13 @@
 #   --ssh      clone the working forks and app repos over git@github.com: (you intend to push);
 #              references stay on https, they are never pushed to
 #   --no-venv  skip the Python virtual environment
-#   --dry-run  print what would be done and exit
+#   --dry-run  print what would be done and exit (it still asks each remote, read-only, whether
+#              the branch exists, so a dry run shows what is not yet published)
+#
+# ONLY="path path ..." limits the run to those repositories (e.g. a quick check of the manifest).
+# LINE=vault (default) or LINE=yugen selects the release line (repos.yaml header). A private
+# repository you cannot reach is skipped silently; one not yet published is reported and skipped;
+# the exit status is non-zero only if a public repository fails.
 #
 # Idempotent: a repository that already exists is verified against the manifest and left alone
 # (nothing is fetched, checked out or chmod'ed behind your back); the venv is created only if
@@ -39,7 +45,31 @@ ok()   { printf "  ${G}✔${R} %s\n" "$*"; }
 warn() { printf "  ${Y}●${R} %s\n" "$*"; WARNINGS=$((WARNINGS + 1)); }
 die()  { printf "  ${E}✘${R} %s\n" "$*" >&2; exit 1; }
 run()  { if [ "$DRY" -eq 1 ]; then printf "  ${D}\$ %s${R}\n" "$*"; else "$@"; fi; }
-WARNINGS=0
+WARNINGS=0; FAILED=0
+export GIT_TERMINAL_PROMPT=0   # an unreachable private repo must fail fast, not prompt
+fail() { printf "  ${E}✘${R} %s\n" "$*" >&2; FAILED=$((FAILED + 1)); }
+
+# reachable <path> <url> <branch>: may this repository be cloned? Says why not, in one line.
+reachable() {
+  local path="$1" url="$2" branch="$3"
+  [ -e "$WORKSPACE/$path/.git" ] && return 0
+  if [ "$("$REPOS" get "$path" published)" = false ]; then
+    say "  ${D}$path skipped: not yet published (repos.yaml published: false)${R}"; return 1; fi
+  [ "$SSH" -eq 1 ] && url="$(ssh_url "$url")"
+  local out err rc=0; err="$(mktemp)"
+  out="$(git ls-remote --heads "$url" "$branch" 2>"$err")" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    if [ "$("$REPOS" get "$path" private)" = true ]; then
+      :  # a private repository without access: skipped silently, never named
+    elif grep -qiE 'not found|404|could not read Username' "$err"; then
+      fail "$path: not found at $url (404: repository not yet published)"
+    else fail "$path: cannot reach $url (offline? $(head -1 "$err"))"; fi
+    rm -f "$err"
+    return 1
+  fi
+  rm -f "$err"; [ -n "$out" ] && return 0
+  fail "$path: branch $branch not yet published at $url (LINE=${LINE:-vault})"; return 1
+}
 
 command -v git >/dev/null || die "git is required"
 if [ "$VENV" -eq 1 ] && ! command -v python3 >/dev/null && ! command -v uv >/dev/null; then
@@ -127,12 +157,7 @@ bootstrap_app() {
     return
   fi
   say "  cloning $path from $url"
-  if [ "${4:-}" = true ]; then   # private (repos.yaml): no access is not an error
-    run git clone --quiet --branch "$branch" "$url" "$dir" 2>/dev/null \
-      || { say "  ${D}$path not cloned: a private repository (needs access; SSH=1 clones over SSH)${R}"; return; }
-  else
-    run git clone --quiet --branch "$branch" "$url" "$dir"
-  fi
+  run git clone --quiet --branch "$branch" "$url" "$dir"
   ok "$path cloned on $branch"
 }
 
@@ -152,15 +177,18 @@ bootstrap_venv() {
   ok ".venv ready: $(sed -n 's/^\([a-z0-9]*\)[>=].*/\1/p' "$REQUIREMENTS" | tr '\n' ' ')+ pyblake2 shim"
 }
 
-say "${B}$(basename "$WORKSPACE")${R} ${D}— bootstrap from repos.yaml${R}${DRY:+}"
+say "${B}$(basename "$WORKSPACE")${R} ${D}— bootstrap from repos.yaml, line ${LINE:-vault}${R}"
 if [ "$DRY" -eq 1 ]; then say "  ${D}(dry run: nothing will be changed)${R}"; fi
 for path in $("$REPOS" list); do
+  if [ -n "${ONLY:-}" ]; then case " $ONLY " in *" $path "*) ;; *) continue ;; esac; fi
   role="$("$REPOS" get "$path" role)"
   case "$role" in
     reference) bootstrap_reference "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" tag)" "$("$REPOS" get "$path" commit)" ;;
-    fork)      bootstrap_fork "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" upstream)" \
+    fork)      reachable "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" || continue
+               bootstrap_fork "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" upstream)" \
                               "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" base)" "$("$REPOS" get "$path" base-commit)" ;;
-    app)       bootstrap_app "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" private)" ;;
+    app)       reachable "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" || continue
+               bootstrap_app "$path" "$("$REPOS" get "$path" url)" "$("$REPOS" get "$path" branch)" "$("$REPOS" get "$path" private)" ;;
     *) die "$path: unknown role '$role' in repos.yaml" ;;
   esac
 done
@@ -169,4 +197,5 @@ if [ "$VENV" -eq 1 ]; then bootstrap_venv; fi
 if [ "$DRY" -eq 0 ] && [ "$WORKSPACE" = "$ROOT" ]; then
   say; make -C "$ROOT" --no-print-directory status-short || true
 fi
+if [ "$FAILED" -gt 0 ]; then say; say "  ${E}$FAILED public repository(ies) failed above.${R}"; exit 1; fi
 if [ "$WARNINGS" -gt 0 ]; then say; say "  ${Y}$WARNINGS warning(s) above.${R}"; exit 1; fi

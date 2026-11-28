@@ -17,7 +17,10 @@
 #                  on GitHub yet. A pull request whose head branch exists on a component repo
 #                  compares that repo's copy (the plan and the copy move together). The RED-5 docs pull
 #                  request still compares cursor/w3-03-new-1-residual-0df7. Otherwise the line
-#                  branch is used.
+#                  branch is used. On upgrade/yugen: ycash6 at upgrade/yugen, ycash-dd at upgrade/vault,
+#                  yecwallet-dd and lightwalletd at upgrade/yugen where it exists (else upgrade/vault);
+#                  then `make spec-check-beta4` (the vault-line copies) and `make spec-check-yugen`
+#                  (ycash6's Yugen copies; a tree not on a line is skipped by extract_spec.py).
 #   spec-upgrade   `make spec-check-upgrade`: the same four at upgrade/vault, the upgrade line's
 #                  copies (rpcversion 5). extract_spec.py skips a tree that does not exist or whose
 #                  node doc is not on the upgrade line yet, and says so.
@@ -32,11 +35,11 @@
 name: workspace-check
 
 # The branch list lives once, here: pull_request is unfiltered, push runs on main (the branch of
-# record), the hardening and upgrade lines, feature/** and the ci/* branches that carry CI changes
+# record), the hardening, upgrade and Yugen lines, feature/** and the ci/* branches that carry CI changes
 # before they merge.
 on:
   push:
-    branches: [ main, harden/yellowback, upgrade/vault, upgrade/quantum-vaults, 'feature/**', 'ci/**' ]
+    branches: [ main, harden/yellowback, upgrade/vault, upgrade/yugen, upgrade/quantum-vaults, 'feature/**', 'ci/**' ]
   pull_request:
   workflow_dispatch:
 
@@ -97,8 +100,10 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
+          yugen=false
           case "$BRANCH" in
             upgrade/vault)                         v4=upgrade/vault; v6=upgrade/vault ;;
+            upgrade/yugen)                         v4=upgrade/vault; v6=upgrade/yugen; yugen=true ;;
             harden/yellowback|upgrade/quantum-vaults|ci/*) v4=harden/yellowback; v6=harden/yellowback ;;
             *)                                     v4=feature/yellowback-price-attest; v6=feature/yellowback ;;
           esac
@@ -119,8 +124,16 @@ jobs:
           }
           v4_node=$(node_ref "$REPO_YCASH_DD" "$v4")
           v6_node=$(node_ref "$REPO_YCASH6" "$v6")
-          wallet_ref=$(node_ref "$REPO_YECWALLET_DD" "$v4")
-          lwd_ref=$(node_ref "$REPO_LIGHTWALLETD_DD" "$v4")
+          # On the Yugen line a client takes its upgrade/yugen once it exists, else upgrade/vault.
+          client_line() {
+            if [ "$yugen" = true ] && git ls-remote --exit-code --heads "https://github.com/$1.git" upgrade/yugen >/dev/null; then
+              echo upgrade/yugen
+            else
+              echo "$v4"
+            fi
+          }
+          wallet_ref=$(node_ref "$REPO_YECWALLET_DD" "$(client_line "$REPO_YECWALLET_DD")")
+          lwd_ref=$(node_ref "$REPO_LIGHTWALLETD_DD" "$(client_line "$REPO_LIGHTWALLETD_DD")")
           clone() {  # repo branch dir sparse-dir
             if ! git ls-remote --exit-code --heads "https://github.com/$1.git" "$2" >/dev/null; then
               echo "::notice::$1 has no branch $2 on GitHub yet; cross-repo spec-check skipped"
@@ -135,12 +148,21 @@ jobs:
           clone "$REPO_YECWALLET_DD"    "$wallet_ref" "$RUNNER_TEMP/yecwallet-dd"    docs
           clone "$REPO_LIGHTWALLETD_DD" "$lwd_ref" "$RUNNER_TEMP/lightwalletd-dd" testdata
           echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "yugen=$yugen" >> "$GITHUB_OUTPUT"
       - name: make spec-check (docs/spec and the four repos' copies)
         if: steps.clone.outputs.ok == 'true'
         run: |
           EXTRACT_SPEC_NODE_DIR="$RUNNER_TEMP/ycash-dd" EXTRACT_SPEC_NODE6_DIR="$RUNNER_TEMP/ycash6" \
           EXTRACT_SPEC_WALLET_DIR="$RUNNER_TEMP/yecwallet-dd" EXTRACT_SPEC_LWD_DIR="$RUNNER_TEMP/lightwalletd-dd" \
             scripts/extract-spec.sh --check
+      - name: make spec-check-beta4 and spec-check-yugen (the Yugen line; same trees)
+        if: steps.clone.outputs.ok == 'true' && steps.clone.outputs.yugen == 'true'
+        run: |
+          set -euo pipefail
+          export EXTRACT_SPEC_NODE_DIR="$RUNNER_TEMP/ycash-dd" EXTRACT_SPEC_NODE6_DIR="$RUNNER_TEMP/ycash6" \
+            EXTRACT_SPEC_WALLET_DIR="$RUNNER_TEMP/yecwallet-dd" EXTRACT_SPEC_LWD_DIR="$RUNNER_TEMP/lightwalletd-dd"
+          scripts/extract-spec.sh --check-beta4
+          scripts/extract-spec.sh --check-yugen
 
   spec-upgrade:
     runs-on: ubuntu-24.04

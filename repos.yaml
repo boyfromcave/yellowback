@@ -28,6 +28,13 @@
 # bootstrap, make pull and make status note it and go on instead of failing; where it is cloned,
 # it is handled like any other entry. Clone it over SSH (`make bootstrap SSH=1`).
 #
+# Lines (`LINE=vault`, the default, or `LINE=yugen` on any make target): `branch` is the
+# upgrade/vault branch; `branch-yugen` overrides it under LINE=yugen (repositories without one stay
+# on `branch`). `lines: yugen` limits a repository to the listed lines (absent = every line).
+# `published: false` marks a repository not yet public: bootstrap, pull and status report it as
+# "not yet published" instead of failing. A public repository that does not exist yet is reported
+# by bootstrap as "not found (404: repository not yet published)".
+#
 # Re-pinning a reference is rare and deliberate: change `tag` and `commit` here, then update
 # the mirrors in AGENTS.md and docs/mapping.md — every file:line citation depends on them.
 
@@ -94,6 +101,7 @@ yecwallet-dd:
   url: https://github.com/boyfromcave/yecwallet-dd.git
   upstream: https://github.com/ycashfoundation/yecwallet.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   base: yecwallet-legacy
   base-commit: 1eb277d       # = ref/yecwallet pin
   what: working fork of the wallet (Yellowback tab)
@@ -103,6 +111,7 @@ lightwalletd-dd:
   url: https://github.com/boyfromcave/lightwalletd.git
   upstream: https://github.com/yodl/lightwalletd.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   base: lightwalletd-legacy
   base-commit: 187a26765e    # = ref/lightwalletd pin
   what: working fork of lightwalletd (Yellowback light-client support)
@@ -112,6 +121,7 @@ ycash6:
   url: https://github.com/boyfromcave/ycash6.git
   upstream: https://github.com/miodragpop/ycash.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   base: ycash6-legacy
   base-commit: 040894344b    # = ref/ycash6 pin
   what: working fork of the 6.20.0 node — the Yellowback overlay on ycashd 6.20.0, the 6.21.x release line
@@ -121,6 +131,7 @@ librustzcash6:
   url: https://github.com/boyfromcave/librustzcash6.git
   upstream: https://github.com/miodragpop/librustzcash.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   base: librustzcash6-legacy
   base-commit: ec525fae82    # = ref/librustzcash6 pin
   what: working fork of the patched librustzcash ycash6 builds against (a separate repo because boyfromcave/librustzcash is already an older fork); ycash6 Cargo.toml pins rev eeb7740d on upgrade/vault
@@ -153,6 +164,7 @@ yew:
   role: app
   url: https://github.com/boyfromcave/yew.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   what: YEW, the mobile wallet for YEC (transparent and Sapling) and YED (transparent) (Flutter + Rust core)
 
 ref/yolo:
@@ -173,6 +185,7 @@ yolo:
   role: app
   url: https://github.com/boyfromcave/yolo.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   what: yolo rewritten in Rust: the solo-pool stratum server that mines Yellowback-tagged blocks on regtest and mainnet (docs/plans/role-pool-regtest-plan.md)
 
 chain-viz:
@@ -185,6 +198,7 @@ x402-ycash:
   role: app
   url: https://github.com/boyfromcave/x402-ycash.git
   branch: upgrade/vault       # the vault network upgrade line (owner, 2026-10-06; GitHub default); harden/yellowback is the no-upgrade fallback
+  branch-yugen: upgrade/yugen  # the Yugen line (6.23.x); merges flow upgrade/vault -> upgrade/yugen only
   what: x402-ycash, x402 (HTTP-402) agent payments on Ycash in YEC and YED — binding specs, the TypeScript SDK mechanism and the facilitator; reaches ycashd only through public RPCs, no node change (docs/plans/x402-agent-payments-plan.md)
 
 yb-calibration:
@@ -229,3 +243,55 @@ ycash-team-site:
   url: https://github.com/boyfromcave/ycash-team-site.git
   branch: upgrade/vault       # GitHub default; net new, no baseline
   what: ycash-team-site, the ycash.team landing page (plain static files, no build step, no dependencies; a start page and a one-screen page per product), served at the apex ycash.team since 2026-11-15 from S3 + CloudFront (the infrastructure is in ycash-ops, site/ycash-team)
+
+# The Yugen line's own repositories (LINE=yugen only), public under boyfromcave on upgrade/yugen.
+# `pin` is the published squashed revision of each; until the
+# repository exists, bootstrap reports it as not found (not yet published) and fails for it.
+
+yugen-spec:
+  role: app
+  url: https://github.com/boyfromcave/yugen-spec.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: e93f9775c017bd359e90866c3fea3e0718e6119c  # the published squashed rev
+  what: the Yugen specification
+
+yugen-proofs:
+  role: app
+  url: https://github.com/boyfromcave/yugen-proofs.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: cf6c19b88135b73dd28840eb3bf020b646864d0c  # the published squashed rev
+  what: the Yugen reference and proof-system crates the node and wallets pin by rev
+
+yugen-falcon:
+  role: app
+  url: https://github.com/boyfromcave/yugen-falcon.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: 874438b9f6c119ae917b1121fe32da45e09b99a4  # the published squashed rev
+  what: the Falcon (FN-DSA) library Yugen pins
+
+yugen-proof-a:
+  role: app
+  url: https://github.com/boyfromcave/yugen-proof-a.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: a61a63b68039a7daa62478c29651f3075575368e  # the published squashed rev
+  what: the Yugen proof system A crate
+
+yugen-proof-b2:
+  role: app
+  url: https://github.com/boyfromcave/yugen-proof-b2.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: 3a2bcf78cd17ed3fe3adf4f2715bf86c811e8264  # the published squashed rev
+  what: the Yugen proof system B2 crate
+
+yugen-bundler:
+  role: app
+  url: https://github.com/boyfromcave/yugen-bundler.git
+  branch: upgrade/yugen
+  lines: yugen
+  pin: c4e04e99e5e3701d1936a7eadfc4dd62f68476ca  # the published squashed rev
+  what: the Yugen bundler; bundling is optional, every node verifies every Yugen transaction itself

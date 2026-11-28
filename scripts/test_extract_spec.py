@@ -112,7 +112,7 @@ class PrefixLineVersion(unittest.TestCase):
     def test_the_line_follows_the_title(self):
         with tempfile.TemporaryDirectory() as d:
             doc = os.path.join(d, "yellowback-rpc.md")
-            for v, line in ((8, "fees"), (9, "prefix"), (10, "beta3"), (11, "beta4"), (12, "beta4")):
+            for v, line in ((8, "fees"), (9, "prefix"), (10, "beta3"), (11, "beta4"), (12, "yugen")):
                 with open(doc, "w", encoding="utf-8") as fh:
                     fh.write("# Yellowback RPC contract (`yed_*`), rpcversion %d\n" % v)
                 self.assertEqual(es.doc_line(doc), line)
@@ -173,6 +173,36 @@ class Beta4LineVersion(unittest.TestCase):
         doc = {"yed_gettag": {"args": "<height|blockhash>", "returns": {"found": True, "version": 1}},
                "yed_getinfo": {"args": "", "returns": {"rpcversion": 10}}}
         self.assertTrue(dies(es.apply_overlay, doc, "doc", es.PLAN_BETA4, es.SECTION_BETA4, delta))
+
+
+
+class YugenLineVersion(unittest.TestCase):
+    def write(self, d, title, y6=None):
+        doc = os.path.join(d, "yellowback-rpc.md")
+        with open(doc, "w", encoding="utf-8") as fh:
+            fh.write("# Yellowback RPC contract (`yed_*`), rpcversion %d\n" % title)
+        if y6 is not None:
+            with open(os.path.join(d, es.YUGEN_NODE_DOC), "w", encoding="utf-8") as fh:
+                fh.write("# Yugen\n\n- Y-6: the Yugen RPCs are rpcversion %d.\n" % y6)
+        return doc
+
+    def test_a_beta4_doc_beside_yugen_node_is_the_yugen_line(self):
+        with tempfile.TemporaryDirectory() as d:
+            doc = self.write(d, 11)
+            self.assertEqual(es.doc_line(doc), "beta4")
+            self.assertIsNone(es.yugen_doc_version(doc))
+            self.write(d, 11, y6=12)
+            self.assertEqual(es.doc_line(doc), "yugen")
+            self.assertEqual(es.yugen_doc_version(doc), 12)
+
+    def test_a_y6_stating_another_rpcversion_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            doc = self.write(d, 11, y6=13)
+            self.assertTrue(dies(es.contract_text_yugen, es.read_plan(), es.read_plan_v3(), doc, es.RPCDOC6_REL))
+
+    def test_the_delta_sets_rpcversion_12_only(self):
+        self.assertEqual(es.overlay_delta(es.read_plan(es.PLAN_YUGEN), es.PLAN_YUGEN, es.SECTION_YUGEN),
+                         (es.YUGEN_RPCVERSION, {"yed_getinfo": {"rpcversion": 12}}, {}, [], None, []))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ name: rpc-docs
 
 on:
   push:
-    branches: [ upgrade/vault ]
+    branches: [ upgrade/vault, upgrade/yugen ]   # published from upgrade/vault only (the deploy job's if)
     paths: [ 'rpc-docs/**', '.github/workflows/rpc-docs.yml' ]
   pull_request:
     paths: [ 'rpc-docs/**', '.github/workflows/rpc-docs.yml' ]

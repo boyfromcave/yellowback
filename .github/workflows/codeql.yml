@@ -7,7 +7,7 @@ name: codeql
 # a PR, only the code-scanning check GitHub derives from new alerts does.
 on:
   push:
-    branches: [upgrade/vault]
+    branches: [upgrade/vault, upgrade/yugen]
   pull_request:
   schedule:
     - cron: '29 4 * * 1'

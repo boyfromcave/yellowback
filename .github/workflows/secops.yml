@@ -18,7 +18,7 @@ name: secops
 # are never scanned from here: each component repository runs its own copy of these legs.
 on:
   push:
-    branches: [upgrade/vault]
+    branches: [upgrade/vault, upgrade/yugen]
   pull_request:
   schedule:
     - cron: '43 3 * * *'

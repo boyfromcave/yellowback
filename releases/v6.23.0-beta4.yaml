@@ -1,0 +1,48 @@
+# SKELETON: the Yugen line's 6.23.0-beta4 train (ycash6 upgrade/yugen). Every `placeholder` is filled in
+# by the coordinator at qualification; while one remains, `scripts/release-train.py pins` refuses this
+# file, so the qualification harness (qualify/, .github/workflows/rc-qualify.yml) cannot run against it.
+# Commits are the public upgrade/yugen tips of 2026-11-27 (ycash6 and ycash-dd: their beta4 tags). kogany is not part of the Yugen train.
+release:
+  version: 6.23.0-beta4
+  rpcversion: 12           # ycash6 upgrade/yugen (Yugen RPCs, decision Y-6); extract_spec.py --check-yugen
+  workspace: placeholder   # the workspace upgrade/yugen commit whose spec and contract copies the clients carry
+testnet:
+  fast-vault-height: 510400  # testnet-yb-fast's UPGRADE_VAULT height, unchanged since beta2
+  fast-set-id: none
+  slow-vault-height: none
+  slow-set-id: none
+  bundle-height: none
+ycash6:
+  commit: 90fe3341095fe37b04edecc61a24a1001b15a420   # the v6.23.0-beta4 tag commit (published 2026-11-27)
+  tag: v6.23.0-beta4
+ycash-dd:
+  commit: 49a91daeef9cf28966c2837849209439d87ee2c0   # the vault-params/v6.23.0-beta4 tag commit
+  tag: vault-params/v6.23.0-beta4
+librustzcash6:
+  commit: 057511f1d355ba47515672b9ae9625e7a35029f4   # upgrade/yugen tip
+lightwalletd-dd:
+  commit: eeb33492324e87c85478cfb61798b6003c369486   # upgrade/yugen tip (boyfromcave/lightwalletd)
+yecwallet-dd:
+  commit: placeholder      # not in the Yugen client list; the coordinator decides its pin
+yew:
+  commit: 82eba4c031f340e7e5f92f59a07150c25a0bb687   # upgrade/yugen tip
+yolo:
+  commit: 02838d78c70d78bf6aef138c6cbbd6d5c2275436   # upgrade/yugen tip
+chain-viz:
+  commit: f24e2d35f94df88717a5869bc9416d89671af8f7   # upgrade/vault tip: no Yugen changes, no upgrade/yugen branch
+x402-ycash:
+  commit: 192d96e815427636376f0f9a8b84610348a3467b   # upgrade/yugen tip
+hawkeye:
+  commit: 7029cbb33f9bac8c811161b38e947ad44e726b17   # upgrade/vault tip: no Yugen changes, no upgrade/yugen branch
+wyec:
+  commit: e9ea41aa185c348c4f6c72085b18bff8eda49bb5   # hawkeye's WYEC_COMMIT at hawkeye.commit (on wyec upgrade/vault; no Yugen changes)
+yugen-bundler:
+  commit: c4e04e99e5e3701d1936a7eadfc4dd62f68476ca   # upgrade/yugen tip
+yugen-spec:
+  commit: e93f9775c017bd359e90866c3fea3e0718e6119c   # upgrade/yugen tip
+yugen-falcon:
+  commit: 874438b9f6c119ae917b1121fe32da45e09b99a4   # upgrade/yugen tip
+yugen-proof-a:
+  commit: a61a63b68039a7daa62478c29651f3075575368e   # upgrade/yugen tip
+yugen-proof-b2:
+  commit: 3a2bcf78cd17ed3fe3adf4f2715bf86c811e8264   # upgrade/yugen tip

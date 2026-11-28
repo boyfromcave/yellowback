@@ -37,6 +37,10 @@
 #                                                    states rpcversion 11 (tag v2, D-T9); EXTRACT_SPEC_*_DIR override
 #        scripts/extract-spec.sh --write-beta4       write them: the beta3 contract with the beta4 delta
 #                                                    (docs/plans/beta4/rpc-contract-delta.md section 4.14) (`make spec-beta4`)
+#        scripts/extract-spec.sh --check-yugen       the Yugen line's copies (`make spec-check-yugen`): ycash6 trees with
+#                                                    doc/yugen-node.md (rpcversion 12, decision Y-6); EXTRACT_SPEC_*_DIR override
+#        scripts/extract-spec.sh --write-yugen       write them: the beta4 contract with the Yugen delta
+#                                                    (docs/plans/yugen/rpc-contract-delta.md section 4.15) (`make spec-yugen`)
 #
 # Python is always the workspace venv (.venv, created by `make bootstrap`); python3 is the
 # fallback only so a bare checkout can still run the check.
